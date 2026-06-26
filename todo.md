@@ -27,8 +27,12 @@
 ## Posting Integration
 - [x] Scheduled endpoints: /api/scheduled/dueForPublish, /api/scheduled/reportPublish
 - [x] Repost publish tracking columns (igMediaId, publishError)
-- [ ] Deploy site (user action) so scheduled endpoints are reachable
-- [ ] Create publishing AGENT cron (2PM SA, 3PM Austin) after deploy
+- [x] Owner-only authorization (ownerProcedure) on all feature + scheduled endpoints
+- [x] Owner-denial + unauthenticated tests added (18 tests passing)
+- [x] Daily posting agent playbook written (posting_playbook.md)
+- [x] Instagram connector UID identified for scheduled tasks
+- [ ] Deploy site (USER ACTION: click Publish) so scheduled endpoints are reachable
+- [ ] Create two scheduled posting tasks (2PM SA, 3PM Austin CDT) after deploy
 
 ## Testing
 - [x] Vitest for selection engine (30-day cooldown, fallback, scheduling)
