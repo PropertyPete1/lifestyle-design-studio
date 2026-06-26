@@ -1,5 +1,27 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1782501083548,
+      "tag": "0000_complex_famine",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1782501345824,
+      "tag": "0001_eminent_nighthawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1782502235423,
+      "tag": "0002_cuddly_jane_foster",
+      "breakpoints": true
+    }
+  ]
 }

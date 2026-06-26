@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { dueForPublishHandler, reportPublishHandler } from "../scheduledPublish";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -44,6 +45,11 @@ async function startServer() {
       createContext,
     })
   );
+
+  // Scheduled publishing endpoints (called by the posting AGENT cron).
+  // Must be registered before the Vite/static fallthrough.
+  app.post("/api/scheduled/dueForPublish", dueForPublishHandler);
+  app.post("/api/scheduled/reportPublish", reportPublishHandler);
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
