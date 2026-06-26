@@ -57,6 +57,7 @@ export async function dueForPublishHandler(req: Request, res: Response) {
         repostId: pick.repostId,
         city: pick.city,
         postId: pick.postId,
+        shortcode: video?.shortcode ?? null,
         permalink: video?.permalink ?? null,
         caption: pick.refreshedCaption ?? video?.caption ?? "",
         thumbnailUrl: video?.thumbnailUrl ?? null,

@@ -79,3 +79,12 @@
 - [x] Root cause: service worker cached stale/empty app shell on mobile
 - [x] Removed SW caching: self-destroying sw.js + auto-unregister/cache-purge on load
 - [ ] Verify on mobile after redeploy
+
+## Recurring Posting Agent (Jun 26)
+- [x] Decided: Option B (confirm-each-time via IG card); AGENT cron fetches reel video and prepares post
+- [x] Harden dueForPublish endpoint (now returns shortcode + permalink + caption); reportPublish already marks posted/failed
+- [x] Verified flow: reportPublishHandler updates daily_picks + calls markRepostPosted/markRepostFailed (reposts row)
+- [ ] Save checkpoint + deploy (required before scheduling)
+- [ ] Schedule two AGENT crons: San Antonio 2 PM CDT (19:00 UTC), Austin 3 PM CDT (20:00 UTC)
+- [ ] Verify schedules registered (nothing posts today)
+- [ ] Deliver summary + how to manage/pause schedules
