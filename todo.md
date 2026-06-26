@@ -31,8 +31,8 @@
 - [x] Owner-denial + unauthenticated tests added (18 tests passing)
 - [x] Daily posting agent playbook written (posting_playbook.md)
 - [x] Instagram connector UID identified for scheduled tasks
-- [ ] Deploy site (USER ACTION: click Publish) so scheduled endpoints are reachable
-- [ ] Create two scheduled posting tasks (2PM SA, 3PM Austin CDT) after deploy
+- [x] Deploy site (live at repostdash-qirdbvnd.manus.space) — scheduled endpoints reachable + 403-guarded
+- [x] Scheduled posting task created (single job, cron 0 0 19,20 * * *, America/Chicago = runs 2PM & 3PM CDT). Per-city due-times in the dashboard make SA post on the 2PM run and Austin on the 3PM run, guaranteeing 1hr separation. Instagram connector attached.
 
 ## Testing
 - [x] Vitest for selection engine (30-day cooldown, fallback, scheduling)
