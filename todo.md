@@ -109,18 +109,17 @@
 - [x] Today's picks are now clean: SA (id 30001) + Austin (id 30002), both pending, correct postIds
 - [x] Saved checkpoint 6333707f — ready to deploy to production
 
-## Fix: 30-Day Rotation vs Real Instagram Posts (Jun 30)
-- [ ] Add ig_post_history table: store postId + postedAt for all posts pulled from Instagram API
-- [ ] Add /api/admin/sync-ig-history endpoint: agent calls this daily to sync recent IG posts into the table
-- [ ] Update getLastRepostByPostId to also check ig_post_history table (union of dashboard reposts + real IG posts)
-- [ ] Delete today's bad SA pick and regenerate with the corrected exclusion list
-- [ ] Update daily posting agent schedule to sync IG history before generating picks
-- [ ] Deploy and verify
+## Fix: 30-Day Rotation vs Real Instagram Posts (Jun 30) — SUPERSEDED by AI Visual Dedup
+- [x] Superseded: AI visual dedup is a better solution (handles reposts with different IDs)
 
 ## AI Visual Deduplication for 30-Day Rotation (Jun 30)
-- [ ] Store recent IG post thumbnails + postedAt in ig_post_history table (sync from Instagram API)
-- [ ] Build AI vision check: compare candidate pick thumbnail vs recent IG thumbnails using LLM vision to detect same property/development
-- [ ] Integrate into ensureTodayPicks: skip candidates flagged as visually similar to a post within last 30 days
-- [ ] Delete today's bad SA pick (id 30001) and regenerate with AI visual dedup
-- [ ] Update schedule playbook: sync IG history before generating picks each day
-- [ ] Deploy and verify SA pick is a genuinely fresh property
+- [x] Built ig_post_history table (igPostId, thumbnailUrl, captionSnippet, postedAt)
+- [x] Built server/igHistorySync.ts: syncIgPostHistory() + getRecentIgHistory() + isVisuallyDuplicate()
+- [x] isVisuallyDuplicate() uses LLM vision to compare candidate thumbnail vs recent IG thumbnails (same property/development detection)
+- [x] Integrated into ensureTodayPicks: tries up to 10 candidates, skips visually similar ones, fallback to top-ranked if all flagged
+- [x] Added /api/scheduled/syncIgHistory endpoint for agent to sync posts before pick generation
+- [x] Seeded ig_post_history with 20 recent Instagram posts (June 12-29, 2026)
+- [x] Deleted today's bad SA pick (id 30001) — will regenerate with AI dedup on next dashboard open
+- [x] Updated schedule playbook to sync IG history before generating picks
+- [x] Pushed to GitHub (efa74c4)
+- [ ] Save checkpoint + deploy to production
