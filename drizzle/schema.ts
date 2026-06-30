@@ -1,4 +1,4 @@
-import { bigint, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { bigint, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -97,7 +97,9 @@ export const dailyPicks = mysqlTable("daily_picks", {
   repostId: int("repostId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, t => ({
+  uniqPickDateCity: uniqueIndex("uq_pick_date_city").on(t.pickDate, t.city),
+}));
 
 export type DailyPick = typeof dailyPicks.$inferSelect;
 export type InsertDailyPick = typeof dailyPicks.$inferInsert;

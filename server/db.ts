@@ -192,7 +192,12 @@ export async function getDailyPick(pickDate: string, city: "austin" | "san_anton
 export async function insertDailyPick(row: InsertDailyPick): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  const res = await db.insert(dailyPicks).values(row);
+  // onDuplicateKeyUpdate with a no-op set makes this idempotent:
+  // if (pickDate, city) already exists the insert is silently skipped.
+  const res = await db
+    .insert(dailyPicks)
+    .values(row)
+    .onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
   // @ts-expect-error insertId access
   return Number(res[0]?.insertId ?? res.insertId ?? 0);
 }

@@ -100,4 +100,11 @@
 - [x] Updated schedule playbook: fully automatic (no confirm tap), Metricool handles all platforms
 - [x] Wrote vitest test for metricool helper (live API validation, 19/19 pass)
 - [x] Pushed to GitHub (PropertyPete1/lifestyle-design-studio, commit f1fb556)
-- [ ] Save checkpoint + deploy to production
+- [x] Saved checkpoint f8eef5a5 — ready to deploy to production
+
+## Bug Fixes: 30-Day Rotation + Duplicate Picks (Jun 30)
+- [ ] Fix selection logic: exclude videos posted in the last 30 days (check reposts table)
+- [ ] Fix duplicate Austin picks: ensure exactly one pick per city per day
+- [ ] Clean up today's bad picks in the database (remove the recently-posted SA video and duplicate Austin pick)
+- [ ] Regenerate today's picks with correct rotation
+- [ ] Deploy and verify
