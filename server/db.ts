@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import {
   appSettings,
   dailyPicks,
+  igPostHistory,
   InsertDailyPick,
   InsertRepost,
   InsertUser,
@@ -127,12 +128,26 @@ export async function getAllReposts() {
 export async function getLastRepostByPostId(): Promise<Record<string, number>> {
   const db = await getDb();
   if (!db) return {};
-  const all = await db.select().from(reposts);
   const map: Record<string, number> = {};
-  for (const r of all) {
-    const t = (r.scheduledFor ?? (r.confirmedAt ? new Date(r.confirmedAt).getTime() : 0)) as number;
+
+  // 1. Dashboard reposts (confirmed or posted through the app)
+  const allReposts = await db.select().from(reposts);
+  for (const r of allReposts) {
+    // Use confirmedAt as the primary timestamp (when user locked the pick in),
+    // fall back to scheduledFor, then 0. This ensures a video confirmed today
+    // is excluded for the next 30 days even before it actually posts.
+    const t = (r.confirmedAt ? new Date(r.confirmedAt).getTime() : (r.scheduledFor ?? 0)) as number;
     if (!map[r.postId] || t > map[r.postId]) map[r.postId] = t;
   }
+
+  // 2. Real Instagram posts (posted directly on IG, outside the dashboard)
+  // ig_post_history.igPostId matches videos.postId (both are Instagram media IDs)
+  const igHistory = await db.select().from(igPostHistory);
+  for (const h of igHistory) {
+    const t = h.postedAt as number;
+    if (!map[h.igPostId] || t > map[h.igPostId]) map[h.igPostId] = t;
+  }
+
   return map;
 }
 

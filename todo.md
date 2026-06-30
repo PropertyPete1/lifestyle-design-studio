@@ -123,3 +123,18 @@
 - [x] Updated schedule playbook to sync IG history before generating picks
 - [x] Pushed to GitHub (efa74c4)
 - [ ] Save checkpoint + deploy to production
+
+## Bug: SA Pick Still Wrong + Metricool All Accounts (Jun 30)
+- [ ] Diagnose why SA pick still shows wrong video after AI dedup delete+regenerate
+- [ ] Force clean SA pick regeneration with AI dedup running correctly
+- [ ] Confirm all Metricool connected networks (Instagram, TikTok, YouTube) from live API
+- [ ] Update publishNow to post to ALL connected Metricool accounts (not just Instagram)
+- [ ] Deploy and verify
+
+## Bug: SA Pick Keeps Repeating Same $279,990 House (Jun 30)
+- [ ] Identify the $279,990 "All closing costs paid" video in the library (14.5K views, highest ranked SA video)
+- [ ] Understand why it keeps winning selection despite being recently posted
+- [ ] Fix: record confirmed picks in reposts table immediately on confirm (not just on post)
+- [ ] Fix: ensure 30-day exclusion uses confirmedAt timestamp, not scheduledFor
+- [ ] Delete today's bad SA pick and force regeneration with the fix in place
+- [ ] Deploy and verify new SA pick is a genuinely different property
