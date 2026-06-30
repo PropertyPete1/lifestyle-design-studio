@@ -109,10 +109,10 @@ export async function createScheduledPost(opts: CreatePostOptions): Promise<Crea
     providers = networks.map(n => ({ ...n, status: "PENDING" }));
   } else {
     const connected = await getConnectedNetworks();
-    // Post to Instagram and TikTok by default (video reel platforms)
-    // Filter to video-friendly platforms
+    // Post to video-friendly platforms that are confirmed connected for this brand:
+    // Instagram, TikTok, YouTube (Facebook is NOT connected in Metricool for this brand)
     const videoNetworks = connected.filter(n =>
-      ["INSTAGRAM", "TIKTOK", "FACEBOOK"].includes(n.network)
+      ["INSTAGRAM", "TIKTOK", "YOUTUBE"].includes(n.network)
     );
     providers = videoNetworks.map(n => ({ ...n, status: "PENDING" }));
   }

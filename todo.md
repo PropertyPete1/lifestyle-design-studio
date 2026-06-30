@@ -93,10 +93,11 @@
 - [x] Researched Metricool API - supports create scheduled post with autoPublish to all platforms
 - [x] Stored METRICOOL_API_TOKEN secret, verified token works (blogId: 4807109, userId: 3748462)
 - [x] Confirmed connected platforms: Instagram, TikTok, YouTube, Facebook
-- [ ] Add METRICOOL_BLOG_ID and METRICOOL_USER_ID to env/secrets
-- [ ] Build server/metricool.ts helper (createPost, getNetworks)
-- [ ] Build server/scheduledPublish.ts metricool posting flow: fetch source video URL from IG, upload to Metricool, auto-publish to all platforms
-- [ ] Add dueForPublish endpoint: return source video URL (from IG connector or stored) for the agent
-- [ ] Update the daily posting agent schedule playbook to use Metricool API directly
-- [ ] Write vitest tests for metricool helper
-- [ ] Deploy and verify end-to-end
+- [x] Added METRICOOL_BLOG_ID (4807109) and METRICOOL_USER_ID (3748462) to env/secrets
+- [x] Built server/metricool.ts: createScheduledPost() + getConnectedNetworks()
+- [x] Built /api/scheduled/publishNow: agent fetches video URL, server calls Metricool to auto-publish to Instagram + TikTok + Facebook
+- [x] dueForPublish returns shortcode + permalink + caption for agent to fetch video
+- [x] Updated schedule playbook: fully automatic (no confirm tap), Metricool handles all platforms
+- [x] Wrote vitest test for metricool helper (live API validation, 19/19 pass)
+- [x] Pushed to GitHub (PropertyPete1/lifestyle-design-studio, commit f1fb556)
+- [ ] Save checkpoint + deploy to production
