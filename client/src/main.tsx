@@ -72,6 +72,10 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+// Remove the static boot fallback once React is about to take over the root.
+const bootFallback = document.getElementById("boot-fallback");
+if (bootFallback) bootFallback.remove();
+
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>

@@ -171,4 +171,17 @@
 - [x] Adaptive iOS/Android instruction sheet; button shows on all phone-class devices
 - [x] Extract pure installDetect helpers + 8 unit tests (verified: iPhone/iPadOS/Android show, desktop only with prompt, hidden when installed)
 - [x] Include client tests in vitest config (35 tests total pass)
-- [ ] Checkpoint, push to GitHub, hand off with install steps
+- [x] Checkpoint saved (89110b6e); hand off with install steps
+
+## BUG: Mobile shows blank blocks (Jun 30)
+- [x] Reproduce on mobile viewport (dev renders fine; issue is device-side stale cache)
+- [x] Check logs: auth.me + picks.today both 200, no server errors — backend healthy
+- [x] Verify prod assets/thumbnails load (JS 200, CSS 200, thumbs 307->200 image/jpeg)
+- [x] Root cause: stale cached shell from old service worker on the device
+- [x] Fix: early in-head SW-unregister + cache-purge guard (runs before app bundle)
+- [x] Add boot fallback (spinner) so a failed load never shows blank screen
+- [x] Remove boot fallback once React mounts
+- [x] Add graceful <img> onError fallback ("Preview unavailable")
+- [x] Verify Daily/Rotation/Library on 390x844 mobile viewport (all render)
+- [x] Type-check clean + 35 tests pass
+- [ ] Checkpoint + hand off retest steps (force-refresh on phone)

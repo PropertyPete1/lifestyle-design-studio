@@ -29,7 +29,36 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Boot fallback: shown until React mounts. If the app fails to load,
+           this stays visible instead of a blank screen so the user has a path. -->
+      <div id="boot-fallback" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0f0f10;color:#e7e2d6;font-family:Inter,system-ui,sans-serif;padding:24px;text-align:center">
+        <div style="width:34px;height:34px;border:3px solid rgba(231,226,214,.25);border-top-color:#c8a96a;border-radius:50%;animation:bootspin .8s linear infinite"></div>
+        <div style="font-size:14px;opacity:.8">Loading Daily Reels…</div>
+        <noscript style="font-size:13px;opacity:.7">This app needs JavaScript enabled.</noscript>
+      </div>
+    </div>
+    <style>@keyframes bootspin{to{transform:rotate(360deg)}}</style>
+
+    <!-- Early cache/service-worker guard: runs BEFORE the app bundle so a
+         broken cached shell from an old service worker can never trap the
+         device on "blank blocks". Unregisters any SW and purges caches. -->
+    <script>
+      (function () {
+        try {
+          if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.getRegistrations()
+              .then(function (regs) { regs.forEach(function (r) { r.unregister(); }); })
+              .catch(function () {});
+          }
+          if (typeof caches !== "undefined" && caches.keys) {
+            caches.keys()
+              .then(function (keys) { keys.forEach(function (k) { caches.delete(k); }); })
+              .catch(function () {});
+          }
+        } catch (e) { /* never block boot */ }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
     <script
       defer

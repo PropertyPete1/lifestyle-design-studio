@@ -96,8 +96,24 @@ function PickCard({ pick }: { pick: PickWithVideo }) {
               <img
                 src={pick.video.thumbnailUrl}
                 alt={`${CITY_LABEL[pick.city]} reel`}
+                loading="lazy"
                 className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 style={{ transitionTimingFunction: "var(--ease-out)" }}
+                onError={e => {
+                  // If the thumbnail fails to load, swap to a graceful label
+                  // instead of leaving an empty block on the card.
+                  const el = e.currentTarget;
+                  el.style.display = "none";
+                  const parent = el.parentElement;
+                  if (parent && !parent.querySelector("[data-img-fallback]")) {
+                    const div = document.createElement("div");
+                    div.setAttribute("data-img-fallback", "true");
+                    div.className =
+                      "flex h-full items-center justify-center text-xs text-muted-foreground";
+                    div.textContent = "Preview unavailable";
+                    parent.appendChild(div);
+                  }
+                }}
               />
             ) : (
               <div className="flex h-full items-center justify-center text-muted-foreground">
