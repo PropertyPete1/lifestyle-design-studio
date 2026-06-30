@@ -105,6 +105,29 @@ export type DailyPick = typeof dailyPicks.$inferSelect;
 export type InsertDailyPick = typeof dailyPicks.$inferInsert;
 
 /**
+ * Recent Instagram post history — synced from the IG API.
+ * Used by AI visual deduplication to prevent reposting visually similar content
+ * within the 30-day rotation window, even when post IDs differ (re-edits, reposts).
+ */
+export const igPostHistory = mysqlTable("ig_post_history", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Instagram media id. */
+  igPostId: varchar("igPostId", { length: 32 }).notNull().unique(),
+  /** Thumbnail URL for AI vision comparison. */
+  thumbnailUrl: varchar("thumbnailUrl", { length: 512 }),
+  /** Caption snippet for additional context. */
+  captionSnippet: varchar("captionSnippet", { length: 500 }),
+  /** AI-generated visual description of the property/location (cached). */
+  visualDescription: text("visualDescription"),
+  /** When this post was published on Instagram (UTC ms). */
+  postedAt: bigint("postedAt", { mode: "number" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type IgPostHistory = typeof igPostHistory.$inferSelect;
+export type InsertIgPostHistory = typeof igPostHistory.$inferInsert;
+
+/**
  * Small key/value store for app settings — used to persist the AGENT cron
  * task_uids so a future session can manage them.
  */

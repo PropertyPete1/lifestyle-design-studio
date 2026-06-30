@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { sdk } from "./_core/sdk";
 import { ENV } from "./_core/env";
 import * as db from "./db";
+import { syncIgPostHistory } from "./igHistorySync";
 import { getCdtPickDate } from "./selection";
 import { createScheduledPost } from "./metricool";
 
@@ -147,6 +148,28 @@ export async function publishNowHandler(req: Request, res: Response) {
       context: { url: req.originalUrl },
       timestamp: new Date().toISOString(),
     });
+  }
+}
+
+/**
+ * syncIgHistory endpoint: called by the daily agent before pick generation.
+ * Body: { posts: Array<{ id, thumbnail_url?, media_url?, caption?, timestamp }> }
+ * Upserts the recent IG posts into ig_post_history for AI visual dedup.
+ */
+export async function syncIgHistoryHandler(req: Request, res: Response) {
+  try {
+    if (!(await authorize(req))) {
+      return res.status(403).json({ error: "forbidden" });
+    }
+    const posts = req.body?.posts;
+    if (!Array.isArray(posts)) {
+      return res.status(400).json({ error: "posts must be an array" });
+    }
+    await syncIgPostHistory(posts);
+    return res.json({ ok: true, synced: posts.length });
+  } catch (err) {
+    const e = err as Error;
+    return res.status(500).json({ error: e.message });
   }
 }
 

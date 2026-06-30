@@ -6,6 +6,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { ownerProcedure, publicProcedure, router } from "./_core/trpc";
 import { refreshCaption } from "./captionRefresh";
 import * as db from "./db";
+import { getRecentIgHistory, isVisuallyDuplicate, syncIgPostHistory } from "./igHistorySync";
 import {
   defaultScheduleMs,
   getCdtPickDate,
@@ -17,28 +18,68 @@ const citySchema = z.enum(["austin", "san_antonio"]);
 /**
  * Ensure today's two picks (Austin + SA) exist, generating them if missing.
  * Idempotent: if rows already exist for the pick date, they are returned as-is.
+ * Uses AI visual deduplication to skip candidates that show the same property
+ * as any post made in the last 30 days — even if the post ID is different.
  */
 async function ensureTodayPicks(pickDate: string) {
   const existing = await db.getDailyPicks(pickDate);
   const haveCities = new Set(existing.map(p => p.city));
   const lastRepost = await db.getLastRepostByPostId();
   const chosenToday = new Set(existing.map(p => p.postId));
+  // Load recent IG post history for AI visual dedup
+  const recentIgHistory = await getRecentIgHistory();
 
   for (const city of ["san_antonio", "austin"] as const) {
     if (haveCities.has(city)) continue;
     const lib = await db.getVideosByCity(city);
     if (!lib.length) continue;
-    const result = selectForCity(lib, lastRepost, chosenToday);
-    if (!result) continue;
-    chosenToday.add(result.video.postId);
-    const refreshed = await refreshCaption(result.video.caption ?? "");
+
+    // Try candidates in ranked order; skip any that are visually similar to a recent post
+    let picked: Awaited<ReturnType<typeof selectForCity>> | null = null;
+    const triedIds = new Set<string>();
+    let attempts = 0;
+    const MAX_ATTEMPTS = Math.min(lib.length, 10); // check up to 10 candidates
+
+    while (attempts < MAX_ATTEMPTS) {
+      const result = selectForCity(lib, lastRepost, new Set([...Array.from(chosenToday), ...Array.from(triedIds)]));
+      if (!result) break;
+      triedIds.add(result.video.postId);
+      attempts++;
+
+      // AI visual dedup: skip if same property was posted in last 30 days
+      const thumbUrl = result.video.thumbnailUrl;
+      if (thumbUrl && recentIgHistory.length > 0) {
+        const isDup = await isVisuallyDuplicate(
+          thumbUrl,
+          recentIgHistory,
+          result.video.caption
+        );
+        if (isDup) {
+          console.log(`[AI Dedup] Skipping ${result.video.postId} (${city}) — visually similar to recent post`);
+          continue;
+        }
+      }
+
+      picked = result;
+      break;
+    }
+
+    if (!picked) {
+      // Fallback: if all candidates were flagged as duplicates, use the top-ranked one anyway
+      console.warn(`[AI Dedup] All ${attempts} candidates for ${city} flagged as duplicates — using top-ranked fallback`);
+      picked = selectForCity(lib, lastRepost, chosenToday);
+    }
+    if (!picked) continue;
+
+    chosenToday.add(picked.video.postId);
+    const refreshed = await refreshCaption(picked.video.caption ?? "");
     await db.insertDailyPick({
       pickDate,
       city,
-      videoId: result.video.id,
-      postId: result.video.postId,
+      videoId: picked.video.id,
+      postId: picked.video.postId,
       refreshedCaption: refreshed,
-      selectionMode: result.mode,
+      selectionMode: picked.mode,
       scheduledFor: defaultScheduleMs(pickDate, city),
       status: "pending",
     });

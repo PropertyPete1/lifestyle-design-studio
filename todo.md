@@ -107,4 +107,20 @@
 - [x] Fixed duplicate Austin picks: added UNIQUE(pickDate, city) DB constraint + idempotent insertDailyPick
 - [x] Cleaned up: deleted duplicate Austin pick (id 30003), kept id 30002
 - [x] Today's picks are now clean: SA (id 30001) + Austin (id 30002), both pending, correct postIds
-- [ ] Save checkpoint + deploy to production
+- [x] Saved checkpoint 6333707f — ready to deploy to production
+
+## Fix: 30-Day Rotation vs Real Instagram Posts (Jun 30)
+- [ ] Add ig_post_history table: store postId + postedAt for all posts pulled from Instagram API
+- [ ] Add /api/admin/sync-ig-history endpoint: agent calls this daily to sync recent IG posts into the table
+- [ ] Update getLastRepostByPostId to also check ig_post_history table (union of dashboard reposts + real IG posts)
+- [ ] Delete today's bad SA pick and regenerate with the corrected exclusion list
+- [ ] Update daily posting agent schedule to sync IG history before generating picks
+- [ ] Deploy and verify
+
+## AI Visual Deduplication for 30-Day Rotation (Jun 30)
+- [ ] Store recent IG post thumbnails + postedAt in ig_post_history table (sync from Instagram API)
+- [ ] Build AI vision check: compare candidate pick thumbnail vs recent IG thumbnails using LLM vision to detect same property/development
+- [ ] Integrate into ensureTodayPicks: skip candidates flagged as visually similar to a post within last 30 days
+- [ ] Delete today's bad SA pick (id 30001) and regenerate with AI visual dedup
+- [ ] Update schedule playbook: sync IG history before generating picks each day
+- [ ] Deploy and verify SA pick is a genuinely fresh property
