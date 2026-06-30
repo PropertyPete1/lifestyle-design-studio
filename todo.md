@@ -185,3 +185,16 @@
 - [x] Verify Daily/Rotation/Library on 390x844 mobile viewport (all render)
 - [x] Type-check clean + 35 tests pass
 - [x] Checkpoint saved (d98aa068); hand off retest steps (force-refresh on phone)
+
+## BUG: Metricool posts stay PENDING — "Video not available" / 4 errors (Jun 30)
+- [x] Root cause part 1: post body shape (lowercase providers, media as {url,type} objects, drop saveExternalMediaFiles) — fixed, returns HTTP 200
+- [x] Root cause part 2: IG CDN media URL expires/blocked → Metricool can't fetch video → "Add at least 1 image or video" on all networks
+- [x] Real fix: upload the video into Metricool's OWN media library via their S3 upload flow (PUT /v2/media/s3/upload-transactions -> presigned S3 PUT -> PATCH complete), then post with the static.metricool.com hosted URL. External URLs always expire before Metricool ingests them.
+- [x] Cracked the S3 403 SignatureDoesNotMatch: the transaction part `hash` MUST be base64(sha256) of the bytes, and the S3 PUT must send `x-amz-checksum-sha256` = that same base64(sha256). Metricool signs the presigned URL with that exact value.
+- [x] Implemented uploadVideoToMetricool() in server/metricool.ts; createScheduledPost now uploads media by default (uploadMedia flag)
+- [x] SECOND root cause: `media` must be an array of bare URL STRINGS. Sending [{url,type}] objects made Metricool silently persist EMPTY media (post then errors "add a picture/video"). Fixed createScheduledPost to send media: [url].
+- [x] Fixed immediate-publish scheduling: added chicagoLocalDateTime() so publicationDate.dateTime is a true America/Chicago wall-clock string (was UTC ISO slice, ~5h late). Used in publishNowHandler + republish.
+- [x] Re-published today's Austin reel via corrected path — VERIFIED PUBLISHED on Instagram, TikTok, YouTube, AND LinkedIn (Metricool post 343860379); repost 30003 igMediaId updated
+- [x] Scheduled cron publishNow flow calls createScheduledPost -> now auto-uploads media + uses Chicago-local time (no further change needed)
+- [x] Added tests: uploadVideoToMetricool returns hosted CDN url; chicagoLocalDateTime timezone semantics (39 tests pass)
+- [ ] Checkpoint + hand off

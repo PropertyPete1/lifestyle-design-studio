@@ -26,6 +26,29 @@ async function authorize(req: Request): Promise<boolean> {
 const CITY_VALUES = new Set(["austin", "san_antonio"]);
 
 /**
+ * Build a "YYYY-MM-DDTHH:MM:SS" wall-clock string in America/Chicago for the
+ * given epoch-ms. Metricool reads publicationDate.dateTime in the supplied
+ * timezone, so passing a UTC ISO string with timezone:"America/Chicago"
+ * schedules the post ~5–6 hours late. This produces the correct local time.
+ */
+export function chicagoLocalDateTime(epochMs: number): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(epochMs));
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? "00";
+  // en-CA gives ISO-like date parts; hour may come back as "24" at midnight.
+  const hour = get("hour") === "24" ? "00" : get("hour");
+  return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}:${get("second")}`;
+}
+
+/**
  * GET-style (POST) endpoint: returns the confirmed pick that is due to publish
  * for the requested city today, including the video's caption + postId so the
  * agent can fetch a fresh media URL and publish it. Returns { due: false } when
@@ -113,8 +136,10 @@ export async function publishNowHandler(req: Request, res: Response) {
     const video = await db.getVideoById(pick.videoId);
     const caption = captionOverride ?? pick.refreshedCaption ?? video?.caption ?? "";
 
-    // Publish immediately via Metricool (schedule 1 minute from now to satisfy API)
-    const publishAt = new Date(Date.now() + 60_000).toISOString().slice(0, 19); // "YYYY-MM-DDTHH:MM:SS"
+    // Publish immediately via Metricool. Metricool interprets publicationDate
+    // in the given timezone, so we MUST build a wall-clock string in
+    // America/Chicago (NOT a UTC ISO string), or the post is scheduled ~5h late.
+    const publishAt = chicagoLocalDateTime(Date.now() + 90_000); // "YYYY-MM-DDTHH:MM:SS"
 
     const result = await createScheduledPost({
       videoUrl,
