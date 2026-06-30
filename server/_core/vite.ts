@@ -58,10 +58,26 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve built assets. Hashed files (e.g. /assets/index-AbC123.js) are
+  // content-addressed and safe to cache forever; index.html must NEVER be
+  // cached, otherwise a phone holding a stale index.html requests old JS/CSS
+  // hashes that no longer exist after a deploy -> chunks 404 -> the app shell
+  // renders but components never hydrate (the "empty card frames" symptom).
+  app.use(
+    express.static(distPath, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith("index.html")) {
+          res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+        } else if (/\/assets\//.test(filePath)) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    })
+  );
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

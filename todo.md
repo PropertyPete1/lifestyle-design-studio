@@ -184,4 +184,4 @@
 - [x] Add graceful <img> onError fallback ("Preview unavailable")
 - [x] Verify Daily/Rotation/Library on 390x844 mobile viewport (all render)
 - [x] Type-check clean + 35 tests pass
-- [ ] Checkpoint + hand off retest steps (force-refresh on phone)
+- [x] Checkpoint saved (d98aa068); hand off retest steps (force-refresh on phone)
