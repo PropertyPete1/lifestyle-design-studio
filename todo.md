@@ -197,4 +197,13 @@
 - [x] Re-published today's Austin reel via corrected path — VERIFIED PUBLISHED on Instagram, TikTok, YouTube, AND LinkedIn (Metricool post 343860379); repost 30003 igMediaId updated
 - [x] Scheduled cron publishNow flow calls createScheduledPost -> now auto-uploads media + uses Chicago-local time (no further change needed)
 - [x] Added tests: uploadVideoToMetricool returns hosted CDN url; chicagoLocalDateTime timezone semantics (39 tests pass)
-- [ ] Checkpoint + hand off
+- [x] Checkpoint saved + deployed to production; all 4 scheduled endpoints live and auth-gated; cron verified for tomorrow (SA 2PM / Austin 3PM CDT)
+
+## Multi-brand posting (max exposure across all connected IG accounts)
+- [x] Discover ALL Metricool brands at post time via getAllBrands(simpleProfiles), not a hardcoded blogId
+- [x] uploadVideoToMetricool now takes blogId + reusable prefetched bytes; authParams parametrized by blogId
+- [x] createScheduledPost fans out to every brand (postToBrand) with that brand's networks (IG always; +TikTok/YouTube/LinkedIn on main)
+- [x] Aggregated per-brand results into ok/platforms summary; partial failures surfaced in summary
+- [x] publishNow already returns result.platforms summary and marks posted when >=1 brand succeeds (no change needed)
+- [x] Live-tested fan-out to all 3 brands (3 posts created + cleaned up); added getAllBrands test; 40 tests pass; tsc clean
+- [ ] Checkpoint + deploy + verify in production

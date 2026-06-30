@@ -44,3 +44,21 @@ describe("Metricool media upload flow", () => {
     expect(head.ok || head.status === 206).toBe(true);
   }, 60000);
 });
+
+describe("Metricool multi-brand discovery", () => {
+  it("getAllBrands returns every Instagram-capable brand on the account", async () => {
+    const { getAllBrands } = await import("./metricool");
+    const brands = await getAllBrands();
+    expect(Array.isArray(brands)).toBe(true);
+    // The account has multiple brands connected; at minimum the main brand.
+    expect(brands.length).toBeGreaterThanOrEqual(1);
+    // Every returned brand must be Instagram-capable (that's the fan-out rule).
+    for (const b of brands) {
+      expect(b.blogId).toBeGreaterThan(0);
+      expect(b.networks).toContain("INSTAGRAM");
+    }
+    // The main brand should expose its full network set.
+    const main = brands.find(b => b.networks.includes("TIKTOK") && b.networks.includes("YOUTUBE"));
+    expect(main, "expected a brand with TikTok + YouTube (main brand)").toBeDefined();
+  }, 15000);
+});

@@ -26,18 +26,29 @@ const BASE = "https://app.metricool.com/api";
  * value as x-amz-checksum-sha256; any other value (e.g. MD5) yields a 403
  * SignatureDoesNotMatch.
  */
-export async function uploadVideoToMetricool(sourceUrl: string): Promise<string> {
-  const auth = authParams();
+export async function uploadVideoToMetricool(
+  sourceUrl: string,
+  blogId: number = ENV.metricoolBlogId,
+  prefetched?: { buf: Buffer; sha256b64: string }
+): Promise<string> {
+  const auth = authParams(blogId);
   const jsonHeaders = authHeaders();
 
-  // Download the source video bytes.
-  const dl = await fetch(sourceUrl);
-  if (!dl.ok) {
-    throw new Error(`uploadVideoToMetricool: failed to download source (${dl.status})`);
+  // Download the source video bytes (or reuse prefetched bytes across brands).
+  let buf: Buffer;
+  let sha256b64: string;
+  if (prefetched) {
+    buf = prefetched.buf;
+    sha256b64 = prefetched.sha256b64;
+  } else {
+    const dl = await fetch(sourceUrl);
+    if (!dl.ok) {
+      throw new Error(`uploadVideoToMetricool: failed to download source (${dl.status})`);
+    }
+    buf = Buffer.from(await dl.arrayBuffer());
+    sha256b64 = crypto.createHash("sha256").update(buf).digest("base64");
   }
-  const buf = Buffer.from(await dl.arrayBuffer());
   const size = buf.length;
-  const sha256b64 = crypto.createHash("sha256").update(buf).digest("base64");
 
   // 1. Create the upload transaction (declare sha256-base64 as the part hash).
   let res = await fetch(`${BASE}/v2/media/s3/upload-transactions?${auth}`, {
@@ -63,7 +74,7 @@ export async function uploadVideoToMetricool(sourceUrl: string): Promise<string>
       "Content-Length": String(size),
       "x-amz-checksum-sha256": sha256b64,
     },
-    body: buf,
+    body: new Uint8Array(buf),
   });
   if (!put.ok) {
     throw new Error(`uploadVideoToMetricool: S3 PUT failed ${put.status} ${(await put.text()).slice(0, 200)}`);
@@ -86,8 +97,46 @@ export async function uploadVideoToMetricool(sourceUrl: string): Promise<string>
   return hostedUrl;
 }
 
-function authParams() {
-  return `blogId=${ENV.metricoolBlogId}&userId=${ENV.metricoolUserId}`;
+function authParams(blogId: number = ENV.metricoolBlogId) {
+  return `blogId=${blogId}&userId=${ENV.metricoolUserId}`;
+}
+
+/** A Metricool brand/blog and the networks connected to it. */
+export interface MetricoolBrand {
+  blogId: number;
+  label: string;
+  networks: string[]; // uppercase: INSTAGRAM, TIKTOK, YOUTUBE, LINKEDIN, FACEBOOK
+}
+
+/**
+ * Discover ALL brands on the Metricool account and the video-capable networks
+ * connected to each. We post each daily reel to every brand that has at least
+ * Instagram, so any future IG account connected as a new brand is included
+ * automatically with no code change.
+ */
+export async function getAllBrands(): Promise<MetricoolBrand[]> {
+  const url = `${BASE}/admin/simpleProfiles?userId=${ENV.metricoolUserId}`;
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    throw new Error(`Metricool getAllBrands failed: ${res.status} ${await res.text()}`);
+  }
+  const profiles = (await res.json()) as Record<string, unknown>[];
+  const brands: MetricoolBrand[] = [];
+  for (const p of profiles) {
+    if (p.deleted === true || p.isDemo === true) continue;
+    const blogId = Number(p.id ?? p.blogId);
+    if (!blogId) continue;
+    const networks: string[] = [];
+    if (typeof p.instagram === "string" && p.instagram) networks.push("INSTAGRAM");
+    if (typeof p.tiktok === "string" && p.tiktok) networks.push("TIKTOK");
+    if (typeof p.youtube === "string" && p.youtube) networks.push("YOUTUBE");
+    if ((typeof p.linkedin === "string" && p.linkedin) || (typeof p.linkedinCompany === "string" && p.linkedinCompany))
+      networks.push("LINKEDIN");
+    // Only target brands that can carry a video reel (Instagram at minimum).
+    if (!networks.includes("INSTAGRAM")) continue;
+    brands.push({ blogId, label: String(p.label ?? p.id ?? blogId), networks });
+  }
+  return brands;
 }
 
 function authHeaders() {
@@ -180,63 +229,124 @@ export async function getConnectedNetworks(): Promise<MetricoolNetwork[]> {
  * Create a scheduled post in Metricool that auto-publishes to all connected platforms.
  * Uses autoPublish: true so no manual confirmation is needed.
  */
+const UPPER_TO_LOWER: Record<string, string> = {
+  INSTAGRAM: "instagram",
+  TIKTOK: "tiktok",
+  YOUTUBE: "youtube",
+  LINKEDIN: "linkedin",
+  FACEBOOK: "facebook",
+};
+const NICE_NAMES: Record<string, string> = {
+  instagram: "Instagram",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  linkedin: "LinkedIn",
+  facebook: "Facebook",
+};
+
+/**
+ * Post one reel to EVERY brand on the Metricool account (fan-out for maximum
+ * exposure). The media is uploaded once into each brand's own media library
+ * (Metricool media libraries are per-blogId), then a post is created per brand
+ * targeting that brand's connected networks. Succeeds if at least one brand
+ * publishes; per-brand outcomes are summarized in `platforms`.
+ */
 export async function createScheduledPost(opts: CreatePostOptions): Promise<CreatePostResult> {
+  const { videoUrl } = opts;
+
+  let brands: MetricoolBrand[];
+  try {
+    brands = await getAllBrands();
+  } catch (err) {
+    return {
+      ok: false,
+      error: `Metricool brand discovery failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+  if (brands.length === 0) {
+    return { ok: false, error: "No Instagram-capable Metricool brands found" };
+  }
+
+  // Download the source bytes ONCE and reuse across brand uploads.
+  let prefetched: { buf: Buffer; sha256b64: string } | undefined;
+  try {
+    const dl = await fetch(videoUrl);
+    if (!dl.ok) throw new Error(`source download failed (${dl.status})`);
+    const buf = Buffer.from(await dl.arrayBuffer());
+    prefetched = { buf, sha256b64: crypto.createHash("sha256").update(buf).digest("base64") };
+  } catch (err) {
+    return {
+      ok: false,
+      error: `Metricool media download failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+
+  const results: Array<{ brand: string; ok: boolean; postId?: number; networks: string[]; error?: string }> = [];
+  for (const brand of brands) {
+    const r = await postToBrand(opts, brand, prefetched);
+    results.push({ brand: brand.label, ok: r.ok, postId: r.postId, networks: brand.networks, error: r.error });
+  }
+
+  const anyOk = results.some(r => r.ok);
+  const firstOkPostId = results.find(r => r.ok)?.postId;
+  // Human-readable summary like:
+  // "lifestyledesignrealtytexas (Instagram, TikTok, YouTube, LinkedIn); propertypete01 (Instagram); ..."
+  const summary = results
+    .map(r => {
+      const nets = r.networks.map(n => NICE_NAMES[n.toLowerCase()] ?? n).join(", ");
+      return r.ok ? `${r.brand} (${nets})` : `${r.brand} FAILED: ${r.error}`;
+    })
+    .join("; ");
+
+  return {
+    ok: anyOk,
+    postId: typeof firstOkPostId === "number" ? firstOkPostId : undefined,
+    error: anyOk ? undefined : `All brands failed. ${summary}`,
+    platforms: summary,
+    raw: results,
+  };
+}
+
+/**
+ * Create + auto-publish one post on a single brand. Uploads the media into that
+ * brand's media library first (per-blogId), then posts to the brand's networks.
+ */
+async function postToBrand(
+  opts: CreatePostOptions,
+  brand: MetricoolBrand,
+  prefetched: { buf: Buffer; sha256b64: string }
+): Promise<CreatePostResult> {
   const {
     videoUrl,
     caption,
     publishAt,
     timezone = "America/Chicago",
     thumbnailUrl,
-    networks,
     uploadMedia = true,
   } = opts;
 
-  // Upload the video into Metricool's media library so it is hosted on their
-  // CDN. External URLs (IG CDN / signed S3) expire and leave the post with no
-  // media ("Video not available"), so this step is mandatory for reliability.
+  // Upload the video into THIS brand's media library (Metricool-hosted CDN URL).
   let mediaUrl = videoUrl;
   if (uploadMedia) {
     try {
-      mediaUrl = await uploadVideoToMetricool(videoUrl);
+      mediaUrl = await uploadVideoToMetricool(videoUrl, brand.blogId, prefetched);
     } catch (err) {
       return {
         ok: false,
-        error: `Metricool media upload failed: ${err instanceof Error ? err.message : String(err)}`,
+        error: `media upload failed: ${err instanceof Error ? err.message : String(err)}`,
       };
     }
   }
 
-  // Resolve which networks to post to. Metricool expects LOWERCASE network
-  // names in `providers` and does NOT want a `status`/`id` field on create
-  // (sending those causes a 500 insert error). We only send { network }.
-  const upperToLower: Record<string, string> = {
-    INSTAGRAM: "instagram",
-    TIKTOK: "tiktok",
-    YOUTUBE: "youtube",
-    LINKEDIN: "linkedin",
-    FACEBOOK: "facebook",
-  };
-  let providers: Array<{ network: string }>;
-  if (networks && networks.length > 0) {
-    providers = networks.map(n => ({ network: upperToLower[n.network] ?? n.network.toLowerCase() }));
-  } else {
-    const connected = await getConnectedNetworks();
-    // Post to every video-friendly platform connected for this brand:
-    // Instagram, TikTok, YouTube, and LinkedIn. (Facebook is NOT connected.)
-    const allowed = ["INSTAGRAM", "TIKTOK", "YOUTUBE", "LINKEDIN"];
-    const seen = new Set<string>();
-    providers = connected
-      .filter(n => {
-        if (!allowed.includes(n.network)) return false;
-        if (seen.has(n.network)) return false;
-        seen.add(n.network);
-        return true;
-      })
-      .map(n => ({ network: upperToLower[n.network] ?? n.network.toLowerCase() }));
-  }
+  // Target every video-friendly network connected to this brand.
+  const allowed = ["INSTAGRAM", "TIKTOK", "YOUTUBE", "LINKEDIN"];
+  const seen = new Set<string>();
+  const providers = brand.networks
+    .filter(n => allowed.includes(n) && !seen.has(n) && seen.add(n) !== undefined)
+    .map(n => ({ network: UPPER_TO_LOWER[n] ?? n.toLowerCase() }));
 
   if (providers.length === 0) {
-    return { ok: false, error: "No connected video networks found in Metricool" };
+    return { ok: false, error: "no video networks on brand" };
   }
 
   const body: Record<string, unknown> = {
@@ -280,7 +390,7 @@ export async function createScheduledPost(opts: CreatePostOptions): Promise<Crea
     body.videoThumbnailUrl = thumbnailUrl;
   }
 
-  const url = `${BASE}/v2/scheduler/posts?${authParams()}`;
+  const url = `${BASE}/v2/scheduler/posts?${authParams(brand.blogId)}`;
   const res = await fetch(url, {
     method: "POST",
     headers: authHeaders(),
@@ -292,7 +402,7 @@ export async function createScheduledPost(opts: CreatePostOptions): Promise<Crea
   if (!res.ok) {
     return {
       ok: false,
-      error: `Metricool API error ${res.status}: ${JSON.stringify(raw)}`,
+      error: `API error ${res.status}: ${JSON.stringify(raw)}`,
       raw,
     };
   }
@@ -302,15 +412,8 @@ export async function createScheduledPost(opts: CreatePostOptions): Promise<Crea
     (raw as Record<string, unknown>)?.id ??
     ((raw as Record<string, unknown>)?.data as Record<string, unknown>)?.id;
 
-  const niceNames: Record<string, string> = {
-    instagram: "Instagram",
-    tiktok: "TikTok",
-    youtube: "YouTube",
-    linkedin: "LinkedIn",
-    facebook: "Facebook",
-  };
   const platforms = providers
-    .map(p => niceNames[p.network.toLowerCase()] ?? p.network)
+    .map(p => NICE_NAMES[p.network.toLowerCase()] ?? p.network)
     .filter((v, i, a) => a.indexOf(v) === i)
     .join(", ");
 
