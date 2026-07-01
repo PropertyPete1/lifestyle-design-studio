@@ -257,21 +257,36 @@ class SDKServer {
   }
 
   async authenticateRequest(req: Request): Promise<AuthenticatedUser> {
-    // 1. Prefer the session cookie (regular OAuth login).
+    // Two independent credentials can arrive on a request:
+    //   (a) the session cookie (regular OAuth login), and
+    //   (b) an Authorization: Bearer token (mobile-safe fallback captured from
+    //       the OAuth callback URL fragment / Preview sessionStorage).
+    //
+    // On mobile (Safari ITP, iOS/Android WebView, strict cross-site cookie
+    // policies) the cookie is frequently STALE or EXPIRED even though the phone
+    // holds a perfectly valid Bearer token. The old code verified ONLY the
+    // cookie and rejected outright when it failed, never trying the Bearer
+    // token. That is the recurring "dashboard loads but nothing works on my
+    // phone" bug. Fix: try the cookie first, and if it does not yield a valid
+    // session, transparently fall back to the Bearer token before giving up.
+    // No access is loosened — both paths still require a validly-signed session
+    // and the same owner-only checks downstream.
     const cookies = this.parseCookies(req.headers.cookie);
-    let sessionToken = cookies.get(COOKIE_NAME);
+    const cookieToken = cookies.get(COOKIE_NAME);
 
-    // 2. Fallback to the Authorization header (Preview auto-login via
-    //    sessionStorage), used when the browser blocks iframe cookies such as
-    //    Safari ITP, private browsing, or iOS/Android WebView.
-    if (!sessionToken) {
-      const authHeader = req.headers.authorization;
-      if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
-        sessionToken = authHeader.slice(7);
-      }
+    const authHeader = req.headers.authorization;
+    const bearerToken =
+      typeof authHeader === "string" && authHeader.startsWith("Bearer ")
+        ? authHeader.slice(7)
+        : undefined;
+
+    // Try cookie first, then Bearer. Pick whichever produces a valid session.
+    let sessionToken = cookieToken;
+    let session = await this.verifySession(cookieToken);
+    if (!session && bearerToken && bearerToken !== cookieToken) {
+      session = await this.verifySession(bearerToken);
+      if (session) sessionToken = bearerToken;
     }
-
-    const session = await this.verifySession(sessionToken);
 
     if (!session) {
       throw ForbiddenError("Invalid session cookie");

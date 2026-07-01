@@ -29,10 +29,14 @@ was the user tapping Confirm in the app. The posting agent's
       automatically with no action needed.
 - [x] Tests: added auto-confirm coverage; 87/87 pass; 0 TypeScript errors.
 
-## Remaining ops step (outside code)
-- [ ] After deploy: register a morning Heartbeat cron (~8 AM CT,
-      `0 0 13 * * *` UTC) hitting `/api/scheduled/generatePicks` so picks are
-      guaranteed present before 2 PM.
+## Remaining ops step (outside code) — DONE
+- [x] Deployed to production (repostdash-qirdbvnd.manus.space); /api/scheduled/generatePicks live + cron-guarded (403 cron-cookie).
+- [x] Registered morning Heartbeat cron 8 AM CT (`0 0 13 * * *` UTC) ->
+      /api/scheduled/generatePicks (task_uid nznYBLuykxrdysEkSxyVBj,
+      next 2026-07-02T13:00Z = 8 AM CDT).
+- [x] Verified posting agent cron active: `0 0 14,15,16 * * *` America/Chicago
+      (2/3/4 PM CT), taskUid he5uIWQiFJljmBdqvGrXLD.
+- [x] Verified today's picks confirmed on live DB (SA 2PM, Austin 3PM).
 
 ## Result (once deployed + morning cron registered)
 1. ~8 AM CT: morning cron generates and AUTO-CONFIRMS the day's picks.

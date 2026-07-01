@@ -279,7 +279,13 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 ## Fully Automatic Posting (no manual tap)
 - [x] Auto-confirm picks at generation time (create repost row + status=confirmed) so the 2/3/4 PM agent finds them due
 - [x] Add /api/scheduled/generatePicks morning Heartbeat endpoint so tomorrow's picks always exist before the posting window
-- [ ] Register a morning Heartbeat cron (~8 AM CT) to call generatePicks
+- [x] Register a morning Heartbeat cron 8 AM CT (0 0 13 * * * UTC) -> /api/scheduled/generatePicks (task_uid nznYBLuykxrdysEkSxyVBj, next 2026-07-02T13:00Z = 8 AM CDT)
 - [x] Keep manual Confirm working as a graceful no-op (already-confirmed handled)
 - [x] tsc + vitest pass (87/87); checkpoint saved (59c4a4f7); pushed to GitHub (github/main ec165d6..59c4a4f)
 - [x] Self-heal in dueForPublish: ensureTodayPicks (generate + auto-confirm) runs before the due check, so posting works even if morning cron/app never ran
+
+## Mobile App Access (recurring blocker - 5th report)
+- [x] Diagnosed: server verified ONLY the cookie; a stale/expired mobile cookie caused rejection and the valid Bearer fallback was never tried
+- [x] Reviewed auth path (sdk.authenticateRequest, useAuth, sessionToken, oauth callback fragment handoff)
+- [x] Fixed: authenticateRequest now falls back to the valid Bearer token when the cookie is invalid/stale (no security removed); added 3 unit tests; 90/90 pass
+- [ ] Test, checkpoint, push to GitHub, ask user to publish, verify live on the owner's phone
