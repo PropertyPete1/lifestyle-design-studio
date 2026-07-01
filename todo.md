@@ -277,8 +277,8 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Verified: job listed, next run 2026-07-02T12:00:00Z; production endpoint reachable and 403-guarded without cron auth
 
 ## Fully Automatic Posting (no manual tap)
-- [ ] Auto-confirm picks at generation time (create repost row + status=confirmed) so the 2/3/4 PM agent finds them due
-- [ ] Add /api/scheduled/generatePicks morning Heartbeat endpoint so tomorrow's picks always exist before the posting window
+- [x] Auto-confirm picks at generation time (create repost row + status=confirmed) so the 2/3/4 PM agent finds them due
+- [x] Add /api/scheduled/generatePicks morning Heartbeat endpoint so tomorrow's picks always exist before the posting window
 - [ ] Register a morning Heartbeat cron (~8 AM CT) to call generatePicks
-- [ ] Keep manual Confirm working as a graceful no-op (already-confirmed handled)
-- [ ] tsc + vitest pass; checkpoint; push to GitHub
+- [x] Keep manual Confirm working as a graceful no-op (already-confirmed handled)
+- [x] tsc + vitest pass (87/87); checkpoint; push to GitHub

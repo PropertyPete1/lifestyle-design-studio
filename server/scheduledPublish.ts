@@ -8,6 +8,7 @@ import { createScheduledPost } from "./metricool";
 import { checkSourceCooldown } from "./sourceCooldown";
 import { makeDifferentiatedVariant } from "./videoVariant";
 import { runPerformanceAnalyst } from "./performanceAnalyst";
+import { ensureTodayPicks } from "./routers";
 
 /**
  * Endpoints used by the publishing AGENT cron (a scheduled Manus session that
@@ -225,6 +226,37 @@ export async function publishNowHandler(req: Request, res: Response) {
       await db.updateDailyPick(pickId, { status: "failed" });
       return res.status(500).json({ ok: false, error: errMsg, raw: result.raw });
     }
+  } catch (err) {
+    const e = err as Error;
+    return res.status(500).json({
+      error: e.message,
+      stack: e.stack,
+      context: { url: req.originalUrl },
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+/**
+ * generatePicks endpoint: proactively generates (and auto-confirms) today's
+ * picks so they always exist BEFORE the 2/3/4 PM CT posting window, even if no
+ * one opens the app that morning. Intended to be called by a morning Heartbeat
+ * cron (~8 AM CT). ensureTodayPicks is idempotent and now auto-confirms every
+ * pending pick, so the posting agent finds them due.
+ */
+export async function generatePicksHandler(req: Request, res: Response) {
+  try {
+    if (!(await authorize(req))) {
+      return res.status(403).json({ error: "forbidden" });
+    }
+    const pickDate = getCdtPickDate();
+    const picks = await ensureTodayPicks(pickDate);
+    return res.json({
+      ok: true,
+      pickDate,
+      count: picks.length,
+      picks: picks.map(p => ({ city: p.city, status: p.status, scheduledFor: p.scheduledFor })),
+    });
   } catch (err) {
     const e = err as Error;
     return res.status(500).json({

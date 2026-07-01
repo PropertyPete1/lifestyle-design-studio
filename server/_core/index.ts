@@ -8,7 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { dueForPublishHandler, reportPublishHandler, publishNowHandler, syncIgHistoryHandler, runAnalystHandler } from "../scheduledPublish";
+import { dueForPublishHandler, reportPublishHandler, publishNowHandler, syncIgHistoryHandler, runAnalystHandler, generatePicksHandler } from "../scheduledPublish";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -53,6 +53,7 @@ async function startServer() {
   app.post("/api/scheduled/reportPublish", reportPublishHandler);
   app.post("/api/scheduled/syncIgHistory", syncIgHistoryHandler);
   app.post("/api/scheduled/runAnalyst", runAnalystHandler);
+  app.post("/api/scheduled/generatePicks", generatePicksHandler);
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

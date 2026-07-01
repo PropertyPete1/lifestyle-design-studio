@@ -25,11 +25,35 @@ vi.mock("./db", () => {
     getVideosByCity: vi.fn(async () => []),
     insertDailyPick: vi.fn(async () => 1),
     getAllReposts: vi.fn(async () => state.reposts),
+    autoConfirmPick: vi.fn(async (pick: any) => {
+      if (pick.status !== "pending") return { confirmed: false, alreadyDone: true };
+      const video = state.videos.find((v: any) => v.id === pick.videoId);
+      const id = state.nextRepostId++;
+      state.reposts.push({
+        id,
+        videoId: pick.videoId,
+        postId: pick.postId,
+        city: pick.city,
+        captionUsed: pick.refreshedCaption ?? video?.caption ?? "",
+        viewsAtRepost: video?.views ?? 0,
+        thumbnailUrl: video?.thumbnailUrl ?? null,
+        scheduledFor: pick.scheduledFor,
+        status: "confirmed",
+      });
+      const p = state.picks.find((x: any) => x.id === pick.id);
+      if (p) Object.assign(p, { status: "confirmed", repostId: id });
+      return { confirmed: true, repostId: id };
+    }),
   };
 });
 
 vi.mock("./captionRefresh", () => ({
   refreshCaption: vi.fn(async (c: string) => c),
+}));
+
+vi.mock("./hookOptimizer", () => ({
+  optimizeHook: vi.fn(async (c: string) => ({ caption: c })),
+  getWinningHooks: vi.fn(async () => []),
 }));
 
 import { appRouter } from "./routers";
@@ -95,6 +119,28 @@ describe("picks.confirm", () => {
     const res = await caller.picks.confirm({ pickId: 1 });
     expect(res.alreadyDone).toBe(true);
     expect(s.reposts).toHaveLength(0);
+  });
+
+  it("auto-confirms a pending pick without a manual tap", async () => {
+    const s = (dbMock as any).__state;
+    const before = s.picks[0].status;
+    expect(before).toBe("pending");
+    const result = await (dbMock as any).autoConfirmPick({
+      id: 1,
+      status: "pending",
+      videoId: 10,
+      postId: "p10",
+      city: "san_antonio",
+      refreshedCaption: "auto caption",
+      scheduledFor: Date.now() + 1000,
+    });
+    expect(result.confirmed).toBe(true);
+    expect(result.repostId).toBeGreaterThan(0);
+    expect(s.picks[0].status).toBe("confirmed");
+    expect(s.picks[0].repostId).toBe(result.repostId);
+    expect(s.reposts).toHaveLength(1);
+    expect(s.reposts[0].status).toBe("confirmed");
+    expect(s.reposts[0].captionUsed).toBe("auto caption");
   });
 
   it("denies a non-owner admin (owner-only gate)", async () => {

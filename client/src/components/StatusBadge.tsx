@@ -10,7 +10,7 @@ const MAP: Record<Status, { label: string; icon: typeof Clock; cls: string }> = 
     cls: "bg-muted/60 text-muted-foreground border-border",
   },
   confirmed: {
-    label: "Confirmed · Queued",
+    label: "Auto-scheduled",
     icon: Send,
     cls: "bg-primary/12 text-primary border-primary/30",
   },

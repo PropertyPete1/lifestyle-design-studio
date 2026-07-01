@@ -172,7 +172,7 @@ function PickCard({ pick }: { pick: PickWithVideo }) {
                 ) : (
                   <CheckCircle2 className="h-4 w-4" />
                 )}
-                Confirm &amp; Schedule
+Confirm now
               </Button>
               <Button
                 variant="outline"
@@ -198,7 +198,7 @@ function PickCard({ pick }: { pick: PickWithVideo }) {
               <CheckCircle2 className="h-4 w-4 text-emerald-400" />
               {pick.status === "posted"
                 ? "Published to Instagram."
-                : "Locked in. The studio will publish at the scheduled time."}
+                : "Auto-scheduled. The studio publishes this automatically at the scheduled time — no action needed."}
               {pick.video?.permalink && (
                 <a
                   href={pick.video.permalink}
@@ -241,7 +241,8 @@ export default function Home() {
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
           Top-performing reels — one per market — selected by Instagram views with a
           strict 30-day no-repeat rotation. San Antonio and Austin post daily; Dallas–Fort
-          Worth joins roughly every other day. Review, refine the caption, and confirm.
+          Worth joins roughly every other day. Posting is fully automatic at 2 / 3 / 4 PM CT —
+          no confirmation needed. You can still review or refine a caption before it goes out.
         </p>
       </header>
 

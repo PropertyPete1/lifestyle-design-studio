@@ -24,7 +24,7 @@ const citySchema = z.enum(["austin", "san_antonio", "dallas"]);
  * Dedup is caption-fingerprint first (catches reposts under new IG IDs), then
  * AI visual check, skipping any candidate shown in the last 30 days.
  */
-async function ensureTodayPicks(pickDate: string) {
+export async function ensureTodayPicks(pickDate: string) {
   const existing = await db.getDailyPicks(pickDate);
   const haveCities = new Set(existing.map(p => p.city));
   const lastRepost = await db.getLastRepostByPostId();
@@ -115,8 +115,36 @@ async function ensureTodayPicks(pickDate: string) {
       refreshedCaption: optimized.caption,
       selectionMode: picked.mode,
       scheduledFor: defaultScheduleMs(pickDate, city),
+      // Inserted as "pending", then IMMEDIATELY auto-confirmed below so posting
+      // is fully hands-off (no manual tap needed).
       status: "pending",
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // AUTO-CONFIRM: the posting agent only publishes picks with status=confirmed.
+  // To make posting fully automatic (zero manual taps), confirm every pending
+  // pick for today right after generation. This creates the repost history row
+  // and flips the pick to "confirmed" so the 2/3/4 PM CT agent finds it due.
+  // Idempotent: already-confirmed/posted picks are left untouched.
+  // ---------------------------------------------------------------------------
+  const generated = await db.getDailyPicks(pickDate);
+  for (const p of generated) {
+    if (p.status === "pending") {
+      try {
+        await db.autoConfirmPick({
+          id: p.id,
+          status: p.status,
+          videoId: p.videoId,
+          postId: p.postId,
+          city: p.city,
+          refreshedCaption: p.refreshedCaption ?? null,
+          scheduledFor: p.scheduledFor ?? null,
+        });
+      } catch (err) {
+        console.error(`[AutoConfirm] Failed to auto-confirm ${p.city} pick ${p.id}:`, err);
+      }
+    }
   }
   return db.getDailyPicks(pickDate);
 }
@@ -183,19 +211,16 @@ export const appRouter = router({
         if (pick.status !== "pending") {
           return { success: true, alreadyDone: true, status: pick.status };
         }
-        const video = await db.getVideoById(pick.videoId);
-        const repostId = await db.insertRepost({
+        const result = await db.autoConfirmPick({
+          id: pick.id,
+          status: pick.status,
           videoId: pick.videoId,
           postId: pick.postId,
           city: pick.city,
-          captionUsed: pick.refreshedCaption ?? video?.caption ?? "",
-          viewsAtRepost: video?.views ?? 0,
-          thumbnailUrl: video?.thumbnailUrl ?? null,
-          scheduledFor: pick.scheduledFor,
-          status: "confirmed",
+          refreshedCaption: pick.refreshedCaption ?? null,
+          scheduledFor: pick.scheduledFor ?? null,
         });
-        await db.updateDailyPick(pick.id, { status: "confirmed", repostId });
-        return { success: true, repostId };
+        return { success: true, repostId: result.repostId };
       }),
   }),
 

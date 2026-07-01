@@ -227,6 +227,40 @@ export async function updateDailyPick(id: number, set: Partial<InsertDailyPick>)
   await db.update(dailyPicks).set(set).where(eq(dailyPicks.id, id));
 }
 
+/**
+ * Auto-confirm a pending pick WITHOUT any manual tap. Mirrors the picks.confirm
+ * tRPC flow: creates the repost history row (status=confirmed) and moves the
+ * daily pick to status=confirmed with its repostId set, so the 2/3/4 PM posting
+ * agent finds it due and publishes it. Idempotent: a pick that is not "pending"
+ * is returned as-is (no duplicate repost row).
+ */
+export async function autoConfirmPick(pick: {
+  id: number;
+  status: string;
+  videoId: number;
+  postId: string;
+  city: "austin" | "san_antonio" | "dallas";
+  refreshedCaption: string | null;
+  scheduledFor: number | null;
+}): Promise<{ confirmed: boolean; repostId?: number; alreadyDone?: boolean }> {
+  if (pick.status !== "pending") {
+    return { confirmed: false, alreadyDone: true };
+  }
+  const video = await getVideoById(pick.videoId);
+  const repostId = await insertRepost({
+    videoId: pick.videoId,
+    postId: pick.postId,
+    city: pick.city,
+    captionUsed: pick.refreshedCaption ?? video?.caption ?? "",
+    viewsAtRepost: video?.views ?? 0,
+    thumbnailUrl: video?.thumbnailUrl ?? null,
+    scheduledFor: pick.scheduledFor,
+    status: "confirmed",
+  });
+  await updateDailyPick(pick.id, { status: "confirmed", repostId });
+  return { confirmed: true, repostId };
+}
+
 export async function getConfirmedDuePicks(nowMs: number) {
   const db = await getDb();
   if (!db) return [];
