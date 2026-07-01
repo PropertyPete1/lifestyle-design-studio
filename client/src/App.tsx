@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import AppShell from "./components/AppShell";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { useBuildFreshness } from "./hooks/useBuildFreshness";
 import HistoryPage from "./pages/HistoryPage";
 import Home from "./pages/Home";
 import LibraryPage from "./pages/LibraryPage";
@@ -24,6 +25,7 @@ function Router() {
 }
 
 function App() {
+  useBuildFreshness();
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">

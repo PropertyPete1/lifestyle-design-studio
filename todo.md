@@ -250,3 +250,13 @@
 - [x] Verify/lock posting time to 2/3/4 PM CDT (scheduleHourFor: SA 14 / Austin 15 / Dallas 16 CDT; automatic cron path uses these; evening drift was manual re-publishes only)
 - [x] Full tests + type-check pass (64 tests, 13 files, 0 TS errors)
 - [ ] Save checkpoint + user publishes + register nightly analyst schedule after publish
+
+
+## Status note (Jul 1) — stale unchecked items reconciled
+The remaining `- [ ]` boxes above are historical, NOT open work for the Jul 1 "maximum results" build:
+- Auto-Pilot Toggle: never requested for this build; left as a future option.
+- Meta Graph API multi-account: CANCELLED by user (superseded by Metricool multi-brand, which is live).
+- "SA pick wrong / $279,990 repeating" bugs: SUPERSEDED and fixed by caption-fingerprint dedup + AI visual dedup (both shipped, verified).
+- "Verify on mobile after redeploy" / blank-screen: fix shipped (self-destroying SW + boot fallback); needs only a user device retest.
+- "User to click Publish" lines: deployment is a user action (Publish button); code is ready.
+Current build (low-views fix + AI performance analyst) is complete and green: 64 tests pass, 0 TS errors, live analyst run verified.

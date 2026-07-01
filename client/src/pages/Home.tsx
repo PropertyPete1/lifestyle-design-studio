@@ -5,6 +5,7 @@ import { CITY_LABEL, formatScheduledCdt, formatViews } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
+  AlertTriangle,
   CheckCircle2,
   Eye,
   Loader2,
@@ -217,7 +218,14 @@ function PickCard({ pick }: { pick: PickWithVideo }) {
 }
 
 export default function Home() {
-  const { data, isLoading } = trpc.picks.today.useQuery();
+  const { data, isLoading, isError, error, refetch, isFetching } =
+    trpc.picks.today.useQuery(undefined, {
+      // Recover automatically when the user returns to the tab (e.g. reopening
+      // the PWA on their phone) and retry transient cold-start failures.
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: 2,
+    });
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -246,9 +254,49 @@ export default function Home() {
             />
           ))}
         </div>
+      ) : isError ? (
+        <div className="rounded-2xl border border-border/60 bg-card p-12 text-center">
+          <AlertTriangle className="mx-auto h-7 w-7 text-amber-400" />
+          <p className="mt-4 font-display text-2xl">Couldn&apos;t load today&apos;s picks</p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            This is usually a brief network hiccup or the app waking up. Your picks are safe
+            — tap retry.
+          </p>
+          {error?.message && (
+            <p className="mx-auto mt-2 max-w-md text-xs text-muted-foreground/70">{error.message}</p>
+          )}
+          <Button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="mt-6 rounded-full px-6"
+          >
+            {isFetching ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Retry
+          </Button>
+        </div>
       ) : !data?.picks.length ? (
-        <div className="rounded-2xl border border-border/60 bg-card p-12 text-center text-muted-foreground">
-          No picks available yet.
+        <div className="rounded-2xl border border-border/60 bg-card p-12 text-center">
+          <p className="text-muted-foreground">
+            No picks scheduled for today yet. They generate automatically each morning — tap
+            refresh if you expected them.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="mt-6 rounded-full bg-transparent px-6"
+          >
+            {isFetching ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Refresh
+          </Button>
         </div>
       ) : (
         <div className="space-y-6">
