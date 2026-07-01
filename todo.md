@@ -281,4 +281,5 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Add /api/scheduled/generatePicks morning Heartbeat endpoint so tomorrow's picks always exist before the posting window
 - [ ] Register a morning Heartbeat cron (~8 AM CT) to call generatePicks
 - [x] Keep manual Confirm working as a graceful no-op (already-confirmed handled)
-- [x] tsc + vitest pass (87/87); checkpoint; push to GitHub
+- [x] tsc + vitest pass (87/87); checkpoint saved (59c4a4f7); pushed to GitHub (github/main ec165d6..59c4a4f)
+- [x] Self-heal in dueForPublish: ensureTodayPicks (generate + auto-confirm) runs before the due check, so posting works even if morning cron/app never ran

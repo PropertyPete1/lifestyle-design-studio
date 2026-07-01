@@ -69,6 +69,16 @@ export async function dueForPublishHandler(req: Request, res: Response) {
     }
     const pickDate = getCdtPickDate();
     const nowMs = Date.now();
+    // SELF-HEAL: guarantee today's picks exist AND are auto-confirmed before we
+    // check what's due. ensureTodayPicks is idempotent and auto-confirms every
+    // pending pick, so even if the morning generation cron never ran (or the
+    // owner never opened the app), the posting agent still finds a confirmed,
+    // due pick here. Failures are non-fatal — fall through to the normal lookup.
+    try {
+      await ensureTodayPicks(pickDate);
+    } catch (genErr) {
+      console.error("[dueForPublish] ensureTodayPicks failed (continuing):", genErr);
+    }
     const pick = await db.getDueConfirmedPickForCity(
       city as "austin" | "san_antonio" | "dallas",
       pickDate,
