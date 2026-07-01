@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { formatViews } from "@/lib/format";
-import { Eye, Loader2, RefreshCw, TrendingDown, TrendingUp, Sparkles } from "lucide-react";
+import { Eye, Loader2, RefreshCw, TrendingDown, TrendingUp, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Streamdown } from "streamdown";
 
@@ -38,6 +38,7 @@ export default function PerformancePage() {
   const utils = trpc.useUtils();
   const latest = trpc.analyst.latest.useQuery();
   const metrics = trpc.analyst.metrics.useQuery();
+  const topHooks = trpc.analyst.topHooks.useQuery();
   const run = trpc.analyst.run.useMutation({
     onSuccess: res => {
       if (res.ok) {
@@ -102,6 +103,52 @@ export default function PerformancePage() {
           </div>
         </div>
       )}
+
+      {/* AI Hook Optimizer — the active layer */}
+      <div className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-6 sm:p-8">
+        <div className="flex items-start gap-3">
+          <Wand2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+          <div className="min-w-0">
+            <p className="font-display text-xl">AI Hook Optimizer</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Before each post, the AI rewrites just the opening line into a stronger,
+              scroll-stopping hook — modeled on your best-performing reels. It keeps your full
+              caption, hashtags, and your &ldquo;Comment&rdquo; line exactly as-is. It gets sharper
+              as more videos post.
+            </p>
+          </div>
+        </div>
+        <div className="mt-5">
+          <p className="text-[10px] uppercase tracking-luxe text-muted-foreground">
+            Winning hooks it&apos;s learning from
+          </p>
+          {topHooks.isLoading ? (
+            <div className="mt-3 h-16 animate-pulse rounded-xl bg-muted" />
+          ) : !topHooks.data?.length ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              No performance data yet — the optimizer uses a proven visual + price-curiosity
+              template until your reels build a track record.
+            </p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {topHooks.data.map((h, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 rounded-xl border border-border/50 bg-card px-4 py-3"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-medium text-primary">
+                    {i + 1}
+                  </span>
+                  <p className="min-w-0 flex-1 truncate text-sm">“{h.hook}”</p>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {formatViews(h.views)} views{h.skipRate != null ? ` · ${h.skipRate}% skip` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Per-brand medians + skip correlation */}
       {data?.brandMedians && Object.keys(data.brandMedians).length > 0 && (

@@ -260,3 +260,13 @@ The remaining `- [ ]` boxes above are historical, NOT open work for the Jul 1 "m
 - "Verify on mobile after redeploy" / blank-screen: fix shipped (self-destroying SW + boot fallback); needs only a user device retest.
 - "User to click Publish" lines: deployment is a user action (Publish button); code is ready.
 Current build (low-views fix + AI performance analyst) is complete and green: 64 tests pass, 0 TS errors, live analyst run verified.
+
+
+## AI Hook Optimizer (active view-optimizer) — Jul 1
+- [x] hookOptimizer.ts: rewrite ONLY opening hook, learn winning hooks from post_metrics (views discounted by skip)
+- [x] Preserve long caption body, hashtags verbatim, and "Comment [word]" CTA verbatim; fail-safe guards
+- [x] Wired into daily pick generation + manual regenerate (after refreshCaption)
+- [x] likelyWeakFirstFrame heuristic hint
+- [x] analyst.topHooks tRPC query + Performance tab "AI Hook Optimizer" section (winning hooks)
+- [x] 16 unit tests for optimizer safety (CTA preserved, no hashtag change, no gutting, fail-safe); full suite 86/86 pass, 0 TS errors
+- [ ] Checkpoint + push to GitHub (PropertyPete1/lifestyle-design-studio)

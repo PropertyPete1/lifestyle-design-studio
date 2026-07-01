@@ -5,6 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { ownerProcedure, publicProcedure, router } from "./_core/trpc";
 import { refreshCaption } from "./captionRefresh";
+import { optimizeHook } from "./hookOptimizer";
 import * as db from "./db";
 import { getRecentIgHistory, isCaptionRecentlyPosted, isVisuallyDuplicate, syncIgPostHistory } from "./igHistorySync";
 import {
@@ -100,13 +101,18 @@ async function ensureTodayPicks(pickDate: string) {
     if (!picked) continue;
 
     chosenToday.add(picked.video.postId);
+    // 1) Vary the wording so the repost isn't a near-duplicate (hashtags/CTA kept).
     const refreshed = await refreshCaption(picked.video.caption ?? "");
+    // 2) ACTIVELY strengthen the opening hook using this account's winning hooks
+    //    (learned from real view/skip data). Preserves the long body, hashtags,
+    //    and the "Comment ..." CTA verbatim; fails safe to `refreshed` on any doubt.
+    const optimized = await optimizeHook(refreshed);
     await db.insertDailyPick({
       pickDate,
       city,
       videoId: picked.video.id,
       postId: picked.video.postId,
-      refreshedCaption: refreshed,
+      refreshedCaption: optimized.caption,
       selectionMode: picked.mode,
       scheduledFor: defaultScheduleMs(pickDate, city),
       status: "pending",
@@ -161,8 +167,9 @@ export const appRouter = router({
         if (!pick) throw new TRPCError({ code: "NOT_FOUND" });
         const video = await db.getVideoById(pick.videoId);
         const refreshed = await refreshCaption(video?.caption ?? "");
-        await db.updateDailyPick(input.pickId, { refreshedCaption: refreshed });
-        return { caption: refreshed };
+        const optimized = await optimizeHook(refreshed);
+        await db.updateDailyPick(input.pickId, { refreshedCaption: optimized.caption });
+        return { caption: optimized.caption };
       }),
 
     /** One-tap confirm: lock the post in, record repost history & schedule. */
@@ -262,6 +269,11 @@ export const appRouter = router({
         avgWatchTimeSec: r.avgWatchTimeSec,
         capturedOn: r.capturedOn,
       }));
+    }),
+    /** The winning hooks the AI Hook Optimizer is currently learning from. */
+    topHooks: ownerProcedure.query(async () => {
+      const { getWinningHooks } = await import("./hookOptimizer");
+      return getWinningHooks(undefined, 5);
     }),
     /** Owner-triggered manual analyst run (same logic as the scheduled cron). */
     run: ownerProcedure
