@@ -5,6 +5,8 @@ import * as db from "./db";
 import { syncIgPostHistory } from "./igHistorySync";
 import { getCdtPickDate } from "./selection";
 import { createScheduledPost } from "./metricool";
+import { checkSourceCooldown } from "./sourceCooldown";
+import { makeDifferentiatedVariant } from "./videoVariant";
 
 /**
  * Endpoints used by the publishing AGENT cron (a scheduled Manus session that
@@ -113,11 +115,64 @@ export async function publishNowHandler(req: Request, res: Response) {
     const video = await db.getVideoById(pick.videoId);
     const caption = captionOverride ?? pick.refreshedCaption ?? video?.caption ?? "";
 
+    // -------------------------------------------------------------------------
+    // GUARD 1 — Hard same-source cooldown (last line of defense).
+    // Blocks publishing the same source video (by IG postId OR caption
+    // fingerprint) if it was posted within the cooldown window on ANY path
+    // (dashboard reposts OR live Instagram history). This prevents the
+    // duplicate-content throttle that floors reach on rapid re-posts.
+    // Can be bypassed with { force: true } for manual overrides.
+    // -------------------------------------------------------------------------
+    const force = Boolean(req.body?.force);
+    if (!force) {
+      const cooldown = await checkSourceCooldown({
+        postId: pick.postId,
+        caption,
+        excludeRepostId: repostId || undefined,
+      });
+      if (cooldown.blocked) {
+        if (repostId) await db.markRepostFailed(repostId, cooldown.reason ?? "cooldown");
+        await db.updateDailyPick(pickId, { status: "failed" });
+        return res.status(409).json({
+          ok: false,
+          blocked: true,
+          reason: cooldown.reason,
+          daysSinceLast: cooldown.daysSinceLast,
+          matchedBy: cooldown.matchedBy,
+        });
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // GUARD 2 — Light video differentiation.
+    // Re-encode the source with a tiny (imperceptible) transform + metadata
+    // strip so the uploaded file is NOT byte-identical to the reel already on
+    // the account. Byte-identical re-uploads are detected as duplicates and
+    // throttled. Differentiation is best-effort: if it fails we fall back to
+    // the original URL rather than block the post.
+    // -------------------------------------------------------------------------
+    let mediaUrl = videoUrl;
+    let differentiated = false;
+    try {
+      const variant = await makeDifferentiatedVariant({
+        sourceUrl: videoUrl,
+        postId: pick.postId,
+      });
+      if (variant.ok && variant.url) {
+        mediaUrl = variant.url;
+        differentiated = true;
+      } else {
+        console.warn(`[publishNow] variant failed, using original URL: ${variant.error}`);
+      }
+    } catch (e) {
+      console.warn(`[publishNow] variant threw, using original URL:`, e);
+    }
+
     // Publish immediately via Metricool (schedule 1 minute from now to satisfy API)
     const publishAt = new Date(Date.now() + 60_000).toISOString().slice(0, 19); // "YYYY-MM-DDTHH:MM:SS"
 
     const result = await createScheduledPost({
-      videoUrl,
+      videoUrl: mediaUrl,
       caption,
       publishAt,
       timezone: "America/Chicago",
@@ -132,6 +187,7 @@ export async function publishNowHandler(req: Request, res: Response) {
         ok: true,
         status: "posted",
         metricoolPostId,
+        differentiated,
         platforms: "Instagram, TikTok, YouTube",
       });
     } else {
