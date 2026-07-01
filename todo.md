@@ -269,4 +269,16 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] likelyWeakFirstFrame heuristic hint
 - [x] analyst.topHooks tRPC query + Performance tab "AI Hook Optimizer" section (winning hooks)
 - [x] 16 unit tests for optimizer safety (CTA preserved, no hashtag change, no gutting, fail-safe); full suite 86/86 pass, 0 TS errors
-- [ ] Checkpoint + push to GitHub (PropertyPete1/lifestyle-design-studio)
+- [x] Checkpoint (ec165d65) + push to GitHub (PropertyPete1/lifestyle-design-studio, commit ec165d6)
+
+
+## Nightly Analyst Schedule — Jul 1
+- [x] Registered project-level Heartbeat cron "nightly-analyst-7amct" (task_uid LPifEYtstgsDBzCEtPgHyH), cron "0 0 12 * * *" = 7 AM CT, path /api/scheduled/runAnalyst
+- [x] Verified: job listed, next run 2026-07-02T12:00:00Z; production endpoint reachable and 403-guarded without cron auth
+
+## Fully Automatic Posting (no manual tap)
+- [ ] Auto-confirm picks at generation time (create repost row + status=confirmed) so the 2/3/4 PM agent finds them due
+- [ ] Add /api/scheduled/generatePicks morning Heartbeat endpoint so tomorrow's picks always exist before the posting window
+- [ ] Register a morning Heartbeat cron (~8 AM CT) to call generatePicks
+- [ ] Keep manual Confirm working as a graceful no-op (already-confirmed handled)
+- [ ] tsc + vitest pass; checkpoint; push to GitHub
