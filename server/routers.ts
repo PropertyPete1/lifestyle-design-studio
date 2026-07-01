@@ -10,13 +10,15 @@ import { getRecentIgHistory, isCaptionRecentlyPosted, isVisuallyDuplicate, syncI
 import {
   defaultScheduleMs,
   getCdtPickDate,
+  isDallasDay,
   selectForCity,
 } from "./selection";
 
-const citySchema = z.enum(["austin", "san_antonio"]);
+const citySchema = z.enum(["austin", "san_antonio", "dallas"]);
 
 /**
- * Ensure today's two picks (Austin + SA) exist, generating them if missing.
+ * Ensure today's picks (SA + Austin, plus Dallas on Dallas days) exist,
+ * generating them if missing.
  * Idempotent: if rows already exist for the pick date, they are returned as-is.
  * Dedup is caption-fingerprint first (catches reposts under new IG IDs), then
  * AI visual check, skipping any candidate shown in the last 30 days.
@@ -29,7 +31,11 @@ async function ensureTodayPicks(pickDate: string) {
   // Load recent IG post history for AI visual dedup
   const recentIgHistory = await getRecentIgHistory();
 
-  for (const city of ["san_antonio", "austin"] as const) {
+  // SA + Austin every day; Dallas only on Dallas days (roughly every 2 days).
+  // Dallas silently skips when there are no Dallas-classified videos yet.
+  const marketsToday = ["san_antonio", "austin", ...(isDallasDay(pickDate) ? ["dallas" as const] : [])] as const;
+
+  for (const city of marketsToday) {
     if (haveCities.has(city)) continue;
     const lib = await db.getVideosByCity(city);
     if (!lib.length) continue;
@@ -198,12 +204,15 @@ export const appRouter = router({
       const all = await db.getAllVideos();
       const austin = all.filter(v => v.city === "austin");
       const sa = all.filter(v => v.city === "san_antonio");
+      const dallas = all.filter(v => v.city === "dallas");
       return {
         total: all.length,
         austin: austin.length,
         sanAntonio: sa.length,
+        dallas: dallas.length,
         topAustinViews: austin[0]?.views ?? 0,
         topSaViews: sa[0]?.views ?? 0,
+        topDallasViews: dallas[0]?.views ?? 0,
       };
     }),
   }),

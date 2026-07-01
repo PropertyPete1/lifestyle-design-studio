@@ -23,7 +23,7 @@ async function authorize(req: Request): Promise<boolean> {
   }
 }
 
-const CITY_VALUES = new Set(["austin", "san_antonio"]);
+const CITY_VALUES = new Set(["austin", "san_antonio", "dallas"]);
 
 /**
  * Build a "YYYY-MM-DDTHH:MM:SS" wall-clock string in America/Chicago for the
@@ -66,7 +66,7 @@ export async function dueForPublishHandler(req: Request, res: Response) {
     const pickDate = getCdtPickDate();
     const nowMs = Date.now();
     const pick = await db.getDueConfirmedPickForCity(
-      city as "austin" | "san_antonio",
+      city as "austin" | "san_antonio" | "dallas",
       pickDate,
       nowMs
     );

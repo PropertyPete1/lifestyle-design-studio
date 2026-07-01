@@ -26,9 +26,31 @@ export function cdtTimeToUtcMs(pickDate: string, localHour: number): number {
   return Date.UTC(y, m - 1, d, utcHour, 0, 0, 0);
 }
 
-/** Default scheduled times: San Antonio 2PM, Austin 3PM (one hour apart). */
-export function defaultScheduleMs(pickDate: string, city: "austin" | "san_antonio"): number {
-  return cdtTimeToUtcMs(pickDate, city === "san_antonio" ? 14 : 15);
+/** The three markets the app posts to. */
+export type Market = "austin" | "san_antonio" | "dallas";
+
+/** Default scheduled hour (CDT) per market: SA 2PM, Austin 3PM, Dallas 4PM. */
+export function scheduleHourFor(market: Market): number {
+  if (market === "san_antonio") return 14;
+  if (market === "austin") return 15;
+  return 16; // dallas
+}
+
+/** Default scheduled times: San Antonio 2PM, Austin 3PM, Dallas 4PM. */
+export function defaultScheduleMs(pickDate: string, city: Market): number {
+  return cdtTimeToUtcMs(pickDate, scheduleHourFor(city));
+}
+
+/**
+ * Dallas posts roughly every 2 days. We derive a deterministic on/off pattern
+ * from the pick date so it's stable per day (no randomness, no drift): Dallas is
+ * "on" when the day-count since the Unix epoch is even. This yields an
+ * every-other-day cadence that requires no stored state.
+ */
+export function isDallasDay(pickDate: string): boolean {
+  const [y, m, d] = pickDate.split("-").map(Number);
+  const dayNumber = Math.floor(Date.UTC(y, m - 1, d) / DAY_MS);
+  return dayNumber % 2 === 0;
 }
 
 export type SelectionResult = { video: Video; mode: "fresh" | "fallback" } | null;

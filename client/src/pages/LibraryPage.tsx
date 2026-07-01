@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Eye, MapPin } from "lucide-react";
 import { useState } from "react";
 
-type CityFilter = "all" | "austin" | "san_antonio";
+type CityFilter = "all" | "austin" | "san_antonio" | "dallas";
 
 export default function LibraryPage() {
   const [filter, setFilter] = useState<CityFilter>("all");
@@ -17,6 +17,7 @@ export default function LibraryPage() {
     { key: "all", label: "All", count: stats?.total },
     { key: "austin", label: "Austin", count: stats?.austin },
     { key: "san_antonio", label: "San Antonio", count: stats?.sanAntonio },
+    { key: "dallas", label: "Dallas–Fort Worth", count: stats?.dallas },
   ];
 
   return (

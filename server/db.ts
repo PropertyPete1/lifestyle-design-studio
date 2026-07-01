@@ -68,7 +68,7 @@ export async function getUserByOpenId(openId: string) {
 
 /* ----------------------------- Videos ----------------------------- */
 
-export async function getVideosByCity(city: "austin" | "san_antonio") {
+export async function getVideosByCity(city: "austin" | "san_antonio" | "dallas") {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(videos).where(eq(videos.city, city)).orderBy(desc(videos.views));
@@ -193,7 +193,7 @@ export async function getDailyPicks(pickDate: string) {
   return db.select().from(dailyPicks).where(eq(dailyPicks.pickDate, pickDate));
 }
 
-export async function getDailyPick(pickDate: string, city: "austin" | "san_antonio") {
+export async function getDailyPick(pickDate: string, city: "austin" | "san_antonio" | "dallas") {
   const db = await getDb();
   if (!db) return undefined;
   const r = await db
@@ -235,7 +235,7 @@ export async function getConfirmedDuePicks(nowMs: number) {
  * Used by the publishing agent. Returns undefined if nothing is due.
  */
 export async function getDueConfirmedPickForCity(
-  city: "austin" | "san_antonio",
+  city: "austin" | "san_antonio" | "dallas",
   pickDate: string,
   nowMs: number
 ) {

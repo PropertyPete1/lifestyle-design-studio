@@ -17,7 +17,7 @@ import { toast } from "sonner";
 
 type PickWithVideo = {
   id: number;
-  city: "austin" | "san_antonio";
+  city: "austin" | "san_antonio" | "dallas";
   postId: string;
   refreshedCaption: string | null;
   selectionMode: string;
@@ -231,8 +231,9 @@ export default function Home() {
         <p className="text-xs uppercase tracking-luxe text-muted-foreground">{today}</p>
         <h1 className="mt-2 font-display text-4xl sm:text-5xl">Today&apos;s Picks</h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          Two top-performing reels — one for each market — selected by Instagram views with a
-          strict 30-day no-repeat rotation. Review, refine the caption, and confirm.
+          Top-performing reels — one per market — selected by Instagram views with a
+          strict 30-day no-repeat rotation. San Antonio and Austin post daily; Dallas–Fort
+          Worth joins roughly every other day. Review, refine the caption, and confirm.
         </p>
       </header>
 

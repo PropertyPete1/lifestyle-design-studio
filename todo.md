@@ -205,5 +205,22 @@
 - [x] createScheduledPost fans out to every brand (postToBrand) with that brand's networks (IG always; +TikTok/YouTube/LinkedIn on main)
 - [x] Aggregated per-brand results into ok/platforms summary; partial failures surfaced in summary
 - [x] publishNow already returns result.platforms summary and marks posted when >=1 brand succeeds (no change needed)
-- [x] Live-tested fan-out to all 3 brands (3 posts created + cleaned up); added getAllBrands test; 40 tests pass; tsc clean
+- [x] Live-tested fan-out to all 3 brands (3 posts created + cleaned up); added getAllBrands test; tsc clean
+- [x] Auto add/remove: brands discovered live each run, so a newly connected IG is auto-included and a removed one drops out with no code change
+- [x] Deployed to production (bundled with the Dallas release below)
+
+## AI geo-classification + Dallas market (every 2 days)
+- [x] Added `dallas` to city enums (videos, reposts, daily_picks); migration applied
+- [x] geoClassify.ts: deterministic keyword pass + AI vision fallback -> san_antonio | austin | dallas
+  - SA: San Antonio metro + Schertz, Cibolo, Alamo Ranch, New Braunfels, Boerne, Seguin, Canyon Lake
+  - AUSTIN: Austin metro and NORTH (Round Rock, Georgetown, San Marcos, Temple, Killeen, Belton, Waco)
+  - DALLAS: Dallas, Fort Worth, Arlington, Plano, Frisco, McKinney, Denton, etc.
+- [x] Re-classified existing library (107 videos): 89 SA / 18 Austin / 0 Dallas (no DFW reels in current synced source)
+- [x] selection.ts: scheduleHourFor (SA 2PM/Austin 3PM/Dallas 4PM) + isDallasDay every-other-day cadence
+- [x] ensureTodayPicks generates Dallas pick only on Dallas days; silently skips if no Dallas videos
+- [x] Dallas fans out to ALL brands via existing multi-brand path; 30-day no-repeat applies
+- [x] UI: Dallas-Fort Worth label, dashboard copy, Library filter tab, dynamic pick list
+- [x] Scheduled task updated: cron 0 0 19,20,21 UTC (2/3/4 PM CDT), agent loops SA->Austin->Dallas
+- [x] Tests: geoClassify, dallasSchedule (hour + cadence); 48 tests pass; tsc clean
 - [ ] Checkpoint + deploy + verify in production
+- [ ] NOTE FOR PETER: no Dallas/Fort Worth videos found in the synced IG source — need the account/videos that contain DFW reels for Dallas days to actually post

@@ -7,6 +7,7 @@ export function formatViews(n: number): string {
 export const CITY_LABEL: Record<string, string> = {
   austin: "Austin",
   san_antonio: "San Antonio",
+  dallas: "Dallas–Fort Worth",
 };
 
 export function formatScheduledCdt(ms?: number | null): string {

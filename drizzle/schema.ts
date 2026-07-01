@@ -28,8 +28,8 @@ export const videos = mysqlTable("videos", {
   postId: varchar("postId", { length: 32 }).notNull().unique(),
   shortcode: varchar("shortcode", { length: 32 }),
   permalink: varchar("permalink", { length: 255 }),
-  /** "austin" | "san_antonio" */
-  city: mysqlEnum("city", ["austin", "san_antonio"]).notNull(),
+  /** "austin" | "san_antonio" | "dallas" */
+  city: mysqlEnum("city", ["austin", "san_antonio", "dallas"]).notNull(),
   caption: text("caption"),
   /** Instagram-only views (basis for ranking). */
   views: int("views").default(0).notNull(),
@@ -55,7 +55,7 @@ export const reposts = mysqlTable("reposts", {
   id: int("id").autoincrement().primaryKey(),
   videoId: int("videoId").notNull(),
   postId: varchar("postId", { length: 32 }).notNull(),
-  city: mysqlEnum("city", ["austin", "san_antonio"]).notNull(),
+  city: mysqlEnum("city", ["austin", "san_antonio", "dallas"]).notNull(),
   /** The caption used for this repost (post-edit). */
   captionUsed: text("captionUsed"),
   viewsAtRepost: int("viewsAtRepost").default(0).notNull(),
@@ -83,7 +83,7 @@ export const dailyPicks = mysqlTable("daily_picks", {
   id: int("id").autoincrement().primaryKey(),
   /** Local pick date, format YYYY-MM-DD (America/Chicago). */
   pickDate: varchar("pickDate", { length: 10 }).notNull(),
-  city: mysqlEnum("city", ["austin", "san_antonio"]).notNull(),
+  city: mysqlEnum("city", ["austin", "san_antonio", "dallas"]).notNull(),
   videoId: int("videoId").notNull(),
   postId: varchar("postId", { length: 32 }).notNull(),
   /** AI-refreshed caption (editable by owner). */
