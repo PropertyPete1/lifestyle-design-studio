@@ -232,4 +232,21 @@
 - [x] Strengthened geoClassify with DFW suburb/ISD keywords (Aledo, Benbrook, Crowley ISD, Joshua ISD, Chisholm Trail, Mansfield, Burleson, etc.)
 - [x] Library now: 89 San Antonio / 18 Austin / 6 Dallas
 - [x] Verified a Dallas pick can generate (top eligible = post 18395283235198565, 1095 views, 0 reposts in 30d)
-- [ ] Save checkpoint + user deploys
+- [x] Checkpoint saved (1b6d0a48) + user deploys
+
+
+## Low-Views Fix + AI Performance Analyst (Jul 1)
+- [x] Diagnosis: pulled live per-brand IG reel analytics; skip-rate + audience size (not byte-identity) drive the spread; posting time drifted to evening
+- [x] Replace ffmpeg GUARD 2 with serverless byte differentiation (append random `free` MP4 boxes; pure Node, runs on Autoscale)
+- [x] videoVariant.test.ts: source preserved, hash changes, distinct per call, valid `free` boxes
+- [x] Strengthen caption variation (rewrite hook/body more aggressively; hashtags + CTA verbatim; prefer Comment over DM)
+- [x] AI analyst: post_metrics + analyst_insights tables created (migration applied)
+- [x] Scheduled metrics ingest via Metricool analytics endpoints (IG reels; server/metricoolAnalytics.ts) — verified live (30 posts, 3 brands)
+- [x] AI diagnosis: flag underperformers vs each brand's OWN trailing median; skip-rate correlation surfaced (flagged 74% vs top 63%)
+- [x] performanceAnalyst.ts: median engine + LLM strategy + persistence + owner notification; 5 unit tests pass
+- [x] /api/scheduled/runAnalyst endpoint (auth-gated, Heartbeat-ready) + trpc analyst router (latest/list/metrics/run)
+- [x] Performance tab UI: report, per-brand medians, skip-rate lever, recent-posts table (zero-view rows filtered)
+- [x] Verified live analyst run: real report generated, owner notified
+- [x] Verify/lock posting time to 2/3/4 PM CDT (scheduleHourFor: SA 14 / Austin 15 / Dallas 16 CDT; automatic cron path uses these; evening drift was manual re-publishes only)
+- [x] Full tests + type-check pass (64 tests, 13 files, 0 TS errors)
+- [ ] Save checkpoint + user publishes + register nightly analyst schedule after publish

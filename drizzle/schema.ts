@@ -140,3 +140,71 @@ export const appSettings = mysqlTable("app_settings", {
 
 export type AppSetting = typeof appSettings.$inferSelect;
 export type InsertAppSetting = typeof appSettings.$inferInsert;
+
+/**
+ * Per-post, per-platform performance metrics ingested from Metricool analytics.
+ * Powers the AI cross-platform performance analyst: tracks views, reach,
+ * engagement AND the reach-determining signals (skip rate, avg watch time) so
+ * the analyst can diagnose WHY a reel under/over-performed, not just that it did.
+ *
+ * One row per (network, networkPostId, capturedOn) so we keep a daily snapshot
+ * trail and can watch a reel mature over its first days.
+ */
+export const postMetrics = mysqlTable("post_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  /** "instagram" | "tiktok" | "linkedin" | "youtube" | "facebook" */
+  network: varchar("network", { length: 24 }).notNull(),
+  /** Metricool brand/blog id the post belongs to. */
+  blogId: bigint("blogId", { mode: "number" }).notNull(),
+  /** Human label for the brand (e.g. lifestyledesignrealtytexas). */
+  brandLabel: varchar("brandLabel", { length: 128 }),
+  /** The network's own post/reel id (e.g. IG reelId). */
+  networkPostId: varchar("networkPostId", { length: 64 }).notNull(),
+  /** First ~120 chars of the caption, for matching back to our reposts. */
+  captionSnippet: varchar("captionSnippet", { length: 500 }),
+  /** When the post was published (UTC ms). */
+  publishedAt: bigint("publishedAt", { mode: "number" }),
+  views: int("views").default(0).notNull(),
+  reach: int("reach").default(0).notNull(),
+  likes: int("likes").default(0).notNull(),
+  comments: int("comments").default(0).notNull(),
+  shares: int("shares").default(0).notNull(),
+  saved: int("saved").default(0).notNull(),
+  /** Instagram reel skip rate (0-100); the dominant reach lever. */
+  skipRate: int("skipRate"),
+  /** Average watch time in seconds (rounded). */
+  avgWatchTimeSec: int("avgWatchTimeSec"),
+  /** Whether this post was produced by our auto-poster (best-effort match). */
+  isAutoPost: int("isAutoPost").default(0).notNull(),
+  /** Local capture date YYYY-MM-DD (America/Chicago) for the daily snapshot. */
+  capturedOn: varchar("capturedOn", { length: 10 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, t => ({
+  uniqNetworkPostDay: uniqueIndex("uq_metrics_net_post_day").on(
+    t.network, t.networkPostId, t.capturedOn
+  ),
+}));
+
+export type PostMetric = typeof postMetrics.$inferSelect;
+export type InsertPostMetric = typeof postMetrics.$inferInsert;
+
+/**
+ * AI analyst output: one row per analysis run. Stores the summary, the
+ * machine-readable strategy recommendations, and the numbers behind them so the
+ * dashboard Performance tab and the owner notification can render the findings.
+ */
+export const analystInsights = mysqlTable("analyst_insights", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Local run date YYYY-MM-DD (America/Chicago). */
+  runDate: varchar("runDate", { length: 10 }).notNull(),
+  /** Markdown human-readable summary shown to the owner. */
+  summary: text("summary").notNull(),
+  /** JSON: { recommendations: [...], flagged: [...], medians: {...} }. */
+  data: text("data"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, t => ({
+  uniqRunDate: uniqueIndex("uq_analyst_run_date").on(t.runDate),
+}));
+
+export type AnalystInsight = typeof analystInsights.$inferSelect;
+export type InsertAnalystInsight = typeof analystInsights.$inferInsert;

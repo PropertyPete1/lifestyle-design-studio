@@ -222,6 +222,56 @@ export const appRouter = router({
     list: ownerProcedure.query(async () => db.getAllReposts()),
   }),
 
+  /* ----------------------- Performance analyst ----------------------- */
+  analyst: router({
+    /** Latest analyst insight (summary markdown + parsed data). */
+    latest: ownerProcedure.query(async () => {
+      const row = await db.getLatestAnalystInsight();
+      if (!row) return null;
+      let data: unknown = null;
+      try {
+        data = row.data ? JSON.parse(row.data) : null;
+      } catch {
+        data = null;
+      }
+      return { runDate: row.runDate, summary: row.summary, data, createdAt: row.createdAt };
+    }),
+    /** Recent analyst runs (for a history list). */
+    list: ownerProcedure.query(async () => {
+      const rows = await db.getAnalystInsights(30);
+      return rows.map(r => ({ runDate: r.runDate, summary: r.summary, createdAt: r.createdAt }));
+    }),
+    /** Latest per-post metric snapshot across brands (for the table). */
+    metrics: ownerProcedure.query(async () => {
+      const rows = await db.getLatestMetricsPerPost();
+      return rows
+        .filter(r => r.views > 0 || r.reach > 0)
+        .map(r => ({
+        network: r.network,
+        brandLabel: r.brandLabel,
+        networkPostId: r.networkPostId,
+        captionSnippet: r.captionSnippet,
+        publishedAt: r.publishedAt,
+        views: r.views,
+        reach: r.reach,
+        likes: r.likes,
+        comments: r.comments,
+        shares: r.shares,
+        saved: r.saved,
+        skipRate: r.skipRate,
+        avgWatchTimeSec: r.avgWatchTimeSec,
+        capturedOn: r.capturedOn,
+      }));
+    }),
+    /** Owner-triggered manual analyst run (same logic as the scheduled cron). */
+    run: ownerProcedure
+      .input(z.object({ days: z.number().int().min(1).max(30).optional() }).optional())
+      .mutation(async ({ input }) => {
+        const { runPerformanceAnalyst } = await import("./performanceAnalyst");
+        return runPerformanceAnalyst(input?.days ?? 5);
+      }),
+  }),
+
 });
 
 export type AppRouter = typeof appRouter;

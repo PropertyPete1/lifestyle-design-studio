@@ -1,13 +1,17 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  analystInsights,
   appSettings,
   dailyPicks,
   igPostHistory,
+  InsertAnalystInsight,
   InsertDailyPick,
+  InsertPostMetric,
   InsertRepost,
   InsertUser,
   InsertVideo,
+  postMetrics,
   reposts,
   users,
   videos,
@@ -274,4 +278,83 @@ export async function setSetting(key: string, value: string) {
     .insert(appSettings)
     .values({ settingKey: key, settingValue: value })
     .onDuplicateKeyUpdate({ set: { settingValue: value } });
+}
+
+/* ----------------------------- Post metrics (analyst) ----------------------------- */
+
+/**
+ * Upsert one daily snapshot of a post's metrics. Idempotent per
+ * (network, networkPostId, capturedOn) so re-running the ingest the same day
+ * refreshes the numbers instead of duplicating rows.
+ */
+export async function upsertPostMetric(m: InsertPostMetric): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .insert(postMetrics)
+    .values(m)
+    .onDuplicateKeyUpdate({
+      set: {
+        views: m.views,
+        reach: m.reach,
+        likes: m.likes,
+        comments: m.comments,
+        shares: m.shares,
+        saved: m.saved,
+        skipRate: m.skipRate,
+        avgWatchTimeSec: m.avgWatchTimeSec,
+        isAutoPost: m.isAutoPost,
+        brandLabel: m.brandLabel,
+        captionSnippet: m.captionSnippet,
+        publishedAt: m.publishedAt,
+      },
+    });
+}
+
+/** Metrics captured on or after a given local date (YYYY-MM-DD), newest first. */
+export async function getRecentPostMetrics(sinceCapturedOn: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(postMetrics).orderBy(desc(postMetrics.publishedAt));
+  return rows.filter(r => r.capturedOn >= sinceCapturedOn);
+}
+
+/** Latest snapshot per (network, networkPostId), used by the Performance tab. */
+export async function getLatestMetricsPerPost() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(postMetrics).orderBy(desc(postMetrics.capturedOn));
+  const seen = new Set<string>();
+  const out: typeof rows = [];
+  for (const r of rows) {
+    const k = `${r.network}:${r.networkPostId}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(r);
+  }
+  return out;
+}
+
+/* ----------------------------- Analyst insights ----------------------------- */
+
+export async function saveAnalystInsight(row: InsertAnalystInsight): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .insert(analystInsights)
+    .values(row)
+    .onDuplicateKeyUpdate({ set: { summary: row.summary, data: row.data } });
+}
+
+export async function getLatestAnalystInsight() {
+  const db = await getDb();
+  if (!db) return null;
+  const r = await db.select().from(analystInsights).orderBy(desc(analystInsights.runDate)).limit(1);
+  return r[0] ?? null;
+}
+
+export async function getAnalystInsights(limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(analystInsights).orderBy(desc(analystInsights.runDate)).limit(limit);
 }

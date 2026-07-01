@@ -1,13 +1,14 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { cn } from "@/lib/utils";
-import { CalendarCheck, History, Loader2, LogOut, Clapperboard, ShieldAlert } from "lucide-react";
+import { CalendarCheck, History, Loader2, LogOut, Clapperboard, ShieldAlert, LineChart } from "lucide-react";
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import InstallAppButton from "./InstallAppButton";
 
 const NAV = [
   { href: "/", label: "Daily Picks", icon: CalendarCheck },
+  { href: "/performance", label: "Performance", icon: LineChart },
   { href: "/history", label: "Rotation History", icon: History },
   { href: "/library", label: "Video Library", icon: Clapperboard },
 ];
@@ -137,7 +138,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <main className="flex-1 min-w-0">{children}</main>
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden sticky bottom-0 z-20 grid grid-cols-3 border-t border-border/60 bg-background/90 backdrop-blur">
+        <nav className="md:hidden sticky bottom-0 z-20 grid grid-cols-4 border-t border-border/60 bg-background/90 backdrop-blur">
           {NAV.map(item => {
             const active = location === item.href;
             const Icon = item.icon;

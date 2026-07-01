@@ -5,6 +5,9 @@ import * as db from "./db";
 import { syncIgPostHistory } from "./igHistorySync";
 import { getCdtPickDate } from "./selection";
 import { createScheduledPost } from "./metricool";
+import { checkSourceCooldown } from "./sourceCooldown";
+import { makeDifferentiatedVariant } from "./videoVariant";
+import { runPerformanceAnalyst } from "./performanceAnalyst";
 
 /**
  * Endpoints used by the publishing AGENT cron (a scheduled Manus session that
@@ -136,13 +139,69 @@ export async function publishNowHandler(req: Request, res: Response) {
     const video = await db.getVideoById(pick.videoId);
     const caption = captionOverride ?? pick.refreshedCaption ?? video?.caption ?? "";
 
+    // -------------------------------------------------------------------------
+    // GUARD 1 - Hard same-source cooldown (last line of defense).
+    // Blocks publishing the same source video (by IG postId OR caption
+    // fingerprint) if it was posted within the cooldown window on ANY path
+    // (dashboard reposts OR live Instagram history). This prevents the
+    // duplicate-content throttle that floors reach on rapid re-posts.
+    // Bypassable with { force: true } for manual overrides.
+    // -------------------------------------------------------------------------
+    const force = Boolean(req.body?.force);
+    if (!force) {
+      const cooldown = await checkSourceCooldown({
+        postId: pick.postId,
+        caption,
+        excludeRepostId: repostId || undefined,
+      });
+      if (cooldown.blocked) {
+        if (repostId) await db.markRepostFailed(repostId, cooldown.reason ?? "cooldown");
+        await db.updateDailyPick(pickId, { status: "failed" });
+        return res.status(409).json({
+          ok: false,
+          blocked: true,
+          reason: cooldown.reason,
+          daysSinceLast: cooldown.daysSinceLast,
+          matchedBy: cooldown.matchedBy,
+        });
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // GUARD 2 - Serverless byte differentiation (best-effort, NO ffmpeg).
+    // Appends spec-legal random `free` MP4 padding boxes so the uploaded file
+    // is NOT byte-identical to the reel already on the account / other brands,
+    // while decoded video+audio are unchanged. Byte-identical re-uploads can be
+    // detected as duplicates and throttled. Pure Node, so it runs on the
+    // Autoscale Node-only runtime (the old ffmpeg version silently no-oped in
+    // prod). If anything fails we fall back to the original URL rather than
+    // block the post.
+    // -------------------------------------------------------------------------
+    let mediaUrl = videoUrl;
+    let differentiated = false;
+    try {
+      const variant = await makeDifferentiatedVariant({
+        sourceUrl: videoUrl,
+        postId: pick.postId,
+        salt: `${Date.now()}`,
+      });
+      if (variant.ok && variant.url) {
+        mediaUrl = variant.url;
+        differentiated = true;
+      } else {
+        console.warn(`[publishNow] variant failed, using original URL: ${variant.error}`);
+      }
+    } catch (e) {
+      console.warn(`[publishNow] variant threw, using original URL:`, e);
+    }
+
     // Publish immediately via Metricool. Metricool interprets publicationDate
     // in the given timezone, so we MUST build a wall-clock string in
     // America/Chicago (NOT a UTC ISO string), or the post is scheduled ~5h late.
     const publishAt = chicagoLocalDateTime(Date.now() + 90_000); // "YYYY-MM-DDTHH:MM:SS"
 
     const result = await createScheduledPost({
-      videoUrl,
+      videoUrl: mediaUrl,
       caption,
       publishAt,
       timezone: "America/Chicago",
@@ -157,6 +216,7 @@ export async function publishNowHandler(req: Request, res: Response) {
         ok: true,
         status: "posted",
         metricoolPostId,
+        differentiated,
         platforms: result.platforms ?? "connected Metricool networks",
       });
     } else {
@@ -235,6 +295,47 @@ export async function reportPublishHandler(req: Request, res: Response) {
       await db.updateDailyPick(pickId, { status: "failed" });
       return res.json({ ok: true, status: "failed" });
     }
+  } catch (err) {
+    const e = err as Error;
+    return res.status(500).json({
+      error: e.message,
+      stack: e.stack,
+      context: { url: req.originalUrl },
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+/**
+ * Scheduled AI performance-analyst run. Ingests recent per-brand metrics from
+ * Metricool, diagnoses under/over-performers vs each brand's own median, asks
+ * the LLM for a concrete strategy update, stores the insight, and notifies the
+ * owner. Runs inline (no agent) so it fits a Heartbeat HTTP cron.
+ *
+ * Idempotent: post_metrics upserts by (network, post, day) and the insight
+ * upserts by run date, so retries just refresh the same day's data.
+ */
+export async function runAnalystHandler(req: Request, res: Response) {
+  try {
+    if (!(await authorize(req))) {
+      return res.status(403).json({ error: "forbidden" });
+    }
+    const days = Number(req.body?.days) > 0 ? Number(req.body.days) : 5;
+    const result = await runPerformanceAnalyst(days);
+    if (!result.ok) {
+      return res.status(500).json({
+        error: result.error ?? "analyst run failed",
+        context: { url: req.originalUrl, runDate: result.runDate },
+        timestamp: new Date().toISOString(),
+      });
+    }
+    return res.json({
+      ok: true,
+      runDate: result.runDate,
+      ingested: result.ingested,
+      flagged: result.flaggedCount,
+      notified: result.notified,
+    });
   } catch (err) {
     const e = err as Error;
     return res.status(500).json({

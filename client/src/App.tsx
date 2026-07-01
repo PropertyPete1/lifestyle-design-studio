@@ -8,11 +8,13 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import HistoryPage from "./pages/HistoryPage";
 import Home from "./pages/Home";
 import LibraryPage from "./pages/LibraryPage";
+import PerformancePage from "./pages/PerformancePage";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/performance" component={PerformancePage} />
       <Route path="/history" component={HistoryPage} />
       <Route path="/library" component={LibraryPage} />
       <Route path="/404" component={NotFound} />
