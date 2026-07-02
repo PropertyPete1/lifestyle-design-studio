@@ -62,3 +62,21 @@ describe("Metricool multi-brand discovery", () => {
     expect(main, "expected a brand with TikTok + YouTube (main brand)").toBeDefined();
   }, 15000);
 });
+
+describe("Metricool LinkedIn brand discovery", () => {
+  it("getLinkedinBrands returns every LinkedIn-connected brand (profile or company), no Instagram requirement", async () => {
+    const { getLinkedinBrands } = await import("./metricool");
+    const brands = await getLinkedinBrands();
+    expect(Array.isArray(brands)).toBe(true);
+    // The account now has multiple LinkedIn company pages connected.
+    expect(brands.length).toBeGreaterThanOrEqual(1);
+    for (const b of brands) {
+      expect(b.blogId).toBeGreaterThan(0);
+      expect(b.networks).toContain("LINKEDIN");
+    }
+    // Deterministic order by blogId so the 30-min stagger is stable per day.
+    const ids = brands.map(b => b.blogId);
+    const sorted = [...ids].sort((a, b) => a - b);
+    expect(ids).toEqual(sorted);
+  }, 15000);
+});

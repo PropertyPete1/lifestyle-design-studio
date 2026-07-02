@@ -4,12 +4,25 @@ import { ENV } from "./_core/env";
 import * as db from "./db";
 import { getCdtPickDate, cdtTimeToUtcMs } from "./selection";
 import { generateLinkedinPost } from "./linkedinAuthor";
-import { publishLinkedinText } from "./metricool";
+import { publishLinkedinText, getLinkedinBrands } from "./metricool";
 import { chicagoLocalDateTime } from "./scheduledPublish";
-import { LINKEDIN_BRAND_BLOG_ID } from "../shared/const";
+import {
+  LINKEDIN_BRAND_BLOG_ID,
+  LINKEDIN_POST_START_HOUR,
+  LINKEDIN_BRAND_STAGGER_MINUTES,
+} from "../shared/const";
 
-/** Daily LinkedIn recruiting posts publish at 2 PM CT. */
-const LINKEDIN_POST_HOUR = 14;
+/** Daily LinkedIn recruiting posts publish at 2 PM CT (first brand). */
+const LINKEDIN_POST_HOUR = LINKEDIN_POST_START_HOUR;
+
+type BrandResult = {
+  blogId: number;
+  label: string;
+  ok: boolean;
+  postId?: string | null;
+  publishAt: string;
+  error?: string;
+};
 
 async function authorize(req: Request): Promise<boolean> {
   try {
@@ -92,29 +105,67 @@ export async function publishLinkedinHandler(req: Request, res: Response) {
       return res.json({ due: false, status: cur?.status ?? "none" });
     }
 
-    const publishAt = chicagoLocalDateTime(Date.now() + 90_000);
-    const result = await publishLinkedinText({
-      blogId: LINKEDIN_BRAND_BLOG_ID,
-      text: due.body,
-      publishAt,
-      timezone: "America/Chicago",
-      autoPublish: true,
+    // Discover every LinkedIn-connected brand and post the SAME text to each,
+    // staggered 30 min apart (2:00, 2:30, 3:00 PM CT ...) so simultaneous
+    // identical posts across related company pages don't look automated.
+    let brands = await getLinkedinBrands();
+    if (brands.length === 0) {
+      // Fallback to the known brand if discovery returns nothing.
+      brands = [{ blogId: LINKEDIN_BRAND_BLOG_ID, label: "LinkedIn", networks: ["LINKEDIN"] }];
+    }
+
+    // Base time: schedule ~90s out so Metricool accepts it, then add the stagger.
+    const baseMs = Date.now() + 90_000;
+    const staggerMs = LINKEDIN_BRAND_STAGGER_MINUTES * 60_000;
+
+    const results: BrandResult[] = [];
+    for (let i = 0; i < brands.length; i++) {
+      const brand = brands[i];
+      const publishAt = chicagoLocalDateTime(baseMs + i * staggerMs);
+      const r = await publishLinkedinText({
+        blogId: brand.blogId,
+        text: due.body,
+        publishAt,
+        timezone: "America/Chicago",
+        autoPublish: true,
+      });
+      results.push({
+        blogId: brand.blogId,
+        label: brand.label,
+        ok: r.ok,
+        postId: r.postId ? String(r.postId) : null,
+        publishAt,
+        error: r.ok ? undefined : (r.error ?? "publish failed").slice(0, 500),
+      });
+    }
+
+    const anyOk = results.some(r => r.ok);
+    const allOk = results.every(r => r.ok);
+    const firstOk = results.find(r => r.ok);
+    const failedLabels = results.filter(r => !r.ok).map(r => r.label);
+
+    await db.updateLinkedinPost(due.id, {
+      status: anyOk ? "posted" : "failed",
+      metricoolPostId: firstOk?.postId ?? null,
+      brandResults: JSON.stringify(results),
+      postedAt: anyOk ? Date.now() : null,
+      errorReason: allOk
+        ? null
+        : failedLabels.length
+          ? `Failed on: ${failedLabels.join(", ")}`.slice(0, 2000)
+          : null,
     });
 
-    if (result.ok) {
-      await db.updateLinkedinPost(due.id, {
+    if (anyOk) {
+      return res.json({
+        ok: true,
         status: "posted",
-        metricoolPostId: result.postId ? String(result.postId) : null,
-        postedAt: Date.now(),
+        topic: due.topic,
+        brands: results.map(r => ({ label: r.label, ok: r.ok, publishAt: r.publishAt, postId: r.postId })),
+        allOk,
       });
-      return res.json({ ok: true, status: "posted", metricoolPostId: result.postId, topic: due.topic });
-    } else {
-      await db.updateLinkedinPost(due.id, {
-        status: "failed",
-        errorReason: (result.error ?? "publish failed").slice(0, 2000),
-      });
-      return res.status(500).json({ ok: false, error: result.error, raw: result.raw });
     }
+    return res.status(500).json({ ok: false, error: "all LinkedIn brands failed", brands: results });
   } catch (err) {
     const e = err as Error;
     return res.status(500).json({ error: e.message, stack: e.stack });

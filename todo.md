@@ -302,5 +302,15 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Endpoints: /api/scheduled/generateLinkedin (morning) + /api/scheduled/publishLinkedin (2 PM CT, self-heal), registered in _core/index.ts
 - [x] Dashboard UI: LinkedinPage (view/edit/regenerate today, word count, status, history) + nav tab + route; renders live
 - [x] Tests: added linkedinAuthor.test.ts (sanitizer, rotation, generation guardrails); full suite 100/100 pass, 0 type errors
-- [ ] Checkpoint + push to GitHub
-- [ ] Deploy, register 2 PM CT LinkedIn cron, verify live
+- [x] Checkpoint 5fd67a6e; pushed to GitHub (633b401..5fd67a6)
+- [x] Deployed live; endpoints verified (403 cron-guard). Registered crons: linkedin-daily-2pm 0 0 19 UTC=2PM CDT (8gNRh2sUxNaLJ4UqFqz5aW), linkedin-morning-generate 0 0 13 UTC=8AM CDT (keCGL7YnnscBgujeL7GmdH). Both enabled, next-run 2026-07-02.
+
+## Multi-brand LinkedIn posting (2 new LinkedIn brands)
+- [x] Add getLinkedinBrands() (LinkedIn profile OR company, no INSTAGRAM requirement)
+- [x] Verified 3 LinkedIn brands: lifestyledesignrealtytexas(4807109), lifestyledesignrealtyaustintx(6486275, new), lifestyledesignrealty(6493212, new)
+- [x] Publish to ALL LinkedIn brands via getLinkedinBrands(), staggered 30 min apart (2:00/2:30/3:00 PM CT)
+- [x] Track per-brand results in linkedin_posts.brandResults JSON (blogId,label,ok,postId,publishAt,error); partial-failure aware status
+- [x] Update dashboard copy to reflect multi-brand posting + per-brand result chips in history
+- [x] Tests: added getLinkedinBrands live test (101/101 pass, 0 type errors)
+- [ ] Checkpoint, push to GitHub
+- [ ] Deploy, verify live

@@ -50,5 +50,12 @@ export const LINKEDIN_TOPICS: { key: string; label: string; angle: string }[] = 
   },
 ];
 
-/** Metricool brand (blogId) that has LinkedIn connected for these posts. */
+/** Metricool brand (blogId) that has LinkedIn connected for these posts.
+ * Back-compat only: the poster now auto-discovers ALL LinkedIn brands via
+ * getLinkedinBrands() and posts to each, staggered. */
 export const LINKEDIN_BRAND_BLOG_ID = 4807109;
+
+/** First LinkedIn post goes out at 2 PM CT. */
+export const LINKEDIN_POST_START_HOUR = 14;
+/** Each additional LinkedIn brand is staggered this many minutes after the previous. */
+export const LINKEDIN_BRAND_STAGGER_MINUTES = 30;

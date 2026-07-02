@@ -146,6 +146,34 @@ function authHeaders() {
   };
 }
 
+/**
+ * Discover every brand on the account that has LinkedIn connected (profile OR
+ * company page). Unlike getAllBrands(), this does NOT require Instagram, since
+ * the daily recruiting post is text-only and LinkedIn-specific. Sorted by
+ * blogId for a stable, deterministic stagger order.
+ */
+export async function getLinkedinBrands(): Promise<MetricoolBrand[]> {
+  const url = `${BASE}/admin/simpleProfiles?userId=${ENV.metricoolUserId}`;
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    throw new Error(`Metricool getLinkedinBrands failed: ${res.status} ${await res.text()}`);
+  }
+  const profiles = (await res.json()) as Record<string, unknown>[];
+  const brands: MetricoolBrand[] = [];
+  for (const p of profiles) {
+    if (p.deleted === true || p.isDemo === true) continue;
+    const blogId = Number(p.id ?? p.blogId);
+    if (!blogId) continue;
+    const hasLinkedin =
+      (typeof p.linkedin === "string" && p.linkedin) ||
+      (typeof p.linkedinCompany === "string" && p.linkedinCompany);
+    if (!hasLinkedin) continue;
+    brands.push({ blogId, label: String(p.label ?? p.id ?? blogId), networks: ["LINKEDIN"] });
+  }
+  brands.sort((a, b) => a.blogId - b.blogId);
+  return brands;
+}
+
 export interface MetricoolNetwork {
   network: string; // "INSTAGRAM" | "TIKTOK" | "FACEBOOK" | "YOUTUBE" | "LINKEDIN" | ...
   id: string;

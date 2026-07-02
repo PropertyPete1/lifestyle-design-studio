@@ -225,8 +225,10 @@ export const linkedinPosts = mysqlTable("linkedin_posts", {
   body: text("body").notNull(),
   /** "draft" (generated, editable) | "scheduled" | "posted" | "failed". */
   status: mysqlEnum("status", ["draft", "scheduled", "posted", "failed"]).default("draft").notNull(),
-  /** Metricool post id once scheduled/published. */
+  /** Metricool post id once scheduled/published (first brand, kept for back-compat). */
   metricoolPostId: varchar("metricoolPostId", { length: 64 }),
+  /** Per-brand publish outcomes JSON: [{blogId,label,ok,postId,publishAt,error}]. */
+  brandResults: text("brandResults"),
   /** Failure reason if status = failed. */
   errorReason: text("errorReason"),
   /** Epoch ms the post is scheduled to publish (2 PM CT that day). */

@@ -37,6 +37,44 @@ function wordCount(s: string) {
   return s.split(/\s+/).filter(Boolean).length;
 }
 
+type BrandResult = {
+  blogId: number;
+  label: string;
+  ok: boolean;
+  postId?: string | null;
+  publishAt?: string;
+  error?: string;
+};
+
+function BrandResults({ raw }: { raw?: string | null }) {
+  if (!raw) return null;
+  let items: BrandResult[] = [];
+  try {
+    items = JSON.parse(raw) as BrandResult[];
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(items) || items.length === 0) return null;
+  const time = (s?: string) => (s && s.includes("T") ? s.split("T")[1]?.slice(0, 5) : undefined);
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {items.map(b => (
+        <span
+          key={b.blogId}
+          className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs ${
+            b.ok ? "bg-emerald-500/10 text-emerald-600" : "bg-red-500/10 text-red-600"
+          }`}
+          title={b.error ?? undefined}
+        >
+          {b.ok ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+          {b.label}
+          {time(b.publishAt) ? ` · ${time(b.publishAt)}` : ""}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function LinkedinPage() {
   const utils = trpc.useUtils();
   const today = trpc.linkedin.today.useQuery(undefined, { refetchOnWindowFocus: false });
@@ -82,8 +120,9 @@ export default function LinkedinPage() {
             <Linkedin className="h-7 w-7" /> LinkedIn Posts
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            One text-only recruiting post publishes automatically every day at 2 PM CT, written in your voice to
-            attract realtors to Lifestyle Design Realty. It rotates through your six topics and learns from what
+            One text-only recruiting post publishes automatically every day, written in your voice to attract
+            realtors to Lifestyle Design Realty. It posts to every LinkedIn page you have connected in Metricool,
+            staggered 30 minutes apart starting at 2 PM CT. It rotates through your six topics and learns from what
             performs best. You can edit or regenerate today's post below before it goes out.
           </p>
         </div>
@@ -124,7 +163,7 @@ export default function LinkedinPage() {
 
             {isPosted ? (
               <p className="mt-4 text-sm text-emerald-600 flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4" /> This post has been published to LinkedIn.
+                <CheckCircle2 className="h-4 w-4" /> This post has been published to your LinkedIn page(s).
               </p>
             ) : (
               <div className="mt-4 flex flex-wrap gap-3">
@@ -179,6 +218,7 @@ export default function LinkedinPage() {
                 )}
               </div>
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{p.body}</p>
+              <BrandResults raw={p.brandResults} />
               {p.status === "failed" && p.errorReason && (
                 <p className="mt-2 text-xs text-red-600">Reason: {p.errorReason}</p>
               )}
