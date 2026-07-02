@@ -288,4 +288,19 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Diagnosed: server verified ONLY the cookie; a stale/expired mobile cookie caused rejection and the valid Bearer fallback was never tried
 - [x] Reviewed auth path (sdk.authenticateRequest, useAuth, sessionToken, oauth callback fragment handoff)
 - [x] Fixed: authenticateRequest now falls back to the valid Bearer token when the cookie is invalid/stale (no security removed); added 3 unit tests; 90/90 pass
-- [ ] Test, checkpoint, push to GitHub, ask user to publish, verify live on the owner's phone
+- [x] Tests pass (90/90), checkpoint 633b4015, pushed to GitHub (92f3999..633b401)
+- [x] User published. Live verified on production: stale cookie alone -> 401; stale cookie + valid Bearer -> auth succeeds (reaches owner check), proving the Bearer fallback now works on the deployed build. Owner-only gate intact.
+
+## New IG Brand + LinkedIn Recruiting Posts
+- [x] Confirmed 4 IG brands on Metricool; new brand (lifestyledesignrealty) auto-picked-up for reels
+- [x] Confirmed only lifestyledesignrealtytexas has LinkedIn connected (personal profile)
+- [x] Stop reels from posting to LinkedIn (removed LINKEDIN from video fan-out; IG/TikTok/YouTube only)
+- [x] DB: linkedin_posts table + helpers (getLinkedinPostByDate, insertLinkedinPost, updateLinkedinPost, getRecentLinkedinPosts, getDueLinkedinPost)
+- [x] AI author (linkedinAuthor.ts): Peter Allen voice, recruiting angle, hook/value/CTA, <150 words, no dashes, no quotes, 6-topic rotation, sanitizer
+- [x] Self-improvement: buildLearningContext feeds recent posts + engagement (best performer) back into the prompt
+- [x] Metricool: publishLinkedinText (text-only, providers=[linkedin], no media) to blogId 4807109
+- [x] Endpoints: /api/scheduled/generateLinkedin (morning) + /api/scheduled/publishLinkedin (2 PM CT, self-heal), registered in _core/index.ts
+- [x] Dashboard UI: LinkedinPage (view/edit/regenerate today, word count, status, history) + nav tab + route; renders live
+- [x] Tests: added linkedinAuthor.test.ts (sanitizer, rotation, generation guardrails); full suite 100/100 pass, 0 type errors
+- [ ] Checkpoint + push to GitHub
+- [ ] Deploy, register 2 PM CT LinkedIn cron, verify live

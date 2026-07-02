@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { dueForPublishHandler, reportPublishHandler, publishNowHandler, syncIgHistoryHandler, runAnalystHandler, generatePicksHandler } from "../scheduledPublish";
+import { generateLinkedinHandler, publishLinkedinHandler } from "../linkedinScheduled";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -54,6 +55,8 @@ async function startServer() {
   app.post("/api/scheduled/syncIgHistory", syncIgHistoryHandler);
   app.post("/api/scheduled/runAnalyst", runAnalystHandler);
   app.post("/api/scheduled/generatePicks", generatePicksHandler);
+  app.post("/api/scheduled/generateLinkedin", generateLinkedinHandler);
+  app.post("/api/scheduled/publishLinkedin", publishLinkedinHandler);
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

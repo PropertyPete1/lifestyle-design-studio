@@ -1,13 +1,14 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { cn } from "@/lib/utils";
-import { CalendarCheck, History, Loader2, LogOut, Clapperboard, ShieldAlert, LineChart } from "lucide-react";
+import { CalendarCheck, History, Loader2, LogOut, Clapperboard, ShieldAlert, LineChart, Linkedin } from "lucide-react";
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import InstallAppButton from "./InstallAppButton";
 
 const NAV = [
   { href: "/", label: "Daily Picks", icon: CalendarCheck },
+  { href: "/linkedin", label: "LinkedIn Posts", icon: Linkedin },
   { href: "/performance", label: "Performance", icon: LineChart },
   { href: "/history", label: "Rotation History", icon: History },
   { href: "/library", label: "Video Library", icon: Clapperboard },

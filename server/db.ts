@@ -7,10 +7,12 @@ import {
   igPostHistory,
   InsertAnalystInsight,
   InsertDailyPick,
+  InsertLinkedinPost,
   InsertPostMetric,
   InsertRepost,
   InsertUser,
   InsertVideo,
+  linkedinPosts,
   postMetrics,
   reposts,
   users,
@@ -391,4 +393,63 @@ export async function getAnalystInsights(limit = 30) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(analystInsights).orderBy(desc(analystInsights.runDate)).limit(limit);
+}
+
+/* ----------------------------- LinkedIn posts ----------------------------- */
+
+/** The LinkedIn post for a given local date, if one exists. */
+export async function getLinkedinPostByDate(postDate: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const r = await db
+    .select()
+    .from(linkedinPosts)
+    .where(eq(linkedinPosts.postDate, postDate))
+    .limit(1);
+  return r[0];
+}
+
+/** Insert a LinkedIn post row (idempotent per postDate via unique key). */
+export async function insertLinkedinPost(row: InsertLinkedinPost): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const res = await db
+    .insert(linkedinPosts)
+    .values(row)
+    .onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
+  // @ts-expect-error insertId access
+  return Number(res[0]?.insertId ?? res.insertId ?? 0);
+}
+
+export async function updateLinkedinPost(id: number, set: Partial<InsertLinkedinPost>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(linkedinPosts).set(set).where(eq(linkedinPosts.id, id));
+}
+
+/** Recent LinkedIn posts, newest first (for history + self-improvement). */
+export async function getRecentLinkedinPosts(limit = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(linkedinPosts)
+    .orderBy(desc(linkedinPosts.postDate))
+    .limit(limit);
+}
+
+/** The scheduled LinkedIn post that is due to publish now (if any). */
+export async function getDueLinkedinPost(postDate: string, nowMs: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const r = await db
+    .select()
+    .from(linkedinPosts)
+    .where(eq(linkedinPosts.postDate, postDate))
+    .limit(1);
+  const post = r[0];
+  if (!post) return undefined;
+  if (post.status === "posted") return undefined;
+  if ((post.scheduledFor ?? 0) > nowMs) return undefined;
+  return post;
 }

@@ -339,7 +339,10 @@ async function postToBrand(
   }
 
   // Target every video-friendly network connected to this brand.
-  const allowed = ["INSTAGRAM", "TIKTOK", "YOUTUBE", "LINKEDIN"];
+  // NOTE: LinkedIn is intentionally EXCLUDED here. LinkedIn is handled by a
+  // separate daily text-only recruiting-post pipeline (see linkedinPosts.ts /
+  // linkedinPublish endpoints). Pushing reels to LinkedIn is off by design.
+  const allowed = ["INSTAGRAM", "TIKTOK", "YOUTUBE"];
   const seen = new Set<string>();
   const providers = brand.networks
     .filter(n => allowed.includes(n) && !seen.has(n) && seen.add(n) !== undefined)
@@ -423,4 +426,68 @@ async function postToBrand(
     raw,
     platforms,
   };
+}
+
+/* --------------------------- LinkedIn text posts --------------------------- */
+
+export interface LinkedinTextPostResult {
+  ok: boolean;
+  postId?: number;
+  error?: string;
+  raw?: unknown;
+}
+
+/**
+ * Publish a TEXT-ONLY LinkedIn post (no media) to a specific brand's LinkedIn
+ * network via Metricool, auto-published at the given local time. This is
+ * separate from the reel pipeline: reels never target LinkedIn (see
+ * postToBrand). Peter's daily recruiting posts flow through here.
+ *
+ * `publishAt` MUST be a wall-clock "YYYY-MM-DDTHH:MM:SS" string in the given
+ * timezone (Metricool interprets publicationDate in that timezone). Reuse
+ * chicagoLocalDateTime() from scheduledPublish.ts to build it.
+ */
+export async function publishLinkedinText(opts: {
+  blogId: number;
+  text: string;
+  publishAt: string;
+  timezone?: string;
+  autoPublish?: boolean;
+}): Promise<LinkedinTextPostResult> {
+  const { blogId, text, publishAt, timezone = "America/Chicago", autoPublish = true } = opts;
+
+  if (!text || !text.trim()) {
+    return { ok: false, error: "empty LinkedIn text" };
+  }
+
+  const body: Record<string, unknown> = {
+    text,
+    publicationDate: { dateTime: publishAt, timezone },
+    providers: [{ network: "linkedin" }],
+    // No media array at all -> Metricool treats this as a text-only post.
+    autoPublish,
+    shortener: false,
+    draft: false,
+    // LinkedIn-specific: publish to the connected profile/page as a normal post.
+    linkedinData: {
+      publishImagesAsPDF: false,
+      documentTitle: "",
+    },
+  };
+
+  const url = `${BASE}/v2/scheduler/posts?${authParams(blogId)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+  });
+  const raw = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    return { ok: false, error: `API error ${res.status}: ${JSON.stringify(raw)}`, raw };
+  }
+  const postId =
+    (raw as Record<string, unknown>)?.id ??
+    ((raw as Record<string, unknown>)?.data as Record<string, unknown>)?.id;
+  return { ok: true, postId: typeof postId === "number" ? postId : undefined, raw };
 }

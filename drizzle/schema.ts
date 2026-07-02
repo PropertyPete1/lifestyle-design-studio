@@ -208,3 +208,40 @@ export const analystInsights = mysqlTable("analyst_insights", {
 
 export type AnalystInsight = typeof analystInsights.$inferSelect;
 export type InsertAnalystInsight = typeof analystInsights.$inferInsert;
+
+/**
+ * Daily LinkedIn recruiting posts. Text-only, first-person as Peter Allen,
+ * aimed at recruiting realtors to Lifestyle Design Realty. One row per local
+ * pick date (America/Chicago). The generator rotates through a fixed set of
+ * topics and self-improves by reading recent posts + their engagement.
+ */
+export const linkedinPosts = mysqlTable("linkedin_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Local pick date YYYY-MM-DD (America/Chicago); one post per day. */
+  postDate: varchar("postDate", { length: 10 }).notNull(),
+  /** Rotation topic key (see LINKEDIN_TOPICS in shared/const.ts). */
+  topic: varchar("topic", { length: 64 }).notNull(),
+  /** The full post body (text only, < 150 words, no em-dashes). */
+  body: text("body").notNull(),
+  /** "draft" (generated, editable) | "scheduled" | "posted" | "failed". */
+  status: mysqlEnum("status", ["draft", "scheduled", "posted", "failed"]).default("draft").notNull(),
+  /** Metricool post id once scheduled/published. */
+  metricoolPostId: varchar("metricoolPostId", { length: 64 }),
+  /** Failure reason if status = failed. */
+  errorReason: text("errorReason"),
+  /** Epoch ms the post is scheduled to publish (2 PM CT that day). */
+  scheduledFor: bigint("scheduledFor", { mode: "number" }),
+  /** Epoch ms the post was actually published. */
+  postedAt: bigint("postedAt", { mode: "number" }),
+  /** Engagement pulled back from Metricool for self-improvement. */
+  impressions: int("impressions").default(0).notNull(),
+  reactions: int("reactions").default(0).notNull(),
+  comments: int("comments").default(0).notNull(),
+  shares: int("shares").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, t => ({
+  uniqPostDate: uniqueIndex("uq_linkedin_post_date").on(t.postDate),
+}));
+export type LinkedinPost = typeof linkedinPosts.$inferSelect;
+export type InsertLinkedinPost = typeof linkedinPosts.$inferInsert;

@@ -309,6 +309,37 @@ export const appRouter = router({
       }),
   }),
 
+  /* ----------------------- LinkedIn recruiting posts ----------------------- */
+  linkedin: router({
+    /** Today's LinkedIn post; generated + auto-scheduled if it does not exist. */
+    today: ownerProcedure.query(async () => {
+      const { getCdtPickDate } = await import("./selection");
+      const { ensureTodayLinkedinPost } = await import("./linkedinScheduled");
+      const postDate = getCdtPickDate();
+      const post = await ensureTodayLinkedinPost(postDate);
+      return post ?? null;
+    }),
+    /** Recent LinkedIn posts (history list). */
+    history: ownerProcedure.query(async () => db.getRecentLinkedinPosts(30)),
+    /** Owner edits today's post body before it publishes. */
+    updateBody: ownerProcedure
+      .input(z.object({ id: z.number().int(), body: z.string().min(1).max(4000) }))
+      .mutation(async ({ input }) => {
+        const { sanitizePost } = await import("./linkedinAuthor");
+        await db.updateLinkedinPost(input.id, { body: sanitizePost(input.body) });
+        return { ok: true };
+      }),
+    /** Regenerate today's post with the AI writer (overwrites the draft body). */
+    regenerate: ownerProcedure
+      .input(z.object({ id: z.number().int(), postDate: z.string() }))
+      .mutation(async ({ input }) => {
+        const { generateLinkedinPost } = await import("./linkedinAuthor");
+        const { topic, body } = await generateLinkedinPost(input.postDate);
+        await db.updateLinkedinPost(input.id, { topic, body });
+        return { ok: true, body };
+      }),
+  }),
+
 });
 
 export type AppRouter = typeof appRouter;
