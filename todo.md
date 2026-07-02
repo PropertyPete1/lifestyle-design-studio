@@ -312,5 +312,16 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Track per-brand results in linkedin_posts.brandResults JSON (blogId,label,ok,postId,publishAt,error); partial-failure aware status
 - [x] Update dashboard copy to reflect multi-brand posting + per-brand result chips in history
 - [x] Tests: added getLinkedinBrands live test (101/101 pass, 0 type errors)
-- [ ] Checkpoint, push to GitHub
-- [ ] Deploy, verify live
+- [x] Checkpoint ff9c20b6; pushed to GitHub (5fd67a6..ff9c20b)
+- [x] Deployed live; both LinkedIn endpoints verified (403 cron-guard) on production. getLinkedinBrands live-verified returns all 3 LinkedIn pages.
+
+## LinkedIn Self-Optimization (real engagement -> angle weighting)
+- [x] Probed live: GET /v2/analytics/posts/linkedin works per blogId. Returns data[] with postId(urn), created.dateTime, impressions, uniqueImpressions, engagement, comment(text). Reactions/comments/shares fields appear once posts accrue engagement. New brands return empty until they have posts.
+- [x] Reuse existing fetchLinkedinPosts in metricoolAnalytics.ts (already normalizes impressions/reactions/comments/shares); add a LinkedIn-brand ingest that also reads `engagement` + urn postId
+- [x] linkedinAnalytics.ts + /api/scheduled/syncLinkedinAnalytics: pulls per-brand LinkedIn analytics, matches by URN, writes engagement to linkedin_posts
+- [x] Aggregates impressions/reactions/comments/shares across all brand URNs onto the day's post row (idempotent, only writes on change)
+- [x] pickTopicForDate: engagement-weighted (comments x3, shares x5), normalized, floor keeps every angle in rotation; deterministic per date
+- [x] Guard: WEIGHTING_MIN_POSTS=6 posts-with-engagement before weighting; before that, plain even 6-way rotation. Writer now uses pickTopicForDate.
+- [x] Tests: linkedinWeighting.test.ts (7) covers scoring, thin-data guard, determinism, favors-winner, floor-keeps-all. Full suite 108/108 pass, 0 type errors
+- [ ] Checkpoint, push
+- [ ] Register daily analytics-sync cron; deploy; verify live

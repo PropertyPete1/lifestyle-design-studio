@@ -20,6 +20,90 @@ export function topicForDate(postDate: string): { key: string; label: string; an
 }
 
 /**
+ * Engagement score for one post. Comments and shares matter far more than a
+ * passive impression for recruiting intent, so they are weighted heavier.
+ */
+export function engagementScore(p: {
+  impressions?: number | null;
+  reactions?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+}): number {
+  const impressions = p.impressions ?? 0;
+  const reactions = p.reactions ?? 0;
+  const comments = p.comments ?? 0;
+  const shares = p.shares ?? 0;
+  // Impressions are a weak signal; reactions moderate; comments/shares strong.
+  return impressions * 0.01 + reactions * 1 + comments * 3 + shares * 5;
+}
+
+/** Minimum posts-with-engagement before we let performance bias the rotation. */
+export const WEIGHTING_MIN_POSTS = 6;
+/** No angle ever falls below this share of the rotation, so all 6 keep running. */
+export const ANGLE_FLOOR_WEIGHT = 0.6;
+
+type ScoredPost = {
+  topic: string;
+  impressions?: number | null;
+  reactions?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+};
+
+/**
+ * Choose the topic for a date using REAL engagement once there is enough data,
+ * otherwise fall back to the plain even rotation. This is what makes the writer
+ * "slowly tailor to the best working angles" without ever going one-note:
+ *
+ *  - Until >= WEIGHTING_MIN_POSTS posts have measurable engagement, we keep the
+ *    deterministic 6-way rotation (no guessing on thin data).
+ *  - After that, each angle gets a weight = floor + its average engagement.
+ *    Stronger angles are chosen more often, but the floor guarantees every
+ *    angle still appears regularly (never below ~10% given 6 topics).
+ *  - Selection stays deterministic per date (seeded by day index) so the same
+ *    day always maps to the same topic, keeping generation idempotent.
+ */
+export function pickTopicForDate(
+  postDate: string,
+  history: ScoredPost[]
+): { key: string; label: string; angle: string } {
+  const withEngagement = history.filter(
+    p => (p.impressions ?? 0) > 0 || (p.reactions ?? 0) > 0 || (p.comments ?? 0) > 0 || (p.shares ?? 0) > 0
+  );
+  if (withEngagement.length < WEIGHTING_MIN_POSTS) {
+    return topicForDate(postDate);
+  }
+
+  // Average engagement per angle key.
+  const sum = new Map<string, number>();
+  const count = new Map<string, number>();
+  for (const p of withEngagement) {
+    sum.set(p.topic, (sum.get(p.topic) ?? 0) + engagementScore(p));
+    count.set(p.topic, (count.get(p.topic) ?? 0) + 1);
+  }
+  const avg = (key: string) => (count.get(key) ? (sum.get(key) ?? 0) / (count.get(key) as number) : 0);
+
+  // Normalize averages to [0,1] so the floor is meaningful regardless of scale.
+  const avgs = LINKEDIN_TOPICS.map(t => avg(t.key));
+  const maxAvg = Math.max(1, ...avgs);
+  const weights = LINKEDIN_TOPICS.map(t => ANGLE_FLOOR_WEIGHT + avg(t.key) / maxAvg);
+  const total = weights.reduce((a, b) => a + b, 0);
+
+  // Deterministic pseudo-random point in [0,total) seeded by the day index, so
+  // the choice is stable per date but spreads across angles by weight.
+  const [y, m, d] = postDate.split("-").map(Number);
+  const dayIndex = Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
+  // A cheap deterministic hash -> fraction in [0,1).
+  const frac = ((Math.sin(dayIndex * 12.9898) * 43758.5453) % 1 + 1) % 1;
+  let point = frac * total;
+  for (let i = 0; i < LINKEDIN_TOPICS.length; i++) {
+    point -= weights[i];
+    if (point <= 0) return LINKEDIN_TOPICS[i];
+  }
+  return LINKEDIN_TOPICS[LINKEDIN_TOPICS.length - 1];
+}
+
+/**
  * Strip anything that reads as AI-generated or violates the brief:
  * - em-dashes / en-dashes (—, –) -> replaced with a period + space or comma
  * - surrounding quotes the model sometimes wraps the whole post in
@@ -127,7 +211,10 @@ export interface GeneratedLinkedinPost {
  * unavailable (caller decides how to handle — we never publish empty text).
  */
 export async function generateLinkedinPost(postDate: string): Promise<GeneratedLinkedinPost> {
-  const topic = topicForDate(postDate);
+  // Use real engagement to gently favor the best-performing angles once there
+  // is enough data; falls back to the even rotation before then.
+  const history = await db.getRecentLinkedinPosts(60);
+  const topic = pickTopicForDate(postDate, history);
   const learning = await buildLearningContext();
 
   const userPrompt =

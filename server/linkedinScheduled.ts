@@ -5,6 +5,7 @@ import * as db from "./db";
 import { getCdtPickDate, cdtTimeToUtcMs } from "./selection";
 import { generateLinkedinPost } from "./linkedinAuthor";
 import { publishLinkedinText, getLinkedinBrands } from "./metricool";
+import { syncLinkedinAnalytics } from "./linkedinAnalytics";
 import { chicagoLocalDateTime } from "./scheduledPublish";
 import {
   LINKEDIN_BRAND_BLOG_ID,
@@ -85,6 +86,22 @@ export async function generateLinkedinHandler(req: Request, res: Response) {
  * publishes the due LinkedIn post as TEXT ONLY via Metricool and marks it
  * posted/failed. Idempotent: an already-posted post short-circuits.
  */
+/**
+ * Analytics-sync endpoint: pulls real LinkedIn engagement for recent posts from
+ * Metricool (all brands) and writes the totals onto each day's post row so the
+ * writer can learn from what actually performs. Intended for a daily cron.
+ */
+export async function syncLinkedinAnalyticsHandler(req: Request, res: Response) {
+  try {
+    if (!(await authorize(req))) return res.status(403).json({ error: "forbidden" });
+    const summary = await syncLinkedinAnalytics(60);
+    return res.json({ ok: true, ...summary });
+  } catch (err) {
+    const e = err as Error;
+    return res.status(500).json({ error: e.message, stack: e.stack });
+  }
+}
+
 export async function publishLinkedinHandler(req: Request, res: Response) {
   try {
     if (!(await authorize(req))) return res.status(403).json({ error: "forbidden" });
