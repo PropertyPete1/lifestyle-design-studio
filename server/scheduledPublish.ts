@@ -9,6 +9,7 @@ import { checkSourceCooldown } from "./sourceCooldown";
 import { makeDifferentiatedVariant } from "./videoVariant";
 import { runPerformanceAnalyst } from "./performanceAnalyst";
 import { ensureTodayPicks } from "./routers";
+import { storageGetSignedUrl } from "./storage";
 
 /**
  * Endpoints used by the publishing AGENT cron (a scheduled Manus session that
@@ -153,7 +154,21 @@ export async function publishNowHandler(req: Request, res: Response) {
     }
 
     // Determine video source: Drive original (preferred) or body videoUrl (legacy)
-    const videoUrl = pick.driveVideoUrl || bodyVideoUrl;
+    // driveVideoUrl is now stored as an S3 storage KEY (not a signed URL).
+    // Generate a fresh signed URL at publish time so it never expires.
+    let videoUrl: string | null = null;
+    if (pick.driveVideoUrl) {
+      // If it looks like a full URL (legacy rows from before the fix), use as-is
+      if (pick.driveVideoUrl.startsWith("http")) {
+        videoUrl = pick.driveVideoUrl;
+      } else {
+        // It's a storage key — generate a fresh signed URL (valid ~1h)
+        videoUrl = await storageGetSignedUrl(pick.driveVideoUrl);
+        console.log(`[publishNow] Generated fresh signed URL from storage key for pick ${pickId}`);
+      }
+    } else {
+      videoUrl = bodyVideoUrl || null;
+    }
     if (!videoUrl || !videoUrl.startsWith("http")) {
       // No Drive original and no agent-provided URL — skip this pick
       const skipMsg = "No Drive original available and no videoUrl provided";

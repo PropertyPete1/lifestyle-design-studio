@@ -141,7 +141,7 @@ async function preprocessPick(pick: {
       sourceBytes: sourceBytes as unknown as Buffer,
     });
 
-    if (!variant.ok || !variant.url) {
+    if (!variant.ok || !variant.storageKey) {
       return {
         pickId: pick.id,
         city: pick.city,
@@ -154,9 +154,10 @@ async function preprocessPick(pick: {
       };
     }
 
-    // Step 5: Store the signed URL on the pick row
+    // Step 5: Store the S3 storage KEY (not signed URL) on the pick row.
+    // At publish time, publishNow generates a fresh signed URL from this key.
     await db.updateDailyPick(pick.id, {
-      driveVideoUrl: variant.url,
+      driveVideoUrl: variant.storageKey!,
       driveMatchConfidence: match.confidence,
     });
 

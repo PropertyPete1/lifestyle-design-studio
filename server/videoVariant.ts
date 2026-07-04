@@ -36,6 +36,8 @@ export interface VariantResult {
   ok: boolean;
   /** Public URL of the differentiated video (when ok). */
   url?: string;
+  /** S3 storage key (never expires; use storageGetSignedUrl to get a fresh URL). */
+  storageKey?: string;
   /** SHA-256 (hex) of the produced bytes, for logging/verification. */
   sha256?: string;
   error?: string;
@@ -124,7 +126,7 @@ export async function makeDifferentiatedVariant(
     // GET URL is directly reachable (the /manus-storage proxy is relative to the
     // app and not guaranteed to be resolvable by Metricool's fetchers).
     const url = await storageGetSignedUrl(key);
-    return { ok: true, url, sha256 };
+    return { ok: true, url, storageKey: key, sha256 };
   } catch (err) {
     const e = err as Error;
     return { ok: false, error: e.message };
