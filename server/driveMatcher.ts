@@ -20,6 +20,9 @@ export interface MatchResult {
   matchedFileId: string;
   fileName: string;
   confidence: "high" | "medium" | "low";
+  width?: number | null;
+  height?: number | null;
+  sizeBytes?: number | null;
 }
 
 interface MatchCandidate {
@@ -72,16 +75,58 @@ export async function findDriveMatch(
   }
 
   // Step 2: AI vision matching in batches of 5
-  // Process batches until we find a high/medium confidence match
+  // Collect ALL matches across all batches so we can pick the highest-res one
+  const allMatches: MatchResult[] = [];
   const BATCH_SIZE = 5;
   for (let i = 0; i < withThumbs.length; i += BATCH_SIZE) {
     const batch = withThumbs.slice(i, i + BATCH_SIZE);
     const result = await matchBatchWithVision(igThumbnailUrl, igCaption, batch);
-    if (result) return result;
+    if (result) {
+      allMatches.push(result);
+      // If we found a high-confidence match, keep scanning for higher-res versions
+      // but only scan a few more batches (don't scan the entire library)
+      if (result.confidence === "high" && allMatches.length >= 3) break;
+    }
   }
 
-  console.log(`[DriveMatcher] No match found among ${withThumbs.length} Drive candidates`);
-  return null;
+  if (allMatches.length === 0) {
+    console.log(`[DriveMatcher] No match found among ${withThumbs.length} Drive candidates`);
+    return null;
+  }
+
+  // Step 3: Among all matches, prefer the highest resolution (4K > 1080p > 720p)
+  // Resolution priority: height * width (pixel count), then file size as tiebreaker
+  const best = pickHighestResolution(allMatches);
+  console.log(`[DriveMatcher] Selected best match: ${best.fileName} (${best.width}x${best.height}, ${best.sizeBytes ? (best.sizeBytes / 1024 / 1024).toFixed(1) + 'MB' : '?'}, confidence=${best.confidence}) from ${allMatches.length} total matches`);
+  return best;
+}
+
+/**
+ * Among multiple matches, pick the one with the highest resolution.
+ * Priority: pixel count (width * height), then file size as tiebreaker.
+ */
+function pickHighestResolution(matches: MatchResult[]): MatchResult {
+  if (matches.length === 1) return matches[0];
+
+  return matches.reduce((best, current) => {
+    const bestPixels = (best.width || 0) * (best.height || 0);
+    const currentPixels = (current.width || 0) * (current.height || 0);
+
+    // Prefer higher pixel count
+    if (currentPixels > bestPixels) return current;
+    if (currentPixels < bestPixels) return best;
+
+    // Same pixel count (or both unknown) — prefer larger file size
+    const bestSize = best.sizeBytes || 0;
+    const currentSize = current.sizeBytes || 0;
+    if (currentSize > bestSize) return current;
+
+    // Same everything — prefer higher confidence
+    const confOrder = { high: 3, medium: 2, low: 1 };
+    if (confOrder[current.confidence] > confOrder[best.confidence]) return current;
+
+    return best;
+  });
 }
 
 /**
@@ -190,11 +235,14 @@ Respond with ONLY a JSON object:
     }
 
     const matched = driveCandidates[matchedIndex - 1];
-    console.log(`[DriveMatcher] Matched! fileId=${matched.driveFileId} name="${matched.fileName}" confidence=${confidence}`);
+    console.log(`[DriveMatcher] Matched! fileId=${matched.driveFileId} name="${matched.fileName}" ${matched.width}x${matched.height} confidence=${confidence}`);
     return {
       matchedFileId: matched.driveFileId,
       fileName: matched.fileName,
       confidence,
+      width: matched.width,
+      height: matched.height,
+      sizeBytes: matched.sizeBytes,
     };
   } catch (err) {
     console.error("[DriveMatcher] Vision matching failed:", err);

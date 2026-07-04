@@ -383,3 +383,9 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Optimistic mutation with toast feedback
 - [x] Set autoPilot = true in DB (system is ON and fully autonomous)
 - [x] All 116 tests pass, 0 TypeScript errors
+
+## Prefer 4K Drive Originals (Jul 4)
+- [x] Refresh Drive index with video resolution metadata (width, height from Google Drive API)
+- [x] Update driveMatcher to return ALL visual matches (not just first), ranked by resolution
+- [x] drivePreprocess picks the highest-res version when multiple files match the same property
+- [x] Test + checkpoint (all 116 tests pass)
