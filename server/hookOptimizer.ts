@@ -124,10 +124,17 @@ export async function optimizeHook(
   brandLabel?: string
 ): Promise<OptimizeResult> {
   const original = caption ?? "";
-  const { body, tags } = splitHashtags(original);
+  const { body, cta: ctaBlock, tags } = splitHashtags(original);
   if (!body.trim()) return { caption: original, changed: false, reason: "empty-body" };
 
-  const cta = findCtaLine(body);
+  // CTA may have been extracted by splitHashtags into ctaBlock, or may still be
+  // embedded in body (e.g. mid-caption). Check both sources.
+  const ctaFromBody = findCtaLine(body);
+  const cta = ctaFromBody
+    ? ctaFromBody
+    : ctaBlock
+      ? { index: -1, line: ctaBlock.split("\n")[0] }
+      : null;
   const winners = await getWinningHooks(brandLabel);
 
   const winnerText = winners.length
@@ -213,8 +220,9 @@ export async function optimizeHook(
     return { caption: original, changed: false, reason: "too-short" };
   }
 
-  // Re-attach the ORIGINAL hashtag block verbatim.
-  const finalCaption = tags ? `${newBody.replace(/\s+$/, "")}\n\n${tags}` : newBody;
+  // Re-attach the ORIGINAL CTA block and hashtag block verbatim.
+  const suffix = [ctaBlock, tags].filter(Boolean).join("\n\n");
+  const finalCaption = suffix ? `${newBody.replace(/\s+$/, "")}\n\n${suffix}` : newBody;
 
   // Hashtags must be byte-identical to the original set.
   const before = hashtagSet(original);

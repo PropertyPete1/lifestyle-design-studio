@@ -26,7 +26,7 @@ for (const file of files) {
         if (post.media_type === 'VIDEO' && post.thumbnail_url && post.id) {
           allReels.push({
             igMediaId: post.id,
-            caption: (post.caption || '').slice(0, 500),
+            caption: post.caption || '',
             likes: post.like_count || 0,
             comments: post.comments_count || 0,
             shares: 0,

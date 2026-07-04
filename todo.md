@@ -389,3 +389,14 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Update driveMatcher to return ALL visual matches (not just first), ranked by resolution
 - [x] drivePreprocess picks the highest-res version when multiple files match the same property
 - [x] Test + checkpoint (all 116 tests pass)
+
+## Bug Fix: Caption Truncation — Missing CTA + Hashtags (Jul 4)
+- [x] Root cause: update_thumbnails.mjs had `.slice(0, 500)` truncating captions before DB insert
+- [x] Removed `.slice(0, 500)` from update_thumbnails.mjs
+- [x] Re-scraped all 180 reels from Instagram API with full captions (avg 1,326 chars, max 2,199 chars)
+- [x] Updated ig_reels table: 0 captions at exactly 500 chars, 179 over 500, 155 over 1,000
+- [x] Fixed captionRefresh.ts splitHashtags(): now properly extracts CTA lines (Comment/DM/FILL OUT/⬆️/⭐️ patterns) as separate `cta` field
+- [x] Fixed hookOptimizer.ts: uses new `cta` field from splitHashtags + re-attaches CTA block to final caption
+- [x] Regenerated today's 3 picks (SA, Austin, Dallas) with full captions including CTA + hashtags
+- [x] Verified: all 3 picks now have captions 1,500+ chars with hashtags (#veteran #military #texas #realestate) and CTA preserved
+- [x] All 120 tests passing (including 8 new captionRefresh tests + 16 hookOptimizer tests)

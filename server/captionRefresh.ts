@@ -3,15 +3,33 @@ import { invokeLLM } from "./_core/llm";
 const CAPTION_MODEL = "claude-haiku-4-5";
 
 /**
- * Split off the trailing hashtag block so it is never altered.
+ * Split off the trailing hashtag block AND call-to-action so they are never altered.
+ * CTA patterns: "Comment ...", "COMMENT ...", "DM ...", "text HOME to ...", "FILL OUT THE LINK IN BIO"
+ * Returns: { body, cta, tags } where cta+tags are preserved verbatim.
  */
-export function splitHashtags(caption: string): { body: string; tags: string } {
+export function splitHashtags(caption: string): { body: string; cta: string; tags: string } {
   const lines = caption.replace(/\s+$/, "").split("\n");
+  // Extract trailing hashtag lines
   const tagLines: string[] = [];
   while (lines.length && lines[lines.length - 1].trim().startsWith("#")) {
     tagLines.unshift(lines.pop() as string);
   }
-  return { body: lines.join("\n").replace(/\s+$/, ""), tags: tagLines.join("\n").trim() };
+  // Remove trailing empty lines between body and hashtags
+  while (lines.length && lines[lines.length - 1].trim() === "") {
+    lines.pop();
+  }
+  // Extract CTA lines (look for common CTA patterns in the remaining lines)
+  const ctaPatterns = /^\s*(comment|dm|text\s+home|fill\s+out\s+the\s+link|⬆️|⭐️)/i;
+  const ctaLines: string[] = [];
+  while (lines.length && (ctaPatterns.test(lines[lines.length - 1]) || lines[lines.length - 1].trim() === "")) {
+    const line = lines.pop() as string;
+    if (line.trim() !== "") ctaLines.unshift(line);
+  }
+  return {
+    body: lines.join("\n").replace(/\s+$/, ""),
+    cta: ctaLines.join("\n").trim(),
+    tags: tagLines.join("\n").trim(),
+  };
 }
 
 /**
@@ -22,7 +40,7 @@ export function splitHashtags(caption: string): { body: string; tags: string } {
  * anything unsafe (added hashtags, empty output).
  */
 export async function refreshCaption(caption: string): Promise<string> {
-  const { body, tags } = splitHashtags(caption || "");
+  const { body, cta, tags } = splitHashtags(caption || "");
   if (!body.trim()) return caption;
 
   try {
@@ -70,8 +88,9 @@ export async function refreshCaption(caption: string): Promise<string> {
       console.warn("[captionRefresh] LLM returned meta-response instead of rewrite, using original");
       return caption;
     }
-    // Re-attach the ORIGINAL hashtag block verbatim — hashtags are never altered.
-    return tags ? `${newBody.replace(/\s+$/, "")}\n\n${tags}` : newBody;
+    // Re-attach the ORIGINAL CTA + hashtag block verbatim — never altered.
+    const suffix = [cta, tags].filter(Boolean).join("\n\n");
+    return suffix ? `${newBody.replace(/\s+$/, "")}\n\n${suffix}` : newBody;
   } catch (err) {
     console.error("[captionRefresh] LLM failed, using original:", err);
     return caption;
