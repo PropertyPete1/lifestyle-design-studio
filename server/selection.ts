@@ -95,8 +95,9 @@ export function selectForCity(
  * - reels: that city's scraped reels, already sorted by engagementScore desc.
  * - lastPostByIgMediaId: map igMediaId -> last post time (ms).
  * - excludeIgMediaIds: ids already chosen today (avoid double-picking).
- * Rule: highest engagement with no post within NO_REPEAT_DAYS. If none qualify,
- * fall back to the least-recently posted (then highest engagement).
+ * Rule: highest engagement with no post within NO_REPEAT_DAYS AND original IG
+ * post date older than 30 days (audience already saw recent posts). If none
+ * qualify, fall back to the least-recently posted (then highest engagement).
  */
 export function selectReelForCity(
   reels: IgReel[],
@@ -110,12 +111,19 @@ export function selectReelForCity(
 
   const eligible = sorted.filter(r => {
     if (excludeIgMediaIds.has(r.igMediaId)) return false;
+    // Exclude reels originally posted on IG within 30 days (audience already saw them)
+    if (r.postedAt && r.postedAt > cutoff) return false;
     const last = lastPostByIgMediaId[r.igMediaId];
     return !last || last <= cutoff;
   });
   if (eligible.length) return { reel: eligible[0], mode: "fresh" };
 
-  const candidates = sorted.filter(r => !excludeIgMediaIds.has(r.igMediaId));
+  // Fallback: still exclude reels posted on IG within 30 days
+  const candidates = sorted.filter(r => {
+    if (excludeIgMediaIds.has(r.igMediaId)) return false;
+    if (r.postedAt && r.postedAt > cutoff) return false;
+    return true;
+  });
   if (!candidates.length) return null;
   candidates.sort((a, b) => {
     const la = lastPostByIgMediaId[a.igMediaId] ?? 0;

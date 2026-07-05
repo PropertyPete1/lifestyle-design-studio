@@ -400,3 +400,11 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Regenerated today's 3 picks (SA, Austin, Dallas) with full captions including CTA + hashtags
 - [x] Verified: all 3 picks now have captions 1,500+ chars with hashtags (#veteran #military #texas #realestate) and CTA preserved
 - [x] All 120 tests passing (including 8 new captionRefresh tests + 16 hookOptimizer tests)
+
+## Bug Fix: SA Pick Violating 30-Day Rule — Original Post Date (Jul 4)
+- [x] Root cause: selection logic only checked repost history, not the reel's original IG post date
+- [x] Video 18 (postId 18107071295064920) was originally posted on IG June 19 (15 days ago) — audience already saw it
+- [x] Fix: selectReelForCity now also excludes reels whose `postedAt` (original IG post date) is within 30 days
+- [x] 99 of 129 SA reels are older than 30 days — plenty of eligible content
+- [x] Deleted bad SA pick + repost, regenerated: new SA pick is video 25 (posted May 1, 64 days ago, 2,880 views)
+- [x] All 120 tests passing
