@@ -420,7 +420,7 @@ export async function generatePicksHandler(req: Request, res: Response) {
         const voiceoverJobs = [];
         for (const pick of picks) {
           // Only start if no existing job and pick has a Drive original
-          const existingJob = await db.getVoiceoverJob(pick.id);
+          const existingJob = await db.getVoiceoverJobByPickId(pick.id);
           if (!existingJob && pick.driveVideoUrl) {
             try {
               const result = await processFullVoiceover(pick.id);

@@ -487,3 +487,11 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] publishNowHandler saves compression metadata to repost row after successful publish
 - [x] HistoryPage UI shows amber badge with file size + CRF value for compressed videos
 - [x] All 121 tests passing, 0 TypeScript errors
+
+## Voiceover Pipeline Preflight Check (Jul 5)
+- [x] Bug fix: generatePicksHandler used getVoiceoverJob(pick.id) instead of getVoiceoverJobByPickId(pick.id) — would create duplicate jobs on re-runs
+- [x] ElevenLabs API verified: Creator tier, 119,337 chars remaining, Peters Pro Voice accessible
+- [x] Auto-Pilot ON, Auto-Voiceover ON (defaults to true)
+- [x] ffmpeg 6.1.1 with libass/subtitles/libx264/aac — all codecs present
+- [x] Production endpoints reachable and auth-gated
+- [x] All 121 tests passing after bug fix
