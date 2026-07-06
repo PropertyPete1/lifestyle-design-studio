@@ -1,4 +1,4 @@
-import { bigint, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { bigint, decimal, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -70,6 +70,10 @@ export const reposts = mysqlTable("reposts", {
   igMediaId: varchar("igMediaId", { length: 32 }),
   /** Error detail if a publish attempt failed. */
   publishError: text("publishError"),
+  /** Final compressed file size in MB (null if no compression needed). */
+  compressedFileSizeMb: decimal("compressedFileSizeMb", { precision: 6, scale: 2 }),
+  /** CRF value used for compression (null if no compression). */
+  crfValue: int("crfValue"),
 });
 
 export type Repost = typeof reposts.$inferSelect;

@@ -308,7 +308,13 @@ export async function publishNowHandler(req: Request, res: Response) {
 
     if (result.ok) {
       const metricoolPostId = result.postId ? String(result.postId) : undefined;
-      if (repostId) await db.markRepostPosted(repostId, metricoolPostId);
+      if (repostId) {
+        await db.markRepostPosted(repostId, metricoolPostId);
+        // Save compression metadata if video was compressed
+        if (result.compression) {
+          await db.updateRepostCompression(repostId, result.compression.fileSizeMb, result.compression.crfValue);
+        }
+      }
       await db.updateDailyPick(pickId, { status: "posted" });
       return res.json({
         ok: true,

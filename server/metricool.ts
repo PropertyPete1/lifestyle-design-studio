@@ -210,6 +210,8 @@ export interface CreatePostResult {
   raw?: unknown;
   /** Human-readable list of the networks this post was sent to, e.g. "Instagram, TikTok, YouTube, LinkedIn". */
   platforms?: string;
+  /** Compression metadata (set when video was compressed to fit Metricool limit). */
+  compression?: { fileSizeMb: number; crfValue: number };
 }
 
 /**
@@ -300,6 +302,7 @@ export async function createScheduledPost(opts: CreatePostOptions): Promise<Crea
 
   // Download the source bytes ONCE and reuse across brand uploads.
   let prefetched: { buf: Buffer; sha256b64: string } | undefined;
+  let compressionMeta: { fileSizeMb: number; crfValue: number } | undefined;
   try {
     const dl = await fetch(videoUrl);
     if (!dl.ok) throw new Error(`source download failed (${dl.status})`);
@@ -310,8 +313,14 @@ export async function createScheduledPost(opts: CreatePostOptions): Promise<Crea
     const MAX_UPLOAD_BYTES = 95 * 1024 * 1024; // 95MB safety margin
     if (buf.length > MAX_UPLOAD_BYTES) {
       console.log(`[Metricool] Video is ${(buf.length / 1024 / 1024).toFixed(1)} MB — compressing to fit 100MB limit while keeping 4K...`);
-      buf = await compressVideoToFit(buf, MAX_UPLOAD_BYTES) as Buffer;
-      console.log(`[Metricool] Compressed to ${(buf.length / 1024 / 1024).toFixed(1)} MB`);
+      const result = await compressVideoToFit(buf, MAX_UPLOAD_BYTES);
+      if (result) {
+        buf = result.buffer;
+        compressionMeta = { fileSizeMb: result.fileSizeMb, crfValue: result.crfValue };
+        console.log(`[Metricool] Compressed to ${result.fileSizeMb} MB (CRF ${result.crfValue})`);
+      } else {
+        console.warn(`[Metricool] Compression failed, proceeding with original`);
+      }
     }
 
     prefetched = { buf, sha256b64: crypto.createHash("sha256").update(buf).digest("base64") };
@@ -345,6 +354,7 @@ export async function createScheduledPost(opts: CreatePostOptions): Promise<Crea
     error: anyOk ? undefined : `All brands failed. ${summary}`,
     platforms: summary,
     raw: results,
+    compression: compressionMeta,
   };
 }
 
@@ -539,7 +549,8 @@ export async function publishLinkedinText(opts: {
  * Uses ffmpeg with h264 encoding at progressively higher CRF until it fits.
  * Falls back to the original buffer if ffmpeg is unavailable or all attempts fail.
  */
-async function compressVideoToFit(source: Buffer, maxBytes: number): Promise<Buffer> {
+export interface CompressionResult { buffer: Buffer; fileSizeMb: number; crfValue: number }
+async function compressVideoToFit(source: Buffer, maxBytes: number): Promise<CompressionResult | null> {
   const tmpDir = "/tmp/metricool-compress";
   if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
 
@@ -564,11 +575,12 @@ async function compressVideoToFit(source: Buffer, maxBytes: number): Promise<Buf
       if (existsSync(outputPath)) {
         const compressed = readFileSync(outputPath);
         if (compressed.length > 1024 && compressed.length <= maxBytes) {
-          console.log(`[Metricool] Compression succeeded at CRF ${crf}: ${(compressed.length / 1024 / 1024).toFixed(1)} MB`);
+          const fileSizeMb = parseFloat((compressed.length / 1024 / 1024).toFixed(2));
+          console.log(`[Metricool] Compression succeeded at CRF ${crf}: ${fileSizeMb} MB`);
           // Cleanup
           try { unlinkSync(inputPath); } catch {}
           try { unlinkSync(outputPath); } catch {}
-          return compressed;
+          return { buffer: compressed, fileSizeMb, crfValue: crf };
         }
         console.log(`[Metricool] CRF ${crf} produced ${(compressed.length / 1024 / 1024).toFixed(1)} MB — still too large, trying higher CRF...`);
       }
@@ -581,7 +593,7 @@ async function compressVideoToFit(source: Buffer, maxBytes: number): Promise<Buf
   try { unlinkSync(inputPath); } catch {}
   try { unlinkSync(outputPath); } catch {}
 
-  // If all CRF attempts failed, return original (will likely fail at Metricool but at least we tried)
+  // If all CRF attempts failed, return null
   console.error(`[Metricool] All compression attempts failed — returning original ${(source.length / 1024 / 1024).toFixed(1)} MB`);
-  return source;
+  return null;
 }

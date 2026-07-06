@@ -1,7 +1,7 @@
 import StatusBadge from "@/components/StatusBadge";
 import { CITY_LABEL, formatDateNice, formatViews } from "@/lib/format";
 import { trpc } from "@/lib/trpc";
-import { Eye, MapPin } from "lucide-react";
+import { Eye, FileVideo, MapPin } from "lucide-react";
 
 export default function HistoryPage() {
   const { data, isLoading } = trpc.history.list.useQuery();
@@ -45,11 +45,18 @@ export default function HistoryPage() {
                   <MapPin className="h-3.5 w-3.5 text-primary" />
                   <span className="font-medium">{CITY_LABEL[r.city]}</span>
                 </div>
-                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                   <span className="whitespace-nowrap">{formatDateNice((r.scheduledFor as number) || r.confirmedAt)}</span>
                   <span className="flex items-center gap-1">
                     <Eye className="h-3 w-3" /> {formatViews(r.viewsAtRepost)}
                   </span>
+                  {r.compressedFileSizeMb && (
+                    <span className="flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-amber-400">
+                      <FileVideo className="h-3 w-3" />
+                      {r.compressedFileSizeMb} MB
+                      {r.crfValue && <span className="opacity-70">· CRF {r.crfValue}</span>}
+                    </span>
+                  )}
                 </div>
               </div>
               <StatusBadge status={r.status as "confirmed" | "posted" | "failed"} />

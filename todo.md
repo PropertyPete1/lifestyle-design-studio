@@ -479,3 +479,11 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Make pipeline fully automatic: script → TTS → render → auto-approve (no manual step)
 - [x] Add "Auto Voiceover" toggle to dashboard UI (next to Auto-Pilot toggle)
 - [x] Show voiceover status on pick cards even when auto mode is on
+## Reposts UI: Compression Metadata Display (Jul 6)
+- [x] Added compressedFileSizeMb and crfValue columns to reposts table
+- [x] Migration applied (0012_chubby_ghost_rider.sql)
+- [x] updateRepostCompression() DB helper added
+- [x] createScheduledPost returns compression metadata (fileSizeMb, crfValue) when video was compressed
+- [x] publishNowHandler saves compression metadata to repost row after successful publish
+- [x] HistoryPage UI shows amber badge with file size + CRF value for compressed videos
+- [x] All 121 tests passing, 0 TypeScript errors

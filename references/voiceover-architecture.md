@@ -1,51 +1,31 @@
 # Voiceover Pipeline Architecture
 
-## Files Created
-- `server/elevenlabs.ts` — ElevenLabs TTS service (voice ID: ymv1q5WLElzdmrHdtgsw "Peters pro voice", model: eleven_multilingual_v2)
-- `server/voiceoverAudioIntel.ts` — Audio intelligence (speech vs music detection via ffprobe)
-- `server/voiceoverScript.ts` — LLM script generation (paced to video duration, ~2.45 wps)
-- `server/voiceoverRender.ts` — Full render pipeline (TTS → atempo → assembly → captions → LUFS)
-- `server/elevenlabs.test.ts` — API key validation test
+## Files
+- `server/voiceoverPipeline.ts` — Main orchestrator: processFullVoiceover(pickId)
+- `server/voiceoverAudioIntel.ts` — Audio detection: analyzeSourceAudio(videoPath) → { audioType: "speech"|"music_only"|"silent"|"unknown", confidence, details, durationSec }
+- `server/voiceoverScript.ts` — Script gen: generateVoiceoverScript({ videoDurationSec, caption, city, audioType }) → { script, wordCount, estimatedDurationSec, wordsPerSecond }
+- `server/elevenlabs.ts` — TTS: generateSpeech(text, opts?) → { audio: Buffer, charactersUsed }; generateSpeechWithTimestamps(text, opts?) → { audio, charactersUsed, alignment: { words, wordStartTimesMs, wordEndTimesMs } }; getVoiceId() → "ymv1q5WLElzdmrHdtgsw" (Peters pro voice)
+- `server/voiceoverRender.ts` — Full render: renderVoiceover({ sourceVideoPath, script, originalAudioMode, jobId }) → { outputPath, audioDurationSec, videoDurationSec, durationMismatchPct, atempoApplied, charactersUsed, audioStorageKey }
+- `server/scheduledPublish.ts` — generatePicksHandler auto-starts voiceover; publishNowHandler uses rendered video if approved
 
-## DB Tables (applied via migration 0011)
-- `voiceover_jobs` — pickId, reelId, city, status (detecting→scripting→pending_approval→generating_audio→duration_mismatch→rendering→preview_ready→approved→failed), audioType, originalAudioMode (duck/mute), videoDurationSec, script, voiceId, charactersUsed, audioDurationSec, durationMismatchPct, audioStorageKey, renderedVideoStorageKey, driveRenderedFileId, errorMessage
-- `voiceover_budget` — month (YYYY-MM), charactersUsed, budgetLimit (default 100000)
+## DB Tables
+- `voiceover_jobs` — pickId, city, status (detecting|scripting|generating_audio|rendering|approved|failed|pending_approval|duration_mismatch|preview_ready), script, audioType, originalAudioMode, audioDurationSec, durationMismatchPct, charactersUsed, renderedVideoStorageKey, errorMessage
+- `voiceover_budget` — month, charactersUsed, characterLimit (100000), jobId
 
-## DB Helpers Added to db.ts
-- insertVoiceoverJob, getVoiceoverJobByPickId, getVoiceoverJob, updateVoiceoverJob, getRecentVoiceoverJobs
-- getOrCreateBudget, addCharacterUsage, updateBudgetLimit
+## Flow (FULLY AUTOMATIC)
+1. generatePicksHandler → checks autoVoiceover setting (default ON)
+2. For each pick with driveVideoUrl → processFullVoiceover(pickId)
+3. Pipeline: download video → analyzeSourceAudio → generateVoiceoverScript → renderVoiceover (which does TTS + duration match + assembly + captions) → upload to S3 → auto-approve
+4. publishNowHandler → checks voiceover job status → if approved, uses renderedVideoStorageKey instead of Drive original
 
-## Still TODO (Phase 4 & 5)
-1. Add voiceover tRPC router procedures to routers.ts:
-   - voiceover.startJob (creates job, triggers detection + scripting)
-   - voiceover.getJob (get job status/details by pickId)
-   - voiceover.approveScript (approve script, trigger TTS + render)
-   - voiceover.updateScript (edit script before approval)
-   - voiceover.regenerateScript (re-run LLM)
-   - voiceover.regenerateAudio (re-run TTS with approved script)
-   - voiceover.approveVideo (mark rendered video as final)
-   - voiceover.budget (get current month budget)
+## UI (COMPLETED)
+- AutoVoiceoverToggle (violet, next to AutoPilotToggle in header)
+- VoiceoverPanel per pick card (shows status, script, audio type)
+- VoiceoverBudget meter (monthly chars used/limit)
 
-2. Dashboard UI additions to Home.tsx PickCard:
-   - Voiceover toggle ("Add Peter voiceover" on/off)
-   - Script editor panel (shows when voiceover enabled)
-   - Status indicator (detecting → scripting → pending_approval → etc)
-   - Approve script button
-   - Video preview (rendered video player)
-   - Regenerate buttons (script / audio)
-   - Duration mismatch warning
-   - Budget meter (monthly characters used/limit)
+## Settings
+- `autoVoiceover` in settings table (default "true" if null)
+- tRPC: settings.getAutoVoiceover / settings.setAutoVoiceover
 
-3. Pipeline integration:
-   - When voiceover is approved, use rendered video URL instead of Drive original for Metricool posting
-   - Upload rendered video to Drive "Rendered - Voiceover" folder
-   - Character usage tracking per job
-   - Nothing posts automatically — human approval required for voiceover
-
-## Key Design Decisions
-- Voiceover is OPT-IN per pick (toggle, default OFF)
-- Original audio mode: "duck" (15-20% volume) or "mute" (replace entirely)
-- Caption style: bold, white text, black outline, centered lower-third, safe-zone aware
-- Duration tolerance: ±5% with atempo adjustment
-- Budget: 100k chars/month default, warn at 80%, pause at 100%
-- Rendered video saved to S3 + Drive "Rendered - Voiceover" folder
+## User's Remaining Request
+- Update reposts table UI to display final compressed file size and CRF value used

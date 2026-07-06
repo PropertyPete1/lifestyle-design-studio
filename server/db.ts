@@ -181,6 +181,15 @@ export async function markRepostPosted(repostId: number, igMediaId?: string) {
     .where(eq(reposts.id, repostId));
 }
 
+export async function updateRepostCompression(repostId: number, fileSizeMb: number, crfValue: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(reposts)
+    .set({ compressedFileSizeMb: String(fileSizeMb), crfValue })
+    .where(eq(reposts.id, repostId));
+}
+
 export async function markRepostFailed(repostId: number, error: string) {
   const db = await getDb();
   if (!db) return;
