@@ -7,13 +7,17 @@
  * 3. Video assembly: voiceover + ducked/muted original audio
  * 4. Loudness normalization to -14 LUFS
  * 5. Caption burn-in (word-by-word, bold, centered lower-third)
+ *
+ * Uses @ffmpeg-installer/ffmpeg and @ffprobe-installer/ffprobe npm packages
+ * so this works in production (Cloud Run, Node-only) without system ffmpeg.
  */
 
-import { execSync, exec } from "child_process";
+import { execSync } from "child_process";
 import { writeFileSync, readFileSync, unlinkSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 import { generateSpeechWithTimestamps } from "./elevenlabs";
 import { storagePut } from "./storage";
+import { getFFmpegPath, getFFprobePath } from "./ffmpegPaths";
 
 const WORK_DIR = "/tmp/voiceover-render";
 const LUFS_TARGET = -14;
@@ -58,12 +62,18 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
   const { sourceVideoPath, script, originalAudioMode, jobId } = options;
   const prefix = join(WORK_DIR, `job_${jobId}`);
 
+  // Resolve binary paths from npm packages
+  const FFMPEG = getFFmpegPath();
+  const FFPROBE = getFFprobePath();
+  console.log(`[VoRender] Using ffmpeg: ${FFMPEG}`);
+  console.log(`[VoRender] Using ffprobe: ${FFPROBE}`);
+
   // Clean up any previous attempt
   cleanupJobFiles(prefix);
 
   try {
     // Step 1: Get video duration
-    const videoDurationSec = getMediaDuration(sourceVideoPath);
+    const videoDurationSec = getMediaDuration(sourceVideoPath, FFPROBE);
     console.log(`[VoRender] Video duration: ${videoDurationSec}s`);
 
     // Step 2: Generate TTS with timestamps
@@ -74,7 +84,7 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
     console.log(`[VoRender] TTS generated: ${audio.length} bytes`);
 
     // Step 3: Check audio duration and apply atempo if needed
-    const rawAudioDuration = getMediaDuration(audioPath);
+    const rawAudioDuration = getMediaDuration(audioPath, FFPROBE);
     console.log(`[VoRender] Raw audio duration: ${rawAudioDuration}s vs video: ${videoDurationSec}s`);
 
     const durationRatio = rawAudioDuration / videoDurationSec;
@@ -89,7 +99,7 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
       const atempoValue = Math.max(ATEMPO_MIN, Math.min(ATEMPO_MAX, durationRatio));
       finalAudioPath = `${prefix}_tempo.mp3`;
       execSync(
-        `ffmpeg -y -i "${audioPath}" -filter:a "atempo=${atempoValue}" "${finalAudioPath}"`,
+        `"${FFMPEG}" -y -i "${audioPath}" -filter:a "atempo=${atempoValue}" "${finalAudioPath}"`,
         { timeout: 60000 }
       );
       atempoApplied = true;
@@ -98,14 +108,14 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
       const atempoValue = durationRatio;
       finalAudioPath = `${prefix}_tempo.mp3`;
       execSync(
-        `ffmpeg -y -i "${audioPath}" -filter:a "atempo=${atempoValue}" "${finalAudioPath}"`,
+        `"${FFMPEG}" -y -i "${audioPath}" -filter:a "atempo=${atempoValue}" "${finalAudioPath}"`,
         { timeout: 60000 }
       );
       atempoApplied = true;
       console.log(`[VoRender] Applied atempo=${atempoValue.toFixed(4)}`);
     }
 
-    const finalAudioDuration = getMediaDuration(finalAudioPath);
+    const finalAudioDuration = getMediaDuration(finalAudioPath, FFPROBE);
 
     // Step 4: Generate SRT captions from word timestamps
     const srtPath = `${prefix}_captions.srt`;
@@ -119,6 +129,7 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
       srtPath,
       outputPath,
       originalAudioMode,
+      ffmpegPath: FFMPEG,
     });
     console.log(`[VoRender] Final video assembled: ${outputPath}`);
 
@@ -207,8 +218,9 @@ function assembleVideo(opts: {
   srtPath: string;
   outputPath: string;
   originalAudioMode: "duck" | "mute";
+  ffmpegPath: string;
 }): void {
-  const { sourceVideoPath, voiceoverAudioPath, srtPath, outputPath, originalAudioMode } = opts;
+  const { sourceVideoPath, voiceoverAudioPath, srtPath, outputPath, originalAudioMode, ffmpegPath } = opts;
 
   // Build the ffmpeg filter chain
   let audioFilter: string;
@@ -238,7 +250,7 @@ function assembleVideo(opts: {
   if (existsSync(srtPath) && readFileSync(srtPath, "utf-8").trim().length > 0) {
     // With captions
     cmd = [
-      `ffmpeg -y -i "${sourceVideoPath}" -i "${voiceoverAudioPath}"`,
+      `"${ffmpegPath}" -y -i "${sourceVideoPath}" -i "${voiceoverAudioPath}"`,
       `-filter_complex "${audioFilter}"`,
       `-vf "subtitles='${escapedSrtPath}':force_style='${subtitleStyle}'"`,
       `-map 0:v -map "${audioOutput}"`,
@@ -249,7 +261,7 @@ function assembleVideo(opts: {
   } else {
     // Without captions (fallback if SRT is empty)
     cmd = [
-      `ffmpeg -y -i "${sourceVideoPath}" -i "${voiceoverAudioPath}"`,
+      `"${ffmpegPath}" -y -i "${sourceVideoPath}" -i "${voiceoverAudioPath}"`,
       `-filter_complex "${audioFilter}"`,
       `-map 0:v -map "${audioOutput}"`,
       `-c:v libx264 -preset medium -crf 18 -c:a aac -b:a 192k`,
@@ -265,9 +277,9 @@ function assembleVideo(opts: {
 /**
  * Get media file duration in seconds.
  */
-function getMediaDuration(filePath: string): number {
+function getMediaDuration(filePath: string, ffprobePath: string): number {
   const result = execSync(
-    `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
+    `"${ffprobePath}" -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
     { encoding: "utf-8", timeout: 15000 }
   ).trim();
   return Math.round(parseFloat(result));

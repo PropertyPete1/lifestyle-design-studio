@@ -13,6 +13,7 @@
  */
 
 import { execSync } from "child_process";
+import { getFFmpegPath, getFFprobePath } from "./ffmpegPaths";
 
 export type AudioType = "speech" | "music_only" | "silent" | "unknown";
 
@@ -29,10 +30,13 @@ interface AudioAnalysis {
  * to characterize the audio content.
  */
 export async function analyzeSourceAudio(videoPath: string): Promise<AudioAnalysis> {
+  const FFMPEG = getFFmpegPath();
+  const FFPROBE = getFFprobePath();
+
   try {
     // Step 1: Get video duration and audio stream info
     const probeResult = execSync(
-      `ffprobe -v quiet -print_format json -show_streams -show_format "${videoPath}"`,
+      `"${FFPROBE}" -v quiet -print_format json -show_streams -show_format "${videoPath}"`,
       { encoding: "utf-8", timeout: 30000 }
     );
     const probe = JSON.parse(probeResult);
@@ -45,7 +49,7 @@ export async function analyzeSourceAudio(videoPath: string): Promise<AudioAnalys
 
     // Step 2: Analyze audio volume levels
     const volumeResult = execSync(
-      `ffmpeg -i "${videoPath}" -af "volumedetect" -f null /dev/null 2>&1 | grep -E "mean_volume|max_volume"`,
+      `"${FFMPEG}" -i "${videoPath}" -af "volumedetect" -f null /dev/null 2>&1 | grep -E "mean_volume|max_volume"`,
       { encoding: "utf-8", timeout: 60000 }
     );
 
@@ -63,7 +67,7 @@ export async function analyzeSourceAudio(videoPath: string): Promise<AudioAnalys
     // Speech has energy concentrated in 300Hz-3400Hz range
     // Music tends to have broader spectral distribution
     const spectralResult = execSync(
-      `ffmpeg -i "${videoPath}" -af "asplit[a][b];[a]highpass=f=300,lowpass=f=3400,volumedetect[speech];[b]volumedetect[full]" -map "[speech]" -f null /dev/null 2>&1 | grep "mean_volume"`,
+      `"${FFMPEG}" -i "${videoPath}" -af "asplit[a][b];[a]highpass=f=300,lowpass=f=3400,volumedetect[speech];[b]volumedetect[full]" -map "[speech]" -f null /dev/null 2>&1 | grep "mean_volume"`,
       { encoding: "utf-8", timeout: 60000 }
     ).trim();
 
@@ -78,7 +82,7 @@ export async function analyzeSourceAudio(videoPath: string): Promise<AudioAnalys
     let silenceCount = 0;
     try {
       const silenceResult = execSync(
-        `ffmpeg -i "${videoPath}" -af "silencedetect=noise=-30dB:d=0.3" -f null /dev/null 2>&1 | grep -c "silence_start"`,
+        `"${FFMPEG}" -i "${videoPath}" -af "silencedetect=noise=-30dB:d=0.3" -f null /dev/null 2>&1 | grep -c "silence_start"`,
         { encoding: "utf-8", timeout: 60000 }
       ).trim();
       silenceCount = parseInt(silenceResult, 10) || 0;
@@ -134,9 +138,10 @@ export async function analyzeSourceAudio(videoPath: string): Promise<AudioAnalys
  * Get video duration in seconds using ffprobe.
  */
 export function getVideoDuration(videoPath: string): number {
+  const FFPROBE = getFFprobePath();
   try {
     const result = execSync(
-      `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${videoPath}"`,
+      `"${FFPROBE}" -v quiet -show_entries format=duration -of csv=p=0 "${videoPath}"`,
       { encoding: "utf-8", timeout: 15000 }
     ).trim();
     return Math.round(parseFloat(result));

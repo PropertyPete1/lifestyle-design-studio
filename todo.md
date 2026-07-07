@@ -518,4 +518,13 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Root cause: publishNow called preprocessDriveOriginals() which has a retry-with-swap loop (up to 10 attempts). When the AI vision matcher couldn't find the exact Drive file for the Austin reel, it swapped the pick to a different reel entirely — posting the wrong house video.
 - [x] Fix: Created preprocessSinglePick() — a no-swap version that only tries to match the current pick's reel. If it can't find the Drive file, it fails (no swap). Swapping is only allowed during the morning generation job.
 - [x] publishNow now calls preprocessSinglePick(pick) instead of preprocessDriveOriginals() for its Drive retry
+- [x] Checkpoint + deploy (25a3ac26)
+
+## FIX: Voiceover pipeline for production (Jul 7)
+- [x] Install @ffmpeg-installer/ffmpeg + fluent-ffmpeg npm packages
+- [x] Fix voiceoverRender.ts to use npm ffmpeg binary instead of system ffmpeg
+- [x] Enable autoVoiceover setting in database (already defaults ON when null)
+- [x] Test ElevenLabs TTS generates audio with Peters pro voice
+- [x] Test ffmpeg combines video + voiceover audio successfully
+- [x] Verify voiceover integrates into publishNow flow (already wired at line 274-288)
 - [ ] Checkpoint + deploy
