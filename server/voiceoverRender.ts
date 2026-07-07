@@ -242,9 +242,9 @@ function assembleVideo(opts: {
 
   const audioOutput = originalAudioMode === "mute" ? "[vo]" : "[mixed]";
 
-  // Caption style: bold, white text, black outline, centered lower-third
-  // Safe-zone aware (margin from bottom)
-  const subtitleStyle = "FontName=Arial,FontSize=22,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,Alignment=2,MarginV=80";
+  // Caption style: bold, white text, black outline, top-center
+  // Alignment=8 = top-center, smaller font so it doesn't cover city name
+  const subtitleStyle = "FontName=Arial,FontSize=16,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,Alignment=8,MarginV=60";
 
   // Escape the SRT path for ffmpeg (handle special characters)
   const escapedSrtPath = srtPath.replace(/'/g, "'\\''").replace(/:/g, "\\:");

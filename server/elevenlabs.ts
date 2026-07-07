@@ -63,9 +63,9 @@ export async function generateSpeech(
       text,
       model_id: MODEL_ID,
       voice_settings: {
-        stability: options?.stability ?? 0.5,
+        stability: options?.stability ?? 0.35,
         similarity_boost: options?.similarityBoost ?? 0.75,
-        style: options?.style ?? 0.3,
+        style: options?.style ?? 0.7,
         use_speaker_boost: true,
       },
     }),
@@ -135,9 +135,9 @@ export async function generateSpeechWithTimestamps(
       text,
       model_id: MODEL_ID,
       voice_settings: {
-        stability: options?.stability ?? 0.5,
+        stability: options?.stability ?? 0.35,
         similarity_boost: options?.similarityBoost ?? 0.75,
-        style: options?.style ?? 0.3,
+        style: options?.style ?? 0.7,
         use_speaker_boost: true,
       },
     }),

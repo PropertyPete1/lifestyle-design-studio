@@ -534,7 +534,7 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Fix getVoiceoverJobByPickId to prefer latest approved job (not first/failed)
 - [x] Fix voiceoverPipeline to resolve storage keys to signed URLs before downloading
 - [x] End-to-end test: Austin video posted with Peters pro voice voiceover (Metricool ID: 346714823)
-- [ ] Checkpoint + deploy
+- [x] Checkpoint + deploy
 
 ## BUG: Voiceover script reads stage directions aloud (Jul 7)
 - [x] Fix script generator: stripped all [bracket] delivery tags from prompt output
@@ -549,3 +549,11 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Root cause: AI Drive matcher picked wrong file, thumbnail was from correct reel but video was wrong
 - [x] Fix: skip custom thumbnail entirely — let Instagram/TikTok/YouTube auto-generate cover from video itself
 - [x] Removed all thumbnail resolution logic from publishNow, always passes thumbnailUrl: null
+
+## FIX: Re-post Austin with corrected voiceover pipeline (Jul 7)
+- [x] Fixed generateVoiceoverScript return type (returns {script, wordCount, ...} object, not plain string)
+- [x] Fixed function signature (requires videoDurationSec + audioType, not thumbnailUrl)
+- [x] Fixed JWT auth for publishNow (needs appId field in payload)
+- [x] Full pipeline: audio analysis → script gen → ElevenLabs TTS → ffmpeg render → S3 upload → publishNow
+- [x] Austin video posted with corrected voiceover (Metricool ID: 346721174, job 90001, 1320 chars)
+- [x] Posted to: Instagram, TikTok, YouTube (LinkedIn excluded by design) across all brands
