@@ -18,6 +18,7 @@ import { join } from "path";
 import { generateSpeechWithTimestamps } from "./elevenlabs";
 import { storagePut } from "./storage";
 import { getFFmpegPath, getFFprobePath } from "./ffmpegPaths";
+import { stripDeliveryTags } from "./voiceoverScript";
 
 const WORK_DIR = "/tmp/voiceover-render";
 const LUFS_TARGET = -14;
@@ -77,8 +78,10 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
     console.log(`[VoRender] Video duration: ${videoDurationSec}s`);
 
     // Step 2: Generate TTS with timestamps
-    console.log(`[VoRender] Generating TTS (${script.length} chars)...`);
-    const { audio, charactersUsed, alignment } = await generateSpeechWithTimestamps(script);
+    // Safety net: strip any bracket tags that slipped through script generation
+    const cleanScript = stripDeliveryTags(script);
+    console.log(`[VoRender] Generating TTS (${cleanScript.length} chars)...`);
+    const { audio, charactersUsed, alignment } = await generateSpeechWithTimestamps(cleanScript);
     const audioPath = `${prefix}_tts.mp3`;
     writeFileSync(audioPath, audio);
     console.log(`[VoRender] TTS generated: ${audio.length} bytes`);

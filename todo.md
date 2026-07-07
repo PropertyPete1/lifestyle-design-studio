@@ -535,3 +535,17 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Fix voiceoverPipeline to resolve storage keys to signed URLs before downloading
 - [x] End-to-end test: Austin video posted with Peters pro voice voiceover (Metricool ID: 346714823)
 - [ ] Checkpoint + deploy
+
+## BUG: Voiceover script reads stage directions aloud (Jul 7)
+- [x] Fix script generator: stripped all [bracket] delivery tags from prompt output
+- [x] Script now outputs ONLY words to be spoken — no parenthetical directions, no emotion labels
+- [x] Added stripDeliveryTags() safety net in voiceoverRender.ts before sending to ElevenLabs
+- [x] ElevenLabs naturally handles inflection via Peters pro voice clone (no SSML needed)
+
+## BUG: Voiceover video only posts to some platforms (Jul 7)
+- [x] User confirmed: video DID post to all platforms — was a false alarm
+
+## BUG: Thumbnail mismatch — cover shows different house than video (Jul 7)
+- [x] Root cause: AI Drive matcher picked wrong file, thumbnail was from correct reel but video was wrong
+- [x] Fix: skip custom thumbnail entirely — let Instagram/TikTok/YouTube auto-generate cover from video itself
+- [x] Removed all thumbnail resolution logic from publishNow, always passes thumbnailUrl: null

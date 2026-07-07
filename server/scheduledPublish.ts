@@ -293,27 +293,14 @@ export async function publishNowHandler(req: Request, res: Response) {
     // America/Chicago (NOT a UTC ISO string), or the post is scheduled ~5h late.
     const publishAt = chicagoLocalDateTime(Date.now() + 90_000); // "YYYY-MM-DDTHH:MM:SS"
 
-    // Resolve thumbnail to a full public URL (Metricool can't fetch relative paths).
-    // If we can't get a signed URL, just omit it — Metricool will auto-generate one.
-    let resolvedThumbnailUrl: string | null = null;
-    try {
-      const thumbKey = thumbnailUrl || (reel?.thumbnailStorageKey ?? null);
-      if (thumbKey && !thumbKey.startsWith("http")) {
-        // It's a storage key — get a signed public URL
-        resolvedThumbnailUrl = await storageGetSignedUrl(thumbKey);
-      } else if (thumbKey?.startsWith("http")) {
-        resolvedThumbnailUrl = thumbKey;
-      }
-    } catch (thumbErr) {
-      console.warn(`[publishNow] Could not resolve thumbnail URL, omitting:`, thumbErr);
-    }
-
+    // No custom thumbnail — let Instagram/TikTok/YouTube auto-generate the cover
+    // from the video itself. This ensures the cover always matches the actual video.
     const result = await createScheduledPost({
       videoUrl: mediaUrl,
       caption,
       publishAt,
       timezone: "America/Chicago",
-      thumbnailUrl: resolvedThumbnailUrl,
+      thumbnailUrl: null,
     });
 
     if (result.ok) {
