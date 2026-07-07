@@ -252,8 +252,11 @@ export async function updateDailyPick(id: number, set: Partial<InsertDailyPick>)
 export async function claimPickForPublishing(pickId: number): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
+  // Use a sentinel driveMatchConfidence value 'claiming' as an atomic lock flag
+  // since 'publishing' is not in the status enum. We check that driveMatchConfidence
+  // is NOT 'claiming' to prevent concurrent publishes.
   const result = await db.execute(
-    sql`UPDATE daily_picks SET status = 'publishing' WHERE id = ${pickId} AND status = 'confirmed'`
+    sql`UPDATE daily_picks SET driveMatchConfidence = 'claiming' WHERE id = ${pickId} AND status = 'confirmed' AND (driveMatchConfidence IS NULL OR driveMatchConfidence != 'claiming')`
   );
   // mysql2 returns [ResultSetHeader, ...] where affectedRows tells us if the row was updated
   const header = Array.isArray(result) ? result[0] : result;
