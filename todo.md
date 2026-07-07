@@ -563,3 +563,10 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Captions: center horizontally and position higher on screen (switched from SRT to ASS format for reliable positioning)
 - [x] Video quality: preserve original brightness/color — CRF 16 + bt709 colorspace + pix_fmt yuv420p (no brightness shift)
 - [x] Test render and verify visually (captions confirmed at top-center, brightness matches original)
+
+## FIX: Voiceover quality + caption sync + position (Jul 7)
+- [x] Voice too monotone/robotic: stability 0.25, style 0.90, similarity_boost 0.60 (was 0.35/0.70/0.75)
+- [x] Captions synced to voice: timeScale = 1/atempoValue (was videoDur/audioDur which was wrong)
+- [x] Captions lowered: MarginV=250, font 40 (was MarginV=80, font 44) — clears IG music label
+- [x] Fixed storagePut key mismatch: now uses returned key with hash suffix in routers.ts + voiceoverRender.ts
+- [x] Austin re-posted with all fixes (Metricool ID: 346732814)

@@ -649,8 +649,8 @@ async function processRender(jobId: number) {
     // Upload rendered video to S3
     const { readFileSync } = await import("fs");
     const { storagePut } = await import("./storage");
-    const renderedKey = `voiceover-rendered/job_${jobId}.mp4`;
-    await storagePut(renderedKey, readFileSync(renderResult.outputPath), "video/mp4");
+    const renderedKeyInput = `voiceover-rendered/job_${jobId}.mp4`;
+    const { key: renderedKey } = await storagePut(renderedKeyInput, readFileSync(renderResult.outputPath), "video/mp4");
 
     // Track character usage
     const month = new Date().toISOString().slice(0, 7);
