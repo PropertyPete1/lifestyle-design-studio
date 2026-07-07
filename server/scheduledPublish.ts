@@ -185,13 +185,16 @@ export async function publishNowHandler(req: Request, res: Response) {
       // 4K-ONLY POLICY: Drive original is required. Attempt Drive preprocessing
       // one more time as a self-heal (covers the case where morning job failed
       // due to temporary Drive disconnect but it's back now).
-      console.log(`[publishNow] No driveVideoUrl for pick ${pickId} — attempting Drive retry...`);
+      // IMPORTANT: Only try to match THIS specific pick's reel — NEVER swap to a
+      // different reel at publish time. Swapping is only allowed during the morning
+      // generation job when there's time to review.
+      console.log(`[publishNow] No driveVideoUrl for pick ${pickId} — attempting Drive retry (no-swap)...`);
       try {
         const { driveHealthCheck } = await import("./driveIndex");
         const health = await driveHealthCheck();
         if (health.healthy) {
-          const { preprocessDriveOriginals } = await import("./drivePreprocess");
-          await preprocessDriveOriginals();
+          const { preprocessSinglePick } = await import("./drivePreprocess");
+          await preprocessSinglePick(pick);
           // Re-fetch the pick to see if it now has a driveVideoUrl
           const updatedPicks = await db.getDailyPicks(pickDate);
           const updatedPick = updatedPicks.find(p => p.id === pickId);

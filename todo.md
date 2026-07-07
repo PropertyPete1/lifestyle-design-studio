@@ -513,3 +513,9 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Fix: YouTube title now uses first 100 chars of caption (stripped of hashtags) instead of hardcoded "New build tour"
 - [x] All 122 tests passing, 0 TypeScript errors
 - [ ] User action needed: Check TikTok connection in Metricool (may need reconnect if token expired)
+
+## BUG FIX: publishNow Drive retry swaps pick to wrong video (Jul 7)
+- [x] Root cause: publishNow called preprocessDriveOriginals() which has a retry-with-swap loop (up to 10 attempts). When the AI vision matcher couldn't find the exact Drive file for the Austin reel, it swapped the pick to a different reel entirely — posting the wrong house video.
+- [x] Fix: Created preprocessSinglePick() — a no-swap version that only tries to match the current pick's reel. If it can't find the Drive file, it fails (no swap). Swapping is only allowed during the morning generation job.
+- [x] publishNow now calls preprocessSinglePick(pick) instead of preprocessDriveOriginals() for its Drive retry
+- [ ] Checkpoint + deploy

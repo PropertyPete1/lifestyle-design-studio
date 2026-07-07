@@ -254,6 +254,27 @@ async function preprocessPick(pick: {
  *
  * Returns a summary of results per pick.
  */
+/**
+ * Pre-process a SINGLE pick without any swap/retry logic.
+ * Used by publishNow's Drive retry — at publish time we NEVER swap the pick
+ * to a different reel. Either we find the Drive original for THIS reel or we fail.
+ */
+export async function preprocessSinglePick(pick: {
+  id: number;
+  city: string;
+  postId: string;
+  refreshedCaption: string | null;
+}): Promise<PreprocessResult> {
+  // Sync Drive index first (in case new files were added)
+  try {
+    await syncDriveIndex();
+  } catch (err) {
+    console.error("[DrivePreprocess] Drive index sync failed during single-pick retry:", err);
+  }
+  // Try to preprocess just this one pick — no swapping
+  return preprocessPick(pick);
+}
+
 export async function preprocessDriveOriginals(): Promise<{
   ok: boolean;
   indexSynced: number;
