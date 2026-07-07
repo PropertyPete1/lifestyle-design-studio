@@ -527,4 +527,11 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Test ElevenLabs TTS generates audio with Peters pro voice
 - [x] Test ffmpeg combines video + voiceover audio successfully
 - [x] Verify voiceover integrates into publishNow flow (already wired at line 274-288)
+- [x] Checkpoint + deploy (c4969143)
+
+## FIX: Voiceover S3 storage key bug + getVoiceoverJobByPickId (Jul 7)
+- [x] Fix storagePut key mismatch: pipeline now stores the ACTUAL key returned by storagePut (with hash suffix)
+- [x] Fix getVoiceoverJobByPickId to prefer latest approved job (not first/failed)
+- [x] Fix voiceoverPipeline to resolve storage keys to signed URLs before downloading
+- [x] End-to-end test: Austin video posted with Peters pro voice voiceover (Metricool ID: 346714823)
 - [ ] Checkpoint + deploy

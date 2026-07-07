@@ -26,9 +26,13 @@ export async function processFullVoiceover(pickId: number): Promise<{ status: st
   const reel = await db.getReelById(pick.videoId);
   if (!reel) throw new Error(`Reel ${pick.videoId} not found`);
 
-  // Get the Drive video URL (stored in driveVideoUrl column of daily_picks)
+  // Get the Drive video URL (stored as S3 key or full URL in driveVideoUrl column)
   if (!pick.driveVideoUrl) throw new Error(`No Drive video URL for pick ${pickId}`);
-  const videoUrl = pick.driveVideoUrl;
+  let videoUrl = pick.driveVideoUrl;
+  // If it's a storage key (not a full URL), resolve to a signed URL
+  if (!videoUrl.startsWith("http")) {
+    videoUrl = await storageGetSignedUrl(videoUrl);
+  }
 
   // 2. Create the voiceover job
   const result = await db.insertVoiceoverJob({
@@ -82,12 +86,12 @@ export async function processFullVoiceover(pickId: number): Promise<{ status: st
     // 7. Upload rendered video to S3
     const renderedVideoBuffer = readFileSync(renderResult.outputPath);
     const { storagePut } = await import("./storage");
-    const storageKey = `voiceover-rendered/pick_${pickId}_${Date.now()}.mp4`;
-    await storagePut(storageKey, renderedVideoBuffer, "video/mp4");
+    const storageKeyInput = `voiceover-rendered/pick_${pickId}_${Date.now()}.mp4`;
+    const { key: actualStorageKey } = await storagePut(storageKeyInput, renderedVideoBuffer, "video/mp4");
 
     // 8. Update job as approved (auto-approve in automatic mode)
     await db.updateVoiceoverJob(jobId, {
-      renderedVideoStorageKey: storageKey,
+      renderedVideoStorageKey: actualStorageKey,
       audioDurationSec: renderResult.audioDurationSec,
       charactersUsed: renderResult.charactersUsed,
       durationMismatchPct: renderResult.durationMismatchPct,

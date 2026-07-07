@@ -603,7 +603,14 @@ export async function insertVoiceoverJob(data: InsertVoiceoverJob) {
 export async function getVoiceoverJobByPickId(pickId: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(voiceoverJobs).where(eq(voiceoverJobs.pickId, pickId)).limit(1);
+  // Prefer the latest approved job; fall back to latest job of any status
+  const approved = await db.select().from(voiceoverJobs)
+    .where(and(eq(voiceoverJobs.pickId, pickId), eq(voiceoverJobs.status, "approved")))
+    .orderBy(desc(voiceoverJobs.id)).limit(1);
+  if (approved[0]) return approved[0];
+  const rows = await db.select().from(voiceoverJobs)
+    .where(eq(voiceoverJobs.pickId, pickId))
+    .orderBy(desc(voiceoverJobs.id)).limit(1);
   return rows[0] ?? null;
 }
 
