@@ -46,12 +46,15 @@ export function stripDeliveryTags(script: string): string {
 }
 
 /**
- * Generate a voiceover script sized to fill the full video duration.
+ * Generate a voiceover script sized to fill the video duration MINUS 5 seconds
+ * of breathing room, so the voice finishes naturally before the video ends.
  */
 export async function generateVoiceoverScript(input: ScriptGenerationInput): Promise<GeneratedScript> {
-  const targetWordCount = Math.round(input.videoDurationSec * WORDS_PER_SECOND_TARGET);
-  const minWords = Math.round(input.videoDurationSec * WORDS_PER_SECOND_MIN);
-  const maxWords = Math.round(input.videoDurationSec * WORDS_PER_SECOND_MAX);
+  // Subtract 5 seconds for breathing room — voice should finish before video ends
+  const effectiveDuration = Math.max(10, input.videoDurationSec - 5);
+  const targetWordCount = Math.round(effectiveDuration * WORDS_PER_SECOND_TARGET);
+  const minWords = Math.round(effectiveDuration * WORDS_PER_SECOND_MIN);
+  const maxWords = Math.round(effectiveDuration * WORDS_PER_SECOND_MAX);
 
   const cityLabel = {
     austin: "Austin, Texas",
@@ -90,14 +93,14 @@ FORMAT — THIS IS CRITICAL:
 
   const userPrompt = `Write a voiceover script for a ${cityLabel} property video.
 
-VIDEO DURATION: ${input.videoDurationSec} seconds
+VIDEO DURATION: ${effectiveDuration} seconds (the video is ${input.videoDurationSec}s total but the voice should finish 5 seconds before the end)
 TARGET WORD COUNT: ${targetWordCount} words (minimum ${minWords}, maximum ${maxWords})
 AUDIO TYPE: ${input.audioType === "speech" ? "Original video has someone talking — voiceover will replace their audio entirely" : "Original video has music/ambient audio — voiceover will be layered on top with the music ducked"}
 
 SOURCE CAPTION (use any factual details from this, but do NOT copy it verbatim):
 ${input.caption || "(No caption available)"}
 
-IMPORTANT: The script MUST be approximately ${targetWordCount} words to fill the full ${input.videoDurationSec}-second video. Count carefully. Output ONLY spoken words — no tags, no brackets, no directions.`;
+IMPORTANT: The script MUST be approximately ${targetWordCount} words to fill ${effectiveDuration} seconds of speaking time. Count carefully. Output ONLY spoken words — no tags, no brackets, no directions.`;
 
   const response = await invokeLLM({
     messages: [
@@ -116,7 +119,7 @@ IMPORTANT: The script MUST be approximately ${targetWordCount} words to fill the
     script,
     wordCount,
     estimatedDurationSec,
-    wordsPerSecond: wordCount / input.videoDurationSec,
+    wordsPerSecond: wordCount / effectiveDuration,
   };
 }
 

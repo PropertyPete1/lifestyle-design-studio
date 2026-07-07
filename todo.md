@@ -557,3 +557,9 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Full pipeline: audio analysis → script gen → ElevenLabs TTS → ffmpeg render → S3 upload → publishNow
 - [x] Austin video posted with corrected voiceover (Metricool ID: 346721174, job 90001, 1320 chars)
 - [x] Posted to: Instagram, TikTok, YouTube (LinkedIn excluded by design) across all brands
+
+## FIX: Voiceover render quality + caption positioning (Jul 7)
+- [x] Script duration: target 5 seconds shorter than video length (breathing room so voice doesn't cut off)
+- [x] Captions: center horizontally and position higher on screen (switched from SRT to ASS format for reliable positioning)
+- [x] Video quality: preserve original brightness/color — CRF 16 + bt709 colorspace + pix_fmt yuv420p (no brightness shift)
+- [x] Test render and verify visually (captions confirmed at top-center, brightness matches original)

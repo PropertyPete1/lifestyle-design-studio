@@ -120,9 +120,9 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
 
     const finalAudioDuration = getMediaDuration(finalAudioPath, FFPROBE);
 
-    // Step 4: Generate SRT captions from word timestamps
-    const srtPath = `${prefix}_captions.srt`;
-    generateSRT(alignment, srtPath, atempoApplied ? videoDurationSec / rawAudioDuration : 1);
+    // Step 4: Generate ASS captions from word timestamps (ASS supports reliable positioning)
+    const srtPath = `${prefix}_captions.ass`;
+    generateASS(alignment, srtPath, atempoApplied ? videoDurationSec / rawAudioDuration : 1);
 
     // Step 5: Assemble final video
     const outputPath = `${prefix}_final.mp4`;
@@ -156,10 +156,11 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
 }
 
 /**
- * Generate SRT subtitle file from word-level timestamps.
+ * Generate ASS subtitle file from word-level timestamps.
+ * ASS format gives us reliable positioning control (top-center).
  * Groups words into 3-5 word chunks for readable captions.
  */
-function generateSRT(
+function generateASS(
   alignment: { words: string[]; wordStartTimesMs: number[]; wordEndTimesMs: number[] },
   outputPath: string,
   timeScale: number = 1
@@ -167,14 +168,29 @@ function generateSRT(
   const { words, wordStartTimesMs, wordEndTimesMs } = alignment;
 
   if (!words.length || !wordStartTimesMs.length) {
-    // Fallback: empty SRT
     writeFileSync(outputPath, "");
     return;
   }
 
+  // ASS header with style: top-center (Alignment=8), white bold text, black outline
+  // PlayResX/Y match 1080x1920 (9:16 portrait video)
+  // MarginV=80 pushes text comfortably below the very top edge
+  const header = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,44,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,3,0,8,20,20,80,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`;
+
   const WORDS_PER_CHUNK = 4;
-  const lines: string[] = [];
-  let idx = 1;
+  const dialogueLines: string[] = [];
 
   for (let i = 0; i < words.length; i += WORDS_PER_CHUNK) {
     const chunkWords = words.slice(i, i + WORDS_PER_CHUNK);
@@ -186,30 +202,25 @@ function generateSRT(
     const displayWords = chunkWords.filter(w => !w.match(/^\[[\w]+\]$/));
     if (displayWords.length === 0) continue;
 
-    lines.push(`${idx}`);
-    lines.push(`${formatSRTTime(startMs)} --> ${formatSRTTime(endMs)}`);
-    lines.push(displayWords.join(" ").toUpperCase());
-    lines.push("");
-    idx++;
+    const text = displayWords.join(" ").toUpperCase();
+    const start = formatASSTime(startMs);
+    const end = formatASSTime(endMs);
+    dialogueLines.push(`Dialogue: 0,${start},${end},Default,,0,0,0,,${text}`);
   }
 
-  writeFileSync(outputPath, lines.join("\n"), "utf-8");
+  writeFileSync(outputPath, header + dialogueLines.join("\n") + "\n", "utf-8");
 }
 
-function formatSRTTime(ms: number): string {
+function formatASSTime(ms: number): string {
   const hours = Math.floor(ms / 3600000);
   const minutes = Math.floor((ms % 3600000) / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
-  const millis = ms % 1000;
-  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)},${pad3(millis)}`;
+  const centis = Math.floor((ms % 1000) / 10);
+  return `${hours}:${pad(minutes)}:${pad(seconds)}.${pad(centis)}`;
 }
 
 function pad(n: number): string {
   return n.toString().padStart(2, "0");
-}
-
-function pad3(n: number): string {
-  return n.toString().padStart(3, "0");
 }
 
 /**
@@ -242,32 +253,33 @@ function assembleVideo(opts: {
 
   const audioOutput = originalAudioMode === "mute" ? "[vo]" : "[mixed]";
 
-  // Caption style: bold, white text, black outline, top-center
-  // Alignment=8 = top-center, smaller font so it doesn't cover city name
-  const subtitleStyle = "FontName=Arial,FontSize=16,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,Outline=2,Shadow=0,Alignment=8,MarginV=60";
+  // Styles are embedded in the ASS file itself (top-center, white bold, black outline)
 
-  // Escape the SRT path for ffmpeg (handle special characters)
+  // Escape the ASS path for ffmpeg (handle special characters)
   const escapedSrtPath = srtPath.replace(/'/g, "'\\''").replace(/:/g, "\\:");
 
   let cmd: string;
   if (existsSync(srtPath) && readFileSync(srtPath, "utf-8").trim().length > 0) {
-    // With captions
+    // With captions — must re-encode video to burn in subtitles, but preserve quality
+    // Use -crf 16 (near-lossless) and copy colorspace/pixel format to avoid brightness shift
     cmd = [
       `"${ffmpegPath}" -y -i "${sourceVideoPath}" -i "${voiceoverAudioPath}"`,
       `-filter_complex "${audioFilter}"`,
-      `-vf "subtitles='${escapedSrtPath}':force_style='${subtitleStyle}'"`,
+      `-vf "ass='${escapedSrtPath}'"`,
       `-map 0:v -map "${audioOutput}"`,
-      `-c:v libx264 -preset medium -crf 18 -c:a aac -b:a 192k`,
+      `-c:v libx264 -preset medium -crf 16 -pix_fmt yuv420p`,
+      `-color_primaries bt709 -color_trc bt709 -colorspace bt709`,
+      `-c:a aac -b:a 192k`,
       `-movflags +faststart`,
       `"${outputPath}"`,
     ].join(" ");
   } else {
-    // Without captions (fallback if SRT is empty)
+    // Without captions — copy video stream directly (zero quality loss)
     cmd = [
       `"${ffmpegPath}" -y -i "${sourceVideoPath}" -i "${voiceoverAudioPath}"`,
       `-filter_complex "${audioFilter}"`,
       `-map 0:v -map "${audioOutput}"`,
-      `-c:v libx264 -preset medium -crf 18 -c:a aac -b:a 192k`,
+      `-c:v copy -c:a aac -b:a 192k`,
       `-movflags +faststart`,
       `"${outputPath}"`,
     ].join(" ");
@@ -292,7 +304,7 @@ function getMediaDuration(filePath: string, ffprobePath: string): number {
  * Clean up temporary files for a job.
  */
 function cleanupJobFiles(prefix: string): void {
-  const suffixes = ["_tts.mp3", "_tempo.mp3", "_captions.srt", "_final.mp4"];
+  const suffixes = ["_tts.mp3", "_tempo.mp3", "_captions.ass", "_final.mp4"];
   for (const suffix of suffixes) {
     const path = `${prefix}${suffix}`;
     if (existsSync(path)) {
