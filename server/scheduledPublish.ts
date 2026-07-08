@@ -603,12 +603,20 @@ export async function runAnalystHandler(req: Request, res: Response) {
 
 
 /**
- * refreshDriveToken endpoint: called by the agent cron BEFORE generatePicks.
- * The agent passes its fresh GOOGLE_WORKSPACE_CLI_TOKEN so the deployed app
- * can use it for Drive API calls (token is valid for ~60 minutes).
- * 
- * POST /api/scheduled/refreshDriveToken
- * Body: { token: string }
+ * refreshDriveToken endpoint — TWO modes:
+ *
+ * MODE 1 — SETUP (one-time): Store a permanent refresh token + OAuth credentials.
+ *   POST /api/scheduled/refreshDriveToken
+ *   Body: { refreshToken: string, clientId: string, clientSecret: string }
+ *   After this, the system auto-refreshes access tokens forever.
+ *
+ * MODE 2 — LEGACY: Pass a short-lived access token directly (backward-compatible).
+ *   POST /api/scheduled/refreshDriveToken
+ *   Body: { token: string }
+ *   The token is stored but will expire in ~60 minutes.
+ *
+ * If a refresh token is already configured, the system auto-refreshes and
+ * the agent does NOT need to call this endpoint at all.
  */
 export async function refreshDriveTokenHandler(req: Request, res: Response) {
   try {
@@ -616,23 +624,51 @@ export async function refreshDriveTokenHandler(req: Request, res: Response) {
       return res.status(403).json({ error: "forbidden" });
     }
 
-    const { token } = req.body as { token?: string };
-    if (!token || typeof token !== "string" || token.length < 50) {
-      return res.status(400).json({ error: "Missing or invalid token in request body" });
+    const { setDriveToken, setDriveRefreshCredentials, verifyDriveAccess, isDriveAutoRefreshConfigured } = await import("./driveAuth");
+
+    // MODE 1: Refresh token setup (permanent — preferred)
+    const { refreshToken, clientId, clientSecret } = req.body as {
+      refreshToken?: string;
+      clientId?: string;
+      clientSecret?: string;
+    };
+
+    if (refreshToken && clientId && clientSecret) {
+      await setDriveRefreshCredentials({ refreshToken, clientId, clientSecret });
+      const health = await verifyDriveAccess();
+      return res.json({
+        ok: true,
+        mode: "refresh_token",
+        healthy: health.healthy,
+        autoRefreshConfigured: true,
+        tokenAge: health.tokenAge,
+        error: health.error,
+        message: "Refresh token stored permanently. Drive will auto-refresh forever.",
+      });
     }
 
-    // Store the token
-    const { setDriveToken, verifyDriveAccess } = await import("./driveAuth");
-    await setDriveToken(token);
+    // MODE 2: Legacy short-lived access token
+    const { token } = req.body as { token?: string };
+    if (!token || typeof token !== "string" || token.length < 50) {
+      return res.status(400).json({
+        error: "Missing credentials. Send either { refreshToken, clientId, clientSecret } for permanent setup, or { token } for a short-lived access token.",
+      });
+    }
 
-    // Verify it works
+    await setDriveToken(token);
     const health = await verifyDriveAccess();
+    const autoRefresh = await isDriveAutoRefreshConfigured();
 
     return res.json({
       ok: true,
+      mode: "access_token",
       healthy: health.healthy,
+      autoRefreshConfigured: autoRefresh,
       tokenAge: health.tokenAge,
       error: health.error,
+      message: autoRefresh
+        ? "Access token stored (but refresh token is already configured — this call was unnecessary)."
+        : "Access token stored. WARNING: This expires in ~60 min. Set up a refresh token for permanent access.",
     });
   } catch (err) {
     const e = err as Error;

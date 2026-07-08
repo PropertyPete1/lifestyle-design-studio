@@ -83,17 +83,23 @@ async function startServer() {
   });
 }
 
-// On startup, warm the Drive token cache from DB if available
+// On startup, warm the Drive token cache and verify auto-refresh is configured
 async function warmDriveTokenCache() {
   try {
-    // Just calling getDriveToken will load from DB if available
+    const { isDriveAutoRefreshConfigured } = await import("../driveAuth");
+    const hasRefreshToken = await isDriveAutoRefreshConfigured();
+    if (hasRefreshToken) {
+      console.log("[DriveAuth] Refresh token configured — auto-refresh is active.");
+    } else {
+      console.warn("[DriveAuth] No refresh token configured. Set one up via the dashboard for permanent Drive access.");
+    }
+    // Calling getDriveToken will auto-refresh if credentials are available
     const token = await getDriveToken();
     if (token) {
-      console.log("[DriveAuth] Token cache warmed from DB on startup");
+      console.log("[DriveAuth] Token cache warmed on startup");
     }
-  } catch {
-    // No token available yet — that's fine, agent will provide one
-    console.log("[DriveAuth] No cached Drive token available. Agent will provide one before generatePicks.");
+  } catch (err) {
+    console.warn("[DriveAuth] Startup token warm failed:", (err as Error).message);
   }
 }
 
