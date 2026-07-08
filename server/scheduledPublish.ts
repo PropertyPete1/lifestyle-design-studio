@@ -124,17 +124,12 @@ export async function dueForPublishHandler(req: Request, res: Response) {
 
 /**
  * publishNow endpoint: called by the agent OR the Heartbeat cron.
- * Body: { pickId, repostId, videoUrl?, caption?, thumbnailUrl? }
+ * Body: { pickId, repostId, caption?, thumbnailUrl? }
  *
- * NEW FLOW (Drive-original): If the pick has a pre-uploaded driveVideoUrl
- * (set by the morning preprocessing job), that URL is used directly —
- * no videoUrl from the agent is needed. The agent just calls dueForPublish
- * → gets the pick → calls publishNow with pickId+repostId.
- *
- * LEGACY FLOW: If driveVideoUrl is not set AND a videoUrl is provided in
- * the body, that URL is used (backward-compatible).
- *
- * If neither source is available, the pick is skipped (no fallback to IG copy).
+ * 4K-ONLY POLICY: The pick MUST have a pre-uploaded driveVideoUrl (set by the
+ * morning preprocessing job). If not present, a last-chance Drive retry is
+ * attempted. If that also fails, the pick is FAILED — we NEVER post an
+ * Instagram copy. Drive originals are the only acceptable video source.
  */
 export async function publishNowHandler(req: Request, res: Response) {
   try {
@@ -144,9 +139,11 @@ export async function publishNowHandler(req: Request, res: Response) {
 
     const pickId = Number(req.body?.pickId);
     const repostId = Number(req.body?.repostId);
-    const bodyVideoUrl = req.body?.videoUrl ? String(req.body.videoUrl) : "";
     const captionOverride = req.body?.caption ? String(req.body.caption) : undefined;
     const thumbnailUrl = req.body?.thumbnailUrl ? String(req.body.thumbnailUrl) : null;
+
+    // NOTE: Any "videoUrl" in the request body is IGNORED. We only use Drive
+    // originals. The agent no longer needs to fetch IG media URLs at all.
 
     if (!pickId) return res.status(400).json({ error: "missing pickId" });
 
@@ -168,8 +165,8 @@ export async function publishNowHandler(req: Request, res: Response) {
       return res.json({ ok: true, alreadyPosted: true, reason: "concurrent publish blocked" });
     }
 
-    // Determine video source: Drive original (preferred) or body videoUrl (legacy)
-    // driveVideoUrl is now stored as an S3 storage KEY (not a signed URL).
+    // Determine video source: Drive original ONLY (4K-only policy).
+    // driveVideoUrl is stored as an S3 storage KEY (not a signed URL).
     // Generate a fresh signed URL at publish time so it never expires.
     let videoUrl: string | null = null;
     if (pick.driveVideoUrl) {
@@ -516,7 +513,7 @@ export async function syncIgHistoryHandler(req: Request, res: Response) {
 }
 
 /**
- * Report the result of a publish attempt (legacy / fallback).
+ * Report the result of a publish attempt.
  * Body: { pickId, repostId, success, igMediaId?, error? }
  * Marks the daily pick + repost row as posted or failed. Idempotent.
  */

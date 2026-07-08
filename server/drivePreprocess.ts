@@ -12,8 +12,9 @@
  *
  * This ensures the 2/3/4 PM publish step is instant (just grabs the URL).
  *
- * If a match is not found for a pick, that pick is skipped (no fallback to IG copy).
- * The pick stays confirmed but without a driveVideoUrl — publishNow will skip it.
+ * If a match is not found for a pick, that pick is FAILED (no fallback to IG copy).
+ * The pick stays confirmed but without a driveVideoUrl — publishNow will REJECT
+ * it with a 422 error. Instagram copies are NEVER used as a video source.
  */
 
 import { existsSync, writeFileSync, readFileSync, unlinkSync, mkdirSync } from "fs";

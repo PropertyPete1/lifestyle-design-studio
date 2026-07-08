@@ -82,30 +82,30 @@ describe("driveMatcher", () => {
   });
 });
 
-describe("publishNow with Drive original", () => {
-  it("should prefer driveVideoUrl over body videoUrl", () => {
-    // This is a logic test: when pick.driveVideoUrl is set,
-    // the publish pipeline should use it directly
+describe("publishNow with Drive original (4K-only policy)", () => {
+  it("should use driveVideoUrl when available", () => {
+    // When pick.driveVideoUrl is set, the publish pipeline uses it directly
     const pick = {
       driveVideoUrl: "https://storage.example.com/drive-variant.mp4",
       driveMatchConfidence: "high",
     };
-    const bodyVideoUrl = "https://ig-cdn.example.com/reel.mp4";
 
-    // The actual logic from publishNowHandler:
-    const videoUrl = pick.driveVideoUrl || bodyVideoUrl;
+    // 4K-only policy: Drive original is the ONLY source
+    const videoUrl = pick.driveVideoUrl;
     expect(videoUrl).toBe("https://storage.example.com/drive-variant.mp4");
   });
 
-  it("should fall back to body videoUrl when no Drive original", () => {
+  it("should FAIL (not fallback) when no Drive original is available", () => {
+    // 4K-only policy: if no Drive original, the pick FAILS.
+    // We NEVER fall back to Instagram copies.
     const pick = {
       driveVideoUrl: null as string | null,
       driveMatchConfidence: null as string | null,
     };
-    const bodyVideoUrl = "https://ig-cdn.example.com/reel.mp4";
 
-    const videoUrl = pick.driveVideoUrl || bodyVideoUrl;
-    expect(videoUrl).toBe("https://ig-cdn.example.com/reel.mp4");
+    // No fallback — videoUrl stays null, pick will be failed
+    const videoUrl = pick.driveVideoUrl;
+    expect(videoUrl).toBeNull();
   });
 
   it("should skip variant when using Drive original (already differentiated)", () => {
