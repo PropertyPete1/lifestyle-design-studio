@@ -577,3 +577,12 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Robotic endings: updated script prompt with sentence-ending rules (no trailing low-energy words)
 - [x] Added retry loop (up to 3 attempts) if LLM generates too few words for the target duration
 - [x] Confirmed good post: Metricool 346737570 — voice, captions, brightness all approved by user
+
+## FEATURE: Monthly payment breakdown voiceover (Jul 8)
+- [x] Parse price and interest rate from caption text (handles $X, "starting at", written-out ranges)
+- [x] Calculate monthly payment (mortgage P&I + taxes + insurance) with: 3% down, default 4.99% rate, area-specific tax rates, $1200/yr insurance
+- [x] Property tax rates by area: San Antonio 2.1%, Austin 2.0%, Dallas 2.3%
+- [x] Two script modes: (A) payment breakdown when price is detected, (B) engaging viral script when no price
+- [x] Update LLM prompt to incorporate payment numbers naturally into the script
+- [x] Test with 14 unit tests (price parsing, rate parsing, payment calculation, strip tags) — all passing
+- [x] Full test suite: 136 tests passing across 23 files
