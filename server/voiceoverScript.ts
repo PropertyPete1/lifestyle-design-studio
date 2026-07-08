@@ -82,6 +82,13 @@ STRUCTURE:
 - Build through the middle with property/area details
 - End with a soft CTA (vary between: "follow for more", "comment below", "DM me", "drop a comment", "save this for later")
 
+SENTENCE ENDINGS — CRITICAL FOR NATURAL SOUND:
+- NEVER end a sentence on a single low-energy word (like "today" or "home" or "here") — it makes TTS drop to a flat robotic tone
+- End sentences with 2-3 word phrases that carry energy forward ("starting in the high threes" not "starting today")
+- Use questions, exclamations, or upward-energy phrases to keep momentum
+- Vary sentence endings: some short punchy ("Let's go."), some flowing ("and this is just the beginning.")
+- The LAST sentence should feel like an invitation, not a statement trailing off
+
 FORMAT — THIS IS CRITICAL:
 - Output ONLY the exact words to be spoken. Nothing else.
 - NO brackets of any kind: no [excited], no [pause], no [warm], no [confident]
@@ -100,19 +107,40 @@ AUDIO TYPE: ${input.audioType === "speech" ? "Original video has someone talking
 SOURCE CAPTION (use any factual details from this, but do NOT copy it verbatim):
 ${input.caption || "(No caption available)"}
 
-IMPORTANT: The script MUST be approximately ${targetWordCount} words to fill ${effectiveDuration} seconds of speaking time. Count carefully. Output ONLY spoken words — no tags, no brackets, no directions.`;
+CRITICAL WORD COUNT REQUIREMENT: The script MUST be EXACTLY ${targetWordCount} words (minimum ${minWords}, maximum ${maxWords}). This is non-negotiable — a script that is too short will leave awkward silence over the video. Count your words before submitting. If you're under ${minWords} words, add more detail about the property, lifestyle, or neighborhood until you hit the target. Output ONLY spoken words — no tags, no brackets, no directions.`;
 
-  const response = await invokeLLM({
-    messages: [
+  // Retry loop: if LLM generates too few words, retry with feedback
+  let script = "";
+  let wordCount = 0;
+  const MAX_RETRIES = 3;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const messages: Array<{role: string; content: string}> = [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
-    ],
-  });
+    ];
 
-  const rawContent = response.choices[0]?.message?.content;
-  // Strip any bracket tags that might still slip through despite the prompt
-  const script = stripDeliveryTags((typeof rawContent === "string" ? rawContent : "").trim());
-  const wordCount = script.split(/\s+/).filter(Boolean).length;
+    if (attempt > 0) {
+      messages.push({
+        role: "assistant",
+        content: script,
+      });
+      messages.push({
+        role: "user",
+        content: `That script is only ${wordCount} words. I need EXACTLY ${targetWordCount} words (minimum ${minWords}). You are ${minWords - wordCount} words short. Please rewrite the FULL script with more detail about the property features, lifestyle benefits, and neighborhood. Add more sentences. The script must fill ${effectiveDuration} seconds of speaking time at 2.45 words per second. Output the complete rewritten script now.`,
+      });
+    }
+
+    const response = await invokeLLM({ messages: messages as any });
+    const rawContent = response.choices[0]?.message?.content;
+    script = stripDeliveryTags((typeof rawContent === "string" ? rawContent : "").trim());
+    wordCount = script.split(/\s+/).filter(Boolean).length;
+
+    console.log(`[VoScript] Attempt ${attempt + 1}: ${wordCount} words (target: ${targetWordCount}, min: ${minWords})`);
+
+    if (wordCount >= minWords) break;
+  }
+
   const estimatedDurationSec = Math.round(wordCount / WORDS_PER_SECOND_TARGET);
 
   return {

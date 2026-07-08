@@ -570,3 +570,10 @@ Current build (low-views fix + AI performance analyst) is complete and green: 64
 - [x] Captions lowered: MarginV=250, font 40 (was MarginV=80, font 44) — clears IG music label
 - [x] Fixed storagePut key mismatch: now uses returned key with hash suffix in routers.ts + voiceoverRender.ts
 - [x] Austin re-posted with all fixes (Metricool ID: 346732814)
+
+## FIX: Video brightness + voice dead space + robotic endings (Jul 7)
+- [x] Video brightness: removed forced bt709 color conversion — now preserves HDR (bt2020/HLG/10-bit) metadata
+- [x] Dead space: added silenceremove + compand filter to trim silence from TTS audio
+- [x] Robotic endings: updated script prompt with sentence-ending rules (no trailing low-energy words)
+- [x] Added retry loop (up to 3 attempts) if LLM generates too few words for the target duration
+- [x] Confirmed good post: Metricool 346737570 — voice, captions, brightness all approved by user

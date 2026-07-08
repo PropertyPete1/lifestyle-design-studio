@@ -86,13 +86,25 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
     writeFileSync(audioPath, audio);
     console.log(`[VoRender] TTS generated: ${audio.length} bytes`);
 
-    // Step 3: Check audio duration and apply atempo if needed
-    const rawAudioDuration = getMediaDuration(audioPath, FFPROBE);
-    console.log(`[VoRender] Raw audio duration: ${rawAudioDuration}s vs video: ${videoDurationSec}s`);
+    // Step 3: Trim silence from TTS audio (removes dead space between sentences)
+    const trimmedPath = `${prefix}_trimmed.mp3`;
+    execSync(
+      `"${FFMPEG}" -y -i "${audioPath}" -af "silenceremove=start_periods=1:start_silence=0.1:start_threshold=-40dB,areverse,silenceremove=start_periods=1:start_silence=0.1:start_threshold=-40dB,areverse,compand=attacks=0:points=-80/-80|-45/-25|-27/-15|0/-7|20/-7:gain=3" "${trimmedPath}"`,
+      { timeout: 60000 }
+    );
+    const trimmedExists = existsSync(trimmedPath);
+    const workingAudioPath = trimmedExists ? trimmedPath : audioPath;
+    if (trimmedExists) {
+      console.log(`[VoRender] Trimmed silence from TTS audio`);
+    }
+
+    // Step 4: Check audio duration and apply atempo if needed
+    const rawAudioDuration = getMediaDuration(workingAudioPath, FFPROBE);
+    console.log(`[VoRender] Audio duration (after trim): ${rawAudioDuration}s vs video: ${videoDurationSec}s`);
 
     const durationRatio = rawAudioDuration / videoDurationSec;
     const durationMismatchPct = Math.round((durationRatio - 1) * 100);
-    let finalAudioPath = audioPath;
+    let finalAudioPath = workingAudioPath;
     let atempoApplied = false;
 
     if (durationRatio > ATEMPO_MAX || durationRatio < ATEMPO_MIN) {
@@ -102,7 +114,7 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
       const atempoValue = Math.max(ATEMPO_MIN, Math.min(ATEMPO_MAX, durationRatio));
       finalAudioPath = `${prefix}_tempo.mp3`;
       execSync(
-        `"${FFMPEG}" -y -i "${audioPath}" -filter:a "atempo=${atempoValue}" "${finalAudioPath}"`,
+        `"${FFMPEG}" -y -i "${workingAudioPath}" -filter:a "atempo=${atempoValue}" "${finalAudioPath}"`,
         { timeout: 60000 }
       );
       atempoApplied = true;
@@ -111,7 +123,7 @@ export async function renderVoiceover(options: RenderOptions): Promise<RenderRes
       const atempoValue = durationRatio;
       finalAudioPath = `${prefix}_tempo.mp3`;
       execSync(
-        `"${FFMPEG}" -y -i "${audioPath}" -filter:a "atempo=${atempoValue}" "${finalAudioPath}"`,
+        `"${FFMPEG}" -y -i "${workingAudioPath}" -filter:a "atempo=${atempoValue}" "${finalAudioPath}"`,
         { timeout: 60000 }
       );
       atempoApplied = true;
@@ -266,15 +278,16 @@ function assembleVideo(opts: {
 
   let cmd: string;
   if (existsSync(srtPath) && readFileSync(srtPath, "utf-8").trim().length > 0) {
-    // With captions — must re-encode video to burn in subtitles, but preserve quality
-    // Use -crf 16 (near-lossless) and copy colorspace/pixel format to avoid brightness shift
+    // With captions — must re-encode video to burn in subtitles
+    // CRITICAL: Do NOT force color space conversion. The source may be HDR (bt2020/HLG/10-bit).
+    // Forcing bt709 crushes dynamic range and changes brightness.
+    // Instead: re-encode at high quality preserving original pixel format and color metadata.
     cmd = [
       `"${ffmpegPath}" -y -i "${sourceVideoPath}" -i "${voiceoverAudioPath}"`,
       `-filter_complex "${audioFilter}"`,
       `-vf "ass='${escapedSrtPath}'"`,
       `-map 0:v -map "${audioOutput}"`,
-      `-c:v libx264 -preset medium -crf 16 -pix_fmt yuv420p`,
-      `-color_primaries bt709 -color_trc bt709 -colorspace bt709`,
+      `-c:v libx264 -preset medium -crf 16`,
       `-c:a aac -b:a 192k`,
       `-movflags +faststart`,
       `"${outputPath}"`,
@@ -310,7 +323,7 @@ function getMediaDuration(filePath: string, ffprobePath: string): number {
  * Clean up temporary files for a job.
  */
 function cleanupJobFiles(prefix: string): void {
-  const suffixes = ["_tts.mp3", "_tempo.mp3", "_captions.ass", "_final.mp4"];
+  const suffixes = ["_tts.mp3", "_trimmed.mp3", "_tempo.mp3", "_captions.ass", "_final.mp4"];
   for (const suffix of suffixes) {
     const path = `${prefix}${suffix}`;
     if (existsSync(path)) {
