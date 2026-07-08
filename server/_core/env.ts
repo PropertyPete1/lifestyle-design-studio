@@ -10,4 +10,8 @@ export const ENV = {
   metricoolApiToken: process.env.METRICOOL_API_TOKEN ?? "",
   metricoolBlogId: parseInt(process.env.METRICOOL_BLOG_ID ?? "0", 10),
   metricoolUserId: parseInt(process.env.METRICOOL_USER_ID ?? "0", 10),
+  // Google Drive OAuth2 (permanent refresh token — auto-refreshes forever)
+  googleDriveRefreshToken: process.env.GOOGLE_DRIVE_REFRESH_TOKEN ?? "",
+  googleDriveClientId: process.env.GOOGLE_DRIVE_CLIENT_ID ?? "",
+  googleDriveClientSecret: process.env.GOOGLE_DRIVE_CLIENT_SECRET ?? "",
 };

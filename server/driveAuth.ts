@@ -20,6 +20,7 @@
  */
 
 import * as db from "./db";
+import { ENV } from "./_core/env";
 
 // ─── In-memory cache ────────────────────────────────────────────────────────
 
@@ -37,28 +38,52 @@ let cachedClientSecret: string | null = null;
 let credentialsLoaded = false;
 
 /**
- * Load OAuth2 credentials from the database (one-time per server lifecycle).
+ * Load OAuth2 credentials from the database OR environment variables.
+ * Priority: DB settings first, then env vars as fallback.
  */
 async function loadCredentials(): Promise<boolean> {
   if (credentialsLoaded) {
     return Boolean(cachedRefreshToken && cachedClientId && cachedClientSecret);
   }
 
+  // Try DB first
   try {
     cachedRefreshToken = await db.getSetting("googleDriveRefreshToken");
     cachedClientId = await db.getSetting("googleDriveClientId");
     cachedClientSecret = await db.getSetting("googleDriveClientSecret");
-    credentialsLoaded = true;
 
     if (cachedRefreshToken && cachedClientId && cachedClientSecret) {
+      credentialsLoaded = true;
       console.log("[DriveAuth] OAuth2 credentials loaded from DB (refresh token available)");
       return true;
     }
-    return false;
   } catch (err) {
     console.warn("[DriveAuth] Could not load credentials from DB:", (err as Error).message);
-    return false;
   }
+
+  // Fallback: environment variables (from ENV config)
+  const envRefresh = ENV.googleDriveRefreshToken || process.env.GOOGLE_DRIVE_REFRESH_TOKEN;
+  const envClientId = ENV.googleDriveClientId || process.env.GOOGLE_DRIVE_CLIENT_ID;
+  const envClientSecret = ENV.googleDriveClientSecret || process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+
+  if (envRefresh && envClientId && envClientSecret) {
+    cachedRefreshToken = envRefresh;
+    cachedClientId = envClientId;
+    cachedClientSecret = envClientSecret;
+    credentialsLoaded = true;
+    console.log("[DriveAuth] OAuth2 credentials loaded from environment variables");
+    // Persist to DB so they survive even if env vars are removed later
+    try {
+      await db.setSetting("googleDriveRefreshToken", envRefresh);
+      await db.setSetting("googleDriveClientId", envClientId);
+      await db.setSetting("googleDriveClientSecret", envClientSecret);
+      console.log("[DriveAuth] Credentials persisted to DB from env vars");
+    } catch { /* best effort */ }
+    return true;
+  }
+
+  credentialsLoaded = true; // Don't retry on every call
+  return false;
 }
 
 /**
