@@ -14,7 +14,9 @@
  * 7. Log result to posted-log.json
  * 
  * MATCHING RULES (asymmetric confidence):
- * - BLOCKING a video (safe direction): hash distance < 18 is enough
+ * - BLOCKING a video: hash distance < 10 = auto-block (definite match)
+ *   hash distance 10-17 = requires AI vision confirmation (too many false positives
+ *   from similar-looking real estate videos in different cities)
  * - REUSING a caption (risky direction): requires distance < 10 AND city consistency check
  *   Falls back to fresh caption if confidence is insufficient.
  */
@@ -25,7 +27,7 @@ import { generateCaption, generateCaptionFromOriginal } from "./caption.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
 import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
-import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration } from "./matcher.js";
+import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -35,8 +37,10 @@ const CITY = process.env.CITY || "san_antonio";
 const FORCE = process.env.FORCE === "true"; // Manual override to bypass every-other-day check
 
 // Match thresholds (asymmetric):
-// BLOCKING: distance < 18 = same video, don't re-post (safe direction, false positives just delay a video)
+// BLOCKING: distance < 10 = definite same video, block immediately
+// distance 10-17 = ambiguous zone, requires AI vision confirmation before blocking
 const BLOCK_THRESHOLD = 18;
+const AI_CONFIRM_THRESHOLD = 10; // Below this = auto-block; 10-17 = AI vision check
 // CAPTION REUSE: distance < 10 = high confidence same video, safe to reuse caption
 // (risky direction: wrong caption looks bad to followers)
 const CAPTION_REUSE_THRESHOLD = 10;
@@ -376,25 +380,62 @@ async function liveIgMatchCheck(video, igWithHashes, matchCache) {
   }
 
   if (bestMatch && bestDist < BLOCK_THRESHOLD) {
-    // Update cache with this match (include distance for caption-reuse decisions)
-    matchCache[video.id] = [{
-      igPostId: bestMatch.reelId,
-      publishedAt: bestMatch.publishedAt,
-      caption: bestMatch.caption,
-      matchMethod: "perceptual_hash_live",
-      confidence: 1 - (bestDist / 64),
-      hashDistance: bestDist,
-      city: CITY,
-    }];
-
     const postedDate = parsePublishedAt(bestMatch.publishedAt);
     const daysSince = (Date.now() - postedDate.getTime()) / (1000 * 60 * 60 * 24);
-    console.log(`[LiveCheck] Matched to IG post from ${daysSince.toFixed(0)} days ago (dist: ${bestDist})`);
-    
-    if (daysSince < 30) {
+    console.log(`[LiveCheck] Hash match: dist=${bestDist}, IG post from ${daysSince.toFixed(0)} days ago`);
+
+    // AI VISION CONFIRMATION for ambiguous zone (dist 10-17)
+    // Below AI_CONFIRM_THRESHOLD (< 10) = auto-block (very high confidence)
+    // Between 10-17 = ask AI vision to confirm it's truly the same property
+    let confirmed = bestDist < AI_CONFIRM_THRESHOLD;
+    if (!confirmed && daysSince < 30) {
+      console.log(`[LiveCheck] Distance ${bestDist} is in ambiguous zone (10-17). Running AI vision confirmation...`);
+      try {
+        const framePaths = extractFrames(tmpPath, duration);
+        if (framePaths.length > 0 && bestMatch.thumbnailUrl) {
+          const visionResult = await aiVisionCompare(framePaths, bestMatch.thumbnailUrl);
+          console.log(`[LiveCheck] AI vision says: same_video=${visionResult.isSame}, confidence=${visionResult.confidence}`);
+          confirmed = visionResult.isSame && visionResult.confidence >= 0.7;
+          // Clean up extracted frames
+          framePaths.forEach(fp => { try { unlinkSync(fp); } catch {} });
+        } else {
+          console.log(`[LiveCheck] Could not extract frames or no thumbnail URL — skipping AI check, allowing video`);
+        }
+      } catch (err) {
+        console.warn(`[LiveCheck] AI vision failed: ${err.message?.slice(0, 100)} — allowing video (fail-open)`);
+      }
+    }
+
+    if (confirmed && daysSince < 30) {
+      // Update cache with this confirmed match
+      matchCache[video.id] = [{
+        igPostId: bestMatch.reelId,
+        publishedAt: bestMatch.publishedAt,
+        caption: bestMatch.caption,
+        matchMethod: bestDist < AI_CONFIRM_THRESHOLD ? "perceptual_hash_live" : "perceptual_hash_live+ai_vision",
+        confidence: 1 - (bestDist / 64),
+        hashDistance: bestDist,
+        city: CITY,
+      }];
       // Blocked — clean up the file since we won't use it
+      console.log(`[LiveCheck] BLOCKED: confirmed same video (dist=${bestDist}, method=${bestDist < AI_CONFIRM_THRESHOLD ? 'hash-only' : 'hash+AI'})`);
       try { unlinkSync(tmpPath); } catch {}
       return { blocked: true, videoPath: null };
+    } else if (daysSince < 30 && !confirmed) {
+      console.log(`[LiveCheck] AI vision says DIFFERENT property — allowing video despite hash dist=${bestDist}`);
+    }
+
+    // If daysSince >= 30 or not confirmed, update cache but don't block
+    if (confirmed) {
+      matchCache[video.id] = [{
+        igPostId: bestMatch.reelId,
+        publishedAt: bestMatch.publishedAt,
+        caption: bestMatch.caption,
+        matchMethod: "perceptual_hash_live",
+        confidence: 1 - (bestDist / 64),
+        hashDistance: bestDist,
+        city: CITY,
+      }];
     }
   }
 
