@@ -109,6 +109,32 @@ function chicagoLocalDateTime(offsetMs = 0) {
 }
 
 /**
+ * Build a Metricool-compatible datetime string for today at a specific hour:minute CT.
+ * If the time has already passed today, schedule 90s from now (Metricool needs future time).
+ */
+function todayAtTime(hour, minute) {
+  const now = new Date();
+  const chicagoStr = now.toLocaleString("en-US", { timeZone: "America/Chicago" });
+  const chicago = new Date(chicagoStr);
+  const y = chicago.getFullYear();
+  const m = String(chicago.getMonth() + 1).padStart(2, "0");
+  const d = String(chicago.getDate()).padStart(2, "0");
+
+  // Check if the target time has already passed
+  const targetMinutes = hour * 60 + minute;
+  const currentMinutes = chicago.getHours() * 60 + chicago.getMinutes();
+
+  if (currentMinutes >= targetMinutes) {
+    // Time already passed — schedule 90s from now so Metricool accepts it
+    return chicagoLocalDateTime(90_000);
+  }
+
+  const h = String(hour).padStart(2, "0");
+  const min = String(minute).padStart(2, "0");
+  return `${y}-${m}-${d}T${h}:${min}:00`;
+}
+
+/**
  * Sanitize the AI-generated post: remove dashes, hashtags, preambles, wrapping quotes.
  */
 function sanitizePost(raw) {
@@ -211,37 +237,16 @@ export async function generateLinkedinPost() {
 }
 
 /**
- * Discover all LinkedIn-connected brands from Metricool.
+ * LinkedIn brand schedule — hardcoded per user's requirements:
+ * - Peter (blogId 4807109) → 2:00 PM CT
+ * - Steven (blogId 6493212) → 2:30 PM CT
+ * - Lifestyle Design Realty company page (blogId 6486275) → 3:00 PM CT
  */
-async function getLinkedinBrands() {
-  const url = `${BASE}/admin/simpleProfiles?userId=${process.env.METRICOOL_USER_ID}`;
-  const res = await fetch(url, { headers: authHeaders() });
-  if (!res.ok) {
-    console.warn(`[LinkedIn] getLinkedinBrands failed (${res.status}), using default`);
-    return [{ blogId: Number(process.env.METRICOOL_BLOG_ID), label: "Default" }];
-  }
-
-  const profiles = await res.json();
-  const brands = [];
-  for (const p of profiles) {
-    if (p.deleted === true || p.isDemo === true) continue;
-    const blogId = Number(p.id ?? p.blogId);
-    if (!blogId) continue;
-    const hasLinkedin =
-      (typeof p.linkedin === "string" && p.linkedin) ||
-      (typeof p.linkedinCompany === "string" && p.linkedinCompany);
-    if (!hasLinkedin) continue;
-    brands.push({ blogId, label: String(p.label ?? p.id ?? blogId) });
-  }
-  brands.sort((a, b) => a.blogId - b.blogId);
-
-  if (brands.length === 0) {
-    brands.push({ blogId: Number(process.env.METRICOOL_BLOG_ID), label: "Default" });
-  }
-
-  console.log(`[LinkedIn] Found ${brands.length} LinkedIn brand(s): ${brands.map(b => b.label).join(", ")}`);
-  return brands;
-}
+const LINKEDIN_BRANDS = [
+  { blogId: 4807109, label: "Peter", hour: 14, minute: 0 },
+  { blogId: 6493212, label: "Steven", hour: 14, minute: 30 },
+  { blogId: 6486275, label: "Lifestyle Design Realty", hour: 15, minute: 0 },
+];
 
 /**
  * Publish text-only to a single LinkedIn brand via Metricool scheduler.
@@ -280,8 +285,10 @@ async function publishToLinkedinBrand(blogId, text, publishAt) {
 /**
  * Full LinkedIn posting flow:
  * 1. Generate recruiting post in Peter's voice
- * 2. Discover all LinkedIn brands
- * 3. Publish text to each brand, staggered 30 min apart
+ * 2. Publish SAME text to all 3 LinkedIn accounts at their scheduled times:
+ *    - Peter → 2:00 PM CT
+ *    - Steven → 2:30 PM CT
+ *    - Lifestyle Design Realty → 3:00 PM CT
  * 
  * Returns { ok, topic, body, brands }
  */
@@ -295,27 +302,26 @@ export async function postToLinkedin(options = {}) {
     console.log("[LinkedIn] DRY RUN — would post to LinkedIn:");
     console.log(`[LinkedIn] Topic: ${topic}`);
     console.log(`[LinkedIn] Body (${wordCount(body)} words):\n${body}`);
+    console.log(`[LinkedIn] Would post to:`);
+    for (const brand of LINKEDIN_BRANDS) {
+      const time = `${brand.hour}:${String(brand.minute).padStart(2, "0")} PM CT`;
+      console.log(`[LinkedIn]   - ${brand.label} at ${time}`);
+    }
     return { ok: true, dryRun: true, topic, body, brands: [] };
   }
 
-  // Discover brands
-  const brands = await getLinkedinBrands();
-
-  // Publish to each brand, staggered 30 min apart
-  const STAGGER_MS = 30 * 60 * 1000;
-  const baseMs = 90_000; // 90s out so Metricool accepts it
-
+  // Build today's scheduled times for each brand
   const results = [];
-  for (let i = 0; i < brands.length; i++) {
-    const brand = brands[i];
-    const publishAt = chicagoLocalDateTime(baseMs + i * STAGGER_MS);
-    console.log(`[LinkedIn] Publishing to ${brand.label} (blogId: ${brand.blogId}) at ${publishAt}...`);
+  for (const brand of LINKEDIN_BRANDS) {
+    const publishAt = todayAtTime(brand.hour, brand.minute);
+    const timeLabel = `${brand.hour}:${String(brand.minute).padStart(2, "0")} CT`;
+    console.log(`[LinkedIn] Publishing to ${brand.label} (blogId: ${brand.blogId}) at ${timeLabel}...`);
 
     const result = await publishToLinkedinBrand(brand.blogId, body, publishAt);
     results.push({ ...result, brand: brand.label, blogId: brand.blogId, publishAt });
 
     if (result.ok) {
-      console.log(`[LinkedIn] ✓ Posted to ${brand.label} (ID: ${result.postId})`);
+      console.log(`[LinkedIn] ✓ Scheduled for ${brand.label} at ${timeLabel} (ID: ${result.postId})`);
     } else {
       console.error(`[LinkedIn] ✗ Failed on ${brand.label}: ${result.error}`);
     }
@@ -323,7 +329,7 @@ export async function postToLinkedin(options = {}) {
 
   const anyOk = results.some(r => r.ok);
   if (anyOk) {
-    console.log(`[LinkedIn] ✓ LinkedIn recruiting post published (topic: ${topic})`);
+    console.log(`[LinkedIn] ✓ LinkedIn recruiting post scheduled for all accounts (topic: ${topic})`);
   } else {
     console.error("[LinkedIn] ✗ All LinkedIn brands failed");
   }
