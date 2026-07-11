@@ -1,0 +1,89 @@
+{
+  "weights": {
+    "question": 1,
+    "bold_claim": 1,
+    "wait_tease": 0.57,
+    "reaction": 1,
+    "vibe": 1.23
+  },
+  "lastUpdated": "2026-07-11T22:49:28.789Z",
+  "reelsAnalyzed": 22,
+  "classifiedCount": 17,
+  "styleBreakdown": {
+    "question": {
+      "count": 0,
+      "avgScore": 0,
+      "weight": 1
+    },
+    "bold_claim": {
+      "count": 3,
+      "avgScore": 1871,
+      "weight": 1
+    },
+    "wait_tease": {
+      "count": 2,
+      "avgScore": 713,
+      "weight": 0.57
+    },
+    "reaction": {
+      "count": 0,
+      "avgScore": 0,
+      "weight": 1
+    },
+    "vibe": {
+      "count": 12,
+      "avgScore": 2487,
+      "weight": 1.23
+    }
+  },
+  "topPerformers": [
+    {
+      "url": "https://www.instagram.com/reel/DaJTzArMjlk/",
+      "hookStyle": "vibe",
+      "score": 8357,
+      "views": 5620,
+      "firstLine": "🪟 bright light clean finishes and a layout that actually lives 😮‍💨🏡"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DabM7ppGsKe/",
+      "hookStyle": "vibe",
+      "score": 6019,
+      "views": 4604,
+      "firstLine": "🪟 soaring ceilings walls of glass and a brand new build in Hill Country for $52"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DagZvD6jICK/",
+      "hookStyle": "vibe",
+      "score": 4305,
+      "views": 2985,
+      "firstLine": "🪟 mature trees move in ready homes and pricing from the mid three forties to th"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DajGMbFCLNz/",
+      "hookStyle": "bold_claim",
+      "score": 4216,
+      "views": 2762,
+      "firstLine": "🪟 THIS SAN ANTONIO BEAUTY JUST HIT THE MARKET AND WON'T LAST LONG!"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DaTT14uk4dM/",
+      "hookStyle": "vibe",
+      "score": 2747,
+      "views": 2200,
+      "firstLine": "🏡 new construction starting in the $470s — 2,100 to 3,600 sq ft and room to act"
+    }
+  ],
+  "history": [
+    {
+      "date": "2026-07-11",
+      "weights": {
+        "question": 1,
+        "bold_claim": 1,
+        "wait_tease": 0.57,
+        "reaction": 1,
+        "vibe": 1.23
+      },
+      "reelsAnalyzed": 22
+    }
+  ]
+}

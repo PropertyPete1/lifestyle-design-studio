@@ -25,6 +25,8 @@ import { listCityVideos, downloadVideo } from "./drive.js";
 import { getRecentIgPosts, uploadVideoToMetricool, createPost, verifyPostStatus } from "./metricool.js";
 import { generateCaption, generateCaptionFromOriginal } from "./caption.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
+import { prePostQualityCheck } from "./quality-check.js";
+import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
@@ -93,6 +95,21 @@ async function main() {
       process.exit(0);
     }
     console.log(`[AutoPoster] DFW posting today (day ${dayOfYear} is even)`);
+  }
+
+  // Run weekly analytics feedback loop (if stale or missing)
+  try {
+    const weights = loadWeights();
+    const lastUpdate = weights.lastUpdated ? new Date(weights.lastUpdated) : null;
+    const daysSinceUpdate = lastUpdate ? (Date.now() - lastUpdate.getTime()) / 86400000 : Infinity;
+    if (daysSinceUpdate >= 7) {
+      console.log(`[AutoPoster] Performance weights stale (${Math.round(daysSinceUpdate)}d old) — running analytics...`);
+      await runWeeklyAnalytics(7);
+    } else {
+      console.log(`[AutoPoster] Performance weights fresh (updated ${Math.round(daysSinceUpdate)}d ago)`);
+    }
+  } catch (err) {
+    console.warn(`[AutoPoster] Analytics update failed (non-fatal): ${err.message}`);
   }
 
   // Load state
@@ -542,10 +559,15 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
   try {
     // Voiceover pipeline
     console.log("[Post] Running voiceover detection...");
-    const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN);
+        const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN);
     finalVideoPath = voResult.videoPath;
     const hasVoiceover = !voResult.skipped;
-
+    // Pre-post quality check (after voiceover, before upload)
+    const videoToCheck = existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath;
+    const qcResult = await prePostQualityCheck(videoToCheck);
+    if (!qcResult.ok) {
+      throw new Error(`[QC] FAILED: ${qcResult.reason}`);
+    }
     // Generate caption — ASYMMETRIC CONFIDENCE for reuse
     console.log("[Post] Generating caption...");
     let caption;

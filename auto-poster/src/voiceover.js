@@ -1,5 +1,11 @@
 /**
- * Voiceover Pipeline — detect speech, generate TTS via ElevenLabs, merge with ffmpeg
+ * Voiceover Pipeline — detect speech via Whisper, generate TTS via ElevenLabs, merge with ffmpeg
+ * 
+ * Decision matrix:
+ *   Actual speech detected → skip voiceover
+ *   Audio but NO speech (music only) → ADD voiceover, duck music to 20%
+ *   No audio at all → ADD voiceover
+ *   Whisper error/ambiguous → assume speech (fail-safe, never double voices)
  */
 
 import { execSync } from "child_process";
@@ -7,39 +13,36 @@ import { writeFileSync, readFileSync, unlinkSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { generateVoiceoverScript } from "./caption.js";
+import { detectSpeech } from "./speech-detect.js";
 
 const VOICE_ID = "ymv1q5WLElzdmrHdtgsw"; // Peters pro voice
 const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1";
 
 /**
  * Detect if a video already has speech audio.
+ * LEGACY: kept for backwards compatibility but processVoiceover now uses detectSpeech() directly.
  * Uses ffprobe to check audio levels — if significant audio detected, assume speech.
  */
 export function videoHasSpeech(videoPath) {
   try {
-    // Check if video has an audio stream
     const result = execSync(
       `ffprobe -v error -select_streams a:0 -show_entries stream=codec_type -of csv=p=0 "${videoPath}"`,
       { encoding: "utf-8", timeout: 30000, stdio: ["pipe", "pipe", "pipe"] }
     ).trim();
 
-    // If no audio stream, definitely no speech
     if (!result || !result.includes("audio")) {
       console.log("[Voiceover] No audio stream detected — will add voiceover");
       return false;
     }
 
-    // Check audio volume using volumedetect filter
     const volResult = execSync(
       `ffmpeg -i "${videoPath}" -af "volumedetect" -f null /dev/null 2>&1`,
       { encoding: "utf-8", timeout: 60000 }
     );
 
-    // Parse mean_volume from output
     const meanMatch = volResult.match(/mean_volume:\s*([-\d.]+)\s*dB/);
     if (meanMatch) {
       const meanVolume = parseFloat(meanMatch[1]);
-      // If mean volume is above -35dB, likely has speech/music
       if (meanVolume > -35) {
         console.log(`[Voiceover] Audio detected (mean: ${meanVolume}dB) — skipping voiceover`);
         return true;
@@ -48,12 +51,10 @@ export function videoHasSpeech(videoPath) {
       return false;
     }
 
-    // If we can't determine, assume it has speech (safer)
     console.log("[Voiceover] Could not determine audio level — assuming speech present");
     return true;
   } catch (err) {
     console.warn("[Voiceover] Audio detection failed:", err.message);
-    // On error, assume speech present (safer to not double-voiceover)
     return true;
   }
 }
@@ -114,7 +115,7 @@ async function generateTTS(script) {
 
 /**
  * Merge voiceover audio with video using ffmpeg.
- * Keeps original video audio at reduced volume, adds voiceover on top.
+ * Keeps original video audio at reduced volume (20%), adds voiceover on top.
  */
 function mergeAudioWithVideo(videoPath, audioPath) {
   const outputPath = join(tmpdir(), `merged_${Date.now()}.mp4`);
@@ -141,22 +142,33 @@ function mergeAudioWithVideo(videoPath, audioPath) {
 
 /**
  * Full voiceover pipeline:
- * 1. Check if video has speech → skip if yes
+ * 1. Detect speech using Whisper (with volume pre-filter for speed)
  * 2. Generate script via Claude
  * 3. Generate TTS via ElevenLabs
  * 4. Merge with video via ffmpeg
  * Returns the path to the final video (original or merged).
  */
 export async function processVoiceover(videoPath, city, dryRun = false) {
-  // Step 1: Check for existing speech
-  if (videoHasSpeech(videoPath)) {
-    console.log("[Voiceover] Video already has speech — using original");
-    return { videoPath, skipped: true, reason: "speech_detected" };
+  // Step 1: Detect speech using Whisper (with volume pre-filter)
+  const detection = detectSpeech(videoPath);
+
+  if (detection.hasSpeech) {
+    console.log(`[Voiceover] Speech detected (conf=${detection.confidence}) — skipping voiceover`);
+    if (detection.transcript) {
+      console.log(`[Voiceover] Transcript: "${detection.transcript.slice(0, 80)}..."`);
+    }
+    return { videoPath, skipped: true, reason: "speech_detected", detection };
+  }
+
+  if (detection.silent) {
+    console.log("[Voiceover] Silent video — will add voiceover");
+  } else if (detection.hasMusic) {
+    console.log("[Voiceover] Music-only detected — will add voiceover (ducking music to 20%)");
   }
 
   if (dryRun) {
     console.log("[Voiceover] DRY RUN — would generate voiceover");
-    return { videoPath, skipped: false, reason: "dry_run" };
+    return { videoPath, skipped: false, reason: "dry_run", detection };
   }
 
   // Step 2: Get video duration and generate script
@@ -167,13 +179,13 @@ export async function processVoiceover(videoPath, city, dryRun = false) {
   // Step 3: Generate TTS
   const audioPath = await generateTTS(script);
 
-  // Step 4: Merge
+  // Step 4: Merge (ducks original audio to 20% automatically)
   const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
 
   // Cleanup TTS temp file
   try { unlinkSync(audioPath); } catch {}
 
-  return { videoPath: mergedPath, skipped: false, script };
+  return { videoPath: mergedPath, skipped: false, script, detection };
 }
 
 /**

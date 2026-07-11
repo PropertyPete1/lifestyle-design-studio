@@ -4,6 +4,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { sanitizeCaption, sanitizeForTTS } from "./sanitize.js";
+import { pickHookStyle, loadWeights } from "./analytics.js";
 
 let client = null;
 
@@ -21,10 +22,27 @@ const CITY_NAMES = {
 };
 
 /**
+ * Get a hook style instruction based on performance weights.
+ * The analytics feedback loop adjusts these weights weekly.
+ */
+function getHookInstruction(cityName) {
+  const style = pickHookStyle();
+  const instructions = {
+    question: `Write a QUESTION hook. Example: "would you believe this is brand new construction in ${cityName}?" or "did you know you can get a brand new home in ${cityName} for less than rent?"`,
+    bold_claim: `Write a BOLD CLAIM hook. Example: "this might be the best new build I've toured this month" or "I've never seen finishes like this at this price point"`,
+    wait_tease: `Write a "WAIT FOR IT" TEASE hook. Example: "wait until you see the kitchen in this one \ud83d\ude2e\u200d\ud83d\udca8" or "you need to see what's behind this front door"`,
+    reaction: `Write a REACTION hook. Example: "the floor plan in this one made me stop mid-tour" or "I was speechless when I walked in"`,
+    vibe: `Write a VIBE hook. Example: "this is what new construction is supposed to feel like" or "the energy in this home is unmatched"`,
+  };
+  console.log(`[Caption] Using hook style: ${style} (weighted selection)`);
+  return instructions[style] || instructions.question;
+}
+
+/**
  * Generate a fresh real-estate caption for a video.
  * 
  * Structure:
- * 1. Hook (curiosity line, under 100 chars — drives watch time)
+ * 1. Hook (curiosity line, under 100 chars \u2014 drives watch time)
  * 2. Scarcity/story line
  * 3. Feature block with emoji bullets (NO fabricated prices or specific bed/bath counts)
  * 4. Who it's for
@@ -42,12 +60,8 @@ export async function generateCaption(city) {
 
 STRUCTURE (follow this EXACT order):
 
-1. HOOK (first line, under 100 chars): A curiosity line that makes people stop scrolling and keep watching. Vary the style — use one of these approaches randomly:
-   - Question: "would you believe this is brand new construction in ${cityName}?"
-   - Bold claim: "this might be the best new build I've toured this month"
-   - "Wait for it" tease: "wait until you see the kitchen in this one 😮‍💨"
-   - Reaction: "the floor plan in this one made me stop mid-tour"
-   - Vibe: "this is what new construction is supposed to feel like"
+1. HOOK (first line, under 100 chars): A curiosity line that makes people stop scrolling and keep watching.
+   USE THIS SPECIFIC HOOK STYLE: ${getHookInstruction(cityName)}
    NEVER start with a CTA or "fill out link in bio". The hook must create curiosity.
 
 2. One short scarcity/story line (e.g. "new construction like this doesn't sit long in ${cityName}" or "builders are offering wild incentives right now")
