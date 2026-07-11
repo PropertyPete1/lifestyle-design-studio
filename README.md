@@ -25,7 +25,7 @@ Automated daily Instagram/TikTok/YouTube Shorts posting pipeline for Lifestyle D
 │  • Whisper → speech detection                          │
 │  • ElevenLabs → voiceover (if no speech)               │
 │  • Claude → caption generation (weighted by analytics) │
-│  • Metricool → post to IG/TikTok/YouTube/FB            │
+│  • Metricool → post to IG/TikTok/YouTube Shorts         │
 │  • Verify → confirm PUBLISHED status                   │
 └─────────────────────────────────────────────────────────┘
 ```
