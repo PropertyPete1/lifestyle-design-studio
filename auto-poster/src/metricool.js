@@ -19,8 +19,8 @@ import { join } from "path";
 const BASE = "https://app.metricool.com/api";
 const MAX_UPLOAD_BYTES = 95 * 1024 * 1024; // 95MB safety margin (Metricool limit is 100MB)
 
-function authParams() {
-  return `blogId=${process.env.METRICOOL_BLOG_ID}&userId=${process.env.METRICOOL_USER_ID}`;
+function authParams(blogId = process.env.METRICOOL_BLOG_ID) {
+  return `blogId=${blogId}&userId=${process.env.METRICOOL_USER_ID}`;
 }
 
 function authHeaders() {
@@ -69,33 +69,47 @@ export async function getRecentIgPosts(days = 30) {
 }
 
 /**
- * Upload a video buffer to Metricool's media library (S3 presigned flow).
+ * Discover ALL brands on the Metricool account that have Instagram connected.
+ * Each brand = a different IG account. We post to every one.
+ * Uses /admin/simpleProfiles endpoint.
+ */
+export async function getAllBrands() {
+  const url = `${BASE}/admin/simpleProfiles?userId=${process.env.METRICOOL_USER_ID}`;
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    console.warn(`[Metricool] getAllBrands failed (${res.status}) — falling back to default brand`);
+    return [{ blogId: process.env.METRICOOL_BLOG_ID, label: "default", networks: ["INSTAGRAM", "TIKTOK", "YOUTUBE"] }];
+  }
+  const profiles = await res.json();
+  const brands = [];
+  for (const p of profiles) {
+    if (p.deleted === true || p.isDemo === true) continue;
+    const blogId = Number(p.id || p.blogId);
+    if (!blogId) continue;
+    const networks = [];
+    if (typeof p.instagram === "string" && p.instagram) networks.push("INSTAGRAM");
+    if (typeof p.tiktok === "string" && p.tiktok) networks.push("TIKTOK");
+    if (typeof p.youtube === "string" && p.youtube) networks.push("YOUTUBE");
+    // Only include brands that have Instagram connected
+    if (!networks.includes("INSTAGRAM")) continue;
+    brands.push({ blogId, label: String(p.label || p.id || blogId), networks });
+  }
+  console.log(`[Metricool] Discovered ${brands.length} IG brands: ${brands.map(b => b.label).join(", ")}`);
+  return brands.length > 0 ? brands : [{ blogId: process.env.METRICOOL_BLOG_ID, label: "default", networks: ["INSTAGRAM", "TIKTOK", "YOUTUBE"] }];
+}
+
+/**
+ * Upload a video buffer to a specific brand's Metricool media library.
  * Returns the hosted CDN URL.
  * 
- * Uses PUT method for creating transaction (NOT POST).
- * Auth is passed as query params, not in the body.
+ * If prefetched is provided (buf + sha256b64), reuses those bytes.
  */
-export async function uploadVideoToMetricool(videoBuffer, fileName) {
-  // Compress if over 95MB (Metricool has 100MB per-part limit)
-  let buf = videoBuffer;
-  if (buf.length > MAX_UPLOAD_BYTES) {
-    console.log(`[Metricool] Video is ${(buf.length / 1024 / 1024).toFixed(1)} MB — compressing to fit 100MB limit (keeping 4K)...`);
-    const compressed = compressVideoToFit(buf, MAX_UPLOAD_BYTES);
-    if (compressed) {
-      buf = compressed.buffer;
-      console.log(`[Metricool] Compressed to ${compressed.fileSizeMb} MB (CRF ${compressed.crfValue})`);
-    } else {
-      console.warn(`[Metricool] Compression failed — attempting upload with original size`);
-    }
-  }
-
-  const sha256b64 = createHash("sha256").update(buf).digest("base64");
+async function uploadToBrand(blogId, prefetched) {
+  const { buf, sha256b64 } = prefetched;
   const size = buf.length;
 
-  console.log(`[Metricool] Uploading ${(size / 1024 / 1024).toFixed(1)} MB...`);
-
-  // Step 1: Create upload transaction (PUT, not POST)
-  const txRes = await fetch(`${BASE}/v2/media/s3/upload-transactions?${authParams()}`, {
+  // Step 1: Create upload transaction
+  const txRes = await fetch(`${BASE}/v2/media/s3/upload-transactions?${authParams(blogId)}`, {
     method: "PUT",
     headers: authHeaders(),
     body: JSON.stringify({
@@ -118,8 +132,7 @@ export async function uploadVideoToMetricool(videoBuffer, fileName) {
     throw new Error(`No presigned URL returned from Metricool: ${JSON.stringify(txJson).slice(0, 200)}`);
   }
 
-  // Step 2: PUT the bytes to the presigned S3 URL with matching checksum header
-  console.log("[Metricool] Uploading to S3...");
+  // Step 2: PUT the bytes to the presigned S3 URL
   const putRes = await fetch(tx.presignedUrl, {
     method: "PUT",
     headers: {
@@ -135,9 +148,8 @@ export async function uploadVideoToMetricool(videoBuffer, fileName) {
     throw new Error(`S3 upload failed (${putRes.status}): ${err}`);
   }
 
-  // Step 3: Complete the transaction (PATCH)
-  console.log("[Metricool] Completing transaction...");
-  const completeRes = await fetch(`${BASE}/v2/media/s3/upload-transactions?${authParams()}`, {
+  // Step 3: Complete the transaction
+  const completeRes = await fetch(`${BASE}/v2/media/s3/upload-transactions?${authParams(blogId)}`, {
     method: "PATCH",
     headers: authHeaders(),
     body: JSON.stringify({ simple: { fileUrl: tx.fileUrl } }),
@@ -155,8 +167,39 @@ export async function uploadVideoToMetricool(videoBuffer, fileName) {
     throw new Error("No hosted URL returned after upload completion");
   }
 
-  console.log(`[Metricool] Video uploaded: ${hostedUrl.slice(0, 80)}...`);
   return hostedUrl;
+}
+
+/**
+ * Upload a video buffer to Metricool's media library (S3 presigned flow).
+ * Handles compression if needed. Returns { buf, sha256b64 } for reuse across brands.
+ */
+export async function uploadVideoToMetricool(videoBuffer, fileName) {
+  // Compress if over 95MB (Metricool has 100MB per-part limit)
+  let buf = videoBuffer;
+  if (buf.length > MAX_UPLOAD_BYTES) {
+    console.log(`[Metricool] Video is ${(buf.length / 1024 / 1024).toFixed(1)} MB — compressing to fit 100MB limit (keeping 4K)...`);
+    const compressed = compressVideoToFit(buf, MAX_UPLOAD_BYTES);
+    if (compressed) {
+      buf = compressed.buffer;
+      console.log(`[Metricool] Compressed to ${compressed.fileSizeMb} MB (CRF ${compressed.crfValue})`);
+    } else {
+      console.warn(`[Metricool] Compression failed — attempting upload with original size`);
+    }
+  }
+
+  const sha256b64 = createHash("sha256").update(buf).digest("base64");
+  const size = buf.length;
+
+  console.log(`[Metricool] Uploading ${(size / 1024 / 1024).toFixed(1)} MB...`);
+
+  // Upload to the default brand first (for backwards compat)
+  const defaultBlogId = process.env.METRICOOL_BLOG_ID;
+  const hostedUrl = await uploadToBrand(defaultBlogId, { buf, sha256b64 });
+
+  console.log(`[Metricool] Video uploaded: ${hostedUrl.slice(0, 80)}...`);
+  // Return both the URL and the prefetched data for multi-brand reuse
+  return { hostedUrl, prefetched: { buf, sha256b64 } };
 }
 
 /**
@@ -176,73 +219,124 @@ function chicagoLocalDateTime() {
 }
 
 /**
- * Create a scheduled post on Metricool (posts immediately if scheduled for now).
- * Posts to Instagram (Reel), TikTok, YouTube. LinkedIn excluded per user preference.
+ * Create a scheduled post on Metricool — MULTI-BRAND FAN-OUT.
+ * Discovers all IG-connected brands and posts to each one separately.
+ * Each brand gets its own upload + post (Metricool media libraries are per-blogId).
+ * 
+ * Posts to Instagram (Reel), TikTok, YouTube per brand. LinkedIn excluded.
+ * 
+ * Returns { ok, brands: [{ label, ok, networks, error? }], platforms }
  */
 export async function createPost(mediaUrl, caption, options = {}) {
-  const { dryRun = false } = options;
+  const { dryRun = false, prefetched = null } = options;
+
+  // Discover all brands
+  const brands = await getAllBrands();
 
   if (dryRun) {
-    console.log("[Metricool] DRY RUN — would post to all platforms");
+    console.log(`[Metricool] DRY RUN — would post to ${brands.length} brands: ${brands.map(b => b.label).join(", ")}`);
     console.log(`[Metricool] Caption: ${caption.slice(0, 100)}...`);
-    console.log(`[Metricool] Media: ${mediaUrl.slice(0, 80)}...`);
-    return { ok: true, dryRun: true };
+    console.log(`[Metricool] Media: ${String(mediaUrl).slice(0, 80)}...`);
+    return { ok: true, dryRun: true, brands: brands.map(b => ({ label: b.label, ok: true, networks: b.networks })) };
   }
 
-  const body = {
-    text: caption,
-    publicationDate: {
-      dateTime: chicagoLocalDateTime(),
-      timezone: "America/Chicago",
-    },
-    providers: [
-      { network: "instagram" },
-      { network: "tiktok" },
-      { network: "youtube" },
-    ],
-    // CRITICAL: media MUST be an array of bare URL STRINGS
-    media: [mediaUrl],
-    autoPublish: true,
-    shortener: false,
-    draft: false,
-    // Instagram-specific: publish as Reel
-    instagramData: {
-      type: "REEL",
-      showReelOnFeed: true,
-      autoPublish: true,
-    },
-    // TikTok-specific
-    tiktokData: {
-      privacyOption: "PUBLIC_TO_EVERYONE",
-      autoPublish: true,
-      contentType: "VIDEO",
-    },
-    // YouTube-specific: publish as Short
-    youtubeData: {
-      type: "short",
-      privacy: "public",
-      title: caption
-        ? caption.replace(/#\S+/g, "").trim().slice(0, 100) || "New property tour"
-        : "New property tour",
-    },
-  };
+  const NETWORK_MAP = { INSTAGRAM: "instagram", TIKTOK: "tiktok", YOUTUBE: "youtube" };
+  const NICE_NAMES = { instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube" };
+  const publishAt = chicagoLocalDateTime();
 
-  const url = `${BASE}/v2/scheduler/posts?${authParams()}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: authHeaders(),
-    body: JSON.stringify(body),
-  });
+  const results = [];
 
-  const raw = await res.json().catch(() => null);
+  for (const brand of brands) {
+    try {
+      // Upload to this brand's media library
+      let brandMediaUrl;
+      if (prefetched) {
+        console.log(`[Metricool] Uploading to brand: ${brand.label} (${brand.blogId})...`);
+        brandMediaUrl = await uploadToBrand(brand.blogId, prefetched);
+      } else {
+        // mediaUrl is already a Metricool-hosted URL from the first upload
+        brandMediaUrl = mediaUrl;
+      }
 
-  if (!res.ok) {
-    throw new Error(`Metricool post failed (${res.status}): ${JSON.stringify(raw).slice(0, 300)}`);
+      // Filter to video-friendly networks only (no LinkedIn)
+      const allowed = ["INSTAGRAM", "TIKTOK", "YOUTUBE"];
+      const providers = brand.networks
+        .filter(n => allowed.includes(n))
+        .map(n => ({ network: NETWORK_MAP[n] || n.toLowerCase() }));
+
+      if (providers.length === 0) {
+        results.push({ label: brand.label, ok: false, networks: [], error: "no video networks" });
+        continue;
+      }
+
+      const body = {
+        text: caption,
+        publicationDate: {
+          dateTime: publishAt,
+          timezone: "America/Chicago",
+        },
+        providers,
+        media: [brandMediaUrl],
+        autoPublish: true,
+        shortener: false,
+        draft: false,
+        instagramData: {
+          type: "REEL",
+          showReelOnFeed: true,
+          autoPublish: true,
+        },
+        tiktokData: {
+          privacyOption: "PUBLIC_TO_EVERYONE",
+          autoPublish: true,
+          contentType: "VIDEO",
+        },
+        youtubeData: {
+          type: "short",
+          privacy: "public",
+          title: caption
+            ? caption.replace(/#\S+/g, "").trim().slice(0, 100) || "New property tour"
+            : "New property tour",
+        },
+      };
+
+      const url = `${BASE}/v2/scheduler/posts?${authParams(brand.blogId)}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+
+      const raw = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const errMsg = `API error ${res.status}: ${JSON.stringify(raw).slice(0, 200)}`;
+        console.warn(`[Metricool] ✗ Brand ${brand.label} failed: ${errMsg}`);
+        results.push({ label: brand.label, ok: false, networks: brand.networks, error: errMsg });
+      } else {
+        const postId = raw?.id || raw?.postId || "unknown";
+        console.log(`[Metricool] ✓ Brand ${brand.label} posted (ID: ${postId}) — ${providers.map(p => NICE_NAMES[p.network] || p.network).join(", ")}`);
+        results.push({ label: brand.label, ok: true, networks: brand.networks, postId });
+      }
+    } catch (err) {
+      console.warn(`[Metricool] ✗ Brand ${brand.label} error: ${err.message?.slice(0, 200)}`);
+      results.push({ label: brand.label, ok: false, networks: brand.networks, error: err.message });
+    }
   }
 
-  const postId = raw?.id || raw?.postId || "unknown";
-  console.log(`[Metricool] Post created successfully (ID: ${postId})`);
-  return { ok: true, postId, data: raw };
+  const anyOk = results.some(r => r.ok);
+  const summary = results
+    .map(r => {
+      const nets = r.networks.map(n => NICE_NAMES[n.toLowerCase()] || n).join(", ");
+      return r.ok ? `${r.label} (${nets})` : `${r.label} FAILED`;
+    })
+    .join("; ");
+
+  if (!anyOk) {
+    throw new Error(`All brands failed: ${results.map(r => `${r.label}: ${r.error}`).join("; ")}`);
+  }
+
+  console.log(`[Metricool] Post created on ${results.filter(r => r.ok).length}/${brands.length} brands: ${summary}`);
+  return { ok: true, brands: results, platforms: summary };
 }
 
 /**

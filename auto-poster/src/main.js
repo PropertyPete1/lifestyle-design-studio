@@ -445,25 +445,31 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       caption = await generateCaption(CITY);
     }
 
-    // Upload to Metricool
+    // Upload to Metricool (compress once, reuse across all brands)
     console.log("[Post] Uploading to Metricool...");
     const videoToUpload = existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath;
 
     let mediaUrl;
+    let prefetched = null;
     if (DRY_RUN) {
       mediaUrl = "https://dry-run-placeholder.example.com/video.mp4";
       console.log("[Post] DRY RUN — skipping upload");
     } else {
       const uploadBuffer = readFileSync(videoToUpload);
-      mediaUrl = await uploadVideoToMetricool(uploadBuffer, video.name);
+      const uploadResult = await uploadVideoToMetricool(uploadBuffer, video.name);
+      mediaUrl = uploadResult.hostedUrl;
+      prefetched = uploadResult.prefetched;
     }
 
-    // Post to all platforms
-    console.log("[Post] Creating post...");
-    const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN });
+    // Post to ALL brands (multi-IG fan-out)
+    console.log("[Post] Creating post on all brands...");
+    const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN, prefetched });
 
     // Record in log (skip in dry-run mode)
     if (!DRY_RUN) {
+      const brandSummary = result.brands
+        ? result.brands.filter(b => b.ok).map(b => b.label).join(", ")
+        : "unknown";
       recordPost(log, {
         driveFileId: video.id,
         fileName: video.name,
@@ -471,6 +477,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         caption,
         voiceover: hasVoiceover,
         platforms: ["instagram", "tiktok", "youtube"],
+        brands: brandSummary,
         success: true,
       });
     } else {
@@ -478,6 +485,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     }
 
     console.log(`[Post] ✓ Successfully posted ${video.name}`);
+    if (result.platforms) console.log(`[Post] ✓ Brands: ${result.platforms}`);
     if (hasVoiceover) console.log("[Post] ✓ Voiceover added");
     console.log(`[Post] ✓ Caption (${caption.length} chars): ${caption.slice(0, 100)}...`);
   } finally {
