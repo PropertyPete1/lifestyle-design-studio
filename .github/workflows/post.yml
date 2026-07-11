@@ -1,14 +1,23 @@
 name: Daily Auto Post
 
+# BACKUP CRONS: GitHub cron is unreliable (delays, silent skips).
+# Each city fires twice — the 20-hour idempotency guard in the script
+# makes this safe: if the first cron posted, the backup exits cleanly.
 on:
   schedule:
+    # San Antonio: 2:00 PM CT = 19:00 UTC (primary), 2:30 PM CT = 19:30 UTC (backup)
     - cron: '0 19 * * *'
+    - cron: '30 19 * * *'
+    # Austin: 3:00 PM CT = 20:00 UTC (primary), 3:30 PM CT = 20:30 UTC (backup)
     - cron: '0 20 * * *'
+    - cron: '30 20 * * *'
+    # Dallas: 4:00 PM CT = 21:00 UTC (primary), 4:30 PM CT = 21:30 UTC (backup)
     - cron: '0 21 * * *'
+    - cron: '30 21 * * *'
   workflow_dispatch:
     inputs:
       city:
-        description: 'City to post for (san_antonio, austin, dallas )'
+        description: 'City to post for (san_antonio, austin, dallas)'
         required: true
         default: 'san_antonio'
         type: choice
@@ -27,7 +36,10 @@ permissions:
 
 jobs:
   post-san-antonio:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'san_antonio' || github.event.schedule == '0 19 * * *'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'san_antonio')
+      || github.event.schedule == '0 19 * * *'
+      || github.event.schedule == '30 19 * * *'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,12 +70,16 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json
+          git add posted-log.json video-matches.json
           git diff --cached --quiet || git commit -m "📸 SA post $(date -u +%Y-%m-%d)"
-          git push
+          git pull --rebase origin main || true
+          git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
 
   post-austin:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'austin' || github.event.schedule == '0 20 * * *'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'austin')
+      || github.event.schedule == '0 20 * * *'
+      || github.event.schedule == '30 20 * * *'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -94,12 +110,16 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json
+          git add posted-log.json video-matches.json
           git diff --cached --quiet || git commit -m "📸 ATX post $(date -u +%Y-%m-%d)"
-          git push
+          git pull --rebase origin main || true
+          git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
 
   post-dallas:
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'dallas' || github.event.schedule == '0 21 * * *'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'dallas')
+      || github.event.schedule == '0 21 * * *'
+      || github.event.schedule == '30 21 * * *'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -142,6 +162,7 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json
+          git add posted-log.json video-matches.json
           git diff --cached --quiet || git commit -m "📸 DFW post $(date -u +%Y-%m-%d)"
-          git push
+          git pull --rebase origin main || true
+          git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
