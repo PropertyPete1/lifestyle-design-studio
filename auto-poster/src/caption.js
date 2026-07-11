@@ -3,7 +3,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { sanitizeCaption } from "./sanitize.js";
+import { sanitizeCaption, sanitizeForTTS } from "./sanitize.js";
 
 let client = null;
 
@@ -121,6 +121,7 @@ RULES:
 - DO NOT use hashtags or emojis
 - Keep it conversational and engaging
 - Do NOT use em-dashes or en-dashes (— or –). Use periods, commas, or line breaks instead. This is important; dashes read as AI-written.
+- Spell out ALL numbers as words. Never use digits. "three bedrooms" not "3 bedrooms", "two and a half baths" not "2.5 baths", "three hundred eighty nine thousand" not "389,000" or "$389K". Also spell out abbreviations that TTS mangles: "square feet" not "sqft", "street" not "st".
 - Return ONLY the script text, nothing else
 
 Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natural light coming through these windows is incredible. You've got this gorgeous open concept layout..."`;
@@ -135,7 +136,7 @@ Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natur
     const content = response.content[0]?.text;
     if (content && content.length > 30) {
       console.log(`[VoiceoverScript] Generated (${content.length} chars, ~${content.split(/\s+/).length} words)`);
-      return sanitizeCaption(content);
+      return sanitizeForTTS(sanitizeCaption(content));
     }
   } catch (err) {
     console.error("[VoiceoverScript] Anthropic API failed:", err.message);
