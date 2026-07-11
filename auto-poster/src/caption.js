@@ -21,32 +21,63 @@ const CITY_NAMES = {
 
 /**
  * Generate a fresh real-estate caption for a video.
+ * 
+ * Structure:
+ * 1. Hook (curiosity line, under 100 chars — drives watch time)
+ * 2. Scarcity/story line
+ * 3. Feature block with emoji bullets (NO fabricated prices or specific bed/bath counts)
+ * 4. Who it's for
+ * 5. Primary CTA (comment TOUR)
+ * 6. Secondary CTA (DM LIST)
+ * 7. Link in bio (demoted to end)
+ * 8. Lifestyle Design Realty
+ * 9. Hashtags
  */
 export async function generateCaption(city) {
   const cityName = CITY_NAMES[city] || city;
   const hashtag = city === "san_antonio" ? "sanantonio" : city === "dallas" ? "dallas" : "austin";
 
-  const prompt = `Write an Instagram Reel caption for a real estate video showcasing a brand new home in ${cityName}, Texas. 
+  const prompt = `Write an Instagram Reel caption for a real estate video showcasing a brand new construction home in ${cityName}, Texas.
 
-Write it in this EXACT style (this is how the account always posts):
+STRUCTURE (follow this EXACT order):
+
+1. HOOK (first line, under 100 chars): A curiosity line that makes people stop scrolling and keep watching. Vary the style — use one of these approaches randomly:
+   - Question: "would you believe this is brand new construction in ${cityName}?"
+   - Bold claim: "this might be the best new build I've toured this month"
+   - "Wait for it" tease: "wait until you see the kitchen in this one 😮‍💨"
+   - Reaction: "the floor plan in this one made me stop mid-tour"
+   - Vibe: "this is what new construction is supposed to feel like"
+   NEVER start with a CTA or "fill out link in bio". The hook must create curiosity.
+
+2. One short scarcity/story line (e.g. "new construction like this doesn't sit long in ${cityName}" or "builders are offering wild incentives right now")
+
+3. Feature block with emoji bullets. Describe what you'd SEE in a new construction tour:
+   🏡 new construction / modern finishes / smart layout
+   🪟 natural light / open concept / big windows
+   🍳 chef's kitchen / island / upgraded counters
+   🔥 energy efficient / move-in ready
+   💸 builder incentives / rate buydowns available — ask what you qualify for
+   
+   IMPORTANT: Do NOT invent specific prices, bedroom counts, or bathroom counts. You don't know the actual specs of this home. Keep features general but vivid.
+
+4. One line on who it's perfect for: "perfect for growing families, military/veteran buyers, or anyone ready to stop renting"
+
+5. PRIMARY CTA: "📲 comment TOUR and I will DM you exact payments, incentives and private tour times"
+
+6. SECONDARY: "📩 or DM LIST for every similar option in ${cityName}"
+
+7. LAST content line (low-key): "⭐️ link in bio to get started with us today"
+
+8. "Lifestyle Design Realty" on its own line
+
+9. Hashtags: #texas #${hashtag} #realestate #military #veteran #newconstruction
 
 RULES:
-- Start with a catchy emoji hook line that grabs attention (use 🪟, 🏡, 😮‍💨, 🔥, or similar)
-- Include "⭐️FILL OUT THE LINK IN BIO FOR INFO AND TO GET STARTED WITH US TODAY🌄" near the top
-- Use emoji bullet points for features (🏡, 🛏, 🛁, 🍳, 🪟, 🔥, 💰, 💸, 🗓)
-- Mention 3-5 bedrooms, 2-3.5 baths
-- Include a realistic price between $280K-$550K for ${cityName}
-- Include a financing mention (like "special financing available" or "low rate option")
-- End with: "📲 comment TOUR and I will DM you exact payments incentives and private tour times"
-- Then: "📩 or DM LIST for every similar option in ${cityName} plus a fast approval plan for VA FHA or conventional"
-- Add "Lifestyle Design Realty" on its own line
-- End with hashtags: #texas #${hashtag} #realestate #military #veteran #newconstruction
-
-IMPORTANT: 
-- Sound natural and excited, not robotic
-- Keep it under 2000 characters total
-- Use line breaks between sections
-- DO NOT use markdown formatting
+- Under 2000 characters total
+- Line breaks between each section
+- Natural excited tone, like a real person posting
+- DO NOT use markdown formatting (no bold, no headers)
+- DO NOT fabricate specific dollar amounts, bedroom counts, or square footage
 - Return ONLY the caption text, nothing else`;
 
   try {
@@ -115,22 +146,23 @@ function getFallbackCaption(city) {
   const cityName = CITY_NAMES[city] || city;
   const hashtag = city === "san_antonio" ? "sanantonio" : city === "dallas" ? "dallas" : "austin";
 
-  return `🪟 bright open layouts and that brand new home glow — this is what ${cityName} living looks like right now 😮‍💨🏡
+  return `the kitchen in this one made me stop mid-tour 😮‍💨
 
-⭐️FILL OUT THE LINK IN BIO FOR INFO AND TO GET STARTED WITH US TODAY🌄
+new construction like this doesn't sit long in ${cityName}
 
-🏡 brand new homes with modern finishes and smart floor plans
-🛏 3-5 bedrooms 🛁 2-3.5 baths designed for real life
-🪟 big windows natural light and open concept living
+🏡 brand new build with modern finishes and a smart open layout
+🪟 huge windows and natural light flooding every room
+🍳 chef's kitchen with island and upgraded counters
 🔥 energy efficient and move-in ready
+💸 builder incentives and rate buydowns available — ask what you qualify for
 
-💰 homes starting in the low $300s
-💸 special financing options available — ask what you qualify for
-🗓 quick move-in options available now
+perfect for growing families, military/veteran buyers, or anyone ready to stop renting
 
-📲 comment TOUR and I will DM you exact payments incentives and private tour times
+📲 comment TOUR and I will DM you exact payments, incentives and private tour times
 
-📩 or DM LIST for every similar option in ${cityName} plus a fast approval plan for VA FHA or conventional
+📩 or DM LIST for every similar option in ${cityName}
+
+⭐️ link in bio to get started with us today
 
 Lifestyle Design Realty
 
