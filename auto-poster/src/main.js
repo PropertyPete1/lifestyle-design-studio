@@ -43,9 +43,11 @@ const FORCE = process.env.FORCE === "true"; // Manual override to bypass every-o
 // distance 10-17 = ambiguous zone, requires AI vision confirmation before blocking
 const BLOCK_THRESHOLD = 18;
 const AI_CONFIRM_THRESHOLD = 10; // Below this = auto-block; 10-17 = AI vision check
-// CAPTION REUSE: distance < 10 = high confidence same video, safe to reuse caption
-// (risky direction: wrong caption looks bad to followers)
-const CAPTION_REUSE_THRESHOLD = 10;
+// CAPTION REUSE: distance < 5 = auto-reuse (extremely high confidence)
+// distance 5-9 = requires AI vision confirmation before reusing caption
+// (risky direction: wrong caption looks bad to followers — worse than wrong block)
+const CAPTION_REUSE_THRESHOLD = 10; // Overall threshold: above this = never reuse
+const CAPTION_AUTO_REUSE_THRESHOLD = 5; // Below this = auto-reuse without AI check
 
 // City keywords for cross-city caption detection
 const CITY_KEYWORDS = {
@@ -504,6 +506,7 @@ async function liveIgMatchCheck(video, igWithHashes, matchCache) {
         igPostId: bestMatch.reelId,
         publishedAt: bestMatch.publishedAt,
         caption: bestMatch.caption,
+        thumbnailUrl: bestMatch.thumbnailUrl || null,
         matchMethod: bestDist < AI_CONFIRM_THRESHOLD ? "perceptual_hash_live" : "perceptual_hash_live+ai_vision",
         confidence: 1 - (bestDist / 64),
         hashDistance: bestDist,
@@ -523,6 +526,7 @@ async function liveIgMatchCheck(video, igWithHashes, matchCache) {
         igPostId: bestMatch.reelId,
         publishedAt: bestMatch.publishedAt,
         caption: bestMatch.caption,
+        thumbnailUrl: bestMatch.thumbnailUrl || null,
         matchMethod: "perceptual_hash_live",
         confidence: 1 - (bestDist / 64),
         hashDistance: bestDist,
@@ -581,12 +585,41 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       if (cityMismatch) {
         console.log(`[Post] Matched caption references a DIFFERENT city — generating fresh caption`);
         caption = await generateCaption(CITY);
-      } else if (matchDist < CAPTION_REUSE_THRESHOLD) {
-        console.log(`[Post] High-confidence match (dist: ${matchDist} < ${CAPTION_REUSE_THRESHOLD}) — restructuring original caption`);
+      } else if (matchDist < CAPTION_AUTO_REUSE_THRESHOLD) {
+        // Distance 0-4: extremely high confidence, auto-reuse
+        console.log(`[Post] Very high-confidence match (dist: ${matchDist} < ${CAPTION_AUTO_REUSE_THRESHOLD}) — restructuring original caption`);
         caption = await generateCaptionFromOriginal(matchCaption, CITY);
+      } else if (matchDist < CAPTION_REUSE_THRESHOLD) {
+        // Distance 5-9: needs AI vision confirmation before reusing caption
+        // (wrong caption = publishing another property's details = very bad)
+        console.log(`[Post] Near-threshold match (dist: ${matchDist}) — running AI vision before caption reuse...`);
+        let visionConfirmed = false;
+        try {
+          const matchThumb = cachedMatch[0].thumbnailUrl;
+          if (matchThumb && existsSync(tempVideoPath)) {
+            const framePaths = await extractFrames(tempVideoPath, 3);
+            if (framePaths.length > 0) {
+              const visionResult = await aiVisionCompare(framePaths, matchThumb);
+              visionConfirmed = visionResult.same === true && (visionResult.confidence || 0) >= 0.7;
+              console.log(`[Post] AI vision for caption reuse: same=${visionResult.same}, confidence=${visionResult.confidence}`);
+              // Clean up frame files
+              for (const fp of framePaths) { try { unlinkSync(fp); } catch {} }
+            }
+          } else {
+            console.log(`[Post] No thumbnail or video for AI vision check — skipping caption reuse`);
+          }
+        } catch (err) {
+          console.warn(`[Post] AI vision check failed: ${err.message} — skipping caption reuse`);
+        }
+        if (visionConfirmed) {
+          console.log(`[Post] AI confirms same property — restructuring original caption`);
+          caption = await generateCaptionFromOriginal(matchCaption, CITY);
+        } else {
+          console.log(`[Post] AI did NOT confirm same property — generating fresh caption (safety)`);
+          caption = await generateCaption(CITY);
+        }
       } else {
-        // Distance 10-17: match is good enough to BLOCK re-posting but NOT confident
-        // enough to reuse the caption (could be a false positive like SA/Austin mismatch)
+        // Distance 10+: not confident enough to reuse caption
         console.log(`[Post] Match distance ${matchDist} >= ${CAPTION_REUSE_THRESHOLD} — not confident enough to reuse caption, generating fresh`);
         caption = await generateCaption(CITY);
       }
