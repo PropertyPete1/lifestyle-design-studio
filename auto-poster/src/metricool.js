@@ -57,8 +57,11 @@ export async function getRecentIgPosts(days = 30) {
 
   const posts = data.map(reel => ({
     reelId: String(reel.reelId || ""),
-    caption: String(reel.content || "").slice(0, 500),
+    caption: String(reel.content || ""),
     publishedAt: reel.publishedAt,
+    duration: reel.durationSeconds || 0,
+    thumbnailUrl: reel.imageUrl || null,
+    url: reel.url || null,
   }));
 
   console.log(`[Metricool] Found ${posts.length} IG posts in last ${days} days`);

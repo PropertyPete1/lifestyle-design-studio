@@ -142,6 +142,80 @@ Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natur
   return getFallbackScript(city);
 }
 
+/**
+ * Generate a caption by restructuring the original IG caption.
+ * Preserves the real price, bed/bath, and features from the original post
+ * but restructures for the new engagement format (hook first, CTA at end).
+ */
+export async function generateCaptionFromOriginal(originalCaption, city) {
+  const cityName = CITY_NAMES[city] || city;
+  const hashtag = city === "san_antonio" ? "sanantonio" : city === "dallas" ? "dallas" : "austin";
+
+  const prompt = `You are given the original Instagram caption from a real estate video post. Your job is to RESTRUCTURE it into a new caption that follows the engagement-optimized format below.
+
+IMPORTANT: Preserve ALL factual details from the original (price, bedrooms, bathrooms, square footage, features, community name). Do NOT invent new details. Only restructure the format and rewrite the hook.
+
+ORIGINAL CAPTION:
+${originalCaption}
+
+NEW STRUCTURE (follow this EXACT order):
+
+1. HOOK (first line, under 100 chars): A curiosity line that references something specific from the original caption. Use the real price or a standout feature. Examples:
+   - "wait until you see what $389K gets you in ${cityName} right now"
+   - "the kitchen in this $450K new build is unreal 😮‍💨"
+   - "4 beds, 3 baths, and THAT backyard for under $400K?"
+   NEVER start with a CTA. The hook must create curiosity using REAL details from the original.
+
+2. One short scarcity/story line (e.g. "new construction like this doesn't sit long" or reference builder incentives if mentioned in original)
+
+3. Feature block with emoji bullets — pull the REAL specs from the original caption:
+   🏡 [beds] / [baths] / [sqft if mentioned]
+   💰 [REAL price from original]
+   🪟 [real features mentioned: natural light, open concept, etc.]
+   🍳 [kitchen details if mentioned]
+   💸 [financing/incentives if mentioned in original]
+
+4. One line on who it's perfect for (growing families, military/veteran buyers, first-time buyers)
+
+5. PRIMARY CTA: "📲 comment TOUR and I will DM you exact payments, incentives and private tour times"
+
+6. SECONDARY: "📩 or DM LIST for every similar option in ${cityName}"
+
+7. LAST content line: "⭐️ link in bio to get started with us today"
+
+8. "Lifestyle Design Realty" on its own line
+
+9. Hashtags: #texas #${hashtag} #realestate #military #veteran #newconstruction
+
+RULES:
+- Under 2000 characters total
+- Line breaks between each section
+- Natural excited tone
+- DO NOT use markdown formatting
+- DO NOT invent details not in the original — if price isn't mentioned, don't add one
+- Return ONLY the caption text, nothing else`;
+
+  try {
+    const response = await getClient().messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const content = response.content[0]?.text;
+    if (content && content.length > 50) {
+      console.log(`[Caption] Restructured from original (${content.length} chars)`);
+      return content.trim();
+    }
+  } catch (err) {
+    console.error("[Caption] Anthropic API failed for restructure:", err.message);
+  }
+
+  // Fallback: use original caption as-is if restructuring fails
+  console.log("[Caption] Falling back to original caption");
+  return originalCaption;
+}
+
 function getFallbackCaption(city) {
   const cityName = CITY_NAMES[city] || city;
   const hashtag = city === "san_antonio" ? "sanantonio" : city === "dallas" ? "dallas" : "austin";

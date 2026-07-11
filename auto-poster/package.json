@@ -9,7 +9,9 @@
     "get-token": "node scripts/get-refresh-token.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0"
+    "@anthropic-ai/sdk": "^0.39.0",
+    "imghash": "^1.1.4",
+    "sharp": "^0.35.3"
   },
   "engines": {
     "node": ">=20.0.0"
