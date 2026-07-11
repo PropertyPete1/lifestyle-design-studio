@@ -19,6 +19,7 @@ import { getRecentIgPosts, uploadVideoToMetricool, createPost } from "./metricoo
 import { generateCaption, generateCaptionFromOriginal } from "./caption.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
 import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds } from "./state.js";
+import { postToLinkedin } from "./linkedin.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration } from "./matcher.js";
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
@@ -183,6 +184,21 @@ async function main() {
 
   // Save updated match cache
   saveMatches(matchCache);
+
+  // LinkedIn: post text-only recruiting content (once per day, on first city run)
+  // Only fires on the first city of the day (san_antonio at 2PM CT) to avoid duplicates
+  if (CITY === "san_antonio") {
+    try {
+      console.log("\n[LinkedIn] Generating daily recruiting post...");
+      const liResult = await postToLinkedin({ dryRun: DRY_RUN });
+      if (liResult.ok) {
+        console.log(`[LinkedIn] ✓ Recruiting post published (topic: ${liResult.topic})`);
+      }
+    } catch (err) {
+      // LinkedIn failure is non-fatal — video posts already succeeded
+      console.error(`[LinkedIn] ✗ Failed (non-fatal): ${err.message}`);
+    }
+  }
 
   console.log("\n" + "=".repeat(60));
   console.log("[AutoPoster] Done!");
