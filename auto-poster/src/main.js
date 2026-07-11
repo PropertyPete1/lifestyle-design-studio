@@ -256,27 +256,48 @@ async function main() {
     }
   }
 
-  if (!posted) {
-    console.error(`\n[AutoPoster] All candidates failed. Last error: ${lastError?.message}`);
-    process.exit(1);
-  }
-
-  // Save updated match cache
+  // Save updated match cache (even if video posting failed — matches are still valid)
   saveMatches(matchCache);
 
-  // LinkedIn: post text-only recruiting content (once per day, on first city run)
-  // Only fires on the first city of the day (san_antonio at 2PM CT) to avoid duplicates
+  // LinkedIn: post text-only recruiting content (DECOUPLED from video success)
+  // Only fires on the san_antonio run to avoid duplicates across city runs.
+  // Has its own 20-hour idempotency guard so manual re-runs can't double-post.
   if (CITY === "san_antonio") {
-    try {
-      console.log("\n[LinkedIn] Generating daily recruiting post...");
-      const liResult = await postToLinkedin({ dryRun: DRY_RUN });
-      if (liResult.ok) {
-        console.log(`[LinkedIn] ✓ Recruiting post published (topic: ${liResult.topic})`);
+    const hasRecentLinkedin = log.posts.some(
+      p => p.type === "linkedin" && (Date.now() - new Date(p.timestamp).getTime()) < 20 * 60 * 60 * 1000
+    );
+
+    if (hasRecentLinkedin) {
+      console.log("\n[LinkedIn] Already posted in last 20 hours — skipping");
+    } else {
+      try {
+        console.log("\n[LinkedIn] Generating daily recruiting post...");
+        const liResult = await postToLinkedin({ dryRun: DRY_RUN });
+        if (liResult.ok) {
+          console.log(`[LinkedIn] ✓ Recruiting post published (topic: ${liResult.topic})`);
+          // Log LinkedIn post for idempotency
+          if (!DRY_RUN) {
+            log.posts.push({
+              type: "linkedin",
+              topic: liResult.topic,
+              brands: liResult.brands.map(b => ({ label: b.label, publishAt: b.publishAt })),
+              timestamp: new Date().toISOString(),
+              success: true,
+            });
+            saveLog(log);
+          }
+        }
+      } catch (err) {
+        // LinkedIn failure is non-fatal in both directions
+        console.error(`[LinkedIn] ✗ Failed (non-fatal): ${err.message}`);
       }
-    } catch (err) {
-      // LinkedIn failure is non-fatal — video posts already succeeded
-      console.error(`[LinkedIn] ✗ Failed (non-fatal): ${err.message}`);
     }
+  }
+
+  // Exit with error if video posting failed (after LinkedIn has had its chance)
+  if (!posted) {
+    console.error(`\n[AutoPoster] All video candidates failed. Last error: ${lastError?.message}`);
+    process.exit(1);
   }
 
   console.log("\n" + "=".repeat(60));

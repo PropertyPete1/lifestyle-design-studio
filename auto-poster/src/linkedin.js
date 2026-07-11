@@ -8,6 +8,11 @@
  * no em-dashes. Hook first, comment-driving question last.
  * 
  * Posts to all LinkedIn-connected brands via Metricool, staggered 30 min apart.
+ * 
+ * STAGGER LOGIC: Always 30 minutes between brands regardless of when cron fires.
+ * Peter = max(2:00 PM, now + 90s)
+ * Steven = max(2:30 PM, Peter + 30min)
+ * Lifestyle = max(3:00 PM, Steven + 30min)
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -93,45 +98,61 @@ function getTodayDateStr() {
 }
 
 /**
- * Get Chicago local datetime string for Metricool scheduling.
+ * Convert a Chicago-local Date to a Metricool-compatible datetime string.
  */
-function chicagoLocalDateTime(offsetMs = 0) {
-  const now = new Date(Date.now() + offsetMs);
-  const chicagoStr = now.toLocaleString("en-US", { timeZone: "America/Chicago" });
-  const chicago = new Date(chicagoStr);
-  const y = chicago.getFullYear();
-  const m = String(chicago.getMonth() + 1).padStart(2, "0");
-  const d = String(chicago.getDate()).padStart(2, "0");
-  const h = String(chicago.getHours()).padStart(2, "0");
-  const min = String(chicago.getMinutes()).padStart(2, "0");
-  const s = String(chicago.getSeconds()).padStart(2, "0");
+function toMetricoolDateTime(chicagoDate) {
+  const y = chicagoDate.getFullYear();
+  const m = String(chicagoDate.getMonth() + 1).padStart(2, "0");
+  const d = String(chicagoDate.getDate()).padStart(2, "0");
+  const h = String(chicagoDate.getHours()).padStart(2, "0");
+  const min = String(chicagoDate.getMinutes()).padStart(2, "0");
+  const s = String(chicagoDate.getSeconds()).padStart(2, "0");
   return `${y}-${m}-${d}T${h}:${min}:${s}`;
 }
 
 /**
- * Build a Metricool-compatible datetime string for today at a specific hour:minute CT.
- * If the time has already passed today, schedule 90s from now (Metricool needs future time).
+ * Compute staggered publish times for all 3 brands.
+ * Always 30 minutes apart, regardless of when the cron fires.
+ * 
+ * Logic:
+ *   Peter  = max(2:00 PM today, now + 90s)
+ *   Steven = max(2:30 PM today, Peter + 30min)
+ *   Lifestyle = max(3:00 PM today, Steven + 30min)
+ * 
+ * Returns array of { blogId, label, publishAt (Metricool datetime string) }
  */
-function todayAtTime(hour, minute) {
+function computeStaggeredTimes() {
   const now = new Date();
   const chicagoStr = now.toLocaleString("en-US", { timeZone: "America/Chicago" });
   const chicago = new Date(chicagoStr);
-  const y = chicago.getFullYear();
-  const m = String(chicago.getMonth() + 1).padStart(2, "0");
-  const d = String(chicago.getDate()).padStart(2, "0");
 
-  // Check if the target time has already passed
-  const targetMinutes = hour * 60 + minute;
-  const currentMinutes = chicago.getHours() * 60 + chicago.getMinutes();
+  // Build today's ideal times (Chicago local)
+  const todayBase = new Date(chicago);
+  todayBase.setHours(0, 0, 0, 0);
 
-  if (currentMinutes >= targetMinutes) {
-    // Time already passed — schedule 90s from now so Metricool accepts it
-    return chicagoLocalDateTime(90_000);
-  }
+  const idealPeter = new Date(todayBase); idealPeter.setHours(14, 0, 0, 0);
+  const idealSteven = new Date(todayBase); idealSteven.setHours(14, 30, 0, 0);
+  const idealLifestyle = new Date(todayBase); idealLifestyle.setHours(15, 0, 0, 0);
 
-  const h = String(hour).padStart(2, "0");
-  const min = String(minute).padStart(2, "0");
-  return `${y}-${m}-${d}T${h}:${min}:00`;
+  // Minimum: 90s from now (Metricool requires future time)
+  const minTime = new Date(chicago.getTime() + 90_000);
+
+  // Peter = max(ideal, minTime)
+  const peterTime = idealPeter > minTime ? idealPeter : new Date(minTime);
+
+  // Steven = max(ideal, Peter + 30min)
+  const peterPlus30 = new Date(peterTime.getTime() + 30 * 60_000);
+  const stevenTime = idealSteven > peterPlus30 ? idealSteven : peterPlus30;
+
+  // Lifestyle = max(ideal, Steven + 30min)
+  const stevenPlus30 = new Date(stevenTime.getTime() + 30 * 60_000);
+  const lifestyleTime = idealLifestyle > stevenPlus30 ? idealLifestyle : stevenPlus30;
+
+  return [
+    { blogId: 4807109, label: "Peter", publishAt: toMetricoolDateTime(peterTime), time: peterTime },
+    { blogId: 6493212, label: "Steven", publishAt: toMetricoolDateTime(stevenTime), time: stevenTime },
+    { blogId: 6486275, label: "Lifestyle Design Realty", publishAt: toMetricoolDateTime(lifestyleTime), time: lifestyleTime },
+  ];
 }
 
 /**
@@ -237,18 +258,6 @@ export async function generateLinkedinPost() {
 }
 
 /**
- * LinkedIn brand schedule — hardcoded per user's requirements:
- * - Peter (blogId 4807109) → 2:00 PM CT
- * - Steven (blogId 6493212) → 2:30 PM CT
- * - Lifestyle Design Realty company page (blogId 6486275) → 3:00 PM CT
- */
-const LINKEDIN_BRANDS = [
-  { blogId: 4807109, label: "Peter", hour: 14, minute: 0 },
-  { blogId: 6493212, label: "Steven", hour: 14, minute: 30 },
-  { blogId: 6486275, label: "Lifestyle Design Realty", hour: 15, minute: 0 },
-];
-
-/**
  * Publish text-only to a single LinkedIn brand via Metricool scheduler.
  */
 async function publishToLinkedinBrand(blogId, text, publishAt) {
@@ -285,10 +294,10 @@ async function publishToLinkedinBrand(blogId, text, publishAt) {
 /**
  * Full LinkedIn posting flow:
  * 1. Generate recruiting post in Peter's voice
- * 2. Publish SAME text to all 3 LinkedIn accounts at their scheduled times:
- *    - Peter → 2:00 PM CT
- *    - Steven → 2:30 PM CT
- *    - Lifestyle Design Realty → 3:00 PM CT
+ * 2. Publish SAME text to all 3 LinkedIn accounts with guaranteed 30-min stagger:
+ *    - Peter → 2:00 PM CT (or now+90s if past 2:00)
+ *    - Steven → 2:30 PM CT (or Peter+30min if past 2:30)
+ *    - Lifestyle Design Realty → 3:00 PM CT (or Steven+30min if past 3:00)
  * 
  * Returns { ok, topic, body, brands }
  */
@@ -298,30 +307,34 @@ export async function postToLinkedin(options = {}) {
   // Generate the post
   const { topic, body } = await generateLinkedinPost();
 
+  // Compute staggered times (always 30 min apart)
+  const schedule = computeStaggeredTimes();
+
   if (dryRun) {
     console.log("[LinkedIn] DRY RUN — would post to LinkedIn:");
     console.log(`[LinkedIn] Topic: ${topic}`);
     console.log(`[LinkedIn] Body (${wordCount(body)} words):\n${body}`);
     console.log(`[LinkedIn] Would post to:`);
-    for (const brand of LINKEDIN_BRANDS) {
-      const time = `${brand.hour}:${String(brand.minute).padStart(2, "0")} PM CT`;
-      console.log(`[LinkedIn]   - ${brand.label} at ${time}`);
+    for (const brand of schedule) {
+      const hh = String(brand.time.getHours()).padStart(2, "0");
+      const mm = String(brand.time.getMinutes()).padStart(2, "0");
+      console.log(`[LinkedIn]   - ${brand.label} at ${hh}:${mm} CT`);
     }
-    return { ok: true, dryRun: true, topic, body, brands: [] };
+    return { ok: true, dryRun: true, topic, body, brands: schedule.map(s => ({ label: s.label, publishAt: s.publishAt })) };
   }
 
-  // Build today's scheduled times for each brand
+  // Publish to each brand
   const results = [];
-  for (const brand of LINKEDIN_BRANDS) {
-    const publishAt = todayAtTime(brand.hour, brand.minute);
-    const timeLabel = `${brand.hour}:${String(brand.minute).padStart(2, "0")} CT`;
-    console.log(`[LinkedIn] Publishing to ${brand.label} (blogId: ${brand.blogId}) at ${timeLabel}...`);
+  for (const brand of schedule) {
+    const hh = String(brand.time.getHours()).padStart(2, "0");
+    const mm = String(brand.time.getMinutes()).padStart(2, "0");
+    console.log(`[LinkedIn] Publishing to ${brand.label} (blogId: ${brand.blogId}) at ${hh}:${mm} CT...`);
 
-    const result = await publishToLinkedinBrand(brand.blogId, body, publishAt);
-    results.push({ ...result, brand: brand.label, blogId: brand.blogId, publishAt });
+    const result = await publishToLinkedinBrand(brand.blogId, body, brand.publishAt);
+    results.push({ ...result, label: brand.label, blogId: brand.blogId, publishAt: brand.publishAt });
 
     if (result.ok) {
-      console.log(`[LinkedIn] ✓ Scheduled for ${brand.label} at ${timeLabel} (ID: ${result.postId})`);
+      console.log(`[LinkedIn] ✓ Scheduled for ${brand.label} at ${hh}:${mm} CT (ID: ${result.postId})`);
     } else {
       console.error(`[LinkedIn] ✗ Failed on ${brand.label}: ${result.error}`);
     }
