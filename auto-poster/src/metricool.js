@@ -322,7 +322,7 @@ export async function createPost(mediaUrl, caption, options = {}) {
       } else {
         const postId = raw?.id || raw?.postId || "unknown";
         console.log(`[Metricool] ✓ Brand ${brand.label} posted (ID: ${postId}) — ${providers.map(p => NICE_NAMES[p.network] || p.network).join(", ")}`);
-        results.push({ label: brand.label, ok: true, networks: brand.networks, postId });
+        results.push({ label: brand.label, ok: true, networks: brand.networks, postId, blogId: brand.blogId });
       }
     } catch (err) {
       console.warn(`[Metricool] ✗ Brand ${brand.label} error: ${err.message?.slice(0, 200)}`);
@@ -468,4 +468,37 @@ function cleanup(inputPath, outputPath, passLogFile) {
   // ffmpeg creates passlog files with suffixes like -0.log and -0.log.mbtree
   try { unlinkSync(`${passLogFile}-0.log`); } catch {}
   try { unlinkSync(`${passLogFile}-0.log.mbtree`); } catch {}
+}
+
+/**
+ * Verify that a scheduled post was actually published on all providers.
+ * Calls GET /v2/scheduler/posts/{postId} and checks each provider's status.
+ * 
+ * @param {string|number} postId - The Metricool post ID
+ * @param {number} blogId - The brand's blogId
+ * @returns {{ verified: boolean, anyFailed: boolean, providers: Array, raw: object }}
+ */
+export async function verifyPostStatus(postId, blogId = process.env.METRICOOL_BLOG_ID) {
+  const url = `${BASE}/v2/scheduler/posts/${postId}?${authParams(blogId)}`;
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) {
+    console.warn(`[Metricool] verifyPostStatus failed (${res.status}) for post ${postId}`);
+    return { verified: false, anyFailed: false, providers: [], error: `HTTP ${res.status}`, raw: null };
+  }
+  const json = await res.json();
+  const data = json?.data;
+  if (!data) {
+    return { verified: false, anyFailed: false, providers: [], error: "No data in response", raw: json };
+  }
+  const providers = (data.providers || []).map(p => ({
+    network: p.network,
+    status: p.status,
+    detailedStatus: p.detailedStatus,
+    publicUrl: p.publicUrl || p.id || null,
+  }));
+  // A post is verified if ALL providers have status "PUBLISHED"
+  const allPublished = providers.length > 0 && providers.every(p => p.status === "PUBLISHED");
+  // Check for any failures
+  const anyFailed = providers.some(p => p.status === "FAILED" || p.status === "ERROR");
+  return { verified: allPublished, anyFailed, providers, raw: data };
 }

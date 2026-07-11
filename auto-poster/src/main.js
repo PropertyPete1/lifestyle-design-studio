@@ -22,7 +22,7 @@
  */
 
 import { listCityVideos, downloadVideo } from "./drive.js";
-import { getRecentIgPosts, uploadVideoToMetricool, createPost } from "./metricool.js";
+import { getRecentIgPosts, uploadVideoToMetricool, createPost, verifyPostStatus } from "./metricool.js";
 import { generateCaption, generateCaptionFromOriginal } from "./caption.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
 import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds } from "./state.js";
@@ -247,6 +247,7 @@ async function main() {
   // Step 5: Try each candidate
   let posted = false;
   let lastError = null;
+  let postedBrands = [];
 
   for (const candidate of candidates) {
     try {
@@ -262,8 +263,12 @@ async function main() {
       }
 
       // Pass the already-downloaded video path to avoid double download
-      await postVideo(candidate, log, igWithHashes, matchCache, liveResult.videoPath);
+      const postResult = await postVideo(candidate, log, igWithHashes, matchCache, liveResult.videoPath);
       posted = true;
+      // Store post result for verification
+      if (postResult && postResult.brands) {
+        postedBrands = postResult.brands.filter(b => b.ok && b.postId && b.postId !== "unknown");
+      }
       break;
     } catch (err) {
       lastError = err;
@@ -314,6 +319,76 @@ async function main() {
   if (!posted) {
     console.error(`\n[AutoPoster] All video candidates failed. Last error: ${lastError?.message}`);
     process.exit(1);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // POST VERIFICATION: Wait and confirm posts are actually PUBLISHED
+  // ═══════════════════════════════════════════════════════════════
+  if (posted && !DRY_RUN && postedBrands.length > 0) {
+    const VERIFY_DELAY_MS = 7 * 60 * 1000; // 7 minutes
+    console.log(`\n[Verify] Waiting ${VERIFY_DELAY_MS / 60000} minutes before verifying post status...`);
+    await new Promise(r => setTimeout(r, VERIFY_DELAY_MS));
+
+    console.log(`[Verify] Checking ${postedBrands.length} brand(s)...`);
+    let allVerified = true;
+    const verificationResults = [];
+
+    for (const brand of postedBrands) {
+      try {
+        const result = await verifyPostStatus(brand.postId, brand.blogId);
+        const statusSummary = result.providers.map(p => `${p.network}=${p.status}`).join(", ");
+        console.log(`[Verify] Brand ${brand.label} (post ${brand.postId}): ${statusSummary}`);
+
+        if (result.verified) {
+          console.log(`[Verify] ✓ Brand ${brand.label}: ALL PUBLISHED`);
+        } else if (result.anyFailed) {
+          console.error(`[Verify] ✗ Brand ${brand.label}: FAILED on some providers`);
+          allVerified = false;
+        } else {
+          // Still pending — not necessarily a failure, but flag it
+          console.warn(`[Verify] ⚠ Brand ${brand.label}: still pending (not yet PUBLISHED)`);
+          allVerified = false;
+        }
+
+        verificationResults.push({
+          label: brand.label,
+          postId: brand.postId,
+          verified: result.verified,
+          anyFailed: result.anyFailed,
+          providers: result.providers,
+        });
+      } catch (err) {
+        console.error(`[Verify] ✗ Brand ${brand.label}: verification error: ${err.message}`);
+        allVerified = false;
+        verificationResults.push({
+          label: brand.label,
+          postId: brand.postId,
+          verified: false,
+          error: err.message,
+        });
+      }
+    }
+
+    // Update the log with verification status
+    const lastPost = log.posts[log.posts.length - 1];
+    if (lastPost) {
+      lastPost.verification = {
+        checkedAt: new Date().toISOString(),
+        allVerified,
+        results: verificationResults,
+      };
+      saveLog(log);
+    }
+
+    if (!allVerified) {
+      console.error("\n" + "!".repeat(60));
+      console.error("[Verify] POST VERIFICATION FAILED");
+      console.error("[Verify] One or more brands did NOT reach PUBLISHED status.");
+      console.error("[Verify] Check Metricool dashboard for details.");
+      console.error("!".repeat(60));
+      process.exit(1);
+    }
+    console.log(`[Verify] ✓ All ${postedBrands.length} brand(s) verified PUBLISHED`);
   }
 
   console.log("\n" + "=".repeat(60));
@@ -516,8 +591,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
 
     // Post to ALL brands (multi-IG fan-out)
     console.log("[Post] Creating post on all brands...");
-    const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN, prefetched });
-
+        const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN, prefetched });
     // Record in log (skip in dry-run mode)
     if (!DRY_RUN) {
       const brandSummary = result.brands
@@ -536,11 +610,12 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     } else {
       console.log("[Post] DRY RUN — skipping log entry");
     }
-
     console.log(`[Post] ✓ Successfully posted ${video.name}`);
     if (result.platforms) console.log(`[Post] ✓ Brands: ${result.platforms}`);
     if (hasVoiceover) console.log("[Post] ✓ Voiceover added");
     console.log(`[Post] ✓ Caption (${caption.length} chars): ${caption.slice(0, 100)}...`);
+    // Return post IDs for verification
+    return result;
   } finally {
     cleanup(tempVideoPath);
     if (finalVideoPath && finalVideoPath !== tempVideoPath) {
