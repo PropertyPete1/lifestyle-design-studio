@@ -30,6 +30,11 @@ on:
         required: false
         default: false
         type: boolean
+      force:
+        description: 'Force post (bypass every-other-day check for Dallas)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -46,8 +51,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install ffmpeg & whisper
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install openai-whisper --quiet
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
@@ -56,6 +63,7 @@ jobs:
         env:
           CITY: san_antonio
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          FORCE: ${{ github.event.inputs.force || 'false' }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -71,7 +79,7 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json video-matches.json
+          git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "📸 SA post $(date -u +%Y-%m-%d)"
           git pull --rebase origin main || true
           git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
@@ -87,8 +95,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install ffmpeg & whisper
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install openai-whisper --quiet
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
@@ -97,6 +107,7 @@ jobs:
         env:
           CITY: austin
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          FORCE: ${{ github.event.inputs.force || 'false' }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -112,7 +123,7 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json video-matches.json
+          git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "📸 ATX post $(date -u +%Y-%m-%d)"
           git pull --rebase origin main || true
           git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
@@ -128,8 +139,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install ffmpeg & whisper
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install openai-whisper --quiet
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
@@ -149,6 +162,7 @@ jobs:
         env:
           CITY: dallas
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          FORCE: ${{ github.event.inputs.force || 'false' }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -164,7 +178,7 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json video-matches.json
+          git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "📸 DFW post $(date -u +%Y-%m-%d)"
           git pull --rebase origin main || true
           git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
