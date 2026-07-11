@@ -244,18 +244,25 @@ export async function createPost(mediaUrl, caption, options = {}) {
   const NICE_NAMES = { instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube" };
   const publishAt = chicagoLocalDateTime();
 
+  // The default brand was already uploaded in uploadVideoToMetricool() — reuse that URL
+  const defaultBlogId = Number(process.env.METRICOOL_BLOG_ID);
   const results = [];
 
   for (const brand of brands) {
     try {
-      // Upload to this brand's media library
+      // Upload to this brand's media library (skip default brand — already uploaded)
       let brandMediaUrl;
-      if (prefetched) {
+      if (brand.blogId === defaultBlogId && mediaUrl) {
+        // Reuse the URL from the initial upload — saves ~90MB of duplicate transfer
+        brandMediaUrl = mediaUrl;
+        console.log(`[Metricool] Reusing initial upload for brand: ${brand.label} (${brand.blogId})`);
+      } else if (prefetched) {
         console.log(`[Metricool] Uploading to brand: ${brand.label} (${brand.blogId})...`);
         brandMediaUrl = await uploadToBrand(brand.blogId, prefetched);
       } else {
-        // mediaUrl is already a Metricool-hosted URL from the first upload
-        brandMediaUrl = mediaUrl;
+        // No prefetched data and not the default brand — skip
+        results.push({ label: brand.label, ok: false, networks: brand.networks, error: "no upload data available" });
+        continue;
       }
 
       // Filter to video-friendly networks only (no LinkedIn)

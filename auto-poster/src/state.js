@@ -57,7 +57,7 @@ export function hasRecentPost(log, city, hoursAgo = 20) {
  * Record a successful post.
  */
 export function recordPost(log, entry) {
-  log.posts.push({
+  const record = {
     driveFileId: entry.driveFileId,
     fileName: entry.fileName,
     city: entry.city,
@@ -66,7 +66,13 @@ export function recordPost(log, entry) {
     platforms: entry.platforms || ["instagram", "tiktok", "youtube"],
     timestamp: new Date().toISOString(),
     success: entry.success ?? true,
-  });
+  };
+  // Persist which brands/IG accounts the post reached (audit trail)
+  if (entry.brands) record.brands = entry.brands;
+  // Persist LinkedIn-specific fields if present
+  if (entry.type) record.type = entry.type;
+  if (entry.topic) record.topic = entry.topic;
+  log.posts.push(record);
 
   // Keep only last 365 days of history
   const yearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
