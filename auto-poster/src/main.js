@@ -153,16 +153,20 @@ async function postVideo(video, log) {
     console.log("[Post] Creating post...");
     const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN });
 
-    // Record in log
-    recordPost(log, {
-      driveFileId: video.id,
-      fileName: video.name,
-      city: CITY,
-      caption,
-      voiceover: hasVoiceover,
-      platforms: ["instagram", "tiktok", "youtube", "linkedin"],
-      success: true,
-    });
+    // Record in log (skip in dry-run mode to avoid blocking real posts)
+    if (!DRY_RUN) {
+      recordPost(log, {
+        driveFileId: video.id,
+        fileName: video.name,
+        city: CITY,
+        caption,
+        voiceover: hasVoiceover,
+        platforms: ["instagram", "tiktok", "youtube", "linkedin"],
+        success: true,
+      });
+    } else {
+      console.log("[Post] DRY RUN — skipping log entry");
+    }
 
     console.log(`[Post] ✓ Successfully posted ${video.name}`);
     if (hasVoiceover) console.log("[Post] ✓ Voiceover added");
