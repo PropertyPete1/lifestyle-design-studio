@@ -1,1 +1,0 @@
-ALTER TABLE `linkedin_posts` ADD `brandResults` text;

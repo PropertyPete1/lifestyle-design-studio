@@ -1,6 +1,6 @@
-# Lifestyle Design Realty — Daily Reels System
+# Lifestyle Design Realty — Auto Poster
 
-Automated social media posting pipeline for real estate video content across San Antonio, Austin, and Dallas/DFW.
+Automated daily Instagram/TikTok/YouTube Shorts posting pipeline for Lifestyle Design Realty.
 
 ## Architecture
 
@@ -12,14 +12,14 @@ Automated social media posting pipeline for real estate video content across San
                        │ POST /api/scheduled/triggerAutoPost
                        ▼
 ┌─────────────────────────────────────────────────────────┐
-│  Deployed Dashboard (server/ + client/)                  │
+│  Deployed Dashboard (separate Manus webdev project)     │
 │  • Calls GitHub API (workflow_dispatch)                  │
 │  • Also serves: pick generation, analyst, library UI    │
 └──────────────────────┬──────────────────────────────────┘
                        │ GitHub Actions workflow_dispatch
                        ▼
 ┌─────────────────────────────────────────────────────────┐
-│  Auto-Poster (auto-poster/)                             │
+│  Auto-Poster (this repo: auto-poster/)                  │
 │  Runs on GitHub Actions ubuntu-latest                   │
 │  • Drive → download video                              │
 │  • Whisper → speech detection                          │
@@ -30,43 +30,66 @@ Automated social media posting pipeline for real estate video content across San
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Directory Structure
+## Repo Structure
 
 ```
-auto-poster/          ← The posting pipeline (GitHub Actions)
-  src/                  Core modules (main, drive, metricool, matcher, etc.)
-  scripts/              Utility scripts (speech detection, token refresh)
-  .github/workflows/    Workflow definition (post.yml)
-
-server/               ← Dashboard backend (tRPC + Express)
-  _core/                Framework plumbing (auth, heartbeat, LLM, storage)
-  scheduledPublish.ts   Legacy publish endpoints (still used for picks/analyst)
-  routers.ts            tRPC API routes
-
-client/               ← Dashboard frontend (React + Tailwind)
-  src/pages/            UI pages (Home, Library, History, Performance)
-
-drizzle/              ← Database schema + migrations
-references/           ← Architecture docs (voiceover, periodic-updates)
+.github/workflows/post.yml    ← GitHub Actions cron + manual dispatch
+auto-poster/
+├── src/
+│   ├── main.js               ← Entry point + orchestration
+│   ├── drive.js              ← Google Drive video download
+│   ├── matcher.js            ← Perceptual hashing + AI vision comparison
+│   ├── voiceover.js          ← Speech detection + ElevenLabs TTS + ffmpeg merge
+│   ├── caption.js            ← AI caption generation with hook optimization
+│   ├── metricool.js          ← Metricool API (post + verify)
+│   ├── analytics.js          ← Weekly performance feedback loop
+│   ├── quality-check.js      ← Pre-post video validation
+│   ├── speech-detect.js      ← Whisper-based speech detection
+│   └── state.js              ← posted-log.json management
+├── scripts/
+│   └── detect-speech.py      ← Python Whisper wrapper
+├── posted-log.json           ← Post history (committed by bot)
+├── video-matches.json        ← Hash match cache
+└── performance-weights.json  ← Hook style weights (auto-updated weekly)
 ```
 
-## Key Data Files (auto-poster/)
+## Cities & Schedule
 
-| File | Purpose |
-|------|---------|
-| `posted-log.json` | Record of every post (city, date, video, brands, verification) |
-| `video-matches.json` | Cache of Drive→IG hash matches (prevents re-posting) |
-| `performance-weights.json` | Hook style weights from weekly analytics |
+| City | Cron (UTC) | CT Time | Frequency |
+|------|-----------|---------|-----------|
+| San Antonio | 19:00 | 2:00 PM | Daily |
+| Austin | 20:00 | 3:00 PM | Daily |
+| Dallas/DFW | 21:00 | 4:00 PM | Every other day |
+
+## Manual Dispatch
+
+Go to **Actions → Daily Auto Post → Run workflow**. Select city, optionally check:
+- **Force** — bypasses DFW every-other-day check
+- **Dry run** — runs full pipeline without actually posting
 
 ## Matching & Safety
 
-- **Perceptual hash** (8×8 grayscale average) compares Drive videos to recent IG posts
+- **Perceptual hash** (8x8 grayscale average) compares Drive videos to recent IG posts
 - **Distance 0-4**: auto-block + auto-reuse caption
 - **Distance 5-9**: AI vision confirmation required before caption reuse
 - **Distance 10-17**: AI vision confirmation required before blocking
 - **Distance 18+**: no match, safe to post
 - **City keyword check**: prevents cross-city caption reuse
 
-## Legacy Archive
+## Secrets Required
 
-One-off scripts and planning notes from development are preserved in the `legacy-archive` branch.
+| Secret | Purpose |
+|--------|---------|
+| `GOOGLE_CLIENT_ID` | Drive API OAuth |
+| `GOOGLE_CLIENT_SECRET` | Drive API OAuth |
+| `GOOGLE_REFRESH_TOKEN` | Drive API OAuth |
+| `METRICOOL_API_TOKEN` | Metricool posting + analytics |
+| `METRICOOL_BLOG_ID` | Metricool brand identifier |
+| `METRICOOL_USER_ID` | Metricool user identifier |
+| `ELEVENLABS_API_KEY` | Voice clone TTS |
+| `ANTHROPIC_API_KEY` | AI vision + caption generation |
+
+## Related
+
+- **Dashboard** (deployed separately via Manus): manages picks, analytics, and triggers this workflow via Heartbeat cron jobs
+- **Legacy code**: archived on `legacy-archive` branch

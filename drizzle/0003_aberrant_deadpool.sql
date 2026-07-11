@@ -1,1 +1,0 @@
-ALTER TABLE `daily_picks` ADD CONSTRAINT `uq_pick_date_city` UNIQUE(`pickDate`,`city`);
