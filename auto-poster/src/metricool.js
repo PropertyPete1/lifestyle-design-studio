@@ -12,8 +12,12 @@
  */
 
 import { createHash } from "crypto";
+import { execSync } from "child_process";
+import { writeFileSync as fsWriteSync, readFileSync as fsReadSync, unlinkSync, existsSync, mkdirSync } from "fs";
+import { join } from "path";
 
 const BASE = "https://app.metricool.com/api";
+const MAX_UPLOAD_BYTES = 95 * 1024 * 1024; // 95MB safety margin (Metricool limit is 100MB)
 
 function authParams() {
   return `blogId=${process.env.METRICOOL_BLOG_ID}&userId=${process.env.METRICOOL_USER_ID}`;
@@ -69,8 +73,21 @@ export async function getRecentIgPosts(days = 30) {
  * Auth is passed as query params, not in the body.
  */
 export async function uploadVideoToMetricool(videoBuffer, fileName) {
-  const sha256b64 = createHash("sha256").update(videoBuffer).digest("base64");
-  const size = videoBuffer.length;
+  // Compress if over 95MB (Metricool has 100MB per-part limit)
+  let buf = videoBuffer;
+  if (buf.length > MAX_UPLOAD_BYTES) {
+    console.log(`[Metricool] Video is ${(buf.length / 1024 / 1024).toFixed(1)} MB — compressing to fit 100MB limit (keeping 4K)...`);
+    const compressed = compressVideoToFit(buf, MAX_UPLOAD_BYTES);
+    if (compressed) {
+      buf = compressed.buffer;
+      console.log(`[Metricool] Compressed to ${compressed.fileSizeMb} MB (CRF ${compressed.crfValue})`);
+    } else {
+      console.warn(`[Metricool] Compression failed — attempting upload with original size`);
+    }
+  }
+
+  const sha256b64 = createHash("sha256").update(buf).digest("base64");
+  const size = buf.length;
 
   console.log(`[Metricool] Uploading ${(size / 1024 / 1024).toFixed(1)} MB...`);
 
@@ -107,7 +124,7 @@ export async function uploadVideoToMetricool(videoBuffer, fileName) {
       "Content-Length": String(size),
       "x-amz-checksum-sha256": sha256b64,
     },
-    body: new Uint8Array(videoBuffer),
+    body: new Uint8Array(buf),
   });
 
   if (!putRes.ok) {
@@ -223,4 +240,53 @@ export async function createPost(mediaUrl, caption, options = {}) {
   const postId = raw?.id || raw?.postId || "unknown";
   console.log(`[Metricool] Post created successfully (ID: ${postId})`);
   return { ok: true, postId, data: raw };
+}
+
+/**
+ * Compress a video with ffmpeg to fit under maxBytes while keeping 4K resolution.
+ * Tries CRF values from 26 to 32 (higher = smaller file, slight quality loss).
+ * CRF 26-28 is visually indistinguishable from original at 4K.
+ */
+function compressVideoToFit(sourceBuffer, maxBytes) {
+  const tmpDir = "/tmp/metricool-compress";
+  if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
+
+  const inputPath = join(tmpDir, `input_${Date.now()}.mp4`);
+  const outputPath = join(tmpDir, `output_${Date.now()}.mp4`);
+
+  fsWriteSync(inputPath, sourceBuffer);
+
+  const crfValues = [26, 28, 30, 32];
+
+  for (const crf of crfValues) {
+    try {
+      if (existsSync(outputPath)) unlinkSync(outputPath);
+
+      execSync(
+        `ffmpeg -y -i "${inputPath}" -c:v libx264 -preset fast -crf ${crf} -c:a aac -b:a 128k -movflags +faststart "${outputPath}"`,
+        { timeout: 300_000, stdio: "pipe" }
+      );
+
+      if (existsSync(outputPath)) {
+        const compressed = fsReadSync(outputPath);
+        if (compressed.length > 1024 && compressed.length <= maxBytes) {
+          const fileSizeMb = parseFloat((compressed.length / 1024 / 1024).toFixed(2));
+          console.log(`[Metricool] Compression succeeded at CRF ${crf}: ${fileSizeMb} MB`);
+          try { unlinkSync(inputPath); } catch {}
+          try { unlinkSync(outputPath); } catch {}
+          return { buffer: compressed, fileSizeMb, crfValue: crf };
+        }
+        console.log(`[Metricool] CRF ${crf} produced ${(compressed.length / 1024 / 1024).toFixed(1)} MB — still too large, trying higher CRF...`);
+      }
+    } catch (err) {
+      console.warn(`[Metricool] ffmpeg CRF ${crf} failed: ${err.message?.slice(0, 200)}`);
+    }
+  }
+
+  // Cleanup
+  try { unlinkSync(inputPath); } catch {}
+  try { unlinkSync(outputPath); } catch {}
+
+  console.error(`[Metricool] All compression attempts failed — video is ${(sourceBuffer.length / 1024 / 1024).toFixed(1)} MB`);
+  return null;
 }
