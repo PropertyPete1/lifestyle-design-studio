@@ -3,6 +3,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { sanitizeCaption } from "./sanitize.js";
 
 let client = null;
 
@@ -56,7 +57,7 @@ STRUCTURE (follow this EXACT order):
    🪟 natural light / open concept / big windows
    🍳 chef's kitchen / island / upgraded counters
    🔥 energy efficient / move-in ready
-   💸 builder incentives / rate buydowns available — ask what you qualify for
+   💸 builder incentives / rate buydowns available, ask what you qualify for
    
    IMPORTANT: Do NOT invent specific prices, bedroom counts, or bathroom counts. You don't know the actual specs of this home. Keep features general but vivid.
 
@@ -78,6 +79,7 @@ RULES:
 - Natural excited tone, like a real person posting
 - DO NOT use markdown formatting (no bold, no headers)
 - DO NOT fabricate specific dollar amounts, bedroom counts, or square footage
+- Do NOT use em-dashes or en-dashes (— or –). Use periods, commas, or line breaks instead. This is important; dashes read as AI-written.
 - Return ONLY the caption text, nothing else`;
 
   try {
@@ -90,7 +92,7 @@ RULES:
     const content = response.content[0]?.text;
     if (content && content.length > 50) {
       console.log(`[Caption] Generated (${content.length} chars)`);
-      return content.trim();
+      return sanitizeCaption(content);
     }
   } catch (err) {
     console.error("[Caption] Anthropic API failed:", err.message);
@@ -118,6 +120,7 @@ RULES:
 - DO NOT mention specific prices or addresses
 - DO NOT use hashtags or emojis
 - Keep it conversational and engaging
+- Do NOT use em-dashes or en-dashes (— or –). Use periods, commas, or line breaks instead. This is important; dashes read as AI-written.
 - Return ONLY the script text, nothing else
 
 Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natural light coming through these windows is incredible. You've got this gorgeous open concept layout..."`;
@@ -132,7 +135,7 @@ Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natur
     const content = response.content[0]?.text;
     if (content && content.length > 30) {
       console.log(`[VoiceoverScript] Generated (${content.length} chars, ~${content.split(/\s+/).length} words)`);
-      return content.trim();
+      return sanitizeCaption(content);
     }
   } catch (err) {
     console.error("[VoiceoverScript] Anthropic API failed:", err.message);
@@ -168,7 +171,7 @@ NEW STRUCTURE (follow this EXACT order):
 
 2. One short scarcity/story line (e.g. "new construction like this doesn't sit long" or reference builder incentives if mentioned in original)
 
-3. Feature block with emoji bullets — pull the REAL specs from the original caption:
+3. Feature block with emoji bullets. Pull the REAL specs from the original caption:
    🏡 [beds] / [baths] / [sqft if mentioned]
    💰 [REAL price from original]
    🪟 [real features mentioned: natural light, open concept, etc.]
@@ -192,7 +195,8 @@ RULES:
 - Line breaks between each section
 - Natural excited tone
 - DO NOT use markdown formatting
-- DO NOT invent details not in the original — if price isn't mentioned, don't add one
+- DO NOT invent details not in the original. If price isn't mentioned, don't add one
+- Do NOT use em-dashes or en-dashes (— or –). Use periods, commas, or line breaks instead. This is important; dashes read as AI-written.
 - Return ONLY the caption text, nothing else`;
 
   try {
@@ -205,15 +209,15 @@ RULES:
     const content = response.content[0]?.text;
     if (content && content.length > 50) {
       console.log(`[Caption] Restructured from original (${content.length} chars)`);
-      return content.trim();
+      return sanitizeCaption(content);
     }
   } catch (err) {
     console.error("[Caption] Anthropic API failed for restructure:", err.message);
   }
 
-  // Fallback: use original caption as-is if restructuring fails
+  // Fallback: use original caption as-is if restructuring fails (still sanitize it)
   console.log("[Caption] Falling back to original caption");
-  return originalCaption;
+  return sanitizeCaption(originalCaption);
 }
 
 function getFallbackCaption(city) {
@@ -228,7 +232,7 @@ new construction like this doesn't sit long in ${cityName}
 🪟 huge windows and natural light flooding every room
 🍳 chef's kitchen with island and upgraded counters
 🔥 energy efficient and move-in ready
-💸 builder incentives and rate buydowns available — ask what you qualify for
+💸 builder incentives and rate buydowns available. ask what you qualify for
 
 perfect for growing families, military/veteran buyers, or anyone ready to stop renting
 

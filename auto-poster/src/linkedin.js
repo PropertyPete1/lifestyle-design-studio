@@ -16,6 +16,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { stripDashes } from "./sanitize.js";
 
 const BASE = "https://app.metricool.com/api";
 
@@ -169,9 +170,8 @@ function sanitizePost(raw) {
     t = t.slice(1, -1).trim();
   }
 
-  // Replace em/en dashes with periods
-  t = t.replace(/\s*[—–]\s*/g, ". ");
-  t = t.replace(/\.\s*\.\s*/g, ". ").replace(/,\s*\./g, ".");
+  // Replace em/en dashes with periods (shared sanitizer)
+  t = stripDashes(t);
 
   // Remove hashtags
   t = t.split("\n")
