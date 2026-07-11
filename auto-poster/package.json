@@ -1,0 +1,17 @@
+{
+  "name": "lifestyle-design-auto-poster",
+  "version": "1.0.0",
+  "description": "Automated social media reposting system for Lifestyle Design Realty",
+  "type": "module",
+  "scripts": {
+    "post": "node src/main.js",
+    "dry-run": "DRY_RUN=true node src/main.js",
+    "get-token": "node scripts/get-refresh-token.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
