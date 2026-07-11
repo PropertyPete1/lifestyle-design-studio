@@ -243,38 +243,108 @@ export async function createPost(mediaUrl, caption, options = {}) {
 }
 
 /**
- * Compress a video with ffmpeg to fit under maxBytes while keeping 4K resolution.
- * Tries CRF values from 26 to 32 (higher = smaller file, slight quality loss).
- * CRF 26-28 is visually indistinguishable from original at 4K.
+ * Compress a video with ffmpeg to maximize quality within the upload limit.
+ * 
+ * Strategy:
+ * 1. Two-pass encode targeting ~90MB (uses full bitrate budget for best quality)
+ * 2. If two-pass fails or overshoots, falls back to CRF ladder starting at 18
+ * 
+ * Keeps original resolution (4K), audio at 192k AAC.
  */
 function compressVideoToFit(sourceBuffer, maxBytes) {
   const tmpDir = "/tmp/metricool-compress";
   if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
 
-  const inputPath = join(tmpDir, `input_${Date.now()}.mp4`);
-  const outputPath = join(tmpDir, `output_${Date.now()}.mp4`);
+  const ts = Date.now();
+  const inputPath = join(tmpDir, `input_${ts}.mp4`);
+  const outputPath = join(tmpDir, `output_${ts}.mp4`);
+  const passLogFile = join(tmpDir, `passlog_${ts}`);
 
   fsWriteSync(inputPath, sourceBuffer);
 
-  const crfValues = [26, 28, 30, 32];
+  const AUDIO_BITRATE_KBPS = 192;
+
+  // Get video duration via ffprobe
+  let durationSec = 0;
+  try {
+    const probeOut = execSync(
+      `ffprobe -v error -show_entries format=duration -of csv=p=0 "${inputPath}"`,
+      { timeout: 30_000, stdio: ["pipe", "pipe", "pipe"] }
+    ).toString().trim();
+    durationSec = parseFloat(probeOut);
+  } catch (err) {
+    console.warn(`[Metricool] ffprobe duration failed: ${err.message?.slice(0, 100)}`);
+  }
+
+  // Two-pass approach: target 90MB for maximum quality within 95MB limit
+  if (durationSec > 0) {
+    const targetSizes = [90, 85]; // Try 90MB first, then 85MB if overshoot
+
+    for (const targetMB of targetSizes) {
+      const targetBytes = targetMB * 1024 * 1024;
+      const targetBitsTotal = targetBytes * 8;
+      const audioBitsTotal = AUDIO_BITRATE_KBPS * 1000 * durationSec;
+      const videoBitrate = Math.floor((targetBitsTotal - audioBitsTotal) / durationSec);
+
+      if (videoBitrate < 500_000) {
+        console.warn(`[Metricool] Computed video bitrate too low (${(videoBitrate/1000).toFixed(0)}k) for ${targetMB}MB target, skipping two-pass`);
+        break;
+      }
+
+      const videoBitrateK = `${Math.floor(videoBitrate / 1000)}k`;
+      console.log(`[Metricool] Two-pass encode: target ${targetMB}MB, video bitrate ${videoBitrateK}, duration ${durationSec.toFixed(1)}s`);
+
+      try {
+        if (existsSync(outputPath)) unlinkSync(outputPath);
+
+        // Pass 1
+        execSync(
+          `ffmpeg -y -i "${inputPath}" -c:v libx264 -preset slow -b:v ${videoBitrateK} -pass 1 -passlogfile "${passLogFile}" -an -f null /dev/null`,
+          { timeout: 600_000, stdio: "pipe" }
+        );
+
+        // Pass 2
+        execSync(
+          `ffmpeg -y -i "${inputPath}" -c:v libx264 -preset slow -b:v ${videoBitrateK} -pass 2 -passlogfile "${passLogFile}" -c:a aac -b:a ${AUDIO_BITRATE_KBPS}k -movflags +faststart "${outputPath}"`,
+          { timeout: 600_000, stdio: "pipe" }
+        );
+
+        if (existsSync(outputPath)) {
+          const compressed = fsReadSync(outputPath);
+          if (compressed.length > 1024 && compressed.length <= maxBytes) {
+            const fileSizeMb = parseFloat((compressed.length / 1024 / 1024).toFixed(2));
+            console.log(`[Metricool] Two-pass succeeded: ${fileSizeMb} MB (target was ${targetMB}MB)`);
+            cleanup(inputPath, outputPath, passLogFile);
+            return { buffer: compressed, fileSizeMb, crfValue: 0, method: "two-pass" };
+          }
+          console.log(`[Metricool] Two-pass at ${targetMB}MB target produced ${(compressed.length / 1024 / 1024).toFixed(1)} MB — over limit, retrying...`);
+        }
+      } catch (err) {
+        console.warn(`[Metricool] Two-pass encode failed: ${err.message?.slice(0, 200)}`);
+      }
+    }
+    console.log(`[Metricool] Two-pass approach exhausted, falling back to CRF ladder...`);
+  }
+
+  // Fallback: CRF ladder starting at 18 for high quality, preset slow
+  const crfValues = [18, 20, 22, 24, 26];
 
   for (const crf of crfValues) {
     try {
       if (existsSync(outputPath)) unlinkSync(outputPath);
 
       execSync(
-        `ffmpeg -y -i "${inputPath}" -c:v libx264 -preset fast -crf ${crf} -c:a aac -b:a 128k -movflags +faststart "${outputPath}"`,
-        { timeout: 300_000, stdio: "pipe" }
+        `ffmpeg -y -i "${inputPath}" -c:v libx264 -preset slow -crf ${crf} -c:a aac -b:a ${AUDIO_BITRATE_KBPS}k -movflags +faststart "${outputPath}"`,
+        { timeout: 600_000, stdio: "pipe" }
       );
 
       if (existsSync(outputPath)) {
         const compressed = fsReadSync(outputPath);
         if (compressed.length > 1024 && compressed.length <= maxBytes) {
           const fileSizeMb = parseFloat((compressed.length / 1024 / 1024).toFixed(2));
-          console.log(`[Metricool] Compression succeeded at CRF ${crf}: ${fileSizeMb} MB`);
-          try { unlinkSync(inputPath); } catch {}
-          try { unlinkSync(outputPath); } catch {}
-          return { buffer: compressed, fileSizeMb, crfValue: crf };
+          console.log(`[Metricool] CRF ${crf} succeeded: ${fileSizeMb} MB`);
+          cleanup(inputPath, outputPath, passLogFile);
+          return { buffer: compressed, fileSizeMb, crfValue: crf, method: "crf" };
         }
         console.log(`[Metricool] CRF ${crf} produced ${(compressed.length / 1024 / 1024).toFixed(1)} MB — still too large, trying higher CRF...`);
       }
@@ -283,10 +353,15 @@ function compressVideoToFit(sourceBuffer, maxBytes) {
     }
   }
 
-  // Cleanup
-  try { unlinkSync(inputPath); } catch {}
-  try { unlinkSync(outputPath); } catch {}
-
+  cleanup(inputPath, outputPath, passLogFile);
   console.error(`[Metricool] All compression attempts failed — video is ${(sourceBuffer.length / 1024 / 1024).toFixed(1)} MB`);
   return null;
+}
+
+function cleanup(inputPath, outputPath, passLogFile) {
+  try { unlinkSync(inputPath); } catch {}
+  try { unlinkSync(outputPath); } catch {}
+  // ffmpeg creates passlog files with suffixes like -0.log and -0.log.mbtree
+  try { unlinkSync(`${passLogFile}-0.log`); } catch {}
+  try { unlinkSync(`${passLogFile}-0.log.mbtree`); } catch {}
 }
