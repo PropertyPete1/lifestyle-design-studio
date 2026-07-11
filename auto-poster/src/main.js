@@ -32,6 +32,7 @@ import { tmpdir } from "os";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 const CITY = process.env.CITY || "san_antonio";
+const FORCE = process.env.FORCE === "true"; // Manual override to bypass every-other-day check
 
 // Match thresholds (asymmetric):
 // BLOCKING: distance < 18 = same video, don't re-post (safe direction, false positives just delay a video)
@@ -78,6 +79,17 @@ async function main() {
   console.log(`[AutoPoster] Mode: ${DRY_RUN ? "DRY RUN" : "LIVE"}`);
   console.log(`[AutoPoster] Time: ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT`);
   console.log("=".repeat(60));
+
+  // DFW every-other-day check (applies to external-cron triggers too)
+  // FORCE=true bypasses this (for manual runs from GitHub UI)
+  if (CITY === "dallas" && !DRY_RUN && !FORCE) {
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+    if (dayOfYear % 2 !== 0) {
+      console.log(`[AutoPoster] DFW posts every other day — skipping today (day ${dayOfYear} is odd)`);
+      process.exit(0);
+    }
+    console.log(`[AutoPoster] DFW posting today (day ${dayOfYear} is even)`);
+  }
 
   // Load state
   const log = loadLog();
