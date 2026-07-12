@@ -95,12 +95,17 @@ async function checkRemoteLog(city) {
       console.warn("[RemoteCheck] No GITHUB_TOKEN — skipping remote log check");
       return false;
     }
-    const url = "https://raw.githubusercontent.com/PropertyPete1/lifestyle-design-studio/main/auto-poster/posted-log.json";
+    // Use GitHub Contents API — NOT raw.githubusercontent.com (which is CDN-cached ~5 min)
+    const url = `https://api.github.com/repos/PropertyPete1/lifestyle-design-studio/contents/auto-poster/posted-log.json?ref=main&t=${Date.now()}`;
     const resp = await fetch(url, {
-      headers: { Authorization: `token ${token}`, "Cache-Control": "no-cache" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github.raw",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
     });
     if (!resp.ok) {
-      console.warn(`[RemoteCheck] Failed to fetch remote log (${resp.status}) — skipping check`);
+      console.warn(`[RemoteCheck] GitHub API returned ${resp.status} — skipping check (fail-open)`);
       return false;
     }
     const remoteLog = await resp.json();
@@ -115,7 +120,7 @@ async function checkRemoteLog(city) {
     }
     return conflict;
   } catch (err) {
-    console.warn(`[RemoteCheck] Error checking remote log: ${err.message} — proceeding anyway`);
+    console.warn(`[RemoteCheck] Error checking remote log: ${err.message} — proceeding anyway (fail-open)`);
     return false;
   }
 }
