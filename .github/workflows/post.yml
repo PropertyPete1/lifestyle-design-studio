@@ -46,6 +46,9 @@ jobs:
       || github.event.schedule == '0 19 * * *'
       || github.event.schedule == '30 19 * * *'
     runs-on: ubuntu-latest
+    concurrency:
+      group: autopost-san_antonio
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,6 +67,7 @@ jobs:
           CITY: san_antonio
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -90,6 +94,9 @@ jobs:
       || github.event.schedule == '0 20 * * *'
       || github.event.schedule == '30 20 * * *'
     runs-on: ubuntu-latest
+    concurrency:
+      group: autopost-austin
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -108,6 +115,7 @@ jobs:
           CITY: austin
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -134,6 +142,9 @@ jobs:
       || github.event.schedule == '0 21 * * *'
       || github.event.schedule == '30 21 * * *'
     runs-on: ubuntu-latest
+    concurrency:
+      group: autopost-dallas
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -163,6 +174,7 @@ jobs:
           CITY: dallas
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
