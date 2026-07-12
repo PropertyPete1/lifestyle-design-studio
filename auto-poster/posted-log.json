@@ -18,9 +18,18 @@
       "type": "linkedin",
       "topic": "time_to_level_up",
       "brands": [
-        { "label": "Peter", "publishAt": "2026-07-11T14:32:00" },
-        { "label": "Steven", "publishAt": "2026-07-11T15:02:00" },
-        { "label": "Lifestyle Design Realty", "publishAt": "2026-07-11T15:32:00" }
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-11T14:32:00"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-11T15:02:00"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-11T15:32:00"
+        }
       ],
       "timestamp": "2026-07-11T19:32:30.000Z",
       "success": true
@@ -37,6 +46,41 @@
         "youtube"
       ],
       "timestamp": "2026-07-11T20:29:39.000Z",
+      "success": true
+    },
+    {
+      "driveFileId": "1n_DaBpZ1jUwD7WsV0zS4NEFWIWezVxIf",
+      "fileName": "009980FF-8910-458D-BFD5-0A077A9C7E96.mp4",
+      "city": "san_antonio",
+      "caption": "wait until you see what $507K gets you in Hill Country San Antonio right now\n\nNew construction like this doesn't sit long. limited time rates as low as 4.99% on select homes.\n\n🏡 4 to 5 bedrooms / 3 t",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "youtube"
+      ],
+      "timestamp": "2026-07-12T20:17:00.744Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty"
+    },
+    {
+      "type": "linkedin",
+      "topic": "why_agents_leave",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-12T15:18:33"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-12T15:48:33"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-12T16:18:33"
+        }
+      ],
+      "timestamp": "2026-07-12T20:17:04.333Z",
       "success": true
     }
   ],
