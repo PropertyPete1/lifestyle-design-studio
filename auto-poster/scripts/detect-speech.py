@@ -30,14 +30,20 @@ def extract_audio(video_path, output_path):
 def detect_speech(audio_path):
     """Run Whisper tiny model on audio and determine if speech is present."""
     import whisper
+    import io
+    import contextlib
     
     model = whisper.load_model("tiny")
-    result = model.transcribe(
-        audio_path,
-        language=None,  # Auto-detect
-        fp16=False,     # CPU mode
-        verbose=False,
-    )
+    # Suppress Whisper's 'Detected language: ...' output that leaks to stdout
+    # even with verbose=False — this breaks our JSON-only stdout contract
+    f = io.StringIO()
+    with contextlib.redirect_stdout(f):
+        result = model.transcribe(
+            audio_path,
+            language=None,  # Auto-detect
+            fp16=False,     # CPU mode
+            verbose=False,
+        )
     
     transcript = result.get("text", "").strip()
     language = result.get("language", "unknown")

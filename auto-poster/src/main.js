@@ -34,6 +34,18 @@ import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
+// Prevent unhandled EPIPE crashes from Anthropic SDK's keepalive agent.
+// These occur when a stale TLS socket is reused after a failed request (e.g., 413).
+process.on("uncaughtException", (err) => {
+  if (err.code === "EPIPE" || err.code === "ECONNRESET") {
+    console.warn(`[Process] Suppressed ${err.code} on socket — retrying operation will use a fresh connection`);
+    return; // Don't crash — the retry logic in the SDK will handle it
+  }
+  // Re-throw anything else
+  console.error("[Process] Uncaught exception:", err);
+  process.exit(1);
+});
+
 const DRY_RUN = process.env.DRY_RUN === "true";
 const CITY = process.env.CITY || "san_antonio";
 const FORCE = process.env.FORCE === "true"; // Manual override to bypass every-other-day check

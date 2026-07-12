@@ -108,8 +108,10 @@ export function extractFrames(videoPath, duration) {
     const ts = timestamps[i].toFixed(2);
     const outPath = join(FRAME_DIR, `frame_${id}_${i}.png`);
     try {
+      // Scale down to max 720px wide to avoid Anthropic 413 (request_too_large)
+      // Original frames can be 2160x3840 which are way too large for vision API
       execSync(
-        `ffmpeg -y -ss ${ts} -i "${videoPath}" -frames:v 1 -q:v 2 "${outPath}"`,
+        `ffmpeg -y -ss ${ts} -i "${videoPath}" -frames:v 1 -vf "scale='min(720,iw)':-2" -q:v 2 "${outPath}"`,
         { timeout: 15_000, stdio: "pipe" }
       );
       if (existsSync(outPath)) framePaths.push(outPath);
