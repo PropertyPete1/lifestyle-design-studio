@@ -81,6 +81,45 @@ function captionCityMismatch(caption, postingCity) {
   return false;
 }
 
+/**
+ * Fetch the LIVE posted-log.json from GitHub's raw API (main branch)
+ * and check if this city has posted in the last 20 hours.
+ * This catches race conditions where another concurrent run already posted
+ * but hasn't committed yet (or committed after our checkout).
+ * Returns true if a conflict is detected (should abort).
+ */
+async function checkRemoteLog(city) {
+  try {
+    const token = process.env.GITHUB_TOKEN;
+    if (!token) {
+      console.warn("[RemoteCheck] No GITHUB_TOKEN — skipping remote log check");
+      return false;
+    }
+    const url = "https://raw.githubusercontent.com/PropertyPete1/lifestyle-design-studio/main/auto-poster/posted-log.json";
+    const resp = await fetch(url, {
+      headers: { Authorization: `token ${token}`, "Cache-Control": "no-cache" },
+    });
+    if (!resp.ok) {
+      console.warn(`[RemoteCheck] Failed to fetch remote log (${resp.status}) — skipping check`);
+      return false;
+    }
+    const remoteLog = await resp.json();
+    const cutoff = Date.now() - 20 * 60 * 60 * 1000;
+    const conflict = (remoteLog.posts || []).some(
+      p => p.city === city && new Date(p.timestamp).getTime() > cutoff
+    );
+    if (conflict) {
+      console.log(`[RemoteCheck] ⚠️ CONFLICT: Remote posted-log shows ${city} was posted in last 20h`);
+    } else {
+      console.log(`[RemoteCheck] ✓ No conflict — remote log clear for ${city}`);
+    }
+    return conflict;
+  } catch (err) {
+    console.warn(`[RemoteCheck] Error checking remote log: ${err.message} — proceeding anyway`);
+    return false;
+  }
+}
+
 async function main() {
   console.log("=".repeat(60));
   console.log(`[AutoPoster] Starting for city: ${CITY}`);
@@ -643,6 +682,16 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       const uploadResult = await uploadVideoToMetricool(uploadBuffer, video.name);
       mediaUrl = uploadResult.hostedUrl;
       prefetched = uploadResult.prefetched;
+    }
+
+    // BELT-AND-SUSPENDERS: Re-check the LIVE remote posted-log before posting.
+    // This catches races where another workflow run posted after our checkout.
+    if (!DRY_RUN) {
+      const remotePostConflict = await checkRemoteLog(CITY);
+      if (remotePostConflict) {
+        console.log(`[Post] ABORT — remote posted-log shows ${CITY} was already posted in the last 20h (race detected). Exiting cleanly.`);
+        process.exit(0);
+      }
     }
 
     // Post to ALL brands (multi-IG fan-out)
