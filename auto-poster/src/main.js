@@ -597,11 +597,12 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         try {
           const matchThumb = cachedMatch[0].thumbnailUrl;
           if (matchThumb && existsSync(tempVideoPath)) {
-            const framePaths = await extractFrames(tempVideoPath, 3);
+            const vidDuration = getLocalDuration(tempVideoPath);
+            const framePaths = await extractFrames(tempVideoPath, vidDuration);
             if (framePaths.length > 0) {
               const visionResult = await aiVisionCompare(framePaths, matchThumb);
-              visionConfirmed = visionResult.same === true && (visionResult.confidence || 0) >= 0.7;
-              console.log(`[Post] AI vision for caption reuse: same=${visionResult.same}, confidence=${visionResult.confidence}`);
+              visionConfirmed = visionResult.isSame === true && (visionResult.confidence || 0) >= 0.7;
+              console.log(`[Post] AI vision for caption reuse: isSame=${visionResult.isSame}, confidence=${visionResult.confidence}`);
               // Clean up frame files
               for (const fp of framePaths) { try { unlinkSync(fp); } catch {} }
             }
