@@ -25,6 +25,8 @@ import { listCityVideos, downloadVideo } from "./drive.js";
 import { getRecentIgPosts, uploadVideoToMetricool, createPost, verifyPostStatus } from "./metricool.js";
 import { generateCaption, generateCaptionFromOriginal } from "./caption.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
+import { runPriceConsistencyCheck } from "./price-check.js";
+import { processBurnedCaptions } from "./burned-captions.js";
 import { prePostQualityCheck } from "./quality-check.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds } from "./state.js";
@@ -619,9 +621,29 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
   try {
     // Voiceover pipeline
     console.log("[Post] Running voiceover detection...");
-        const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN);
+    const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN);
     finalVideoPath = voResult.videoPath;
     const hasVoiceover = !voResult.skipped;
+
+    // Burned-in captions: only when voiceover was added (not skipped)
+    if (hasVoiceover && voResult.audioPath && voResult.script && !DRY_RUN) {
+      console.log("[Post] Burning synced captions onto video...");
+      try {
+        const captionedPath = await processBurnedCaptions(finalVideoPath, voResult.audioPath, voResult.script);
+        if (captionedPath && captionedPath !== finalVideoPath) {
+          // Clean up the pre-caption merged video
+          cleanup(finalVideoPath);
+          finalVideoPath = captionedPath;
+        }
+      } catch (err) {
+        console.warn(`[Post] Burned captions failed (non-fatal): ${err.message} — continuing without captions`);
+      }
+      // Clean up TTS audio file (no longer needed after caption burn)
+      cleanup(voResult.audioPath);
+    } else if (voResult.audioPath) {
+      // Clean up TTS audio if voiceover was added but captions skipped (e.g. dry run)
+      cleanup(voResult.audioPath);
+    }
     // Pre-post quality check (after voiceover, before upload)
     const videoToCheck = existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath;
     const qcResult = await prePostQualityCheck(videoToCheck);
@@ -683,6 +705,20 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     } else {
       console.log("[Post] No original caption found — generating fresh");
       caption = await generateCaption(CITY);
+    }
+
+    // Price-consistency check: verify caption price against video overlay text
+    // Video text is ground truth — original IG captions go stale when builders change prices
+    if (caption && !DRY_RUN) {
+      try {
+        const priceResult = await runPriceConsistencyCheck(tempVideoPath, caption);
+        if (priceResult.corrected) {
+          console.log(`[Post] ⚠️ Price corrected: ${priceResult.log}`);
+          caption = priceResult.caption;
+        }
+      } catch (err) {
+        console.warn(`[Post] Price check failed (non-fatal): ${err.message}`);
+      }
     }
 
     // Upload to Metricool (compress once, reuse across all brands)

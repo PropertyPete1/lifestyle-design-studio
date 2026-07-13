@@ -182,10 +182,10 @@ export async function processVoiceover(videoPath, city, dryRun = false) {
   // Step 4: Merge (ducks original audio to 20% automatically)
   const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
 
-  // Cleanup TTS temp file
-  try { unlinkSync(audioPath); } catch {}
+  // NOTE: Do NOT delete audioPath here — caller needs it for burned captions (Whisper word timing).
+  // Caller is responsible for cleanup via cleanup(audioPath) after caption burn.
 
-  return { videoPath: mergedPath, skipped: false, script, detection };
+  return { videoPath: mergedPath, skipped: false, script, detection, audioPath };
 }
 
 /**
