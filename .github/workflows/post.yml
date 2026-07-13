@@ -77,6 +77,8 @@ jobs:
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
         run: |
           if node src/main.js; then
             echo "post_success=true" >> $GITHUB_OUTPUT
@@ -129,6 +131,8 @@ jobs:
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
         run: |
           if node src/main.js; then
             echo "post_success=true" >> $GITHUB_OUTPUT
@@ -192,6 +196,8 @@ jobs:
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
         run: |
           if node src/main.js; then
             echo "post_success=true" >> $GITHUB_OUTPUT
