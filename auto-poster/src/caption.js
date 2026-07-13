@@ -13,6 +13,7 @@ import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { sanitizeCaption, sanitizeForTTS } from "./sanitize.js";
+import { validateCaption, RETRY_INSTRUCTION } from "./caption-validator.js";
 import { pickHookStyle, loadWeights } from "./analytics.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -179,6 +180,8 @@ RULES:
 - ALL prices MUST include the $ sign (e.g. "$389,900" not "389,900")
 - ALL tax rates MUST include the % sign (e.g. "2.5%" not "2.5")
 - Return ONLY the caption text, nothing else
+- NEVER ask clarifying questions. NEVER say you need more information. If you lack specific details, use generic new-construction descriptions.
+- You are NOT an assistant having a conversation. You are a caption generator. Your output IS the caption that will be published directly.
 `;
 
 /**
@@ -428,29 +431,47 @@ AFTER THE BODY:
 ${noKBInstructions}
 ${CAPTION_RULES}`;
 
-  try {
-    const response = await getClient().messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1500,
-      messages: [{ role: "user", content: prompt }],
-    });
-    const content = response.content[0]?.text;
-    if (content && content.length > 50) {
-      // Post-generation leak scan
-      const { caption: gatedCaption, leaksFound, leakDetails } = scanAndStripLeaks(content, community);
-      if (leaksFound > 0) {
-        console.log(`[Caption] LEAK SCANNER: stripped ${leaksFound} gated terms: ${leakDetails.map(l => `"${l.term}" (${l.type})`).join(", ")}`);
+  // Attempt generation with validation gate (retry once on failure)
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const currentPrompt = attempt === 1 ? prompt : prompt + RETRY_INSTRUCTION;
+    try {
+      const response = await getClient().messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1500,
+        messages: [{ role: "user", content: currentPrompt }],
+      });
+      const content = response.content[0]?.text;
+      if (content && content.length > 50) {
+        // Post-generation leak scan
+        const { caption: gatedCaption, leaksFound, leakDetails } = scanAndStripLeaks(content, community);
+        if (leaksFound > 0) {
+          console.log(`[Caption] LEAK SCANNER: stripped ${leaksFound} gated terms: ${leakDetails.map(l => `"${l.term}" (${l.type})`).join(", ")}`);
+        }
+        // Currency formatting pass
+        const formatted = fixCurrencyFormatting(gatedCaption);
+        // Lock hashtags
+        const final = lockHashtags(formatted, city);
+        // VALIDATION GATE — reject invalid LLM output
+        const validation = validateCaption(final);
+        if (!validation.valid) {
+          console.error(`[Caption] ⚠️ VALIDATION FAILED (attempt ${attempt}/2): ${validation.reason}`);
+          console.error(`[Caption] Rejected output (first 200 chars): ${final.slice(0, 200)}`);
+          if (attempt === 1) {
+            console.log(`[Caption] Retrying with correction instruction...`);
+            continue; // retry with RETRY_INSTRUCTION appended
+          }
+          // Second attempt also failed — fall through to fallback
+          console.error(`[Caption] ❌ BOTH attempts failed validation. Using hardcoded fallback.`);
+          return getFallbackCaption(city);
+        }
+        console.log(`[Caption] Generated fresh caption (${final.length} chars, community=${community?.name || "none"}, leaks_stripped=${leaksFound})`);
+        return sanitizeCaption(final);
       }
-      // Currency formatting pass
-      const formatted = fixCurrencyFormatting(gatedCaption);
-      // Lock hashtags
-      const final = lockHashtags(formatted, city);
-      console.log(`[Caption] Generated fresh caption (${final.length} chars, community=${community?.name || "none"}, leaks_stripped=${leaksFound})`);
-      return sanitizeCaption(final);
+    } catch (err) {
+      console.error(`[Caption] Anthropic API failed (attempt ${attempt}):`, err.message);
     }
-  } catch (err) {
-    console.error("[Caption] Anthropic API failed:", err.message);
   }
+  console.error(`[Caption] All generation attempts exhausted. Using hardcoded fallback.`);
   return getFallbackCaption(city);
 }
 
@@ -584,28 +605,44 @@ PRESERVATION CHECKLIST — verify ALL of these from the original appear in your 
 If any FACT (not name) from the original is missing in your output, you have failed the task.
 ${CAPTION_RULES}`;
 
-  try {
-    const response = await getClient().messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2000,
-      messages: [{ role: "user", content: prompt }],
-    });
-    const content = response.content[0]?.text;
-    if (content && content.length > 50) {
-      // Post-generation leak scan (check against ALL KB communities)
-      const { caption: gatedCaption, leaksFound, leakDetails } = scanAndStripLeaks(content, community);
-      if (leaksFound > 0) {
-        console.log(`[Caption] LEAK SCANNER (restructure): stripped ${leaksFound} gated terms: ${leakDetails.map(l => `"${l.term}" (${l.type})`).join(", ")}`);
+  // Attempt generation with validation gate (retry once on failure)
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const currentPrompt = attempt === 1 ? prompt : prompt + RETRY_INSTRUCTION;
+    try {
+      const response = await getClient().messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 2000,
+        messages: [{ role: "user", content: currentPrompt }],
+      });
+      const content = response.content[0]?.text;
+      if (content && content.length > 50) {
+        // Post-generation leak scan (check against ALL KB communities)
+        const { caption: gatedCaption, leaksFound, leakDetails } = scanAndStripLeaks(content, community);
+        if (leaksFound > 0) {
+          console.log(`[Caption] LEAK SCANNER (restructure): stripped ${leaksFound} gated terms: ${leakDetails.map(l => `"${l.term}" (${l.type})`).join(", ")}`);
+        }
+        // Currency formatting pass
+        const formatted = fixCurrencyFormatting(gatedCaption);
+        // Lock hashtags
+        const final = lockHashtags(formatted, city);
+        // VALIDATION GATE — reject invalid LLM output
+        const validation = validateCaption(final);
+        if (!validation.valid) {
+          console.error(`[Caption] ⚠️ VALIDATION FAILED (restructure, attempt ${attempt}/2): ${validation.reason}`);
+          console.error(`[Caption] Rejected output (first 200 chars): ${final.slice(0, 200)}`);
+          if (attempt === 1) {
+            console.log(`[Caption] Retrying restructure with correction instruction...`);
+            continue;
+          }
+          console.error(`[Caption] ❌ BOTH restructure attempts failed validation. Using fallback.`);
+          break; // fall through to fallback below
+        }
+        console.log(`[Caption] Restructured from original (${final.length} chars, original was ${originalCaption.length} chars, KB_override=${!!community}, leaks_stripped=${leaksFound})`);
+        return sanitizeCaption(final);
       }
-      // Currency formatting pass
-      const formatted = fixCurrencyFormatting(gatedCaption);
-      // Lock hashtags
-      const final = lockHashtags(formatted, city);
-      console.log(`[Caption] Restructured from original (${final.length} chars, original was ${originalCaption.length} chars, KB_override=${!!community}, leaks_stripped=${leaksFound})`);
-      return sanitizeCaption(final);
+    } catch (err) {
+      console.error(`[Caption] Anthropic API failed for restructure (attempt ${attempt}):`, err.message);
     }
-  } catch (err) {
-    console.error("[Caption] Anthropic API failed for restructure:", err.message);
   }
   // Fallback: strip leaks from original, lock hashtags, and return it
   console.log("[Caption] Falling back to original caption (leak-scanned)");

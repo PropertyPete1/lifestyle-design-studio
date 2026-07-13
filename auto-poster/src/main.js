@@ -647,16 +647,8 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       // Clean up TTS audio if voiceover was added but captions skipped (e.g. dry run)
       cleanup(voResult.audioPath);
     }
-    // Pre-post quality check (after voiceover, before upload)
-    const videoToCheck = existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath;
-    const qcResult = await prePostQualityCheck(videoToCheck);
-    if (!qcResult.ok) {
-      throw new Error(`[QC] FAILED: ${qcResult.reason}`);
-    }
-    // Generate caption — ASYMMETRIC CONFIDENCE for reuse
-    console.log("[Post] Generating caption...");
-
-    // Extract video overlays ONCE (reused for both community KB lookup and price check)
+    // Extract video overlays BEFORE QC — QC may compress the file in-place,
+    // which can degrade text readability. Must read from original video.
     let videoOverlays = null;
     try {
       const overlayFrames = extractPriceCheckFrames(tempVideoPath);
@@ -670,6 +662,14 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     } catch (err) {
       console.warn(`[Post] Overlay extraction failed (non-fatal): ${err.message}`);
     }
+    // Pre-post quality check (after voiceover, before upload — may compress oversized files in-place)
+    const videoToCheck = existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath;
+    const qcResult = await prePostQualityCheck(videoToCheck);
+    if (!qcResult.ok) {
+      throw new Error(`[QC] FAILED: ${qcResult.reason}`);
+    }
+    // Generate caption — ASYMMETRIC CONFIDENCE for reuse
+    console.log("[Post] Generating caption...");
 
     let caption;
     const cachedMatch = matchCache[video.id];
