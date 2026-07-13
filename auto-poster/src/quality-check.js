@@ -78,10 +78,11 @@ export async function prePostQualityCheck(videoPath) {
       console.log(`[QC] File is ${(fileSize / 1024 / 1024).toFixed(0)}MB — compressing to fit under 200MB...`);
       const compressedPath = videoPath.replace(/\.mp4$/, '_compressed.mp4');
       try {
-        // Use CRF 28 with fast preset — good quality/size tradeoff for social media
+        // Use CRF 28 with ultrafast preset — optimized for GitHub Actions 2-vCPU runners
+        // 260MB videos need ~3-4 min with ultrafast (vs 7-8 min with fast)
         execSync(
-          `ffmpeg -y -i "${videoPath}" -c:v libx264 -crf 28 -preset fast -c:a aac -b:a 128k -movflags +faststart "${compressedPath}"`,
-          { timeout: 300000, stdio: 'pipe' }
+          `ffmpeg -y -i "${videoPath}" -c:v libx264 -crf 28 -preset ultrafast -c:a aac -b:a 128k -movflags +faststart "${compressedPath}"`,
+          { timeout: 600000, stdio: 'pipe' }
         );
         const compressedSize = statSync(compressedPath).size;
         if (compressedSize > 200 * 1024 * 1024) {
