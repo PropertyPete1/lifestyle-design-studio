@@ -229,7 +229,7 @@ function chicagoLocalDateTime() {
  * Returns { ok, brands: [{ label, ok, networks, error? }], platforms }
  */
 export async function createPost(mediaUrl, caption, options = {}) {
-  const { dryRun = false, prefetched = null } = options;
+  const { dryRun = false, prefetched = null, mainBrandSkipIG = false } = options;
 
   // Discover all brands
   const brands = await getAllBrands();
@@ -267,7 +267,12 @@ export async function createPost(mediaUrl, caption, options = {}) {
       }
 
       // Filter to video-friendly networks only (no LinkedIn)
-      const allowed = ["INSTAGRAM", "FACEBOOK", "TIKTOK", "YOUTUBE"];
+      let allowed = ["INSTAGRAM", "FACEBOOK", "TIKTOK", "YOUTUBE"];
+      // Manual-assist mode: skip Instagram for the MAIN brand (owner posts natively)
+      if (mainBrandSkipIG && brand.blogId === defaultBlogId) {
+        allowed = allowed.filter(n => n !== "INSTAGRAM");
+        console.log(`[Metricool] Manual-assist: skipping Instagram for main brand ${brand.label} (owner will post natively)`);
+      }
       const providers = brand.networks
         .filter(n => allowed.includes(n))
         .map(n => ({ network: NETWORK_MAP[n] || n.toLowerCase() }));

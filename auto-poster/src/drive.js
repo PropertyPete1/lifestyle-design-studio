@@ -123,4 +123,4 @@ export function getDriveDownloadUrl(fileId) {
   return `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
 }
 
-export { CITY_FOLDER_IDS };
+export { CITY_FOLDER_IDS, getAccessToken };

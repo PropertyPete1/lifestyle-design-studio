@@ -21,7 +21,7 @@
  *   Falls back to fresh caption if confidence is insufficient.
  */
 
-import { listCityVideos, downloadVideo } from "./drive.js";
+import { listCityVideos, downloadVideo, getAccessToken } from "./drive.js";
 import { getRecentIgPosts, uploadVideoToMetricool, createPost, verifyPostStatus } from "./metricool.js";
 import { generateCaption, generateCaptionFromOriginal, findCommunity } from "./caption.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
@@ -29,6 +29,7 @@ import { runPriceConsistencyCheck, readVideoOverlays, extractPriceCheckFrames } 
 import { processBurnedCaptions } from "./burned-captions.js";
 import { prePostQualityCheck } from "./quality-check.js";
 import { applyFreshness } from "./freshness.js";
+import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
@@ -797,8 +798,22 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     }
 
     // Post to ALL brands (multi-IG fan-out)
-    console.log("[Post] Creating post on all brands...");
-        const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN, prefetched });
+    // Manual-assist: skip Instagram on main brand — owner posts natively for FB crosspost + merged views
+    console.log("[Post] Creating post on all brands (main IG withheld for manual post)...");
+        const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN, prefetched, mainBrandSkipIG: true });
+
+    // MANUAL-ASSIST DELIVERY: upload finished video to Drive and notify owner
+    let deliveryResult = null;
+    if (!DRY_RUN) {
+      try {
+        const driveToken = await getAccessToken();
+        deliveryResult = await deliverToOwner(driveToken, videoToUpload, CITY, caption);
+      } catch (err) {
+        console.warn(`[Delivery] Failed (non-fatal): ${err.message}`);
+        console.warn("[Delivery] Owner will need to download from satellite IG or request manual delivery");
+      }
+    }
+
     // Record in log (skip in dry-run mode)
     if (!DRY_RUN) {
       const brandSummary = result.brands
@@ -813,7 +828,9 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         voiceover_reason: voiceoverReason,
         voiceover_transcript: voiceoverTranscript,
         freshness: freshnessResult.applied ? "re_encoded" : freshnessResult.reason,
-        platforms: ["instagram", "tiktok", "youtube"],
+        platforms: ["tiktok", "youtube", "satellite_ig"],
+        mainIgDelivery: deliveryResult ? "delivered" : "failed",
+        deliveryDriveLink: deliveryResult?.driveLink || null,
         brands: brandSummary,
         success: true,
       });
