@@ -111,44 +111,62 @@ If no text overlays are visible at all, return: {"price": null, "city": null, "b
 }
 
 /**
- * Extract price from a caption string.
- * Returns the first price found (e.g. "$507,000", "$440K", "$389,900") or null.
+ * Extract ALL price mentions from a caption string.
+ * Returns array of matches (e.g. ["$507K", "$507K"]) or empty array.
+ * Single combined regex captures K/k suffix, "s" suffix ("$400s"), and full prices.
+ */
+export function extractAllPrices(caption) {
+  if (!caption) return [];
+  // Single regex: $ + digits/commas + optional decimal + optional K/k/s suffix (NO trailing space)
+  // The [Kks] is directly after the number — no space between "507" and "K"
+  const priceRegex = /\$[\d,]+(?:\.\d+)?[Kks]?/g;
+  const matches = caption.match(priceRegex) || [];
+  // Filter out matches that are just "$" followed by nothing meaningful
+  return matches.filter(m => /\$\d/.test(m));
+}
+
+/**
+ * Extract the first price from a caption (convenience wrapper).
  */
 export function extractPriceFromCaption(caption) {
-  if (!caption) return null;
-  // Match patterns like $440,000 or $507K or $389,900 or $400s or from the $400s
-  const pricePatterns = [
-    /\$[\d,]+(?:\.\d{2})?/g,           // $440,000 or $389,900.00
-    /\$\d+[Kk]/g,                       // $507K
-    /(?:from |starting at )?\$[\d,]+/gi, // from $440,000
-  ];
-
-  for (const pattern of pricePatterns) {
-    const matches = caption.match(pattern);
-    if (matches && matches.length > 0) {
-      return matches[0];
-    }
-  }
-  return null;
+  const prices = extractAllPrices(caption);
+  return prices.length > 0 ? prices[0] : null;
 }
 
 /**
  * Normalize a price string to a numeric value for comparison.
- * "$440,000" → 440000, "$507K" → 507000, "$389,900" → 389900
+ * "$440,000" → 440000, "$507K" → 507000, "$389,900" → 389900, "$400s" → 400000
  */
-function normalizePrice(priceStr) {
+export function normalizePrice(priceStr) {
   if (!priceStr) return null;
-  let cleaned = priceStr.replace(/[^0-9.kK]/g, "");
+  const trimmed = priceStr.trim();
+  let cleaned = trimmed.replace(/[^0-9.kKs]/g, "");
+
+  // Handle K/k suffix: $507K → 507 * 1000 = 507000
   if (/[kK]$/.test(cleaned)) {
     cleaned = cleaned.replace(/[kK]$/, "");
     return parseFloat(cleaned) * 1000;
   }
+
+  // Handle "s" suffix: $400s → 400 * 1000 = 400000 ("from the $400s" means ~$400,000)
+  if (/s$/.test(cleaned)) {
+    cleaned = cleaned.replace(/s$/, "");
+    const val = parseFloat(cleaned);
+    // If under 10000, it's shorthand for thousands (e.g. $400s = $400,000 range)
+    if (val && val < 10000) return val * 1000;
+    return val || null;
+  }
+
   return parseFloat(cleaned) || null;
 }
 
 /**
  * Compare video price vs caption price.
- * Returns { matches: boolean, videoPrice, captionPrice, correction } 
+ * Returns { matches: boolean, videoPrice, captionPrice, correction }
+ * 
+ * Special handling for "$400s" style: if caption uses shorthand thousands format
+ * and video shows a specific price in that range, treat as consistent rather than
+ * trying to replace vague language with a specific number.
  */
 export function comparePrices(videoOverlays, captionText) {
   const videoPrice = videoOverlays?.price || null;
@@ -173,6 +191,22 @@ export function comparePrices(videoOverlays, captionText) {
     return { matches: true, videoPrice, captionPrice, correction: null };
   }
 
+  // Special case: "$400s" style is a range, not a precise price.
+  // If caption uses "s" suffix (e.g. "$400s") and video price falls in that range,
+  // skip correction — replacing "$400s" with "$440,000" changes the tone.
+  // If they DON'T match even at range level, skip correction too (log only) to avoid mangling.
+  if (/\$[\d,]+s/i.test(captionPrice)) {
+    // "$400s" = 400k range. Check if video price is in same hundreds-of-thousands bucket.
+    const captionBucket = Math.floor(captionNum / 100000);
+    const videoBucket = Math.floor(videoNum / 100000);
+    if (captionBucket === videoBucket) {
+      return { matches: true, videoPrice, captionPrice, correction: null };
+    }
+    // Different bucket — log but don't correct (would mangle the format)
+    console.log(`[PriceCheck] ⚠️ Range mismatch: caption "${captionPrice}" vs video "${videoPrice}" — logging only, not correcting`);
+    return { matches: true, videoPrice, captionPrice, correction: null, logOnly: `range mismatch: caption ${captionPrice} vs video ${videoPrice}` };
+  }
+
   // Allow 5% tolerance (rounding differences)
   const tolerance = 0.05;
   const diff = Math.abs(videoNum - captionNum) / Math.max(videoNum, captionNum);
@@ -182,26 +216,48 @@ export function comparePrices(videoOverlays, captionText) {
   }
 
   // MISMATCH — video price is ground truth
-  console.log(`[PriceCheck] ⚠️ PRICE MISMATCH: caption says ${captionPrice} (${captionNum}), video shows ${videoPrice} (${videoNum})`);
+  // Extract just the numeric price from the video overlay (e.g. "Starting at $440,000" → "$440,000")
+  const videoPriceExtracted = extractPriceFromCaption(videoPrice) || videoPrice;
+  console.log(`[PriceCheck] ⚠️ PRICE MISMATCH: caption says ${captionPrice} (${captionNum}), video shows ${videoPriceExtracted} (${videoNum})`);
   return {
     matches: false,
     videoPrice,
     captionPrice,
-    correction: videoPrice,
+    correction: videoPriceExtracted,
     videoPriceNum: videoNum,
     captionPriceNum: captionNum,
   };
 }
 
 /**
- * Replace the price in a caption with the corrected price from video.
- * Preserves the format of the original price mention.
+ * Replace ALL occurrences of a price in a caption with the corrected price.
+ * Captions often repeat the price in hook + bullets — must replace globally.
+ * 
+ * After correction, runs a sanity check: re-extracts the price from the result
+ * and verifies it matches the video price. If mangled, falls back to original.
  */
-export function correctCaptionPrice(caption, oldPrice, newPrice) {
+export function correctCaptionPrice(caption, oldPrice, newPrice, videoPriceNum) {
   if (!caption || !oldPrice || !newPrice) return caption;
-  // Replace the old price with the new one
-  const corrected = caption.replace(oldPrice, newPrice);
-  console.log(`[PriceCheck] Corrected caption price: "${oldPrice}" → "${newPrice}"`);
+
+  // Escape special regex chars in the old price string
+  const escaped = oldPrice.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const corrected = caption.replace(new RegExp(escaped, "g"), newPrice);
+
+  // Sanity guard: re-extract price from corrected caption and verify it parses correctly
+  const verifyPrice = extractPriceFromCaption(corrected);
+  const verifyNum = normalizePrice(verifyPrice);
+
+  if (verifyNum && videoPriceNum) {
+    const verifyDiff = Math.abs(verifyNum - videoPriceNum) / Math.max(verifyNum, videoPriceNum);
+    if (verifyDiff > 0.05) {
+      // Correction produced a mangled result — fall back to original
+      console.warn(`[PriceCheck] Sanity check FAILED: corrected caption parses to ${verifyNum}, expected ~${videoPriceNum}. Keeping original.`);
+      return caption;
+    }
+  }
+
+  const count = (caption.match(new RegExp(escaped, "g")) || []).length;
+  console.log(`[PriceCheck] Corrected ${count} occurrence(s): "${oldPrice}" → "${newPrice}"`);
   return corrected;
 }
 
@@ -243,12 +299,18 @@ export async function runPriceConsistencyCheck(videoPath, caption, existingFrame
     const comparison = comparePrices(overlays, caption);
 
     if (comparison.matches) {
-      console.log("[PriceCheck] ✓ Prices consistent (or no conflict)");
-      return { caption, corrected: false, log: "consistent" };
+      const logMsg = comparison.logOnly || "consistent";
+      console.log(`[PriceCheck] ✓ Prices consistent (or no conflict)`);
+      return { caption, corrected: false, log: logMsg };
     }
 
-    // Step 4: Correct the caption
-    const correctedCaption = correctCaptionPrice(caption, comparison.captionPrice, comparison.correction);
+    // Step 4: Correct the caption (global replace + sanity check)
+    const correctedCaption = correctCaptionPrice(
+      caption,
+      comparison.captionPrice,
+      comparison.correction,
+      comparison.videoPriceNum
+    );
     const logMsg = `caption said ${comparison.captionPrice}, video shows ${comparison.videoPrice}, corrected`;
     console.log(`[PriceCheck] ✓ Caption corrected: ${logMsg}`);
 
