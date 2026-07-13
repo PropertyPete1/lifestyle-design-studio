@@ -90,41 +90,7 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          elif [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
-            git commit -m "📸 SA post $(date -u +%Y-%m-%d)"
-          else
-            git commit -m "🔍 SA run $(date -u +%Y-%m-%d) — no post (see logs)"
-          fi
-          # Robust push with retry loop — a lost log entry causes double-posts
-          MAX_ATTEMPTS=5
-          for i in $(seq 1 $MAX_ATTEMPTS); do
-            echo "[Push] Attempt $i/$MAX_ATTEMPTS..."
-            git rebase --abort 2>/dev/null || true
-            git checkout main 2>/dev/null || true
-            git pull --rebase origin main
-            if git push; then
-              echo "[Push] ✓ Success on attempt $i"
-              break
-            fi
-            if [ $i -eq $MAX_ATTEMPTS ]; then
-              echo "::error::🚨 CRITICAL: All $MAX_ATTEMPTS push attempts failed. Log entry is LOST. Double-post risk!"
-              exit 1
-            fi
-            echo "[Push] Attempt $i failed — retrying in $((i * 3))s..."
-            sleep $((i * 3))
-            # Re-stage and re-commit after failed rebase
-            git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-            if ! git diff --cached --quiet; then
-              if [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
-                git commit -m "📸 SA post $(date -u +%Y-%m-%d)"
-              else
-                git commit -m "🔍 SA run $(date -u +%Y-%m-%d) — no post (see logs)"
-              fi
-            fi
-          done
+          node merge-log-push.mjs SA "${{ steps.run-poster.outputs.post_success }}"
 
   post-austin:
     if: >-
@@ -176,41 +142,7 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          elif [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
-            git commit -m "📸 ATX post $(date -u +%Y-%m-%d)"
-          else
-            git commit -m "🔍 ATX run $(date -u +%Y-%m-%d) — no post (see logs)"
-          fi
-          # Robust push with retry loop — a lost log entry causes double-posts
-          MAX_ATTEMPTS=5
-          for i in $(seq 1 $MAX_ATTEMPTS); do
-            echo "[Push] Attempt $i/$MAX_ATTEMPTS..."
-            git rebase --abort 2>/dev/null || true
-            git checkout main 2>/dev/null || true
-            git pull --rebase origin main
-            if git push; then
-              echo "[Push] ✓ Success on attempt $i"
-              break
-            fi
-            if [ $i -eq $MAX_ATTEMPTS ]; then
-              echo "::error::🚨 CRITICAL: All $MAX_ATTEMPTS push attempts failed. Log entry is LOST. Double-post risk!"
-              exit 1
-            fi
-            echo "[Push] Attempt $i failed — retrying in $((i * 3))s..."
-            sleep $((i * 3))
-            # Re-stage and re-commit after failed rebase
-            git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-            if ! git diff --cached --quiet; then
-              if [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
-                git commit -m "📸 ATX post $(date -u +%Y-%m-%d)"
-              else
-                git commit -m "🔍 ATX run $(date -u +%Y-%m-%d) — no post (see logs)"
-              fi
-            fi
-          done
+          node merge-log-push.mjs ATX "${{ steps.run-poster.outputs.post_success }}"
 
   post-dallas:
     if: >-
@@ -273,38 +205,4 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          elif [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
-            git commit -m "📸 DFW post $(date -u +%Y-%m-%d)"
-          else
-            git commit -m "🔍 DFW run $(date -u +%Y-%m-%d) — no post (see logs)"
-          fi
-          # Robust push with retry loop — a lost log entry causes double-posts
-          MAX_ATTEMPTS=5
-          for i in $(seq 1 $MAX_ATTEMPTS); do
-            echo "[Push] Attempt $i/$MAX_ATTEMPTS..."
-            git rebase --abort 2>/dev/null || true
-            git checkout main 2>/dev/null || true
-            git pull --rebase origin main
-            if git push; then
-              echo "[Push] ✓ Success on attempt $i"
-              break
-            fi
-            if [ $i -eq $MAX_ATTEMPTS ]; then
-              echo "::error::🚨 CRITICAL: All $MAX_ATTEMPTS push attempts failed. Log entry is LOST. Double-post risk!"
-              exit 1
-            fi
-            echo "[Push] Attempt $i failed — retrying in $((i * 3))s..."
-            sleep $((i * 3))
-            # Re-stage and re-commit after failed rebase
-            git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-            if ! git diff --cached --quiet; then
-              if [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
-                git commit -m "📸 DFW post $(date -u +%Y-%m-%d)"
-              else
-                git commit -m "🔍 DFW run $(date -u +%Y-%m-%d) — no post (see logs)"
-              fi
-            fi
-          done
+          node merge-log-push.mjs DFW "${{ steps.run-poster.outputs.post_success }}"
