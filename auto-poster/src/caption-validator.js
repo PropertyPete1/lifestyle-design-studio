@@ -19,27 +19,34 @@ const REQUIRED_MARKERS = [
   { pattern: /[✨💸]/, label: "themed section emoji (✨ or 💸)" },
 ];
 
-const FORBIDDEN_PATTERNS = [
+// FULL-TEXT forbidden patterns — scanned against the entire caption
+const FORBIDDEN_FULL_TEXT = [
   // Markdown formatting
   { pattern: /\*\*/, label: "markdown bold (**)" },
   { pattern: /^##\s/m, label: "markdown header (##)" },
   { pattern: /```/, label: "markdown code block" },
-  // Assistant-speak phrases (case-insensitive)
+  // Hard refusal phrases — these NEVER appear in legitimate captions
   { pattern: /I'd love to/i, label: 'assistant-speak: "I\'d love to"' },
   { pattern: /I need/i, label: 'assistant-speak: "I need"' },
   { pattern: /Can you provide/i, label: 'assistant-speak: "Can you provide"' },
   { pattern: /I'm sorry/i, label: 'assistant-speak: "I\'m sorry"' },
   { pattern: /As an AI/i, label: 'assistant-speak: "As an AI"' },
-  { pattern: /\bhere's\b/i, label: 'assistant-speak: "here\'s"' },
-  { pattern: /let me know/i, label: 'assistant-speak: "let me know"' },
   { pattern: /I don't have/i, label: 'assistant-speak: "I don\'t have"' },
   { pattern: /I cannot/i, label: 'assistant-speak: "I cannot"' },
   { pattern: /I can't/i, label: 'assistant-speak: "I can\'t"' },
   { pattern: /please provide/i, label: 'assistant-speak: "please provide"' },
-  { pattern: /Could you/i, label: 'assistant-speak: "Could you"' },
   { pattern: /I'd be happy to/i, label: 'assistant-speak: "I\'d be happy to"' },
   { pattern: /Unfortunately/i, label: 'assistant-speak: "Unfortunately"' },
   { pattern: /I apologize/i, label: 'assistant-speak: "I apologize"' },
+];
+
+// FIRST-150-CHARS-ONLY forbidden patterns — these phrases appear in legit captions
+// (e.g. "here's what $340K gets you", "let me know in the comments", "Could you see yourself here?")
+// but refusals/clarifying questions always start at the beginning.
+const FORBIDDEN_OPENING_ONLY = [
+  { pattern: /\bhere's\b/i, label: 'assistant-speak opening: "here\'s"' },
+  { pattern: /let me know/i, label: 'assistant-speak opening: "let me know"' },
+  { pattern: /Could you/i, label: 'assistant-speak opening: "Could you"' },
 ];
 
 /**
@@ -66,10 +73,18 @@ export function validateCaption(caption) {
     }
   }
 
-  // Check FORBIDDEN markers
-  for (const { pattern, label } of FORBIDDEN_PATTERNS) {
+  // Check FORBIDDEN markers — full text scan
+  for (const { pattern, label } of FORBIDDEN_FULL_TEXT) {
     if (pattern.test(caption)) {
       failures.push(`CONTAINS forbidden: ${label}`);
+    }
+  }
+
+  // Check FORBIDDEN markers — first 150 chars only (phrases that are legit mid-caption)
+  const opening = caption.slice(0, 150);
+  for (const { pattern, label } of FORBIDDEN_OPENING_ONLY) {
+    if (pattern.test(opening)) {
+      failures.push(`CONTAINS forbidden in opening: ${label}`);
     }
   }
 
