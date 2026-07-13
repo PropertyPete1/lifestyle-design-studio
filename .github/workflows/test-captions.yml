@@ -1,0 +1,19 @@
+name: Test Captions (Gated)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        working-directory: auto-poster
+        run: npm ci
+      - name: Run caption test
+        working-directory: auto-poster
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/test-caption-dry-run.mjs
