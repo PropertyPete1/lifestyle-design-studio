@@ -252,9 +252,12 @@ function scanAndStripLeaks(caption, community) {
 
   let cleaned = caption;
   for (const { term, type } of gatedTerms) {
-    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "gi");
     if (regex.test(cleaned)) {
       leakDetails.push({ term, type });
+      // Reset lastIndex after test() since we reuse the regex
+      regex.lastIndex = 0;
       if (type === "community_name") {
         cleaned = cleaned.replace(regex, "this community");
       } else if (type === "builder_name") {
@@ -299,10 +302,17 @@ function fixCurrencyFormatting(caption) {
     return match.replace(num, `$${num}`);
   });
 
-  // Fix tax rates missing %: "2.5" after "tax rate" or "MUD" → "2.5%"
-  fixed = fixed.replace(/((?:tax|MUD|rate)[^.]*?)\b(\d+\.?\d*)\b(?!%)/gi, (match, prefix, num) => {
+  // Fix tax rates missing %: only when number has a decimal point AND is near "tax"/"rate"/"MUD"
+  // OR immediately follows "rate" within a few words. Never fire on "rate buydowns on 3 select homes".
+  fixed = fixed.replace(/\b(?:tax\s*rate|MUD\s*(?:rate|district|tax))\s[^.]{0,30}?\b(\d+\.\d+)\b(?!%)/gi, (match, num) => {
     const val = parseFloat(num);
-    if (val > 0 && val < 10) return match.replace(num, `${num}%`);
+    if (val > 0 && val < 15) return match.replace(num, `${num}%`);
+    return match;
+  });
+  // Also catch standalone decimal numbers immediately after "rate" (e.g. "rate around 2.5")
+  fixed = fixed.replace(/\brate\s+(?:around|about|of|is|at)?\s*(\d+\.\d+)\b(?!%)/gi, (match, num) => {
+    const val = parseFloat(num);
+    if (val > 0 && val < 15) return match.replace(num, `${num}%`);
     return match;
   });
 
@@ -313,12 +323,14 @@ function fixCurrencyFormatting(caption) {
  * Lock hashtags: strip any LLM-generated hashtags and append the fixed set.
  */
 function lockHashtags(caption, city) {
-  // Remove any existing hashtag lines (lines that start with # or contain multiple #words)
+  // Remove any line that is purely hashtags (one or more), regardless of count
   const lines = caption.split("\n");
   const cleanedLines = lines.filter(line => {
     const stripped = line.trim();
-    // Remove lines that are primarily hashtags
-    if (/^#\w/.test(stripped) && (stripped.match(/#/g) || []).length >= 2) return false;
+    if (!stripped) return true; // keep blank lines
+    // A line is "purely hashtags" if after removing all #word tokens, nothing meaningful remains
+    const withoutHashtags = stripped.replace(/#\w+/g, "").trim();
+    if (withoutHashtags === "" && stripped.includes("#")) return false;
     return true;
   });
 
