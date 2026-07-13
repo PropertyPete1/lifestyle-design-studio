@@ -153,11 +153,21 @@ export async function processVoiceover(videoPath, city, dryRun = false) {
   const detection = detectSpeech(videoPath);
 
   if (detection.hasSpeech) {
-    console.log(`[Voiceover] Speech detected (conf=${detection.confidence}) — skipping voiceover`);
+    // Determine skip reason for audit trail
+    let reason;
+    if (detection.error) {
+      reason = "whisper_error_failsafe";
+      console.log(`[Voiceover] Whisper error (fail-safe skip) — assuming speech present`);
+    } else {
+      // Heuristic: low confidence (<0.6) with few words likely = lyrics, not real speech
+      const isLikelyLyrics = detection.confidence < 0.6 && (detection.wordCount || 0) < 50;
+      reason = isLikelyLyrics ? "lyrics_detected" : "speech_detected";
+      console.log(`[Voiceover] ${isLikelyLyrics ? 'Lyrics' : 'Speech'} detected (conf=${detection.confidence}, words=${detection.wordCount || '?'}) — skipping voiceover`);
+    }
     if (detection.transcript) {
       console.log(`[Voiceover] Transcript: "${detection.transcript.slice(0, 80)}..."`);
     }
-    return { videoPath, skipped: true, reason: "speech_detected", detection };
+    return { videoPath, skipped: true, reason, detection };
   }
 
   if (detection.silent) {

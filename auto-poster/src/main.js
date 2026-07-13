@@ -627,6 +627,16 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN);
     finalVideoPath = voResult.videoPath;
     const hasVoiceover = !voResult.skipped;
+    // Build voiceover reason for audit trail
+    let voiceoverReason = "added";
+    if (voResult.skipped) {
+      if (voResult.reason === "speech_detected") voiceoverReason = "speech_detected";
+      else if (voResult.detection?.error) voiceoverReason = "whisper_error_failsafe";
+      else voiceoverReason = voResult.reason || "speech_detected";
+    }
+    const voiceoverTranscript = voResult.detection?.transcript
+      ? voResult.detection.transcript.split(/\s+/).slice(0, 10).join(" ")
+      : null;
 
     // Burned-in captions: only when voiceover was added (not skipped)
     if (hasVoiceover && voResult.audioPath && voResult.script && !DRY_RUN) {
@@ -789,6 +799,8 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         city: CITY,
         caption,
         voiceover: hasVoiceover,
+        voiceover_reason: voiceoverReason,
+        voiceover_transcript: voiceoverTranscript,
         platforms: ["instagram", "tiktok", "youtube"],
         brands: brandSummary,
         success: true,
