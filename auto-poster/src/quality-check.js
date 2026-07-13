@@ -7,7 +7,7 @@
  * Returns { ok: boolean, reason: string }
  */
 import { execSync } from "child_process";
-import { statSync, readFileSync, unlinkSync, existsSync } from "fs";
+import { statSync, readFileSync, unlinkSync, existsSync, renameSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { createHash } from "crypto";
@@ -74,7 +74,30 @@ export async function prePostQualityCheck(videoPath) {
       return { ok: false, reason: `File too small: ${(fileSize / 1024).toFixed(0)}KB — likely corrupted`, details };
     }
     if (fileSize > 200 * 1024 * 1024) {
-      return { ok: false, reason: `File too large: ${(fileSize / 1024 / 1024).toFixed(0)}MB — exceeds 200MB limit`, details };
+      // Auto-compress oversized videos instead of failing
+      console.log(`[QC] File is ${(fileSize / 1024 / 1024).toFixed(0)}MB — compressing to fit under 200MB...`);
+      const compressedPath = videoPath.replace(/\.mp4$/, '_compressed.mp4');
+      try {
+        // Use CRF 28 with fast preset — good quality/size tradeoff for social media
+        execSync(
+          `ffmpeg -y -i "${videoPath}" -c:v libx264 -crf 28 -preset fast -c:a aac -b:a 128k -movflags +faststart "${compressedPath}"`,
+          { timeout: 300000, stdio: 'pipe' }
+        );
+        const compressedSize = statSync(compressedPath).size;
+        if (compressedSize > 200 * 1024 * 1024) {
+          // Still too large even after compression — fail
+          try { unlinkSync(compressedPath); } catch {}
+          return { ok: false, reason: `File still too large after compression: ${(compressedSize / 1024 / 1024).toFixed(0)}MB — exceeds 200MB limit`, details };
+        }
+        // Replace the original with the compressed version
+        unlinkSync(videoPath);
+        renameSync(compressedPath, videoPath);
+        details.fileSize = `${(compressedSize / 1024 / 1024).toFixed(1)}MB (compressed from ${(fileSize / 1024 / 1024).toFixed(0)}MB)`;
+        console.log(`[QC] Compressed: ${(fileSize / 1024 / 1024).toFixed(0)}MB → ${(compressedSize / 1024 / 1024).toFixed(0)}MB ✓`);
+      } catch (compErr) {
+        try { unlinkSync(compressedPath); } catch {}
+        return { ok: false, reason: `File too large (${(fileSize / 1024 / 1024).toFixed(0)}MB) and compression failed: ${compErr.message?.slice(0, 80)}`, details };
+      }
     }
 
     console.log(`[QC] Programmatic: ${width}x${height}, ${duration.toFixed(1)}s, ${(fileSize / 1024 / 1024).toFixed(1)}MB — PASS`);

@@ -447,9 +447,12 @@ async function main() {
     }
 
     // Update the log with verification status
-    const lastPost = log.posts[log.posts.length - 1];
-    if (lastPost) {
-      lastPost.verification = {
+    // Find the MOST RECENT video post for this city (not LinkedIn entries)
+    const videoPost = [...log.posts].reverse().find(
+      p => p.city === CITY && !p.type
+    );
+    if (videoPost) {
+      videoPost.verification = {
         checkedAt: new Date().toISOString(),
         allVerified,
         results: verificationResults,
