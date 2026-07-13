@@ -28,6 +28,7 @@ import { processVoiceover, cleanup } from "./voiceover.js";
 import { runPriceConsistencyCheck, readVideoOverlays, extractPriceCheckFrames } from "./price-check.js";
 import { processBurnedCaptions } from "./burned-captions.js";
 import { prePostQualityCheck } from "./quality-check.js";
+import { applyFreshness } from "./freshness.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
@@ -678,6 +679,16 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     if (!qcResult.ok) {
       throw new Error(`[QC] FAILED: ${qcResult.reason}`);
     }
+    // Freshness pass: light re-encode to make every upload byte-unique
+    // Skip if voiceover or compression already re-encoded the video
+    const alreadyReEncoded = hasVoiceover || (qcResult.details?.fileSize?.includes('compressed'));
+    const freshnessResult = applyFreshness(
+      existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath,
+      { alreadyReEncoded, dryRun: DRY_RUN }
+    );
+    if (freshnessResult.applied) {
+      console.log(`[Post] Freshness pass applied: trim ${freshnessResult.trimFrames}f, gain ${freshnessResult.gainDb}dB`);
+    }
     // Generate caption — ASYMMETRIC CONFIDENCE for reuse
     console.log("[Post] Generating caption...");
 
@@ -801,6 +812,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         voiceover: hasVoiceover,
         voiceover_reason: voiceoverReason,
         voiceover_transcript: voiceoverTranscript,
+        freshness: freshnessResult.applied ? "re_encoded" : freshnessResult.reason,
         platforms: ["instagram", "tiktok", "youtube"],
         brands: brandSummary,
         success: true,
