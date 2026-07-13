@@ -91,7 +91,7 @@ export function validateCaption(caption) {
   }
 
   // "DM" must appear at most 2 times (primary CTA "I'll DM you" + secondary "DM LIST")
-  const dmMatches = (caption.match(/\bDM\b/g) || []).length;
+  const dmMatches = (caption.match(/\bDM\b/gi) || []).length;
   if (dmMatches > 2) {
     failures.push(`"DM" appears ${dmMatches} times (max 2 allowed)`);
   }
@@ -131,7 +131,7 @@ Output ONLY the caption text following the exact structure specified above. Do N
 STRICT CTA RULES:
 - "comment TOUR" must appear EXACTLY ONCE — in the primary CTA at the end, nowhere else
 - The word "comment" must not appear more than twice total
-- "DM" must appear at most once (the secondary CTA)
+- "DM" appears at most twice (only in the two CTA lines)
 - NO asking/requesting in the value sections (✨, 💸, 🌳, 🎓) — those sections INFORM, they don't ask
 
 You MUST include:
