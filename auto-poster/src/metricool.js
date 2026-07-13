@@ -88,6 +88,7 @@ export async function getAllBrands() {
     if (!blogId) continue;
     const networks = [];
     if (typeof p.instagram === "string" && p.instagram) networks.push("INSTAGRAM");
+    if (typeof p.facebook === "string" && p.facebook) networks.push("FACEBOOK");
     if (typeof p.tiktok === "string" && p.tiktok) networks.push("TIKTOK");
     if (typeof p.youtube === "string" && p.youtube) networks.push("YOUTUBE");
     // Only include brands that have Instagram connected
@@ -240,8 +241,8 @@ export async function createPost(mediaUrl, caption, options = {}) {
     return { ok: true, dryRun: true, brands: brands.map(b => ({ label: b.label, ok: true, networks: b.networks })) };
   }
 
-  const NETWORK_MAP = { INSTAGRAM: "instagram", TIKTOK: "tiktok", YOUTUBE: "youtube" };
-  const NICE_NAMES = { instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube" };
+  const NETWORK_MAP = { INSTAGRAM: "instagram", FACEBOOK: "facebook", TIKTOK: "tiktok", YOUTUBE: "youtube" };
+  const NICE_NAMES = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", youtube: "YouTube" };
   const publishAt = chicagoLocalDateTime();
 
   // The default brand was already uploaded in uploadVideoToMetricool() — reuse that URL
@@ -266,7 +267,7 @@ export async function createPost(mediaUrl, caption, options = {}) {
       }
 
       // Filter to video-friendly networks only (no LinkedIn)
-      const allowed = ["INSTAGRAM", "TIKTOK", "YOUTUBE"];
+      const allowed = ["INSTAGRAM", "FACEBOOK", "TIKTOK", "YOUTUBE"];
       const providers = brand.networks
         .filter(n => allowed.includes(n))
         .map(n => ({ network: NETWORK_MAP[n] || n.toLowerCase() }));
@@ -303,6 +304,9 @@ export async function createPost(mediaUrl, caption, options = {}) {
           title: caption
             ? caption.replace(/#\S+/g, "").trim().slice(0, 100) || "New property tour"
             : "New property tour",
+        },
+        facebookData: {
+          type: "REEL",
         },
       };
 
