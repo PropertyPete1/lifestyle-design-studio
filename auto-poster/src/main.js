@@ -23,9 +23,9 @@
 
 import { listCityVideos, downloadVideo } from "./drive.js";
 import { getRecentIgPosts, uploadVideoToMetricool, createPost, verifyPostStatus } from "./metricool.js";
-import { generateCaption, generateCaptionFromOriginal } from "./caption.js";
+import { generateCaption, generateCaptionFromOriginal, findCommunity } from "./caption.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
-import { runPriceConsistencyCheck } from "./price-check.js";
+import { runPriceConsistencyCheck, readVideoOverlays, extractPriceCheckFrames } from "./price-check.js";
 import { processBurnedCaptions } from "./burned-captions.js";
 import { prePostQualityCheck } from "./quality-check.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
@@ -652,6 +652,22 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     }
     // Generate caption — ASYMMETRIC CONFIDENCE for reuse
     console.log("[Post] Generating caption...");
+
+    // Extract video overlays ONCE (reused for both community KB lookup and price check)
+    let videoOverlays = null;
+    try {
+      const overlayFrames = extractPriceCheckFrames(tempVideoPath);
+      if (overlayFrames.length > 0) {
+        videoOverlays = await readVideoOverlays(overlayFrames);
+        overlayFrames.forEach(fp => { try { unlinkSync(fp); } catch {} });
+        if (videoOverlays?.community) {
+          console.log(`[Post] Video overlay community: ${videoOverlays.community}`);
+        }
+      }
+    } catch (err) {
+      console.warn(`[Post] Overlay extraction failed (non-fatal): ${err.message}`);
+    }
+
     let caption;
     const cachedMatch = matchCache[video.id];
     
@@ -662,7 +678,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
 
       if (cityMismatch) {
         console.log(`[Post] Matched caption references a DIFFERENT city — generating fresh caption`);
-        caption = await generateCaption(CITY);
+        caption = await generateCaption(CITY, videoOverlays);
       } else if (matchDist < CAPTION_AUTO_REUSE_THRESHOLD) {
         // Distance 0-4: extremely high confidence, auto-reuse
         console.log(`[Post] Very high-confidence match (dist: ${matchDist} < ${CAPTION_AUTO_REUSE_THRESHOLD}) — restructuring original caption`);
@@ -695,23 +711,23 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
           caption = await generateCaptionFromOriginal(matchCaption, CITY);
         } else {
           console.log(`[Post] AI did NOT confirm same property — generating fresh caption (safety)`);
-          caption = await generateCaption(CITY);
+          caption = await generateCaption(CITY, videoOverlays);
         }
       } else {
         // Distance 10+: not confident enough to reuse caption
         console.log(`[Post] Match distance ${matchDist} >= ${CAPTION_REUSE_THRESHOLD} — not confident enough to reuse caption, generating fresh`);
-        caption = await generateCaption(CITY);
+        caption = await generateCaption(CITY, videoOverlays);
       }
     } else {
       console.log("[Post] No original caption found — generating fresh");
-      caption = await generateCaption(CITY);
+      caption = await generateCaption(CITY, videoOverlays);
     }
 
     // Price-consistency check: verify caption price against video overlay text
     // Video text is ground truth — original IG captions go stale when builders change prices
     if (caption && !DRY_RUN) {
       try {
-        const priceResult = await runPriceConsistencyCheck(tempVideoPath, caption);
+        const priceResult = await runPriceConsistencyCheck(tempVideoPath, caption, null, videoOverlays);
         if (priceResult.corrected) {
           console.log(`[Post] ⚠️ Price corrected: ${priceResult.log}`);
           caption = priceResult.caption;

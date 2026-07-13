@@ -270,8 +270,32 @@ export function correctCaptionPrice(caption, oldPrice, newPrice, videoPriceNum) 
  * @param {string[]} existingFrames - Optional pre-extracted frames (reuse from QC)
  * @returns {{ caption: string, corrected: boolean, log: string }}
  */
-export async function runPriceConsistencyCheck(videoPath, caption, existingFrames = null) {
+export async function runPriceConsistencyCheck(videoPath, caption, existingFrames = null, preReadOverlays = null) {
   console.log("[PriceCheck] Running price-consistency check...");
+
+  // If overlays were already read upstream (e.g. for community KB lookup), reuse them
+  if (preReadOverlays) {
+    console.log("[PriceCheck] Using pre-read overlays (skipping duplicate vision call)");
+    if (!preReadOverlays.price) {
+      console.log("[PriceCheck] No price visible in video — caption unchanged");
+      return { caption, corrected: false, log: "no_video_price" };
+    }
+    const comparison = comparePrices(preReadOverlays, caption);
+    if (comparison.matches) {
+      const logMsg = comparison.logOnly || "consistent";
+      console.log(`[PriceCheck] \u2713 Prices consistent (or no conflict)`);
+      return { caption, corrected: false, log: logMsg };
+    }
+    const correctedCaption = correctCaptionPrice(
+      caption,
+      comparison.captionPrice,
+      comparison.correction,
+      comparison.videoPriceNum
+    );
+    const logMsg = `caption said ${comparison.captionPrice}, video shows ${comparison.videoPrice}, corrected`;
+    console.log(`[PriceCheck] \u2713 Caption corrected: ${logMsg}`);
+    return { caption: correctedCaption, corrected: true, log: logMsg };
+  }
 
   // Step 1: Extract frames from first 5 seconds (or reuse existing)
   let framePaths = existingFrames;

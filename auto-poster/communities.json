@@ -1,0 +1,111 @@
+{
+  "Rancho Sienna": {
+    "city": "Austin",
+    "price_range": "from about $455,990 to $591,990",
+    "beds_baths_range": "3 to 5 bedrooms, 2 to 4 bathrooms",
+    "sqft_range": "1,566 to 3,313 sq ft",
+    "school_district": "Liberty Hill ISD (multiple on-site schools)",
+    "hoa": "~$106/month (master HOA)",
+    "amenities": [
+      "resort-style pools with splash zones and dual waterslides",
+      "Wellness Barn",
+      "nature trails and parks",
+      "Ranch Camp",
+      "dog park",
+      "community garden"
+    ],
+    "incentives": "VA/FHA/conventional friendly, potential USDA on select homes, 4.99% fixed rate promo on select homes, rate buydowns available",
+    "lot_size": "60 ft homesites",
+    "notes": "435-acre master-planned community, one and two story options, quick move-ins available"
+  },
+  "Esperanza": {
+    "city": "San Antonio",
+    "price_range": "from the $350s to $591,990 (specific models around $507,990 to $524,000)",
+    "beds_baths_range": "4 to 5 bedrooms, 3 to 4 bathrooms",
+    "sqft_range": "2,776 to 3,803 sq ft",
+    "school_district": "Medina Valley ISD",
+    "hoa": "~$116/month (master HOA)",
+    "amenities": [
+      "resort-style pool with splash zones and dual waterslides",
+      "Wellness Barn",
+      "nature trails and parks",
+      "Ranch Camp",
+      "dog park",
+      "community garden",
+      "hike and bike trails",
+      "300,000+ sq ft retail, dining, and medical at entrance"
+    ],
+    "incentives": "VA/FHA/conventional, rate buydowns, 4.99% fixed rate on select homes",
+    "lot_size": "60 ft homesites",
+    "notes": "435-acre master-planned Hill Country community, mature oaks, resort-style living"
+  },
+  "Ventana": {
+    "city": "San Antonio",
+    "price_range": "$279,995 to low-mid $300s",
+    "beds_baths_range": "2 to 5 bedrooms, 2 to 3 bathrooms",
+    "sqft_range": "1,389 to 2,328 sq ft",
+    "school_district": "Stahl Elementary, Driscoll Middle, Madison High (NEISD)",
+    "hoa": "confirm per address",
+    "amenities": [
+      "planned playground"
+    ],
+    "incentives": "VA/FHA/conventional friendly, rate buydowns and closing cost help on select homes",
+    "lot_size": null,
+    "notes": "8 floorplans, one and two story options, 2 car garages, go cozy or go roomy"
+  },
+  "Travisso": {
+    "city": "Austin",
+    "price_range": "from about $398,000 to $591,990",
+    "beds_baths_range": "3 to 5 bedrooms, 2 to 4 bathrooms",
+    "sqft_range": "1,566 to 3,313 sq ft",
+    "school_district": "Liberty Hill ISD",
+    "hoa": "~$116/month",
+    "amenities": [
+      "resort-style pools with splash zones and dual waterslides",
+      "Wellness Barn",
+      "nature trails and parks",
+      "Ranch Camp amenities"
+    ],
+    "incentives": "VA/FHA/conventional, 4.99% fixed rate promo on select homes, rate buydowns",
+    "lot_size": null,
+    "notes": "Hill Country community near Liberty Hill, one and two story layouts, quick move-ins"
+  },
+  "Bee Cave / Lakeway": {
+    "city": "Austin",
+    "price_range": "from $639,990",
+    "beds_baths_range": "one and two story options",
+    "sqft_range": "2,341 to 3,656 sq ft",
+    "school_district": "Lake Travis ISD",
+    "hoa": "confirm per address",
+    "amenities": [
+      "multiple pool areas",
+      "fitness centers",
+      "gathering spots",
+      "trails",
+      "700+ acres of protected canyons and natural terrain"
+    ],
+    "incentives": "preferred lending programs, closing cost assistance on eligible homes",
+    "lot_size": "generous lots",
+    "notes": "Hill Country western edge near Austin, near Bee Cave and Lakeway for shopping/dining, open layouts with soaring ceilings and natural light"
+  },
+  "Walsh Ranch": {
+    "city": "Dallas / DFW",
+    "price_range": "from the $295Ks to low $300s",
+    "beds_baths_range": "3 to 5 bedrooms, 2 to 4 bathrooms",
+    "sqft_range": "1,400 to 2,900 sq ft",
+    "school_district": "Crowley ISD",
+    "hoa": "~$830/year",
+    "amenities": [
+      "8,000+ sq ft resort-style pool",
+      "clubhouse",
+      "event lawn",
+      "amphitheater",
+      "outdoor gym",
+      "mile-long walking trail",
+      "11-acre city park inside the community"
+    ],
+    "incentives": "VA/FHA/conventional, rate buydown and closing cost assistance on select homes",
+    "lot_size": null,
+    "notes": "Near Benbrook Lake, Chisholm Trail Tollway access, one and two story homes, quick move-in options, tax rate ~2.45%"
+  }
+}
