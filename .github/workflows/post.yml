@@ -62,6 +62,7 @@ jobs:
         working-directory: auto-poster
         run: npm install
       - name: Run auto-poster (San Antonio)
+        id: run-poster
         working-directory: auto-poster
         env:
           CITY: san_antonio
@@ -76,7 +77,13 @@ jobs:
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node src/main.js
+        run: |
+          if node src/main.js; then
+            echo "post_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "post_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
       - name: Commit posted-log
         if: always()
         run: |
@@ -84,7 +91,13 @@ jobs:
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
           git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "📸 SA post $(date -u +%Y-%m-%d)"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          elif [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
+            git commit -m "📸 SA post $(date -u +%Y-%m-%d)"
+          else
+            git commit -m "🔍 SA run $(date -u +%Y-%m-%d) — no post (see logs)"
+          fi
           git pull --rebase origin main || true
           git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
 
@@ -110,6 +123,7 @@ jobs:
         working-directory: auto-poster
         run: npm install
       - name: Run auto-poster (Austin)
+        id: run-poster
         working-directory: auto-poster
         env:
           CITY: austin
@@ -124,7 +138,13 @@ jobs:
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node src/main.js
+        run: |
+          if node src/main.js; then
+            echo "post_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "post_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
       - name: Commit posted-log
         if: always()
         run: |
@@ -132,7 +152,13 @@ jobs:
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
           git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "📸 ATX post $(date -u +%Y-%m-%d)"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          elif [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
+            git commit -m "📸 ATX post $(date -u +%Y-%m-%d)"
+          else
+            git commit -m "🔍 ATX run $(date -u +%Y-%m-%d) — no post (see logs)"
+          fi
           git pull --rebase origin main || true
           git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
 
@@ -168,6 +194,7 @@ jobs:
             echo "DFW posts every other day — skipping today"
           fi
       - name: Run auto-poster (Dallas/DFW)
+        id: run-poster
         if: steps.check-day.outputs.should_post == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: auto-poster
         env:
@@ -183,7 +210,13 @@ jobs:
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node src/main.js
+        run: |
+          if node src/main.js; then
+            echo "post_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "post_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
       - name: Commit posted-log
         if: always() && (steps.check-day.outputs.should_post == 'true' || github.event_name == 'workflow_dispatch')
         run: |
@@ -191,6 +224,12 @@ jobs:
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
           git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true
-          git diff --cached --quiet || git commit -m "📸 DFW post $(date -u +%Y-%m-%d)"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          elif [ "${{ steps.run-poster.outputs.post_success }}" = "true" ]; then
+            git commit -m "📸 DFW post $(date -u +%Y-%m-%d)"
+          else
+            git commit -m "🔍 DFW run $(date -u +%Y-%m-%d) — no post (see logs)"
+          fi
           git pull --rebase origin main || true
           git push || echo "⚠️ Push failed (non-fatal) — log will sync on next run"
