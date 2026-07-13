@@ -31,6 +31,12 @@ const CITY_NAMES = {
   dallas: "Dallas / DFW",
 };
 
+const LOCKED_HASHTAGS = {
+  austin: "#texas #austin #realestate #military #veteran #newconstruction",
+  san_antonio: "#texas #sanantonio #realestate #military #veteran #newconstruction",
+  dallas: "#texas #dallas #realestate #military #veteran #newconstruction",
+};
+
 /**
  * Load community knowledge base.
  */
@@ -170,6 +176,8 @@ RULES:
 - DO NOT use markdown formatting (no bold, no headers, no asterisks)
 - Do NOT use em-dashes or en-dashes (— or –). Use periods, commas, or line breaks instead
 - NEVER invent facts. Only use what's provided (original caption, community KB, or video overlays)
+- ALL prices MUST include the $ sign (e.g. "$389,900" not "389,900")
+- ALL tax rates MUST include the % sign (e.g. "2.5%" not "2.5")
 - Return ONLY the caption text, nothing else
 `;
 
@@ -189,10 +197,9 @@ function buildGatedTerms(community) {
   // Gate branded amenity names from the matched community
   if (community?.amenities) {
     for (const amenity of community.amenities) {
-      // Extract proper nouns / branded names from amenity strings
       const brandedPatterns = [
-        /^([A-Z][a-zA-Z\s']+(?:at\s[A-Z][a-zA-Z\s]+)?)\s*\(/,  // "The Club (11-acre..." → "The Club"
-        /^([A-Z][a-zA-Z\s']+)\s*$/,  // standalone proper noun amenity
+        /^([A-Z][a-zA-Z\s']+(?:at\s[A-Z][a-zA-Z\s]+)?)\s*\(/,
+        /^([A-Z][a-zA-Z\s']+)\s*$/,
       ];
       for (const pat of brandedPatterns) {
         const m = amenity.match(pat);
@@ -245,11 +252,9 @@ function scanAndStripLeaks(caption, community) {
 
   let cleaned = caption;
   for (const { term, type } of gatedTerms) {
-    // Case-insensitive search
     const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
     if (regex.test(cleaned)) {
       leakDetails.push({ term, type });
-      // Replace with generic alternatives based on type
       if (type === "community_name") {
         cleaned = cleaned.replace(regex, "this community");
       } else if (type === "builder_name") {
@@ -275,13 +280,68 @@ function scanAndStripLeaks(caption, community) {
 }
 
 /**
+ * Post-generation currency/rate formatting pass.
+ * Ensures all prices have $ and all rates have %.
+ */
+function fixCurrencyFormatting(caption) {
+  let fixed = caption;
+
+  // Fix prices that are missing $ sign: bare numbers that look like prices (100,000+)
+  // Pattern: standalone number with commas that's >= 100,000 without a preceding $
+  fixed = fixed.replace(/(?<!\$)\b(\d{3},\d{3}(?:,\d{3})?)\b/g, (match, num) => {
+    const val = parseInt(num.replace(/,/g, ""));
+    if (val >= 100000) return `$${num}`;
+    return match;
+  });
+
+  // Fix "starting at 389,900" → "starting at $389,900"
+  fixed = fixed.replace(/(?:starting at|from|about|around)\s+(?!\$)(\d{3},\d{3})/gi, (match, num) => {
+    return match.replace(num, `$${num}`);
+  });
+
+  // Fix tax rates missing %: "2.5" after "tax rate" or "MUD" → "2.5%"
+  fixed = fixed.replace(/((?:tax|MUD|rate)[^.]*?)\b(\d+\.?\d*)\b(?!%)/gi, (match, prefix, num) => {
+    const val = parseFloat(num);
+    if (val > 0 && val < 10) return match.replace(num, `${num}%`);
+    return match;
+  });
+
+  return fixed;
+}
+
+/**
+ * Lock hashtags: strip any LLM-generated hashtags and append the fixed set.
+ */
+function lockHashtags(caption, city) {
+  // Remove any existing hashtag lines (lines that start with # or contain multiple #words)
+  const lines = caption.split("\n");
+  const cleanedLines = lines.filter(line => {
+    const stripped = line.trim();
+    // Remove lines that are primarily hashtags
+    if (/^#\w/.test(stripped) && (stripped.match(/#/g) || []).length >= 2) return false;
+    return true;
+  });
+
+  // Also remove trailing hashtags from the last content line
+  let result = cleanedLines.join("\n").trimEnd();
+
+  // Append locked hashtags
+  const hashtags = LOCKED_HASHTAGS[city] || LOCKED_HASHTAGS.austin;
+  result += `\n${hashtags}`;
+
+  return result;
+}
+
+/**
  * Generate a fresh real-estate caption for a video.
  * Uses community KB if a match is found from video overlays.
  * Applies lead-gating rules to withhold searchable details.
+ * 
+ * When NO KB match: only states facts from the video overlay (price, city).
+ * Does NOT invent amenities, HOA, school districts, or any other claims.
  */
 export async function generateCaption(city, videoOverlays = null) {
   const cityName = CITY_NAMES[city] || city;
-  const hashtag = city === "san_antonio" ? "sanantonio" : city === "dallas" ? "dallas" : "austin";
 
   let community = null;
   if (videoOverlays?.community) {
@@ -290,6 +350,30 @@ export async function generateCaption(city, videoOverlays = null) {
 
   const communityBlock = buildCommunityFactsBlock(community);
   const hasRealFacts = !!community;
+
+  // Build the no-KB-match section instructions
+  const noKBInstructions = hasRealFacts ? "" : `
+CRITICAL — NO COMMUNITY KNOWLEDGE BASE MATCH:
+You do NOT have verified facts for this community. You MUST NOT invent or assume:
+- Amenities (no pools, trails, playgrounds, fitness centers unless the video overlay explicitly states them)
+- HOA amounts or ranges
+- School district names or ratings
+- Tax rates
+- Bed/bath counts (unless video overlay shows them)
+- Square footage ranges
+
+For the 🌳 amenity section: replace it with ONLY this line:
+"🌳 want the full amenity and community rundown? comment TOUR and I'll send everything"
+
+For the 🎓 school and numbers section: replace it with ONLY this line:
+"🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment"
+
+You MAY state:
+- The price from the video overlay (if shown)
+- The city/area from the video overlay
+- Generic interior descriptions visible in any new construction (open floor plan, natural light, modern finishes) for the ✨ section ONLY
+- Financing options (VA/FHA/USDA) since these are universally available for new construction
+`;
 
   const prompt = `Write an Instagram Reel caption for a real estate video showcasing a brand new construction home in ${cityName}, Texas.
 ${communityBlock}
@@ -307,7 +391,19 @@ STRUCTURE (follow this EXACT order):
 
 2. One short scarcity/story line (e.g. "new construction like this doesn't sit long" or reference builder incentives if known)
 
-${THEMED_SECTIONS_FORMAT}
+${hasRealFacts ? THEMED_SECTIONS_FORMAT : `
+BODY FORMAT — use these themed sections:
+
+✨ everyday living hits
+(ONLY generic interior features visible in any new build: open floor plan, natural light, modern finishes, kitchen island. Keep it short. Do NOT invent specific sqft, bed counts, or features not in the video overlay.)
+
+🌳 want the full amenity and community rundown? comment TOUR and I'll send everything
+
+🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment
+
+💸 buyer wins
+(ONLY universally true financing options: VA/FHA/USDA/conventional welcome, builder incentives available, rate buydowns. Do NOT invent specific incentive amounts.)
+`}
 
 AFTER THE BODY:
 - One line on who it's perfect for: "perfect for growing families, military/veteran buyers, or anyone ready to stop renting"
@@ -315,9 +411,9 @@ AFTER THE BODY:
 - SECONDARY: "📩 or DM LIST for every similar option in ${cityName}"
 - LAST content line: "⭐️ link in bio to get started with us today"
 - "Lifestyle Design Realty" on its own line
-- Hashtags: #texas #${hashtag} #realestate #military #veteran #newconstruction
+- DO NOT include any hashtags. They will be added separately.
 
-${hasRealFacts ? "" : "IMPORTANT: You do NOT have specific facts for this home. Keep features general but vivid. Do NOT invent specific prices, bedroom counts, or square footage unless the video overlay shows them."}
+${noKBInstructions}
 ${CAPTION_RULES}`;
 
   try {
@@ -333,8 +429,12 @@ ${CAPTION_RULES}`;
       if (leaksFound > 0) {
         console.log(`[Caption] LEAK SCANNER: stripped ${leaksFound} gated terms: ${leakDetails.map(l => `"${l.term}" (${l.type})`).join(", ")}`);
       }
-      console.log(`[Caption] Generated fresh caption (${gatedCaption.length} chars, community=${community?.name || "none"}, leaks_stripped=${leaksFound})`);
-      return sanitizeCaption(gatedCaption);
+      // Currency formatting pass
+      const formatted = fixCurrencyFormatting(gatedCaption);
+      // Lock hashtags
+      const final = lockHashtags(formatted, city);
+      console.log(`[Caption] Generated fresh caption (${final.length} chars, community=${community?.name || "none"}, leaks_stripped=${leaksFound})`);
+      return sanitizeCaption(final);
     }
   } catch (err) {
     console.error("[Caption] Anthropic API failed:", err.message);
@@ -389,14 +489,46 @@ Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natur
  * PRESERVES every specific fact from the original. Restructures, never summarizes.
  * A 1,800-char rich caption should stay ~1,800 chars, just better ordered.
  * Applies lead-gating: strips community names, builder names, branded amenities.
+ * 
+ * KB OVERRIDE: When a community KB entry exists, volatile numbers (HOA, tax, price ranges)
+ * from the KB take precedence over the original caption's potentially stale values.
  */
-export async function generateCaptionFromOriginal(originalCaption, city) {
+export async function generateCaptionFromOriginal(originalCaption, city, videoOverlays = null) {
   const cityName = CITY_NAMES[city] || city;
-  const hashtag = city === "san_antonio" ? "sanantonio" : city === "dallas" ? "dallas" : "austin";
+
+  // Check if we can find a community match for KB override
+  let community = null;
+  if (videoOverlays?.community) {
+    community = findCommunity(videoOverlays.community, cityName);
+  }
+  // Also try to find community from the original caption text (for restructure cases)
+  if (!community) {
+    const kb = loadCommunities();
+    for (const [name, data] of Object.entries(kb)) {
+      if (originalCaption.toLowerCase().includes(name.toLowerCase())) {
+        community = { name, ...data };
+        console.log(`[Caption] KB match from original caption text: "${name}"`);
+        break;
+      }
+    }
+  }
+
+  // Build KB override instructions if we have a match
+  const kbOverrideBlock = community ? `
+KB OVERRIDE — USE THESE VALUES INSTEAD OF THE ORIGINAL'S (original may be stale):
+${community.hoa ? `- HOA: ${community.hoa} (REPLACE any HOA amount from the original with this)` : ""}
+${community.price_range ? `- Price range: ${community.price_range} (USE this if the original's price range differs)` : ""}
+${community.school_district ? `- School district: ${community.school_district}` : ""}
+${community.sqft_range ? `- Sqft range: ${community.sqft_range}` : ""}
+${community.beds_baths_range ? `- Beds/baths: ${community.beds_baths_range}` : ""}
+When the original caption and the KB disagree on a volatile number (HOA, tax rate, price range), the KB wins. The KB is updated from builder websites; old captions go stale.
+` : "";
 
   const prompt = `You are given the original Instagram caption from a real estate video post. Your job is to RESTRUCTURE it into the themed-section format below.
 
 CRITICAL RULE: Keep EVERY specific fact from the original (school district, HOA amount, sqft ranges, price, beds/baths, lot sizes, tax rates, specific incentive details, financing options). Do NOT summarize or compress. A 1,800-character rich caption should stay approximately 1,800 characters. You are REORGANIZING facts into better sections, not reducing them.
+
+${kbOverrideBlock}
 
 ${LEAD_GATING_RULES}
 
@@ -425,13 +557,13 @@ AFTER THE BODY:
 - SECONDARY: "📩 or DM LIST for every similar option in ${cityName}"
 - LAST content line: "⭐️ link in bio to get started with us today"
 - "Lifestyle Design Realty" on its own line
-- Hashtags: #texas #${hashtag} #realestate #military #veteran #newconstruction
+- DO NOT include any hashtags. They will be added separately.
 
 PRESERVATION CHECKLIST — verify ALL of these from the original appear in your output (EXCEPT gated names):
 - Every price mentioned (exact dollar amounts, ranges, "from the $Xs")
 - Every bed/bath/sqft number
 - School district name (KEEP — doesn't identify community alone)
-- HOA amount
+- HOA amount (USE KB OVERRIDE VALUE if available, otherwise keep original)
 - Tax rate if mentioned
 - Every specific amenity DESCRIPTION (sizes, features — but NOT the branded name)
 - Every financing detail (VA/FHA/USDA, rate buydowns, specific % rates)
@@ -449,42 +581,48 @@ ${CAPTION_RULES}`;
     const content = response.content[0]?.text;
     if (content && content.length > 50) {
       // Post-generation leak scan (check against ALL KB communities)
-      const { caption: gatedCaption, leaksFound, leakDetails } = scanAndStripLeaks(content, null);
+      const { caption: gatedCaption, leaksFound, leakDetails } = scanAndStripLeaks(content, community);
       if (leaksFound > 0) {
         console.log(`[Caption] LEAK SCANNER (restructure): stripped ${leaksFound} gated terms: ${leakDetails.map(l => `"${l.term}" (${l.type})`).join(", ")}`);
       }
-      console.log(`[Caption] Restructured from original (${gatedCaption.length} chars, original was ${originalCaption.length} chars, leaks_stripped=${leaksFound})`);
-      return sanitizeCaption(gatedCaption);
+      // Currency formatting pass
+      const formatted = fixCurrencyFormatting(gatedCaption);
+      // Lock hashtags
+      const final = lockHashtags(formatted, city);
+      console.log(`[Caption] Restructured from original (${final.length} chars, original was ${originalCaption.length} chars, KB_override=${!!community}, leaks_stripped=${leaksFound})`);
+      return sanitizeCaption(final);
     }
   } catch (err) {
     console.error("[Caption] Anthropic API failed for restructure:", err.message);
   }
-  // Fallback: strip leaks from original and return it
+  // Fallback: strip leaks from original, lock hashtags, and return it
   console.log("[Caption] Falling back to original caption (leak-scanned)");
   const { caption: gatedOriginal } = scanAndStripLeaks(originalCaption, null);
-  return sanitizeCaption(gatedOriginal);
+  const formatted = fixCurrencyFormatting(gatedOriginal);
+  const final = lockHashtags(formatted, city);
+  return sanitizeCaption(final);
 }
 
 function getFallbackCaption(city) {
   const cityName = CITY_NAMES[city] || city;
-  const hashtag = city === "san_antonio" ? "sanantonio" : city === "dallas" ? "dallas" : "austin";
+  const hashtags = LOCKED_HASHTAGS[city] || LOCKED_HASHTAGS.austin;
   return `the kitchen in this one made me stop mid-tour 😮‍💨
 
 new construction like this doesn't sit long in ${cityName}
 
 ✨ everyday living hits
-🏡 brand new build with modern finishes and a smart open layout
-🪟 huge windows and natural light flooding every room
-🍳 chef's kitchen with island and upgraded counters
-🔥 energy efficient and move-in ready
+• brand new build with modern finishes and a smart open layout
+• huge windows and natural light flooding every room
+• chef's kitchen with island and upgraded counters
+• energy efficient and move-in ready
 
-🌳 amenity energy you will actually use
-🏊 community pool and green spaces for weekend resets
-🛝 playgrounds and trails right outside your door
+🌳 want the full amenity and community rundown? comment TOUR and I'll send everything
+
+🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment
 
 💸 buyer wins
-✅ builder incentives and rate buydowns available. ask what you qualify for
-⚡ VA FHA and conventional friendly with fast pre approvals
+• builder incentives and rate buydowns available. ask what you qualify for
+• VA, FHA, and conventional friendly with fast pre-approvals
 
 perfect for growing families, military/veteran buyers, or anyone ready to stop renting
 
@@ -493,7 +631,7 @@ perfect for growing families, military/veteran buyers, or anyone ready to stop r
 ⭐️ link in bio to get started with us today
 
 Lifestyle Design Realty
-#texas #${hashtag} #realestate #military #veteran #newconstruction`;
+${hashtags}`;
 }
 
 function getFallbackScript(city) {
