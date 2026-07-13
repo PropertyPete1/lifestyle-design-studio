@@ -97,6 +97,41 @@
       "timestamp": "2026-07-12T21:21:30.823Z",
       "success": true,
       "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty"
+    },
+    {
+      "driveFileId": "1ispjYBGaQnKVIMI91dLb6QNrOv5kOQM0",
+      "fileName": "08B5FCB2-CF99-408A-B873-A88AE11B948F.mp4",
+      "city": "san_antonio",
+      "caption": "this is what new construction is supposed to feel like.\n\nnew construction like this doesn't sit long. $340,000 gets you in the door to something real.\n\n✨ everyday living hits\nopen floor plan that actu",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "youtube"
+      ],
+      "timestamp": "2026-07-13T19:14:51.154Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty"
+    },
+    {
+      "type": "linkedin",
+      "topic": "leadership_culture",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-13T14:16:24"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-13T14:46:24"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-13T15:16:24"
+        }
+      ],
+      "timestamp": "2026-07-13T19:14:55.715Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
