@@ -803,65 +803,22 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN, prefetched, mainBrandSkipIG: true });
 
     // MANUAL-ASSIST DELIVERY: upload finished video to Drive and notify owner
-    // On failure after 1 retry, auto-publish main IG via Metricool as fallback (never go dark)
+    // NO auto-publish fallback — main IG is NEVER posted via Metricool (owner posts natively)
+    // Delivery is bulletproof: 3x retries + email backup + manifest fallback
     let deliveryResult = null;
-    let mainIgFallbackUsed = false;
     if (!DRY_RUN) {
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          const driveToken = await getAccessToken();
-          deliveryResult = await deliverToOwner(driveToken, videoToUpload, CITY, caption);
-          console.log(`[Delivery] ✓ Delivered on attempt ${attempt}`);
-          break;
-        } catch (err) {
-          console.warn(`[Delivery] Attempt ${attempt} failed: ${err.message}`);
-          if (attempt < 2) {
-            console.log("[Delivery] Retrying in 5 seconds...");
-            await new Promise(r => setTimeout(r, 5000));
-          }
-        }
-      }
-
-      // If delivery failed after retry: fallback to auto-publishing main IG via Metricool
-      if (!deliveryResult) {
-        console.error("[Delivery] FAILED after retry — falling back to auto-publish main IG via Metricool");
-        try {
-          // Re-post to ONLY the main brand's Instagram (satellites already posted above)
-          const fallbackResult = await createPost(mediaUrl, caption, {
-            dryRun: false,
-            prefetched,
-            mainBrandSkipIG: false,   // allow main IG this time
-            onlyMainBrandIG: true,    // NEW: only post to main brand's IG
-          });
-          mainIgFallbackUsed = true;
-          console.log(`[Delivery] ✓ Fallback auto-published main IG via Metricool`);
-        } catch (fallbackErr) {
-          console.error(`[Delivery] Fallback auto-publish ALSO failed: ${fallbackErr.message}`);
-        }
-
-        // Alert owner regardless of fallback outcome
-        try {
-          const dashboardUrl = process.env.DASHBOARD_URL;
-          const dashboardSecret = process.env.DASHBOARD_WEBHOOK_SECRET;
-          if (dashboardUrl && dashboardSecret) {
-            await fetch(`${dashboardUrl}/api/delivery/webhook`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-Webhook-Secret": dashboardSecret },
-              body: JSON.stringify({
-                city: CITY,
-                caption,
-                driveFileId: null,
-                driveLink: null,
-                alert: true,
-                alertMessage: mainIgFallbackUsed
-                  ? `Delivery failed — auto-published main IG via Metricool as fallback`
-                  : `Delivery AND fallback both failed — main IG may not have posted today`,
-              }),
-            });
-          }
-        } catch (alertErr) {
-          console.error(`[Delivery] Alert notification failed: ${alertErr.message}`);
-        }
+      try {
+        const driveToken = await getAccessToken();
+        deliveryResult = await deliverToOwner(driveToken, videoToUpload, CITY, caption);
+        console.log(`[Delivery] ✓ Delivered successfully`);
+      } catch (err) {
+        // deliverToOwner already retries 3x internally and sends email backup.
+        // If we're here, BOTH channels failed — workflow exits red.
+        console.error(`[Delivery] CRITICAL FAILURE — all channels exhausted: ${err.message}`);
+        console.error(`[Delivery] Video is preserved in Drive "Ready to Post" folder (manifest written).`);
+        console.error(`[Delivery] Main IG will NOT be auto-published — owner must post natively.`);
+        // Exit with non-zero so GitHub Actions shows red X (owner gets email alert from GitHub)
+        process.exitCode = 1;
       }
     }
 
@@ -880,7 +837,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         voiceover_transcript: voiceoverTranscript,
         freshness: freshnessResult.applied ? "re_encoded" : freshnessResult.reason,
         platforms: ["tiktok", "youtube", "satellite_ig"],
-        mainIgDelivery: deliveryResult ? "delivered" : (mainIgFallbackUsed ? "fallback_auto_published" : "failed_no_fallback"),
+        mainIgDelivery: deliveryResult ? "delivered" : "delivery_failed_owner_must_post",
         deliveryDriveLink: deliveryResult?.driveLink || null,
         brands: brandSummary,
         success: true,
