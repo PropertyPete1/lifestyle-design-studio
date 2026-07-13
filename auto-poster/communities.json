@@ -19,25 +19,28 @@
     "notes": "435-acre master-planned community, one and two story options, quick move-ins available"
   },
   "Esperanza": {
-    "city": "San Antonio",
-    "price_range": "from the $350s to $591,990 (specific models around $507,990 to $524,000)",
-    "beds_baths_range": "4 to 5 bedrooms, 3 to 4 bathrooms",
-    "sqft_range": "2,776 to 3,803 sq ft",
-    "school_district": "Medina Valley ISD",
-    "hoa": "~$116/month (master HOA)",
+    "city": "San Antonio / Boerne",
+    "price_range": "from the $310s to $786K+ (KB Home entry from $310K, Highland Homes to $786K+)",
+    "beds_baths_range": "2 to 5+ bedrooms, 2 to 5+ bathrooms",
+    "sqft_range": "1,625 to 4,994 sq ft",
+    "school_district": "Boerne ISD (A-rated, Dr. Herff Elementary on-site, Boerne Middle School North, Boerne High School)",
+    "hoa": "~$900 to $1,200/year (varies by section)",
     "amenities": [
-      "resort-style pool with splash zones and dual waterslides",
-      "Wellness Barn",
-      "nature trails and parks",
-      "Ranch Camp",
-      "dog park",
-      "community garden",
-      "hike and bike trails",
-      "300,000+ sq ft retail, dining, and medical at entrance"
+      "The Club (11-acre amenity center with resort-style pool, lazy river, splash pad, kids pool)",
+      "fitness center and wellness studio",
+      "20+ miles of hiking and biking trails",
+      "Roca Loca Lawn (event space with bandstand, food truck area, firepit)",
+      "Roca Loca Beach (sand volleyball courts)",
+      "Roca Loca Forest (nature-based playground)",
+      "Reunión Parque (multi-sport complex)",
+      "pickleball courts",
+      "Rover Oaks Bark Parque (dog park)",
+      "450+ acres of preserved green space and parks",
+      "full-time Lifestyle Director"
     ],
-    "incentives": "VA/FHA/conventional, rate buydowns, 4.99% fixed rate on select homes",
-    "lot_size": "60 ft homesites",
-    "notes": "435-acre master-planned Hill Country community, mature oaks, resort-style living"
+    "incentives": "builder-specific promotions, VA/FHA/conventional friendly, multiple builders competing on incentives",
+    "lot_size": "45 ft to 70 ft+ homesites (varies by builder and section)",
+    "notes": "1,700-acre master-planned community in Boerne (Kendall County), 6 active builders (KB Home, Chesmar, Scott Felder, Perry Homes, Highland Homes, Weston Dean), Hill Country terrain with live oaks, on-site elementary school, 55+ Regency section by Toll Brothers, Best Overall Community (TAB 2021 & 2023), ~30 min from San Antonio, MUD district tax rate 2.5%+"
   },
   "Ventana": {
     "city": "San Antonio",
@@ -54,21 +57,23 @@
     "notes": "8 floorplans, one and two story options, 2 car garages, go cozy or go roomy"
   },
   "Travisso": {
-    "city": "Austin",
-    "price_range": "from about $398,000 to $591,990",
-    "beds_baths_range": "3 to 5 bedrooms, 2 to 4 bathrooms",
-    "sqft_range": "1,566 to 3,313 sq ft",
-    "school_district": "Liberty Hill ISD",
-    "hoa": "~$116/month",
+    "city": "Austin / Leander",
+    "price_range": "from the $590s to $2M+ (new construction from Taylor Morrison and Toll Brothers)",
+    "beds_baths_range": "3 to 6 bedrooms, 2 to 6 bathrooms",
+    "sqft_range": "1,900 to 6,000+ sq ft (median ~3,750 sq ft)",
+    "school_district": "Leander ISD (CC Mason Elementary, Running Brushy Middle, Cedar Park High School)",
+    "hoa": "$1,080/year ($540 semi-annual, Jan and Jul)",
     "amenities": [
-      "resort-style pools with splash zones and dual waterslides",
-      "Wellness Barn",
-      "nature trails and parks",
-      "Ranch Camp amenities"
+      "Palazzo Clubhouse (9-acre amenity center, resort-style pool with splash pad, 2,000 sq ft fitness center, tennis courts, pickleball courts, covered pavilion with fireplace)",
+      "The Forum (second amenity center: pool with tanning ledge and lap lanes, pickleball/basketball flex court, indoor wellness studio, yoga room, recreational pond, zipline playground)",
+      "350+ acres of open Hill Country space",
+      "miles of hiking and biking trails",
+      "full-time Lifestyle Director",
+      "neighborhood parks"
     ],
-    "incentives": "VA/FHA/conventional, 4.99% fixed rate promo on select homes, rate buydowns",
-    "lot_size": null,
-    "notes": "Hill Country community near Liberty Hill, one and two story layouts, quick move-ins"
+    "incentives": "builder-specific promotions from Taylor Morrison and Toll Brothers",
+    "lot_size": "60 ft to 100 ft homesites (0.15 to 0.5+ acres)",
+    "notes": "Award-winning luxury master-planned community in Leander (Hill Country views), builders: Taylor Morrison and Toll Brothers, near NW Austin tech corridor (Apple, Dell ~20 min), Crystal Falls Golf Course nearby, tax rate ~2.48%, 2019 Best Amenities, 2017 Best Clubhouse in Texas"
   },
   "Bee Cave / Lakeway": {
     "city": "Austin",
