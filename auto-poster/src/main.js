@@ -723,6 +723,15 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       caption = await generateCaption(CITY, videoOverlays);
     }
 
+    // Log full caption in DRY_RUN mode for testing/approval
+    if (caption && DRY_RUN) {
+      console.log("[DRY_RUN] ═══════ GENERATED CAPTION ═══════");
+      console.log(caption);
+      console.log("[DRY_RUN] ═══════ END CAPTION ═══════");
+      console.log(`[DRY_RUN] Caption length: ${caption.length} chars`);
+      console.log(`[DRY_RUN] Community KB used: ${videoOverlays?.community || 'NONE (no match)'}`);
+    }
+
     // Price-consistency check: verify caption price against video overlay text
     // Video text is ground truth — original IG captions go stale when builders change prices
     if (caption && !DRY_RUN) {
