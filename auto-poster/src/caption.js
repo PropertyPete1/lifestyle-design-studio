@@ -3,6 +3,10 @@
  * 
  * Format: themed sections with lowercase punchy sub-headers,
  * emoji-bulleted specifics, conversational personality.
+ * 
+ * LEAD-GATING: Captions tease but never reveal searchable details
+ * (community names, builder names, branded amenity names).
+ * The DM/comment CTA delivers what was withheld.
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { readFileSync, existsSync } from "fs";
@@ -86,10 +90,11 @@ function getHookInstruction(cityName) {
 
 /**
  * Build a community facts block for the prompt (when KB match found).
+ * Facts are provided for CONTENT but community/builder/branded names are GATED.
  */
 function buildCommunityFactsBlock(community) {
   if (!community) return "";
-  const lines = [`\nCOMMUNITY KNOWLEDGE BASE MATCH: "${community.name}"`];
+  const lines = [`\nCOMMUNITY KNOWLEDGE BASE MATCH (INTERNAL ONLY — name is GATED, do NOT include it):`];
   lines.push("Use these REAL facts in the themed sections (never invent beyond these):");
   if (community.price_range) lines.push(`- Price range: ${community.price_range}`);
   if (community.beds_baths_range) lines.push(`- Beds/baths: ${community.beds_baths_range}`);
@@ -97,13 +102,41 @@ function buildCommunityFactsBlock(community) {
   if (community.school_district) lines.push(`- School district: ${community.school_district}`);
   if (community.hoa) lines.push(`- HOA: ${community.hoa}`);
   if (community.amenities && community.amenities.length > 0) {
-    lines.push(`- Amenities: ${community.amenities.join(", ")}`);
+    lines.push(`- Amenities (describe generically, NO branded names): ${community.amenities.join(", ")}`);
   }
   if (community.incentives) lines.push(`- Incentives: ${community.incentives}`);
   if (community.lot_size) lines.push(`- Lot size: ${community.lot_size}`);
   if (community.notes) lines.push(`- Notes: ${community.notes}`);
   return lines.join("\n");
 }
+
+/**
+ * LEAD-GATING RULES — included in every caption prompt.
+ */
+const LEAD_GATING_RULES = `
+LEAD-GATING RULES (CRITICAL — violating these ruins the business model):
+
+NEVER include in the caption:
+1. Community/subdivision names (no "Esperanza", "Rancho Sienna", "Travisso", "Walsh Ranch", "Ventana", etc.)
+2. Builder names or "X different builders" phrasing that invites builder-shopping
+3. Branded/googleable amenity names ("Roca Loca", "Happy's Splash Park", "The Club at Esperanza", "Wellness Barn", "Ranch Camp", "Palazzo Clubhouse", "The Forum", "Rover Oaks Bark Parque", "Reunión Parque") — describe them GENERICALLY instead:
+   - "Roca Loca Beach" → "a sand volleyball beach"
+   - "The Club (11-acre amenity center)" → "an 11-acre resort-style amenity club"
+   - "Wellness Barn" → "a two-story fitness barn"
+   - "Palazzo Clubhouse" → "a 9-acre clubhouse with resort pool"
+   - "Ranch Camp" → "kids adventure camp"
+4. Street/section names or anything uniquely searchable that identifies the specific community
+
+KEEP in captions (the desire-builders):
+- City/area level location ("in Boerne", "northwest San Antonio", "near Leander")
+- Price ranges, beds/baths, sqft ranges (these create desire)
+- School district name and rating (big draw, doesn't identify the specific community alone)
+- HOA/tax ballparks with "confirm per address"
+- Vivid but GENERIC amenity descriptions (sizes, features, but no proper nouns)
+- Financing options (VA/FHA/USDA, rate buydowns)
+
+THE GATE IS THE CTA: The caption teases, the DM delivers. The comment CTA must explicitly offer what was withheld.
+`;
 
 const THEMED_SECTIONS_FORMAT = `
 BODY FORMAT — use these themed sections with lowercase punchy sub-headers:
@@ -112,10 +145,10 @@ BODY FORMAT — use these themed sections with lowercase punchy sub-headers:
 (interior features: layout, kitchen, natural light, finishes, floor plans, sqft ranges. Use emoji bullets for each specific fact.)
 
 🌳 amenity energy you will actually use
-(community amenities: pools, trails, parks, fitness, playgrounds, dog parks. Be specific with names and sizes if known.)
+(community amenities: pools, trails, parks, fitness, playgrounds, dog parks. Be SPECIFIC with sizes and features but use GENERIC descriptions, never branded names.)
 
 🎓 school and numbers
-(school district name, HOA amount, tax rate if known. Always add "confirm per address before writing the offer")
+(school district name and rating, HOA amount, tax rate if known. Always add "confirm per address before writing the offer")
 
 💸 buyer wins
 (financing options, incentives, VA/FHA/USDA eligibility, rate buydowns, closing cost help)
@@ -141,8 +174,110 @@ RULES:
 `;
 
 /**
+ * Build the list of gated terms from the KB for post-generation scanning.
+ * Returns an array of { term, type } objects.
+ */
+function buildGatedTerms(community) {
+  const terms = [];
+  const kb = loadCommunities();
+
+  // Always gate ALL community names from the entire KB
+  for (const name of Object.keys(kb)) {
+    terms.push({ term: name, type: "community_name" });
+  }
+
+  // Gate branded amenity names from the matched community
+  if (community?.amenities) {
+    for (const amenity of community.amenities) {
+      // Extract proper nouns / branded names from amenity strings
+      const brandedPatterns = [
+        /^([A-Z][a-zA-Z\s']+(?:at\s[A-Z][a-zA-Z\s]+)?)\s*\(/,  // "The Club (11-acre..." → "The Club"
+        /^([A-Z][a-zA-Z\s']+)\s*$/,  // standalone proper noun amenity
+      ];
+      for (const pat of brandedPatterns) {
+        const m = amenity.match(pat);
+        if (m && m[1].length > 4) {
+          terms.push({ term: m[1].trim(), type: "branded_amenity" });
+        }
+      }
+    }
+  }
+
+  // Also gate specific known branded names across all communities
+  const knownBranded = [
+    "Wellness Barn", "Ranch Camp", "Roca Loca", "The Club at Esperanza",
+    "The Club", "Palazzo Clubhouse", "The Forum", "Rover Oaks",
+    "Bark Parque", "Reunión Parque", "Roca Loca Lawn", "Roca Loca Beach",
+    "Roca Loca Forest", "Happy's Splash Park", "Dr. Herff Elementary"
+  ];
+  for (const name of knownBranded) {
+    terms.push({ term: name, type: "branded_amenity" });
+  }
+
+  // Gate builder names from notes
+  const knownBuilders = [
+    "KB Home", "Chesmar", "Scott Felder", "Perry Homes", "Highland Homes",
+    "Weston Dean", "Taylor Morrison", "Toll Brothers", "Meritage", "Lennar",
+    "DR Horton", "D.R. Horton", "Pulte", "Ashton Woods", "Trendmaker"
+  ];
+  for (const name of knownBuilders) {
+    terms.push({ term: name, type: "builder_name" });
+  }
+
+  // Deduplicate
+  const seen = new Set();
+  return terms.filter(t => {
+    const key = t.term.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * Post-generation leak scanner.
+ * Checks the generated caption against gated terms and strips any leaks.
+ * Returns { caption, leaksFound, leakDetails }.
+ */
+function scanAndStripLeaks(caption, community) {
+  const gatedTerms = buildGatedTerms(community);
+  const leakDetails = [];
+
+  let cleaned = caption;
+  for (const { term, type } of gatedTerms) {
+    // Case-insensitive search
+    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    if (regex.test(cleaned)) {
+      leakDetails.push({ term, type });
+      // Replace with generic alternatives based on type
+      if (type === "community_name") {
+        cleaned = cleaned.replace(regex, "this community");
+      } else if (type === "builder_name") {
+        cleaned = cleaned.replace(regex, "the builder");
+      } else if (type === "branded_amenity") {
+        cleaned = cleaned.replace(regex, "the amenity center");
+      }
+    }
+  }
+
+  // Also check for "X builders" or "X different builders" patterns
+  const builderCountPattern = /\b\d+\s+(different\s+)?builders?\b/gi;
+  if (builderCountPattern.test(cleaned)) {
+    leakDetails.push({ term: "builder count", type: "builder_shopping" });
+    cleaned = cleaned.replace(builderCountPattern, "multiple floor plan options");
+  }
+
+  return {
+    caption: cleaned,
+    leaksFound: leakDetails.length,
+    leakDetails,
+  };
+}
+
+/**
  * Generate a fresh real-estate caption for a video.
  * Uses community KB if a match is found from video overlays.
+ * Applies lead-gating rules to withhold searchable details.
  */
 export async function generateCaption(city, videoOverlays = null) {
   const cityName = CITY_NAMES[city] || city;
@@ -161,11 +296,13 @@ ${communityBlock}
 ${videoOverlays?.price ? `VIDEO SHOWS PRICE: ${videoOverlays.price}` : ""}
 ${videoOverlays?.beds_baths ? `VIDEO SHOWS: ${videoOverlays.beds_baths}` : ""}
 
+${LEAD_GATING_RULES}
+
 STRUCTURE (follow this EXACT order):
 
 1. HOOK (first line, under 100 chars): A curiosity line that makes people stop scrolling.
    ${getHookInstruction(cityName)}
-   ${hasRealFacts ? `USE a real detail from the community KB in the hook (price, standout amenity, etc.)` : ""}
+   ${hasRealFacts ? `USE a real detail from the community KB in the hook (price, standout amenity description, etc.) but NEVER the community name.` : ""}
    NEVER start with a CTA. The hook must create curiosity.
 
 2. One short scarcity/story line (e.g. "new construction like this doesn't sit long" or reference builder incentives if known)
@@ -174,13 +311,13 @@ ${THEMED_SECTIONS_FORMAT}
 
 AFTER THE BODY:
 - One line on who it's perfect for: "perfect for growing families, military/veteran buyers, or anyone ready to stop renting"
-- PRIMARY CTA: "📲 comment TOUR and I will DM you exact payments, incentives and private tour times"
+- PRIMARY CTA: "📲 comment TOUR and I'll DM you the community name, builder lineup, exact pricing and tour times"
 - SECONDARY: "📩 or DM LIST for every similar option in ${cityName}"
 - LAST content line: "⭐️ link in bio to get started with us today"
 - "Lifestyle Design Realty" on its own line
 - Hashtags: #texas #${hashtag} #realestate #military #veteran #newconstruction
 
-${hasRealFacts ? "" : "IMPORTANT: You do NOT have specific facts for this home. Keep features general but vivid. Do NOT invent specific prices, bedroom counts, or square footage."}
+${hasRealFacts ? "" : "IMPORTANT: You do NOT have specific facts for this home. Keep features general but vivid. Do NOT invent specific prices, bedroom counts, or square footage unless the video overlay shows them."}
 ${CAPTION_RULES}`;
 
   try {
@@ -191,8 +328,13 @@ ${CAPTION_RULES}`;
     });
     const content = response.content[0]?.text;
     if (content && content.length > 50) {
-      console.log(`[Caption] Generated fresh caption (${content.length} chars, community=${community?.name || "none"})`);
-      return sanitizeCaption(content);
+      // Post-generation leak scan
+      const { caption: gatedCaption, leaksFound, leakDetails } = scanAndStripLeaks(content, community);
+      if (leaksFound > 0) {
+        console.log(`[Caption] LEAK SCANNER: stripped ${leaksFound} gated terms: ${leakDetails.map(l => `"${l.term}" (${l.type})`).join(", ")}`);
+      }
+      console.log(`[Caption] Generated fresh caption (${gatedCaption.length} chars, community=${community?.name || "none"}, leaks_stripped=${leaksFound})`);
+      return sanitizeCaption(gatedCaption);
     }
   } catch (err) {
     console.error("[Caption] Anthropic API failed:", err.message);
@@ -216,7 +358,7 @@ RULES:
 - Mention the city name naturally
 - Highlight features: open floor plan, natural light, modern finishes, spacious bedrooms
 - End with a soft call to action like "comment below if you want to see more"
-- DO NOT mention specific prices or addresses
+- DO NOT mention specific prices, addresses, community names, or builder names
 - DO NOT use hashtags or emojis
 - Keep it conversational and engaging
 - Do NOT use em-dashes or en-dashes. Use periods, commas, or line breaks instead.
@@ -246,6 +388,7 @@ Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natur
  * Generate a caption by restructuring the original IG caption.
  * PRESERVES every specific fact from the original. Restructures, never summarizes.
  * A 1,800-char rich caption should stay ~1,800 chars, just better ordered.
+ * Applies lead-gating: strips community names, builder names, branded amenities.
  */
 export async function generateCaptionFromOriginal(originalCaption, city) {
   const cityName = CITY_NAMES[city] || city;
@@ -253,7 +396,15 @@ export async function generateCaptionFromOriginal(originalCaption, city) {
 
   const prompt = `You are given the original Instagram caption from a real estate video post. Your job is to RESTRUCTURE it into the themed-section format below.
 
-CRITICAL RULE: Keep EVERY specific fact from the original (amenity names, school district, HOA amount, sqft ranges, community name, price, beds/baths, lot sizes, tax rates, specific incentive details). Do NOT summarize or compress. A 1,800-character rich caption should stay approximately 1,800 characters. You are REORGANIZING facts into better sections, not reducing them.
+CRITICAL RULE: Keep EVERY specific fact from the original (school district, HOA amount, sqft ranges, price, beds/baths, lot sizes, tax rates, specific incentive details, financing options). Do NOT summarize or compress. A 1,800-character rich caption should stay approximately 1,800 characters. You are REORGANIZING facts into better sections, not reducing them.
+
+${LEAD_GATING_RULES}
+
+IMPORTANT FOR RESTRUCTURING: The original caption may contain community names, builder names, or branded amenity names. You MUST:
+- REMOVE all community/subdivision names and replace with area-level location ("in Boerne", "northwest San Antonio")
+- REMOVE all builder names and "X builders" phrasing
+- CONVERT all branded amenity names to generic vivid descriptions (keep the SIZE and FEATURES, drop the proper noun)
+- KEEP everything else: prices, sqft, beds/baths, school districts, HOA, financing, amenity descriptions
 
 ORIGINAL CAPTION:
 ${originalCaption}
@@ -262,7 +413,7 @@ NEW STRUCTURE (follow this EXACT order):
 
 1. HOOK (first line, under 100 chars): A curiosity line that references something specific from the original.
    USE THIS SPECIFIC HOOK STYLE: ${getHookInstruction(cityName)}
-   Use the real price or a standout feature from the original. NEVER start with a CTA.
+   Use the real price or a standout feature from the original. NEVER start with a CTA. NEVER include the community name.
 
 2. One short scarcity/story line (reference builder incentives or timing if mentioned in original)
 
@@ -270,24 +421,23 @@ ${THEMED_SECTIONS_FORMAT}
 
 AFTER THE BODY:
 - One line on who it's perfect for (growing families, military/veteran buyers, first-time buyers)
-- PRIMARY CTA: "📲 comment TOUR and I will DM you exact payments, incentives and private tour times"
+- PRIMARY CTA: "📲 comment TOUR and I'll DM you the community name, builder lineup, exact pricing and tour times"
 - SECONDARY: "📩 or DM LIST for every similar option in ${cityName}"
 - LAST content line: "⭐️ link in bio to get started with us today"
 - "Lifestyle Design Realty" on its own line
 - Hashtags: #texas #${hashtag} #realestate #military #veteran #newconstruction
 
-PRESERVATION CHECKLIST — verify ALL of these from the original appear in your output:
+PRESERVATION CHECKLIST — verify ALL of these from the original appear in your output (EXCEPT gated names):
 - Every price mentioned (exact dollar amounts, ranges, "from the $Xs")
 - Every bed/bath/sqft number
-- Community/subdivision name if mentioned
-- School district name
+- School district name (KEEP — doesn't identify community alone)
 - HOA amount
 - Tax rate if mentioned
-- Every specific amenity (pool sizes, trail lengths, park names, etc.)
+- Every specific amenity DESCRIPTION (sizes, features — but NOT the branded name)
 - Every financing detail (VA/FHA/USDA, rate buydowns, specific % rates)
-- Every location detail (nearby landmarks, roads, lakes)
+- Every location detail at city/area level
 
-If any fact from the original is missing in your output, you have failed the task.
+If any FACT (not name) from the original is missing in your output, you have failed the task.
 ${CAPTION_RULES}`;
 
   try {
@@ -298,14 +448,21 @@ ${CAPTION_RULES}`;
     });
     const content = response.content[0]?.text;
     if (content && content.length > 50) {
-      console.log(`[Caption] Restructured from original (${content.length} chars, original was ${originalCaption.length} chars)`);
-      return sanitizeCaption(content);
+      // Post-generation leak scan (check against ALL KB communities)
+      const { caption: gatedCaption, leaksFound, leakDetails } = scanAndStripLeaks(content, null);
+      if (leaksFound > 0) {
+        console.log(`[Caption] LEAK SCANNER (restructure): stripped ${leaksFound} gated terms: ${leakDetails.map(l => `"${l.term}" (${l.type})`).join(", ")}`);
+      }
+      console.log(`[Caption] Restructured from original (${gatedCaption.length} chars, original was ${originalCaption.length} chars, leaks_stripped=${leaksFound})`);
+      return sanitizeCaption(gatedCaption);
     }
   } catch (err) {
     console.error("[Caption] Anthropic API failed for restructure:", err.message);
   }
-  console.log("[Caption] Falling back to original caption");
-  return sanitizeCaption(originalCaption);
+  // Fallback: strip leaks from original and return it
+  console.log("[Caption] Falling back to original caption (leak-scanned)");
+  const { caption: gatedOriginal } = scanAndStripLeaks(originalCaption, null);
+  return sanitizeCaption(gatedOriginal);
 }
 
 function getFallbackCaption(city) {
@@ -331,7 +488,7 @@ new construction like this doesn't sit long in ${cityName}
 
 perfect for growing families, military/veteran buyers, or anyone ready to stop renting
 
-📲 comment TOUR and I will DM you exact payments, incentives and private tour times
+📲 comment TOUR and I'll DM you the community name, builder lineup, exact pricing and tour times
 📩 or DM LIST for every similar option in ${cityName}
 ⭐️ link in bio to get started with us today
 
