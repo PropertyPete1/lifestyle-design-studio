@@ -375,7 +375,7 @@ You do NOT have verified facts for this community. You MUST NOT invent or assume
 - Square footage ranges
 
 For the 🌳 amenity section: replace it with ONLY this line:
-"🌳 want the full amenity and community rundown? comment TOUR and I'll send everything"
+"🌳 want the full amenity and community rundown? comment TOUR and I'll send everything including what your monthly payment would look like"
 
 For the 🎓 school and numbers section: replace it with ONLY this line:
 "🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment"
@@ -409,7 +409,7 @@ BODY FORMAT — use these themed sections:
 ✨ everyday living hits
 (ONLY generic interior features visible in any new build: open floor plan, natural light, modern finishes, kitchen island. Keep it short. Do NOT invent specific sqft, bed counts, or features not in the video overlay.)
 
-🌳 want the full amenity and community rundown? comment TOUR and I'll send everything
+🌳 want the full amenity and community rundown? comment TOUR and I'll send everything including what your monthly payment would look like
 
 🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment
 
@@ -419,8 +419,8 @@ BODY FORMAT — use these themed sections:
 
 AFTER THE BODY:
 - One line on who it's perfect for: "perfect for growing families, military/veteran buyers, or anyone ready to stop renting"
-- PRIMARY CTA: "📲 comment TOUR and I'll DM you the community name, builder lineup, exact pricing and tour times"
-- SECONDARY: "📩 or DM LIST for every similar option in ${cityName}"
+- PRIMARY CTA: "📲 comment TOUR and I'll DM you today's available homes with a complete monthly payment breakdown, current incentives, and private tour times"
+- SECONDARY: "📩 or DM LIST and I'll build you a custom lineup of every similar option, with payments and a fast approval game plan"
 - LAST content line: "⭐️ link in bio to get started with us today"
 - "Lifestyle Design Realty" on its own line
 - DO NOT include any hashtags. They will be added separately.
@@ -565,8 +565,8 @@ ${THEMED_SECTIONS_FORMAT}
 
 AFTER THE BODY:
 - One line on who it's perfect for (growing families, military/veteran buyers, first-time buyers)
-- PRIMARY CTA: "📲 comment TOUR and I'll DM you the community name, builder lineup, exact pricing and tour times"
-- SECONDARY: "📩 or DM LIST for every similar option in ${cityName}"
+- PRIMARY CTA: "📲 comment TOUR and I'll DM you today's available homes with a complete monthly payment breakdown, current incentives, and private tour times"
+- SECONDARY: "📩 or DM LIST and I'll build you a custom lineup of every similar option, with payments and a fast approval game plan"
 - LAST content line: "⭐️ link in bio to get started with us today"
 - "Lifestyle Design Realty" on its own line
 - DO NOT include any hashtags. They will be added separately.
@@ -628,7 +628,7 @@ new construction like this doesn't sit long in ${cityName}
 • chef's kitchen with island and upgraded counters
 • energy efficient and move-in ready
 
-🌳 want the full amenity and community rundown? comment TOUR and I'll send everything
+🌳 want the full amenity and community rundown? comment TOUR and I'll send everything including what your monthly payment would look like
 
 🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment
 
@@ -638,8 +638,8 @@ new construction like this doesn't sit long in ${cityName}
 
 perfect for growing families, military/veteran buyers, or anyone ready to stop renting
 
-📲 comment TOUR and I'll DM you the community name, builder lineup, exact pricing and tour times
-📩 or DM LIST for every similar option in ${cityName}
+📲 comment TOUR and I'll DM you today's available homes with a complete monthly payment breakdown, current incentives, and private tour times
+📩 or DM LIST and I'll build you a custom lineup of every similar option, with payments and a fast approval game plan
 ⭐️ link in bio to get started with us today
 
 Lifestyle Design Realty
