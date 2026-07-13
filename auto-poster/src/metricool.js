@@ -229,7 +229,7 @@ function chicagoLocalDateTime() {
  * Returns { ok, brands: [{ label, ok, networks, error? }], platforms }
  */
 export async function createPost(mediaUrl, caption, options = {}) {
-  const { dryRun = false, prefetched = null, mainBrandSkipIG = false } = options;
+  const { dryRun = false, prefetched = null, mainBrandSkipIG = false, onlyMainBrandIG = false } = options;
 
   // Discover all brands
   const brands = await getAllBrands();
@@ -251,6 +251,11 @@ export async function createPost(mediaUrl, caption, options = {}) {
 
   for (const brand of brands) {
     try {
+      // onlyMainBrandIG mode: skip all brands except the main brand's IG (delivery fallback)
+      if (onlyMainBrandIG && brand.blogId !== defaultBlogId) {
+        continue;
+      }
+
       // Upload to this brand's media library (skip default brand — already uploaded)
       let brandMediaUrl;
       if (brand.blogId === defaultBlogId && mediaUrl) {
@@ -272,6 +277,11 @@ export async function createPost(mediaUrl, caption, options = {}) {
       if (mainBrandSkipIG && brand.blogId === defaultBlogId) {
         allowed = allowed.filter(n => n !== "INSTAGRAM");
         console.log(`[Metricool] Manual-assist: skipping Instagram for main brand ${brand.label} (owner will post natively)`);
+      }
+      // onlyMainBrandIG mode: ONLY post to main brand's Instagram (delivery fallback)
+      if (onlyMainBrandIG && brand.blogId === defaultBlogId) {
+        allowed = ["INSTAGRAM"];
+        console.log(`[Metricool] Delivery fallback: posting ONLY to main brand Instagram`);
       }
       const providers = brand.networks
         .filter(n => allowed.includes(n))
