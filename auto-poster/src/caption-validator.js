@@ -2,9 +2,14 @@
  * Caption Validation Gate — ensures no unvalidated LLM output is ever published.
  * 
  * REQUIRED markers: output must contain these (case-insensitive):
- *   - "comment TOUR" (the primary CTA)
+ *   - "comment TOUR" EXACTLY ONCE (primary CTA at the end)
  *   - "Lifestyle Design Realty" (brand)
  *   - At least one themed section emoji: ✨ or 💸
+ * 
+ * COMMENT DISCIPLINE:
+ *   - "comment TOUR" must appear exactly 1 time (not 0, not 2+)
+ *   - The word "comment" must appear at most 2 times total in the caption
+ *   - "DM" must appear at most 2 times (primary CTA "I'll DM you" + secondary "DM LIST")
  * 
  * FORBIDDEN markers: reject if output contains any of these:
  *   - Markdown: "**" (bold), "##" (headers), "```"
@@ -73,6 +78,24 @@ export function validateCaption(caption) {
     }
   }
 
+  // COMMENT DISCIPLINE: "comment TOUR" must appear EXACTLY ONCE
+  const commentTourMatches = (caption.match(/comment\s+TOUR/gi) || []).length;
+  if (commentTourMatches > 1) {
+    failures.push(`"comment TOUR" appears ${commentTourMatches} times (must be exactly 1)`);
+  }
+
+  // Total "comment" occurrences must be at most 2 (the CTA line + possibly "comment below" type phrasing)
+  const commentMatches = (caption.match(/\bcomment\b/gi) || []).length;
+  if (commentMatches > 2) {
+    failures.push(`Word "comment" appears ${commentMatches} times (max 2 allowed)`);
+  }
+
+  // "DM" must appear at most 2 times (primary CTA "I'll DM you" + secondary "DM LIST")
+  const dmMatches = (caption.match(/\bDM\b/g) || []).length;
+  if (dmMatches > 2) {
+    failures.push(`"DM" appears ${dmMatches} times (max 2 allowed)`);
+  }
+
   // Check FORBIDDEN markers — full text scan
   for (const { pattern, label } of FORBIDDEN_FULL_TEXT) {
     if (pattern.test(caption)) {
@@ -101,9 +124,17 @@ export function validateCaption(caption) {
  */
 export const RETRY_INSTRUCTION = `
 
-CRITICAL CORRECTION: Your previous output was NOT a valid Instagram caption. It contained assistant-speak, markdown formatting, or was missing required elements.
+CRITICAL CORRECTION: Your previous output was NOT a valid Instagram caption. It contained assistant-speak, markdown formatting, too many CTAs, or was missing required elements.
 
-Output ONLY the caption text following the exact structure specified above. Do NOT ask questions, do NOT use markdown, do NOT explain what you need. If you lack specific details, use generic new-construction descriptions. You MUST include:
-- "comment TOUR" as the primary CTA
+Output ONLY the caption text following the exact structure specified above. Do NOT ask questions, do NOT use markdown, do NOT explain what you need. If you lack specific details, use generic new-construction descriptions.
+
+STRICT CTA RULES:
+- "comment TOUR" must appear EXACTLY ONCE — in the primary CTA at the end, nowhere else
+- The word "comment" must not appear more than twice total
+- "DM" must appear at most once (the secondary CTA)
+- NO asking/requesting in the value sections (✨, 💸, 🌳, 🎓) — those sections INFORM, they don't ask
+
+You MUST include:
+- "comment TOUR" ONCE as the primary CTA at the end
 - "Lifestyle Design Realty" on its own line
 - At least one ✨ or 💸 themed section`;

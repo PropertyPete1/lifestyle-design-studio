@@ -167,6 +167,7 @@ STYLE RULES:
 - Conversational, specific, never corporate
 - Ranges are great ("from about $455,990 to $591,990 with 3 to 4 bedrooms")
 - Skip any section where you have zero facts for it (don't pad with generic filler)
+- NEVER use "comment", "DM", or any call-to-action language inside these sections. They INFORM only. All asking happens in the CTA at the end.
 `;
 
 const CAPTION_RULES = `
@@ -182,6 +183,7 @@ RULES:
 - Return ONLY the caption text, nothing else
 - NEVER ask clarifying questions. NEVER say you need more information. If you lack specific details, use generic new-construction descriptions.
 - You are NOT an assistant having a conversation. You are a caption generator. Your output IS the caption that will be published directly.
+- "comment TOUR" appears EXACTLY ONCE in the entire caption (in the primary CTA at the end). The word "comment" must not appear anywhere else.
 `;
 
 /**
@@ -378,10 +380,10 @@ You do NOT have verified facts for this community. You MUST NOT invent or assume
 - Square footage ranges
 
 For the 🌳 amenity section: replace it with ONLY this line:
-"🌳 want the full community rundown and today's available homes? comment TOUR"
+"🌳 full amenity and community rundown available. it's worth asking about"
 
 For the 🎓 school and numbers section: replace it with ONLY this line:
-"🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment"
+"🎓 school ratings, HOA and taxes vary by address. exact numbers on request"
 
 You MAY state:
 - The price from the video overlay (if shown)
@@ -412,12 +414,12 @@ BODY FORMAT — use these themed sections:
 ✨ everyday living hits
 (ONLY generic interior features visible in any new build: open floor plan, natural light, modern finishes, kitchen island. Keep it short. Do NOT invent specific sqft, bed counts, or features not in the video overlay.)
 
-🌳 want the full community rundown and today's available homes? comment TOUR
+🌳 full amenity and community rundown available. it's worth asking about
 
-🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment
+🎓 school ratings, HOA and taxes vary by address. exact numbers on request
 
 💸 buyer wins
-(ONLY universally true financing options: VA/FHA/USDA/conventional welcome, builder incentives available, rate buydowns. Do NOT invent specific incentive amounts.)
+(ONLY universally true financing options: VA/FHA/USDA/conventional welcome, builder incentives available, rate buydowns. Do NOT invent specific incentive amounts. Do NOT use the word "comment" or "DM" in this section.)
 `}
 
 AFTER THE BODY:
@@ -427,6 +429,12 @@ AFTER THE BODY:
 - LAST content line: "⭐️ link in bio to get started with us today"
 - "Lifestyle Design Realty" on its own line
 - DO NOT include any hashtags. They will be added separately.
+
+CTA DISCIPLINE (NON-NEGOTIABLE):
+- "comment TOUR" must appear EXACTLY ONCE in the entire caption — only in the PRIMARY CTA line at the end
+- The word "comment" must NOT appear anywhere else in the caption (not in tease lines, not in section headers, not in the body)
+- "DM" must appear at most ONCE (only in the secondary CTA)
+- The value sections (✨, 💸, 🌳, 🎓) INFORM and TEASE — they do NOT ask. No "comment", "DM", or requests in those sections.
 
 ${noKBInstructions}
 ${CAPTION_RULES}`;
@@ -592,6 +600,12 @@ AFTER THE BODY:
 - "Lifestyle Design Realty" on its own line
 - DO NOT include any hashtags. They will be added separately.
 
+CTA DISCIPLINE (NON-NEGOTIABLE):
+- "comment TOUR" must appear EXACTLY ONCE in the entire caption — only in the PRIMARY CTA line at the end
+- The word "comment" must NOT appear anywhere else in the caption
+- "DM" must appear at most ONCE (only in the secondary CTA)
+- The value sections (✨, 💸, 🌳, 🎓) INFORM and TEASE — they do NOT ask. No "comment", "DM", or requests in those sections.
+
 PRESERVATION CHECKLIST — verify ALL of these from the original appear in your output (EXCEPT gated names):
 - Every price mentioned (exact dollar amounts, ranges, "from the $Xs")
 - Every bed/bath/sqft number
@@ -665,12 +679,12 @@ new construction like this doesn't sit long in ${cityName}
 • chef's kitchen with island and upgraded counters
 • energy efficient and move-in ready
 
-🌳 want the full community rundown and today's available homes? comment TOUR
+🌳 full amenity and community rundown available. it's worth asking about
 
-🎓 school ratings, HOA and taxes vary by address. I'll send exact numbers when you comment
+🎓 school ratings, HOA and taxes vary by address. exact numbers on request
 
 💸 buyer wins
-• builder incentives and rate buydowns available. ask what you qualify for
+• builder incentives and rate buydowns available right now
 • VA, FHA, and conventional friendly with fast pre-approvals
 
 perfect for growing families, military/veteran buyers, or anyone ready to stop renting
