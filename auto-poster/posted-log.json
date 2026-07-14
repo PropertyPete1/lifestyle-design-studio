@@ -162,6 +162,26 @@
       "timestamp": "2026-07-13T21:53:54.517Z",
       "success": true,
       "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty"
+    },
+    {
+      "type": "linkedin",
+      "topic": "income_potential",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-14T14:11:20"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-14T14:41:20"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-14T15:11:20"
+        }
+      ],
+      "timestamp": "2026-07-14T19:09:52.613Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
