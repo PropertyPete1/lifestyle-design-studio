@@ -53,6 +53,7 @@ process.on("uncaughtException", (err) => {
 const DRY_RUN = process.env.DRY_RUN === "true";
 const CITY = process.env.CITY || "san_antonio";
 const FORCE = process.env.FORCE === "true"; // Manual override to bypass every-other-day check
+const TEST_DELIVERY_ONLY = process.env.TEST_DELIVERY_ONLY === "true"; // Test delivery pipeline only — no social posts, no log entry
 
 // Match thresholds (asymmetric):
 // BLOCKING: distance < 10 = definite same video, block immediately
@@ -144,7 +145,7 @@ async function checkRemoteLog(city) {
 async function main() {
   console.log("=".repeat(60));
   console.log(`[AutoPoster] Starting for city: ${CITY}`);
-  console.log(`[AutoPoster] Mode: ${DRY_RUN ? "DRY RUN" : "LIVE"}`);
+  console.log(`[AutoPoster] Mode: ${TEST_DELIVERY_ONLY ? "TEST DELIVERY ONLY (no social posts)" : DRY_RUN ? "DRY RUN" : "LIVE"}`);
   console.log(`[AutoPoster] Time: ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT`);
   console.log("=".repeat(60));
 
@@ -178,8 +179,7 @@ async function main() {
   const log = loadLog();
 
   // Idempotency guard: don't double-post if cron fires twice
-  // FORCE=true bypasses this (for manual test runs)
-  if (!DRY_RUN && !FORCE && hasRecentPost(log, CITY, 20)) {
+  if (!DRY_RUN && !TEST_DELIVERY_ONLY && hasRecentPost(log, CITY, 20)) {
     console.log(`[AutoPoster] Already posted for ${CITY} in the last 20 hours. Exiting.`);
     process.exit(0);
   }
@@ -363,7 +363,7 @@ async function main() {
   // LinkedIn: post text-only recruiting content (DECOUPLED from video success)
   // Only fires on the san_antonio run to avoid duplicates across city runs.
   // Has its own 20-hour idempotency guard so manual re-runs can't double-post.
-  if (CITY === "san_antonio") {
+  if (CITY === "san_antonio" && !TEST_DELIVERY_ONLY) {
     const hasRecentLinkedin = log.posts.some(
       p => p.type === "linkedin" && (Date.now() - new Date(p.timestamp).getTime()) < 20 * 60 * 60 * 1000
     );
@@ -404,7 +404,7 @@ async function main() {
   // ═══════════════════════════════════════════════════════════════
   // POST VERIFICATION: Wait and confirm posts are actually PUBLISHED
   // ═══════════════════════════════════════════════════════════════
-  if (posted && !DRY_RUN && postedBrands.length > 0) {
+  if (posted && !DRY_RUN && !TEST_DELIVERY_ONLY && postedBrands.length > 0) {
     const VERIFY_DELAY_MS = 7 * 60 * 1000; // 7 minutes
     console.log(`\n[Verify] Waiting ${VERIFY_DELAY_MS / 60000} minutes before verifying post status...`);
     await new Promise(r => setTimeout(r, VERIFY_DELAY_MS));
@@ -778,9 +778,9 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
 
     let mediaUrl;
     let prefetched = null;
-    if (DRY_RUN) {
-      mediaUrl = "https://dry-run-placeholder.example.com/video.mp4";
-      console.log("[Post] DRY RUN — skipping upload");
+    if (DRY_RUN || TEST_DELIVERY_ONLY) {
+      mediaUrl = "https://test-delivery-placeholder.example.com/video.mp4";
+      console.log(`[Post] ${TEST_DELIVERY_ONLY ? "TEST_DELIVERY_ONLY" : "DRY RUN"} — skipping Metricool upload`);
     } else {
       const uploadBuffer = readFileSync(videoToUpload);
       const uploadResult = await uploadVideoToMetricool(uploadBuffer, video.name);
@@ -790,7 +790,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
 
     // BELT-AND-SUSPENDERS: Re-check the LIVE remote posted-log before posting.
     // This catches races where another workflow run posted after our checkout.
-    if (!DRY_RUN && !FORCE) {
+    if (!DRY_RUN && !TEST_DELIVERY_ONLY) {
       const remotePostConflict = await checkRemoteLog(CITY);
       if (remotePostConflict) {
         console.log(`[Post] ABORT — remote posted-log shows ${CITY} was already posted in the last 20h (race detected). Exiting cleanly.`);
@@ -800,8 +800,13 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
 
     // Post to ALL brands (multi-IG fan-out)
     // Manual-assist: skip Instagram on main brand — owner posts natively for FB crosspost + merged views
-    console.log("[Post] Creating post on all brands (main IG withheld for manual post)...");
-        const result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN, prefetched, mainBrandSkipIG: true });
+    let result = { brands: [], platforms: "skipped (TEST_DELIVERY_ONLY)" };
+    if (TEST_DELIVERY_ONLY) {
+      console.log("[Post] TEST_DELIVERY_ONLY — skipping createPost (no social posts will be made)");
+    } else {
+      console.log("[Post] Creating post on all brands (main IG withheld for manual post)...");
+      result = await createPost(mediaUrl, caption, { dryRun: DRY_RUN, prefetched, mainBrandSkipIG: true });
+    }
 
     // MANUAL-ASSIST DELIVERY: upload finished video to Drive and notify owner
     // NO auto-publish fallback — main IG is NEVER posted via Metricool (owner posts natively)
@@ -823,8 +828,8 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       }
     }
 
-    // Record in log (skip in dry-run mode)
-    if (!DRY_RUN) {
+    // Record in log (skip in dry-run mode and TEST_DELIVERY_ONLY mode)
+    if (!DRY_RUN && !TEST_DELIVERY_ONLY) {
       const brandSummary = result.brands
         ? result.brands.filter(b => b.ok).map(b => b.label).join(", ")
         : "unknown";
@@ -843,6 +848,8 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         brands: brandSummary,
         success: true,
       });
+    } else if (TEST_DELIVERY_ONLY) {
+      console.log("[Post] TEST_DELIVERY_ONLY — skipping posted-log entry (this is a test, not a real post)");
     } else {
       console.log("[Post] DRY RUN — skipping log entry");
     }
