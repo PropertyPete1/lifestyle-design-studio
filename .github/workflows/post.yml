@@ -35,6 +35,11 @@ on:
         required: false
         default: false
         type: boolean
+      test_delivery_only:
+        description: 'Test delivery only (real Drive upload + email + dashboard, ZERO social posts)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -68,6 +73,7 @@ jobs:
           CITY: san_antonio
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
+          TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -122,6 +128,7 @@ jobs:
           CITY: austin
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
+          TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -187,6 +194,7 @@ jobs:
           CITY: dallas
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
+          TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
