@@ -1,13 +1,20 @@
 /**
- * One-time setup script to get a Google Drive refresh token.
+ * One-time setup script to get a Google OAuth refresh token.
+ * 
+ * Scopes requested:
+ *   - drive (full read/write — needed for uploading to "Ready to Post" folder)
+ *   - gmail.send (send-only — needed for email backup channel on delivery)
  * 
  * Run this locally: node scripts/get-refresh-token.js
  * 
  * It will:
  * 1. Open a browser to Google's OAuth consent page
- * 2. You authorize access to your Drive
+ * 2. You authorize Drive + Gmail Send access
  * 3. It prints the refresh token
  * 4. You paste it into GitHub Secrets as GOOGLE_REFRESH_TOKEN
+ *
+ * NOTE: Your OAuth app is Internal, so no re-verification needed.
+ * The old readonly token will stop working once you replace the secret.
  */
 
 import http from "http";
@@ -17,11 +24,14 @@ import { exec } from "child_process";
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "1014621141316-fs30p38fo8a99gs6ggufu5hf39vb0e3q.apps.googleusercontent.com";
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "GOCSPX-6xA1ZbsFEtaV4uQlEvzvDkqCJ5B";
 const REDIRECT_URI = "http://localhost:3847/callback";
-const SCOPES = "https://www.googleapis.com/auth/drive.readonly";
+const SCOPES = [
+  "https://www.googleapis.com/auth/drive",       // Full Drive access (read + write + delete)
+  "https://www.googleapis.com/auth/gmail.send",   // Send email only (not read inbox)
+].join(" ");
 
 async function main() {
   console.log("=".repeat(60));
-  console.log("Google Drive Refresh Token Generator");
+  console.log("Google OAuth Refresh Token Generator (Drive + Gmail Send)");
   console.log("=".repeat(60));
   console.log("");
 
@@ -114,8 +124,8 @@ async function main() {
   console.log("2. Add a new secret: GOOGLE_REFRESH_TOKEN");
   console.log("3. Paste the token above as the value");
   console.log("");
-  console.log("IMPORTANT: Make sure your Google Cloud OAuth app is in 'Production' mode");
-  console.log("(not 'Testing'), otherwise this token will expire in 7 days.");
+  console.log("IMPORTANT: Your OAuth app is Internal — no re-verification needed.");
+  console.log("The new token grants: drive (full) + gmail.send.");
 }
 
 main().catch(err => {
