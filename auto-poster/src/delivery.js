@@ -250,7 +250,7 @@ async function notifyDashboard(deliveryData) {
  */
 async function sendEmailBackup(accessToken, { city, caption, driveLink, fileName }) {
   // Try Gmail API first (requires gmail.send scope on the token)
-  const subject = `📱 Ready to Post: ${city.toUpperCase()} reel — ${new Date().toLocaleDateString("en-US", { timeZone: "America/Chicago" })}`;
+  const subject = `Ready to Post: ${city.toUpperCase()} reel - ${new Date().toLocaleDateString("en-US", { timeZone: "America/Chicago" })}`;
   const body = [
     `Your ${city.replace("_", " ")} reel is ready to post natively on Instagram.`,
     ``,
