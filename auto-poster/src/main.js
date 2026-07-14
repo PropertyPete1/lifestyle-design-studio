@@ -790,7 +790,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
 
     // BELT-AND-SUSPENDERS: Re-check the LIVE remote posted-log before posting.
     // This catches races where another workflow run posted after our checkout.
-    if (!DRY_RUN) {
+    if (!DRY_RUN && !FORCE) {
       const remotePostConflict = await checkRemoteLog(CITY);
       if (remotePostConflict) {
         console.log(`[Post] ABORT — remote posted-log shows ${CITY} was already posted in the last 20h (race detected). Exiting cleanly.`);
