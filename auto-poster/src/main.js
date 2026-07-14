@@ -178,7 +178,8 @@ async function main() {
   const log = loadLog();
 
   // Idempotency guard: don't double-post if cron fires twice
-  if (!DRY_RUN && hasRecentPost(log, CITY, 20)) {
+  // FORCE=true bypasses this (for manual test runs)
+  if (!DRY_RUN && !FORCE && hasRecentPost(log, CITY, 20)) {
     console.log(`[AutoPoster] Already posted for ${CITY} in the last 20 hours. Exiting.`);
     process.exit(0);
   }
