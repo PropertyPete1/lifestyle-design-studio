@@ -93,4 +93,49 @@ export function getRecentlyPostedIds(log, city, days = 30) {
   );
 }
 
-export { LOG_PATH };
+// ─── QC Blocklist ────────────────────────────────────────────────────────────
+
+const BLOCKLIST_PATH = join(__dirname, "..", "qc-blocklist.json");
+
+/**
+ * Load the QC blocklist.
+ */
+export function loadBlocklist() {
+  if (!existsSync(BLOCKLIST_PATH)) {
+    return { blockedDriveIds: {} };
+  }
+  try {
+    const raw = readFileSync(BLOCKLIST_PATH, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return { blockedDriveIds: {} };
+  }
+}
+
+/**
+ * Save the QC blocklist.
+ */
+export function saveBlocklist(blocklist) {
+  writeFileSync(BLOCKLIST_PATH, JSON.stringify(blocklist, null, 2) + "\n");
+}
+
+/**
+ * Add a video to the QC blocklist for an inherent failure reason.
+ */
+export function blocklistVideo(blocklist, driveFileId, filename, reason) {
+  blocklist.blockedDriveIds[driveFileId] = {
+    filename,
+    reason,
+    blockedAt: new Date().toISOString(),
+  };
+  saveBlocklist(blocklist);
+}
+
+/**
+ * Check if a video is on the QC blocklist.
+ */
+export function isBlocklisted(blocklist, driveFileId) {
+  return !!blocklist.blockedDriveIds[driveFileId];
+}
+
+export { LOG_PATH, BLOCKLIST_PATH };

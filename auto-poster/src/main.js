@@ -31,7 +31,7 @@ import { prePostQualityCheck } from "./quality-check.js";
 import { applyFreshness } from "./freshness.js";
 import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
-import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds } from "./state.js";
+import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, loadBlocklist, blocklistVideo, isBlocklisted } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
@@ -248,12 +248,36 @@ async function main() {
   // Load cached matches
   const matchCache = loadMatches();
 
-  // Find eligible videos (not posted in last 30 days)
+  // Load QC blocklist
+  const blocklist = loadBlocklist();
+  const blocklistCount = Object.keys(blocklist.blockedDriveIds).length;
+  if (blocklistCount > 0) {
+    console.log(`[Step 3] QC blocklist: ${blocklistCount} permanently blocked videos`);
+  }
+
+  // Find eligible videos (not posted in last 30 days, not blocklisted, not too short)
   const eligible = [];
   const blocked = [];
+  let durationFilterCount = 0;
 
   for (const video of allVideos) {
-    // Check posted-log first (fast)
+    // Check QC blocklist first (instant)
+    if (isBlocklisted(blocklist, video.id)) {
+      blocked.push({ video, reason: `qc-blocklist: ${blocklist.blockedDriveIds[video.id].reason.slice(0, 50)}` });
+      continue;
+    }
+
+    // Pre-filter: skip videos shorter than 5 seconds (via Drive metadata)
+    const durationMs = video.videoMediaMetadata?.durationMillis;
+    if (durationMs && parseInt(durationMs) < 5000) {
+      blocked.push({ video, reason: `too short: ${(parseInt(durationMs) / 1000).toFixed(1)}s (Drive metadata)` });
+      // Auto-add to blocklist for permanent exclusion
+      blocklistVideo(blocklist, video.id, video.name, `Too short: ${(parseInt(durationMs) / 1000).toFixed(1)}s (minimum 5s)`);
+      durationFilterCount++;
+      continue;
+    }
+
+    // Check posted-log (fast)
     if (recentLogIds.has(video.id)) {
       blocked.push({ video, reason: "posted-log" });
       continue;
@@ -272,6 +296,10 @@ async function main() {
     }
 
     eligible.push(video);
+  }
+
+  if (durationFilterCount > 0) {
+    console.log(`[Step 3] Pre-filtered ${durationFilterCount} videos under 5s (added to blocklist)`);
   }
 
   console.log(`[Step 3] ${eligible.length} eligible, ${blocked.length} blocked`);
@@ -313,13 +341,16 @@ async function main() {
     return aDate - bDate;
   });
 
-  const candidates = sorted.slice(0, 3);
-  console.log(`\n[Step 4] Top ${candidates.length} candidates:`);
-  candidates.forEach((c, i) => {
+  // Use ALL eligible candidates (not just top 3) — iterate until one passes
+  const candidates = sorted;
+  console.log(`\n[Step 4] ${candidates.length} candidates (sorted by rotation priority):`);
+  // Show top 5 for logging
+  candidates.slice(0, 5).forEach((c, i) => {
     const m = matchCache[c.id];
     const lastPost = m?.[0]?.publishedAt ? parsePublishedAt(m[0].publishedAt).toLocaleDateString() : "never matched";
     console.log(`  ${i + 1}. ${c.name} (last posted: ${lastPost})`);
   });
+  if (candidates.length > 5) console.log(`  ... and ${candidates.length - 5} more`);
   if (hasUnmatchable) {
     console.log(`  [Note: ${unmatchable.length} unmatchable IG posts exist — preferring confirmed-old candidates]`);
   }
@@ -353,11 +384,23 @@ async function main() {
     } catch (err) {
       lastError = err;
       console.error(`[AutoPoster] Failed for ${candidate.name}: ${err.message}`);
+
+      // Auto-blocklist videos that fail for inherent reasons (won't pass on retry)
+      const msg = err.message || "";
+      const isInherent = msg.includes("Too short") || msg.includes("Too long") ||
+        msg.includes("Not vertical") || msg.includes("corrupted") ||
+        msg.includes("No video stream") || msg.includes("AI vision:") ||
+        msg.includes("File too small");
+      if (isInherent) {
+        blocklistVideo(blocklist, candidate.id, candidate.name, msg.replace(/^\[QC\] FAILED: /, ""));
+        console.log(`[AutoPoster] Added ${candidate.name} to QC blocklist (inherent failure)`);
+      }
+
       console.log("[AutoPoster] Trying next candidate...");
     }
   }
 
-  // Save updated match cache (even if video posting failed — matches are still valid)
+  // Save updated match cache and blocklist (even if video posting failed)
   saveMatches(matchCache);
 
   // LinkedIn: post text-only recruiting content (DECOUPLED from video success)

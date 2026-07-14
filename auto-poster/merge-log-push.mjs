@@ -27,7 +27,7 @@ const POST_SUCCESS = process.argv[3] === "true";
 const REPO_DIR = process.cwd(); // Should be auto-poster/
 
 // Files to merge
-const FILES = ["posted-log.json", "video-matches.json", "performance-weights.json"];
+const FILES = ["posted-log.json", "video-matches.json", "performance-weights.json", "qc-blocklist.json"];
 const TMP_DIR = "/tmp/merge-push-local";
 
 function run(cmd, opts = {}) {
@@ -108,6 +108,13 @@ function mergePerformanceWeights(local, remote) {
   return merged;
 }
 
+function mergeBlocklist(local, remote) {
+  // Union of all blocked IDs — once blocked, always blocked
+  const merged = { blockedDriveIds: { ...(remote?.blockedDriveIds || {}), ...(local?.blockedDriveIds || {}) } };
+  console.log(`[Merge] qc-blocklist: ${Object.keys(merged.blockedDriveIds).length} blocked videos`);
+  return merged;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -159,6 +166,8 @@ async function main() {
           merged = mergeVideoMatches(localData, remoteData);
         } else if (file === "performance-weights.json") {
           merged = mergePerformanceWeights(localData, remoteData);
+        } else if (file === "qc-blocklist.json") {
+          merged = mergeBlocklist(localData, remoteData);
         } else {
           merged = localData; // Fallback: local wins
         }
@@ -167,7 +176,7 @@ async function main() {
       }
 
       // Stage and commit
-      run("git add posted-log.json video-matches.json performance-weights.json 2>/dev/null || true", { allowFail: true });
+      run("git add posted-log.json video-matches.json performance-weights.json qc-blocklist.json 2>/dev/null || true", { allowFail: true });
 
       const diffResult = run("git diff --cached --quiet || echo changed", { allowFail: true }).trim();
       if (!diffResult.includes("changed")) {

@@ -65,7 +65,7 @@ export async function listCityVideos(city) {
   do {
     const params = new URLSearchParams({
       q: `'${folderId}' in parents and mimeType contains 'video/' and trashed = false`,
-      fields: "nextPageToken,files(id,name,mimeType,size)",
+      fields: "nextPageToken,files(id,name,mimeType,size,videoMediaMetadata)",
       pageSize: "100",
       orderBy: "name",
     });

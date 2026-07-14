@@ -1,0 +1,14 @@
+{
+  "blockedDriveIds": {
+    "1PCUXAl0Ic9HRiJgznGhkTHPtY0o0vbtF": {
+      "filename": "01F4C007-1610-4820-96C7-DA9F3B04C18E.mp4",
+      "reason": "AI vision: These are two static images, not a video. Instagram Reels requires video content, not still photographs.",
+      "blockedAt": "2026-07-14T19:09:29Z"
+    },
+    "1OfV7aePdeAUCNW9WalLHA-G9t4J66k-C": {
+      "filename": "0ADF5F6D-2142-46B8-B7FF-92A47E26BBBA.mp4",
+      "reason": "Too short: 3.8s (minimum 5s)",
+      "blockedAt": "2026-07-14T19:09:48Z"
+    }
+  }
+}
