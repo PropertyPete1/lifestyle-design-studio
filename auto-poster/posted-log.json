@@ -227,6 +227,41 @@
       "timestamp": "2026-07-14T21:35:16.522Z",
       "success": true,
       "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty"
+    },
+    {
+      "driveFileId": "1myE-M7tZy2FdxIqxqET020MI_0-emu0u",
+      "fileName": "0E10E0D1-9C5B-448E-AE06-2C0A75CE59A1.mp4",
+      "city": "san_antonio",
+      "caption": "This might be the best new build value I've toured in San Antonio this month.\n\nNew construction at this price point moves fast, and builder incentives are still on the table right now.\n\n✨ everyday liv",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-15T19:06:23.363Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty"
+    },
+    {
+      "type": "linkedin",
+      "topic": "mindset_motivation",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-15T14:08:00"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-15T14:38:00"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-15T15:08:00"
+        }
+      ],
+      "timestamp": "2026-07-15T19:06:31.763Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
