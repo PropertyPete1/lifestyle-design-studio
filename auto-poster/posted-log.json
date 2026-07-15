@@ -262,6 +262,17 @@
       ],
       "timestamp": "2026-07-15T19:06:31.763Z",
       "success": true
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-07-15T19:41:33.011Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1Be-tfYgYQ1wPbwOuQcETPr5XSlDebyGr",
+      "captionSnippet": "This might be the best new build value I've toured in San Antonio this month.\n\nNew construction at this price point move",
+      "mainIgPostedAt": "2026-07-15T19:41:33.011Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
