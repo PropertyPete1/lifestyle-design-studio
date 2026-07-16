@@ -396,6 +396,17 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1KPKLRUTqxNdsXG_IzpKGhxjfEuZAV-O1/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-16T20:09:02.708Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1KPKLRUTqxNdsXG_IzpKGhxjfEuZAV-O1",
+      "captionSnippet": "the floor plan in this one made me stop mid-tour\n\nnew construction like this doesn't sit long in Austin, so if you're se",
+      "mainIgPostedAt": "2026-07-16T20:09:02.708Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
