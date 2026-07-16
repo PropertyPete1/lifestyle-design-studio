@@ -1,9 +1,11 @@
 /**
  * Voiceover Pipeline — detect speech via Whisper, generate TTS via ElevenLabs, merge with ffmpeg
  * 
- * Decision matrix:
- *   Actual speech detected → skip voiceover
- *   Audio but NO speech (music only) → ADD voiceover, duck music to 20%
+ * Decision matrix (updated Jul 2026):
+ *   Genuine human speech (confirmed by coherence check) → skip voiceover
+ *   Whisper hallucination / garbled text → ADD voiceover (duck music to 12%)
+ *   Lyrics detected → ADD voiceover (duck music to 12%)
+ *   Audio but NO speech (music only) → ADD voiceover, duck music to 12%
  *   No audio at all → ADD voiceover
  *   Whisper error/ambiguous → assume speech (fail-safe, never double voices)
  */
@@ -12,11 +14,50 @@ import { execSync } from "child_process";
 import { writeFileSync, readFileSync, unlinkSync, existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import Anthropic from "@anthropic-ai/sdk";
 import { generateVoiceoverScript } from "./caption.js";
 import { detectSpeech } from "./speech-detect.js";
 
-const VOICE_ID = "qnTRoadmcb87J7GRHnhG"; // Peters pro voice (News model, recreated Jul 2026)
+// Voice ID from env var (changeable without code edits) with hardcoded fallback
+const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "qnTRoadmcb87J7GRHnhG";
 const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1";
+
+// Background music ducking level (0.12 = 12% volume)
+const DUCK_VOLUME = 0.12;
+
+let anthropicClient = null;
+function getAnthropicClient() {
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropicClient;
+}
+
+/**
+ * Coherence check: ask Claude Haiku whether a Whisper transcript is real speech
+ * or garbled hallucination / song lyrics.
+ * Returns "SPEECH" or "NOT_SPEECH"
+ */
+async function checkTranscriptCoherence(transcript) {
+  try {
+    const client = getAnthropicClient();
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 10,
+      messages: [{
+        role: "user",
+        content: `Is this coherent human speech from someone talking, or garbled/hallucinated text or song lyrics? Answer with exactly one word: SPEECH or NOT_SPEECH.\n\nTranscript: "${transcript}"`
+      }],
+    });
+    const answer = response.content[0].text.trim().toUpperCase();
+    console.log(`[Voiceover] Coherence check: "${transcript.slice(0, 60)}..." → ${answer}`);
+    return answer.includes("NOT_SPEECH") ? "NOT_SPEECH" : "SPEECH";
+  } catch (err) {
+    // On error, fail-safe: assume it's real speech (don't risk doubling voices)
+    console.warn(`[Voiceover] Coherence check failed: ${err.message} — assuming SPEECH (fail-safe)`);
+    return "SPEECH";
+  }
+}
 
 /**
  * Detect if a video already has speech audio.
@@ -82,6 +123,8 @@ async function generateTTS(script) {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) throw new Error("ELEVENLABS_API_KEY not set");
 
+  console.log(`[Voiceover] Using voice ID: ${VOICE_ID}`);
+
   const res = await fetch(`${ELEVENLABS_BASE}/text-to-speech/${VOICE_ID}`, {
     method: "POST",
     headers: {
@@ -90,7 +133,7 @@ async function generateTTS(script) {
     },
     body: JSON.stringify({
       text: script,
-      model_id: "eleven_multilingual_v2",  // Voice was cloned under News category but multilingual model still works
+      model_id: "eleven_multilingual_v2",
       voice_settings: {
         stability: 0.5,
         similarity_boost: 0.75,
@@ -115,17 +158,17 @@ async function generateTTS(script) {
 
 /**
  * Merge voiceover audio with video using ffmpeg.
- * Keeps original video audio at reduced volume (20%), adds voiceover on top.
+ * Keeps original video audio at reduced volume (12%), adds voiceover on top.
  */
 function mergeAudioWithVideo(videoPath, audioPath) {
   const outputPath = join(tmpdir(), `merged_${Date.now()}.mp4`);
 
-  // Mix: original audio at 20% volume + voiceover at full volume
-  const cmd = `ffmpeg -y -i "${videoPath}" -i "${audioPath}" -filter_complex "[0:a]volume=0.2[bg];[1:a]adelay=500|500[vo];[bg][vo]amix=inputs=2:duration=first:dropout_transition=2[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}" 2>&1`;
+  // Mix: original audio at 12% volume + voiceover at full volume
+  const cmd = `ffmpeg -y -i "${videoPath}" -i "${audioPath}" -filter_complex "[0:a]volume=${DUCK_VOLUME}[bg];[1:a]adelay=500|500[vo];[bg][vo]amix=inputs=2:duration=first:dropout_transition=2[a]" -map 0:v -map "[a]" -c:v copy -c:a aac -b:a 192k -shortest "${outputPath}" 2>&1`;
 
   try {
     execSync(cmd, { encoding: "utf-8", timeout: 120000 });
-    console.log(`[Voiceover] Merged video created: ${outputPath}`);
+    console.log(`[Voiceover] Merged video created (music ducked to ${DUCK_VOLUME * 100}%): ${outputPath}`);
     return outputPath;
   } catch (err) {
     // If original has no audio, just add voiceover as the only audio track
@@ -143,9 +186,10 @@ function mergeAudioWithVideo(videoPath, audioPath) {
 /**
  * Full voiceover pipeline:
  * 1. Detect speech using Whisper (with volume pre-filter for speed)
- * 2. Generate script via Claude
- * 3. Generate TTS via ElevenLabs
- * 4. Merge with video via ffmpeg
+ * 2. If Whisper claims speech → coherence check via Claude Haiku
+ * 3. Generate script via Claude
+ * 4. Generate TTS via ElevenLabs
+ * 5. Merge with video via ffmpeg (duck music to 12%)
  * Returns the path to the final video (original or merged).
  */
 export async function processVoiceover(videoPath, city, dryRun = false) {
@@ -153,49 +197,60 @@ export async function processVoiceover(videoPath, city, dryRun = false) {
   const detection = detectSpeech(videoPath);
 
   if (detection.hasSpeech) {
-    // Determine skip reason for audit trail
-    let reason;
+    // Whisper claims speech — but is it real or hallucinated?
     if (detection.error) {
-      reason = "whisper_error_failsafe";
+      // Whisper error → fail-safe: assume speech, skip voiceover
       console.log(`[Voiceover] Whisper error (fail-safe skip) — assuming speech present`);
-    } else {
-      // Heuristic: low confidence (<0.6) with few words likely = lyrics, not real speech
-      const isLikelyLyrics = detection.confidence < 0.6 && (detection.wordCount || 0) < 50;
-      reason = isLikelyLyrics ? "lyrics_detected" : "speech_detected";
-      console.log(`[Voiceover] ${isLikelyLyrics ? 'Lyrics' : 'Speech'} detected (conf=${detection.confidence}, words=${detection.wordCount || '?'}) — skipping voiceover`);
+      return { videoPath, skipped: true, reason: "whisper_error_failsafe", detection };
     }
-    if (detection.transcript) {
-      console.log(`[Voiceover] Transcript: "${detection.transcript.slice(0, 80)}..."`);
+
+    // Step 2: Coherence check — ask Claude if this is real speech
+    const transcript = detection.transcript || "";
+    const coherence = await checkTranscriptCoherence(transcript);
+
+    if (coherence === "SPEECH") {
+      // Genuine human speech confirmed — skip voiceover
+      console.log(`[Voiceover] Coherence confirmed SPEECH — skipping voiceover`);
+      return { videoPath, skipped: true, reason: "speech_confirmed", detection };
     }
-    return { videoPath, skipped: true, reason, detection };
+
+    // NOT_SPEECH — Whisper hallucinated or detected lyrics
+    // Policy: ADD voiceover with music ducked
+    const isLikelyLyrics = detection.confidence < 0.6 && (detection.wordCount || 0) < 50;
+    const reason = isLikelyLyrics ? "lyrics_override_add_voiceover" : "hallucination_override_add_voiceover";
+    console.log(`[Voiceover] Coherence says NOT_SPEECH (${reason}) — will ADD voiceover over ducked music`);
+    // Fall through to voiceover generation below
+    detection._overrideReason = reason;
   }
 
+  // Reaching here means: no speech, music only, silent, OR coherence override
   if (detection.silent) {
     console.log("[Voiceover] Silent video — will add voiceover");
-  } else if (detection.hasMusic) {
-    console.log("[Voiceover] Music-only detected — will add voiceover (ducking music to 20%)");
+  } else if (detection.hasMusic || detection._overrideReason) {
+    console.log(`[Voiceover] Music/lyrics detected — will add voiceover (ducking music to ${DUCK_VOLUME * 100}%)`);
   }
 
   if (dryRun) {
     console.log("[Voiceover] DRY RUN — would generate voiceover");
-    return { videoPath, skipped: false, reason: "dry_run", detection };
+    return { videoPath, skipped: false, reason: detection._overrideReason || "dry_run", detection };
   }
 
-  // Step 2: Get video duration and generate script
+  // Step 3: Get video duration and generate script
   const duration = getVideoDuration(videoPath);
   const script = await generateVoiceoverScript(city, duration);
   console.log(`[Voiceover] Script: "${script.slice(0, 80)}..."`);
 
-  // Step 3: Generate TTS
+  // Step 4: Generate TTS
   const audioPath = await generateTTS(script);
 
-  // Step 4: Merge (ducks original audio to 20% automatically)
+  // Step 5: Merge (ducks original audio to 12% automatically)
   const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
 
   // NOTE: Do NOT delete audioPath here — caller needs it for burned captions (Whisper word timing).
   // Caller is responsible for cleanup via cleanup(audioPath) after caption burn.
 
-  return { videoPath: mergedPath, skipped: false, script, detection, audioPath };
+  const reason = detection._overrideReason || (detection.silent ? "silent_add_voiceover" : "music_only_add_voiceover");
+  return { videoPath: mergedPath, skipped: false, reason, script, detection, audioPath };
 }
 
 /**
