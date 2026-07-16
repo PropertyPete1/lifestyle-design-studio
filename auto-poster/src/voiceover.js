@@ -15,7 +15,7 @@ import { join } from "path";
 import { generateVoiceoverScript } from "./caption.js";
 import { detectSpeech } from "./speech-detect.js";
 
-const VOICE_ID = "ymv1q5WLElzdmrHdtgsw"; // Peters pro voice
+const VOICE_ID = "qnTRoadmcb87J7GRHnhG"; // Peters pro voice (News model, recreated Jul 2026)
 const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1";
 
 /**
@@ -90,7 +90,7 @@ async function generateTTS(script) {
     },
     body: JSON.stringify({
       text: script,
-      model_id: "eleven_multilingual_v2",
+      model_id: "eleven_multilingual_v2",  // Voice was cloned under News category but multilingual model still works
       voice_settings: {
         stability: 0.5,
         similarity_boost: 0.75,
