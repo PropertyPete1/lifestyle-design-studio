@@ -674,11 +674,11 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     finalVideoPath = voResult.videoPath;
     const hasVoiceover = !voResult.skipped;
     // Build voiceover reason for audit trail
-    let voiceoverReason = "added";
+    // New reasons: speech_confirmed, whisper_error_failsafe, hallucination_override_add_voiceover,
+    // lyrics_override_add_voiceover, music_only_add_voiceover, silent_add_voiceover
+    let voiceoverReason = voResult.reason || "added";
     if (voResult.skipped) {
-      if (voResult.reason === "speech_detected") voiceoverReason = "speech_detected";
-      else if (voResult.detection?.error) voiceoverReason = "whisper_error_failsafe";
-      else voiceoverReason = voResult.reason || "speech_detected";
+      voiceoverReason = voResult.reason || "speech_confirmed";
     }
     const voiceoverTranscript = voResult.detection?.transcript
       ? voResult.detection.transcript.split(/\s+/).slice(0, 10).join(" ")
