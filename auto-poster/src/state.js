@@ -55,8 +55,11 @@ export function hasRecentPost(log, city, hoursAgo = 20) {
 
 /**
  * Record a successful post.
+ * Persists all audit fields passed by main.js (voiceover_reason,
+ * voiceover_transcript, freshness, mainIgDelivery, deliveryDriveLink, etc.)
  */
 export function recordPost(log, entry) {
+  // Core fields (always present)
   const record = {
     driveFileId: entry.driveFileId,
     fileName: entry.fileName,
@@ -72,6 +75,19 @@ export function recordPost(log, entry) {
   // Persist LinkedIn-specific fields if present
   if (entry.type) record.type = entry.type;
   if (entry.topic) record.topic = entry.topic;
+
+  // Persist all remaining audit fields (voiceover_reason, voiceover_transcript,
+  // freshness, mainIgDelivery, deliveryDriveLink, and any future additions)
+  const coreKeys = new Set([
+    "driveFileId", "fileName", "city", "caption", "voiceover",
+    "platforms", "success", "brands", "type", "topic",
+  ]);
+  for (const [key, value] of Object.entries(entry)) {
+    if (!coreKeys.has(key) && value !== undefined && value !== null) {
+      record[key] = value;
+    }
+  }
+
   log.posts.push(record);
 
   // Keep only last 365 days of history
