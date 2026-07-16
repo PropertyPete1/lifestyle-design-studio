@@ -325,6 +325,46 @@
       "captionSnippet": "Would you believe this is brand new construction in Dallas/DFW?\n\nNew construction like this doesn't sit long. Builder in",
       "mainIgPostedAt": "2026-07-15T21:12:31.799Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "10xY-L7YfK74DyFjkiAkLmE9Aa6cvMByg",
+      "fileName": "06744F90-F40C-4279-8F27-78F861E28165.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe brand new construction in San Antonio starts at $469,990?\n\nNew construction like this doesn't sit long. If you're ready to stop renting or upgrade to something move-in ready, this is",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-16T19:11:50.310Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "voiceover_reason": "speech_detected",
+      "voiceover_transcript": "Remember this is just a model house. You do park",
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1asPoYDjcSdK6z88p2CVfMDzx6O3gdYNj/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "wish_i_knew",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-16T14:13:23"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-16T14:43:23"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-16T15:13:23"
+        }
+      ],
+      "timestamp": "2026-07-16T19:11:54.405Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
