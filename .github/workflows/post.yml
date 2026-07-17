@@ -40,6 +40,11 @@ on:
         required: false
         default: false
         type: boolean
+      force_video_id:
+        description: 'Pin a specific Drive file ID (bypasses rotation/filtering)'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: write
@@ -74,6 +79,7 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
+          FORCE_VIDEO_ID: ${{ github.event.inputs.force_video_id || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -129,6 +135,7 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
+          FORCE_VIDEO_ID: ${{ github.event.inputs.force_video_id || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -195,6 +202,7 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
+          FORCE_VIDEO_ID: ${{ github.event.inputs.force_video_id || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
