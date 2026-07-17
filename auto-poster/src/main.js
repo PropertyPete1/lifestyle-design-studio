@@ -668,9 +668,28 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
   }
 
   try {
-    // Voiceover pipeline
+    // Extract video overlays FIRST — needed for voiceover script generation (payment tease)
+    // Must read from original downloaded video (before any re-encode)
+    let videoOverlays = null;
+    try {
+      const overlayFrames = extractPriceCheckFrames(tempVideoPath);
+      if (overlayFrames.length > 0) {
+        videoOverlays = await readVideoOverlays(overlayFrames);
+        overlayFrames.forEach(fp => { try { unlinkSync(fp); } catch {} });
+        if (videoOverlays?.community) {
+          console.log(`[Post] Video overlay community: ${videoOverlays.community}`);
+        }
+        if (videoOverlays?.price) {
+          console.log(`[Post] Video overlay price: ${videoOverlays.price}`);
+        }
+      }
+    } catch (err) {
+      console.warn(`[Post] Overlay extraction failed (non-fatal): ${err.message}`);
+    }
+
+    // Voiceover pipeline (now receives videoOverlays for payment-tease script)
     console.log("[Post] Running voiceover detection...");
-    const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN);
+    const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN, videoOverlays);
     finalVideoPath = voResult.videoPath;
     const hasVoiceover = !voResult.skipped;
     // Build voiceover reason for audit trail
@@ -685,38 +704,29 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       : null;
 
     // Burned-in captions: only when voiceover was added (not skipped)
+    // processBurnedCaptions now returns { videoPath, captions_burned, captions_error }
+    let captionsBurned = false;
+    let captionsError = null;
     if (hasVoiceover && voResult.audioPath && voResult.script && !DRY_RUN) {
       console.log("[Post] Burning synced captions onto video...");
-      try {
-        const captionedPath = await processBurnedCaptions(finalVideoPath, voResult.audioPath, voResult.script);
-        if (captionedPath && captionedPath !== finalVideoPath) {
-          // Clean up the pre-caption merged video
-          cleanup(finalVideoPath);
-          finalVideoPath = captionedPath;
-        }
-      } catch (err) {
-        console.warn(`[Post] Burned captions failed (non-fatal): ${err.message} — continuing without captions`);
+      const captionResult = await processBurnedCaptions(finalVideoPath, voResult.audioPath, voResult.script);
+      captionsBurned = captionResult.captions_burned;
+      captionsError = captionResult.captions_error;
+      if (captionResult.videoPath !== finalVideoPath) {
+        // Clean up the pre-caption merged video
+        cleanup(finalVideoPath);
+        finalVideoPath = captionResult.videoPath;
+      }
+      if (captionsBurned) {
+        console.log("[Post] ✓ Captions burned onto video");
+      } else {
+        console.warn(`[Post] Captions NOT burned (non-fatal): ${captionsError}`);
       }
       // Clean up TTS audio file (no longer needed after caption burn)
       cleanup(voResult.audioPath);
     } else if (voResult.audioPath) {
       // Clean up TTS audio if voiceover was added but captions skipped (e.g. dry run)
       cleanup(voResult.audioPath);
-    }
-    // Extract video overlays BEFORE QC — QC may compress the file in-place,
-    // which can degrade text readability. Must read from original video.
-    let videoOverlays = null;
-    try {
-      const overlayFrames = extractPriceCheckFrames(tempVideoPath);
-      if (overlayFrames.length > 0) {
-        videoOverlays = await readVideoOverlays(overlayFrames);
-        overlayFrames.forEach(fp => { try { unlinkSync(fp); } catch {} });
-        if (videoOverlays?.community) {
-          console.log(`[Post] Video overlay community: ${videoOverlays.community}`);
-        }
-      }
-    } catch (err) {
-      console.warn(`[Post] Overlay extraction failed (non-fatal): ${err.message}`);
     }
     // Pre-post quality check (after voiceover, before upload — may compress oversized files in-place)
     const videoToCheck = existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath;
@@ -884,6 +894,8 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         voiceover: hasVoiceover,
         voiceover_reason: voiceoverReason,
         voiceover_transcript: voiceoverTranscript,
+        captions_burned: captionsBurned,
+        captions_error: captionsError,
         freshness: freshnessResult.applied ? "re_encoded" : freshnessResult.reason,
         platforms: ["tiktok", "youtube", "satellite_ig"],
         mainIgDelivery: deliveryResult ? "delivered" : "delivery_failed_owner_must_post",

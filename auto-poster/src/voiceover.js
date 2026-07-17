@@ -192,7 +192,7 @@ function mergeAudioWithVideo(videoPath, audioPath) {
  * 5. Merge with video via ffmpeg (duck music to 12%)
  * Returns the path to the final video (original or merged).
  */
-export async function processVoiceover(videoPath, city, dryRun = false) {
+export async function processVoiceover(videoPath, city, dryRun = false, videoOverlays = null) {
   // Step 1: Detect speech using Whisper (with volume pre-filter)
   const detection = detectSpeech(videoPath);
 
@@ -237,7 +237,7 @@ export async function processVoiceover(videoPath, city, dryRun = false) {
 
   // Step 3: Get video duration and generate script
   const duration = getVideoDuration(videoPath);
-  const script = await generateVoiceoverScript(city, duration);
+  const script = await generateVoiceoverScript(city, duration, videoOverlays);
   console.log(`[Voiceover] Script: "${script.slice(0, 80)}..."`);
 
   // Step 4: Generate TTS

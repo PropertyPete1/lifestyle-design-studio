@@ -8,6 +8,11 @@
  * 4. Burn into video with ffmpeg (after audio merge)
  * 
  * Only applied when voiceover IS added. Videos with existing speech get NO captions.
+ *
+ * ENCODE SETTINGS (optimized for 2-vCPU GitHub Actions runner):
+ * - preset veryfast: ~4x faster than "fast" with minimal quality loss at CRF 23
+ * - CRF 23: visually transparent for social media (IG/TikTok re-encode anyway)
+ * - timeout 15 min: 4K re-encode on 2-vCPU needs 8-12 min typically
  */
 import { execSync } from "child_process";
 import { writeFileSync, existsSync, unlinkSync } from "fs";
@@ -15,6 +20,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 
 const VOICEOVER_DELAY_MS = 500; // Must match the adelay=500 in mergeAudioWithVideo
+const BURN_TIMEOUT_MS = 900_000; // 15 minutes — 4K re-encode on 2-vCPU runner
 
 /**
  * Get word-level timestamps by running Whisper on the TTS audio file.
@@ -195,7 +201,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 /**
  * Burn subtitles into video using ffmpeg.
  * This re-encodes the video (necessary for subtitle overlay).
- * 
+ *
+ * Uses -preset veryfast and -crf 23 for speed on 2-vCPU runners.
+ * Quality is visually transparent for social media (IG/TikTok re-encode anyway).
+ * Timeout: 15 minutes (4K re-encode on 2-vCPU needs 8-12 min typically).
+ *
  * @param {string} videoPath - Input video (already merged with voiceover audio)
  * @param {string} assPath - ASS subtitle file
  * @returns {string} Path to the output video with burned captions
@@ -203,28 +213,36 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 export function burnCaptions(videoPath, assPath) {
   const outputPath = join(tmpdir(), `captioned_${Date.now()}.mp4`);
 
-  // Use libx264 for compatibility, CRF 18 for near-lossless quality
-  // The ass filter handles all the styling from the ASS file
-  const cmd = `ffmpeg -y -i "${videoPath}" -vf "ass=${assPath}" -c:v libx264 -preset fast -crf 18 -c:a copy "${outputPath}" 2>&1`;
+  // -preset veryfast: ~4x faster than "fast" on 2-vCPU, minimal quality loss at CRF 23
+  // -crf 23: good quality for social media (platforms re-encode anyway)
+  // -c:a copy: pass audio through unchanged (already merged with ducked music + voiceover)
+  // -movflags +faststart: optimize for streaming playback
+  const cmd = `ffmpeg -y -i "${videoPath}" -vf "ass=${assPath}" -c:v libx264 -preset veryfast -crf 23 -c:a copy -movflags +faststart "${outputPath}" 2>&1`;
 
   try {
-    execSync(cmd, { encoding: "utf-8", timeout: 180000 });
+    execSync(cmd, { encoding: "utf-8", timeout: BURN_TIMEOUT_MS });
     console.log(`[Captions] Burned captions into video: ${outputPath}`);
     return outputPath;
   } catch (err) {
-    console.error(`[Captions] ffmpeg burn failed: ${err.message?.slice(0, 200)}`);
-    throw new Error("Caption burn failed");
+    const errMsg = err.message?.slice(0, 300) || "unknown error";
+    console.error(`[Captions] ffmpeg burn failed: ${errMsg}`);
+    throw new Error(`Caption burn failed: ${errMsg}`);
   }
 }
 
 /**
  * Full burned-captions pipeline.
  * Call AFTER voiceover merge but BEFORE upload.
- * 
+ *
+ * Returns an object with:
+ * - videoPath: path to final video (with or without captions)
+ * - captions_burned: true if captions were successfully burned
+ * - captions_error: error message string if burn failed, null otherwise
+ *
  * @param {string} mergedVideoPath - Video with voiceover already merged
  * @param {string} voiceoverAudioPath - The TTS audio file (for Whisper timing)
  * @param {string} script - The voiceover script text
- * @returns {string} Path to final video with burned captions (or original if failed)
+ * @returns {{ videoPath: string, captions_burned: boolean, captions_error: string|null }}
  */
 export async function processBurnedCaptions(mergedVideoPath, voiceoverAudioPath, script) {
   console.log("[Captions] Starting burned-captions pipeline...");
@@ -234,14 +252,14 @@ export async function processBurnedCaptions(mergedVideoPath, voiceoverAudioPath,
     const words = await getWordTimestampsFromElevenLabs(script, voiceoverAudioPath);
     if (!words || words.length === 0) {
       console.warn("[Captions] No word timestamps available — skipping captions");
-      return mergedVideoPath;
+      return { videoPath: mergedVideoPath, captions_burned: false, captions_error: "no_word_timestamps" };
     }
 
     // Step 2: Group into 2-4 word chunks
     const chunks = groupWordsIntoChunks(words, 4);
     if (chunks.length === 0) {
       console.warn("[Captions] No chunks generated — skipping captions");
-      return mergedVideoPath;
+      return { videoPath: mergedVideoPath, captions_burned: false, captions_error: "no_chunks_generated" };
     }
     console.log(`[Captions] ${chunks.length} caption chunks (${words.length} words)`);
 
@@ -259,15 +277,17 @@ export async function processBurnedCaptions(mergedVideoPath, voiceoverAudioPath,
     // Step 4: Generate ASS subtitle file
     const assPath = generateASSFile(chunks, width, height);
 
-    // Step 5: Burn into video
+    // Step 5: Burn into video (15-min timeout, veryfast preset)
     const captionedPath = burnCaptions(mergedVideoPath, assPath);
 
     // Cleanup ASS file
     try { unlinkSync(assPath); } catch {}
 
-    return captionedPath;
+    console.log("[Captions] ✓ Captions burned successfully");
+    return { videoPath: captionedPath, captions_burned: true, captions_error: null };
   } catch (err) {
-    console.error(`[Captions] Pipeline failed: ${err.message} — returning video without captions`);
-    return mergedVideoPath;
+    const errorMsg = err.message?.slice(0, 200) || "unknown";
+    console.error(`[Captions] Pipeline failed: ${errorMsg} — returning video without captions`);
+    return { videoPath: mergedVideoPath, captions_burned: false, captions_error: errorMsg };
   }
 }

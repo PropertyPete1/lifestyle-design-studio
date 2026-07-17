@@ -487,26 +487,80 @@ ${CAPTION_RULES}`;
  * Generate a voiceover script for a video.
  * Script should be shorter than video duration to ensure natural ending.
  */
-export async function generateVoiceoverScript(city, videoDurationSec = 30) {
+export async function generateVoiceoverScript(city, videoDurationSec = 30, videoOverlays = null) {
   const cityName = CITY_NAMES[city] || city;
   const targetWords = Math.floor(videoDurationSec * 2.2);
 
-  const prompt = `Write a short voiceover script for a real estate video tour of a brand new home in ${cityName}, Texas.
+  // Extract price and rate from overlay/KB for payment-tease script
+  let priceFromOverlay = null;
+  let rateFromOverlayOrKB = null;
+
+  if (videoOverlays?.price) {
+    priceFromOverlay = videoOverlays.price;
+    console.log(`[VoiceoverScript] Overlay price: ${priceFromOverlay}`);
+  }
+
+  // Check raw_text for rate mentions (e.g. "4.99%", "5.25% fixed")
+  if (videoOverlays?.raw_text) {
+    const rateMatch = videoOverlays.raw_text.match(/(\d+\.\d+)\s*%/i);
+    if (rateMatch) {
+      rateFromOverlayOrKB = rateMatch[1] + "%";
+      console.log(`[VoiceoverScript] Rate from overlay: ${rateFromOverlayOrKB}`);
+    }
+  }
+
+  // Try community KB for rate if not in overlay
+  if (!rateFromOverlayOrKB && videoOverlays?.community) {
+    const communityData = findCommunity(videoOverlays.community, cityName);
+    if (communityData?.incentives) {
+      const kbRateMatch = communityData.incentives.match(/(\d+\.\d+)%\s*(?:fixed)?\s*(?:rate)?/i);
+      if (kbRateMatch) {
+        rateFromOverlayOrKB = kbRateMatch[1] + "%";
+        console.log(`[VoiceoverScript] Rate from KB: ${rateFromOverlayOrKB}`);
+      }
+    }
+  }
+
+  // Build the payment-tease prompt
+  let priceInstruction;
+  let paymentAngleInstruction;
+  const ctaInstruction = `CTA (use these EXACT words): "Comment TOUR and I'll send you the exact payment breakdown"`;
+
+  if (priceFromOverlay) {
+    priceInstruction = `HOOK: Start with the real price from the video. Use this EXACT price (spelled out as words): "${priceFromOverlay}". Example opening: "Brand new construction in ${cityName} starting at [price spelled out]"`;
+    if (rateFromOverlayOrKB) {
+      paymentAngleInstruction = `PAYMENT ANGLE: Mention the rate "${rateFromOverlayOrKB}" (spelled out as words, e.g. "four point nine nine percent fixed rate") and tease the monthly payment WITHOUT stating a figure. Say something like: "with the [rate] fixed rate, the monthly payment on this is lower than most people guess"`;
+    } else {
+      paymentAngleInstruction = `PAYMENT ANGLE: Tease the monthly payment WITHOUT stating a figure. Say something like: "the monthly payment on this is lower than most people guess" or "you'd be surprised how affordable the monthly payment is"`;
+    }
+  } else {
+    // No price overlay — use curiosity fallback
+    priceInstruction = `HOOK: Start with a curiosity hook about the home in ${cityName}. Do NOT mention a specific price since none is visible. Example: "Wait until you see this brand new home in ${cityName}"`;
+    paymentAngleInstruction = `PAYMENT ANGLE: Use the curiosity fallback. Say something like: "the payment on this one surprises people" or "the monthly payment is lower than most people guess"`;
+  }
+
+  const prompt = `Write a short voiceover script for a real estate video in ${cityName}, Texas. This is a PAYMENT TEASE format. Follow this EXACT structure:
+
+1. ${priceInstruction}
+2. ONE FEATURE BEAT: Mention ONE visual feature only (the most striking thing visible in a new build tour, e.g. "look at this kitchen" or "these ceilings are massive"). Keep it to one sentence max.
+3. ${paymentAngleInstruction}
+4. ${ctaInstruction}
 
 RULES:
 - Maximum ${targetWords} words (MUST be shorter than ${videoDurationSec} seconds when spoken)
-- Sound like a friendly, excited real estate agent giving a tour
-- Mention the city name naturally
-- Highlight features: open floor plan, natural light, modern finishes, spacious bedrooms
-- End with a soft call to action like "comment below if you want to see more"
-- DO NOT mention specific prices, addresses, community names, or builder names
+- The script has FOUR parts only: hook, one feature, payment angle, CTA. Nothing else.
+- Sound confident and conversational, like you're showing a friend around
+- DO NOT mention community names, builder names, or addresses
 - DO NOT use hashtags or emojis
-- Keep it conversational and engaging
 - Do NOT use em-dashes or en-dashes. Use periods, commas, or line breaks instead.
-- Spell out ALL numbers as words. Never use digits. "three bedrooms" not "3 bedrooms", "two and a half baths" not "2.5 baths". Also spell out abbreviations that TTS mangles: "square feet" not "sqft", "street" not "st".
+- Do NOT invent or compute any payment figures. NEVER state a monthly payment number.
+- Spell out ALL numbers as words. Never use digits. "four hundred forty thousand dollars" not "$440,000". "four point nine nine percent" not "4.99%".
+- Also spell out abbreviations: "square feet" not "sqft", "street" not "st".
 - Return ONLY the script text, nothing else
 
-Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natural light coming through these windows is incredible. You've got this gorgeous open concept layout..."`;
+Example (with price and rate): "Brand new construction in San Antonio starting at three hundred eighty nine thousand dollars. Look at this open concept kitchen with the quartz countertops. With the four point nine nine percent fixed rate, the monthly payment on this is lower than most people guess. Comment TOUR and I'll send you the exact payment breakdown."
+
+Example (no price): "Wait until you see this brand new home in Austin. These ceilings are absolutely massive. The payment on this one surprises people. Comment TOUR and I'll send you the exact payment breakdown."`;
 
   try {
     const response = await getClient().messages.create({
@@ -516,13 +570,13 @@ Example tone: "Oh my gosh, look at this brand new home in San Antonio. The natur
     });
     const content = response.content[0]?.text;
     if (content && content.length > 30) {
-      console.log(`[VoiceoverScript] Generated (${content.length} chars, ~${content.split(/\s+/).length} words)`);
+      console.log(`[VoiceoverScript] Generated payment-tease (${content.length} chars, ~${content.split(/\s+/).length} words)`);
       return sanitizeForTTS(sanitizeCaption(content));
     }
   } catch (err) {
     console.error("[VoiceoverScript] Anthropic API failed:", err.message);
   }
-  return getFallbackScript(city);
+  return getPaymentTeaseFallbackScript(city, priceFromOverlay, rateFromOverlayOrKB);
 }
 
 /**
@@ -700,4 +754,20 @@ ${hashtags}`;
 function getFallbackScript(city) {
   const cityName = CITY_NAMES[city] || city;
   return `Look at this brand new home in ${cityName}. The natural light coming through these windows is incredible. You have this gorgeous open concept layout with modern finishes throughout. The kitchen flows right into the living space, perfect for entertaining. And these bedrooms are so spacious. If you want to see more homes like this, comment below and I will send you everything available.`;
+}
+
+/**
+ * Payment-tease fallback script when Claude API fails.
+ * Uses real price/rate from overlay if available.
+ */
+function getPaymentTeaseFallbackScript(city, priceFromOverlay, rateFromOverlayOrKB) {
+  const cityName = CITY_NAMES[city] || city;
+  if (priceFromOverlay && rateFromOverlayOrKB) {
+    // sanitizeForTTS will convert the dollar amount and rate to words
+    return `Brand new construction in ${cityName} starting at ${priceFromOverlay}. Look at this open concept layout. With the ${rateFromOverlayOrKB} fixed rate, the monthly payment on this is lower than most people guess. Comment TOUR and I will send you the exact payment breakdown.`;
+  } else if (priceFromOverlay) {
+    return `Brand new construction in ${cityName} starting at ${priceFromOverlay}. Look at these finishes. The monthly payment on this is lower than most people guess. Comment TOUR and I will send you the exact payment breakdown.`;
+  } else {
+    return `Wait until you see this brand new home in ${cityName}. These finishes are incredible. The payment on this one surprises people. Comment TOUR and I will send you the exact payment breakdown.`;
+  }
 }
