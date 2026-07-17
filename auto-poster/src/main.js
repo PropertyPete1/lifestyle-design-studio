@@ -54,6 +54,7 @@ const DRY_RUN = process.env.DRY_RUN === "true";
 const CITY = process.env.CITY || "san_antonio";
 const FORCE = process.env.FORCE === "true"; // Manual override to bypass every-other-day check
 const TEST_DELIVERY_ONLY = process.env.TEST_DELIVERY_ONLY === "true"; // Test delivery pipeline only — no social posts, no log entry
+const FORCE_VIDEO_ID = process.env.FORCE_VIDEO_ID || ""; // Pin a specific Drive file ID for testing
 
 // Match thresholds (asymmetric):
 // BLOCKING: distance < 10 = definite same video, block immediately
@@ -355,11 +356,32 @@ async function main() {
     console.log(`  [Note: ${unmatchable.length} unmatchable IG posts exist — preferring confirmed-old candidates]`);
   }
 
-  // Step 5: Try each candidate
+    // Step 5: Try each candidate
+  // FORCE_VIDEO_ID override: skip rotation and use a specific Drive file
+  if (FORCE_VIDEO_ID) {
+    const forced = allVideos.find(v => v.id === FORCE_VIDEO_ID);
+    if (!forced) {
+      console.error(`[FORCE_VIDEO_ID] File ${FORCE_VIDEO_ID} not found in Drive folder for ${CITY}. Trying direct metadata...`);
+      // Try to get file metadata directly from Drive
+      const { getFileMetadata } = await import("./drive.js");
+      const meta = await getFileMetadata(FORCE_VIDEO_ID);
+      if (meta) {
+        candidates.length = 0;
+        candidates.push({ id: FORCE_VIDEO_ID, name: meta.name, mimeType: meta.mimeType });
+        console.log(`[FORCE_VIDEO_ID] Resolved: ${meta.name}`);
+      } else {
+        console.error(`[FORCE_VIDEO_ID] Could not resolve file. Aborting.`);
+        process.exit(1);
+      }
+    } else {
+      candidates.length = 0;
+      candidates.push(forced);
+      console.log(`[FORCE_VIDEO_ID] Pinned: ${forced.name} (${forced.id})`);
+    }
+  }
   let posted = false;
   let lastError = null;
   let postedBrands = [];
-
   for (const candidate of candidates) {
     try {
       console.log(`\n${"─".repeat(50)}`);

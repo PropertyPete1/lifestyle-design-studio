@@ -123,4 +123,17 @@ export function getDriveDownloadUrl(fileId) {
   return `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
 }
 
+/**
+ * Get file metadata by ID (for FORCE_VIDEO_ID when file isn't in the city folder).
+ */
+export async function getFileMetadata(fileId) {
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,name,mimeType`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export { CITY_FOLDER_IDS, getAccessToken };
