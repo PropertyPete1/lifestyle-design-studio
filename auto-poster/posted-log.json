@@ -447,6 +447,17 @@
       ],
       "timestamp": "2026-07-17T19:26:35.907Z",
       "success": true
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-07-17T19:30:13.288Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1uFCmbyQsYDdaQCOC7gyYZe1EnqbdoAs5",
+      "captionSnippet": "this is what new construction feels like when everything is done right\n\nbrand new construction in San Antonio with that ",
+      "mainIgPostedAt": "2026-07-17T19:30:13.288Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
