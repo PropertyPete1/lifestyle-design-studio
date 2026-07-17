@@ -478,6 +478,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/14R2ab2RMwXWmbjx1g63jt6ptGVS7yziO/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-17T20:32:06.686Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "14R2ab2RMwXWmbjx1g63jt6ptGVS7yziO",
+      "captionSnippet": "this is what new construction in Austin is supposed to feel like\n\nnew construction like this doesn't sit long in this ma",
+      "mainIgPostedAt": "2026-07-17T20:32:06.686Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
