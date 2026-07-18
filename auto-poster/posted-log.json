@@ -603,6 +603,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1OT1AmbMsvEe09vpbLvNJTNlSEvOhLpAA/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-18T20:21:32.333Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1OT1AmbMsvEe09vpbLvNJTNlSEvOhLpAA",
+      "captionSnippet": "the floor plan in this one made me stop mid-tour\n\nnew construction like this in Austin moves fast. builder incentives ar",
+      "mainIgPostedAt": "2026-07-18T20:21:32.333Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
