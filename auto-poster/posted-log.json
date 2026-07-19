@@ -675,6 +675,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/14pCGlUwgWISYTkkemNwzbAeUIVZ2pdVK/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-07-19T20:14:07.168Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1OW8Zh7v_UsvH-RqBslZpS1vUqX8WkNn2",
+      "captionSnippet": "This might be the best value I've toured in San Antonio this month.\n\nNew construction like this doesn't sit long, especi",
+      "mainIgPostedAt": "2026-07-19T20:14:07.168Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
