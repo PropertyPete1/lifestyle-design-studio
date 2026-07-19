@@ -1,76 +1,76 @@
 {
   "weights": {
-    "question": 1,
-    "bold_claim": 1,
-    "wait_tease": 0.57,
-    "reaction": 1,
-    "vibe": 1.23
+    "question": 0.94,
+    "bold_claim": 1.22,
+    "wait_tease": 0.87,
+    "reaction": 0.72,
+    "vibe": 1.49
   },
-  "lastUpdated": "2026-07-11T22:49:28.789Z",
-  "reelsAnalyzed": 22,
-  "classifiedCount": 17,
+  "lastUpdated": "2026-07-19T19:06:33.783Z",
+  "reelsAnalyzed": 17,
+  "classifiedCount": 15,
   "styleBreakdown": {
     "question": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 1
+      "count": 5,
+      "avgScore": 1039,
+      "weight": 0.94
     },
     "bold_claim": {
-      "count": 3,
-      "avgScore": 1871,
-      "weight": 1
+      "count": 2,
+      "avgScore": 1509,
+      "weight": 1.22
     },
     "wait_tease": {
       "count": 2,
-      "avgScore": 713,
-      "weight": 0.57
+      "avgScore": 1143,
+      "weight": 0.87
     },
     "reaction": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 1
+      "count": 2,
+      "avgScore": 691,
+      "weight": 0.72
     },
     "vibe": {
-      "count": 12,
-      "avgScore": 2487,
-      "weight": 1.23
+      "count": 4,
+      "avgScore": 1825,
+      "weight": 1.49
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/DaJTzArMjlk/",
+      "url": "https://www.instagram.com/reel/Da6FEaUM8MW/",
       "hookStyle": "vibe",
-      "score": 8357,
-      "views": 5620,
-      "firstLine": "🪟 bright light clean finishes and a layout that actually lives 😮‍💨🏡"
+      "score": 2970,
+      "views": 1930,
+      "firstLine": "this is what new construction in Austin is supposed to feel like"
     },
     {
-      "url": "https://www.instagram.com/reel/DabM7ppGsKe/",
+      "url": "https://www.instagram.com/reel/Dav2ap7kogW/",
       "hookStyle": "vibe",
-      "score": 6019,
-      "views": 4604,
-      "firstLine": "🪟 soaring ceilings walls of glass and a brand new build in Hill Country for $52"
+      "score": 2186,
+      "views": 1748,
+      "firstLine": "This is what new construction is supposed to feel like."
     },
     {
-      "url": "https://www.instagram.com/reel/DagZvD6jICK/",
-      "hookStyle": "vibe",
-      "score": 4305,
-      "views": 2985,
-      "firstLine": "🪟 mature trees move in ready homes and pricing from the mid three forties to th"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DajGMbFCLNz/",
+      "url": "https://www.instagram.com/reel/Da0yBQ-sRWZ/",
       "hookStyle": "bold_claim",
-      "score": 4216,
-      "views": 2762,
-      "firstLine": "🪟 THIS SAN ANTONIO BEAUTY JUST HIT THE MARKET AND WON'T LAST LONG!"
+      "score": 2138,
+      "views": 1607,
+      "firstLine": "This might be the best new build value I’ve toured in San Antonio this month."
     },
     {
-      "url": "https://www.instagram.com/reel/DaTT14uk4dM/",
-      "hookStyle": "vibe",
-      "score": 2747,
-      "views": 2200,
-      "firstLine": "🏡 new construction starting in the $470s — 2,100 to 3,600 sq ft and room to act"
+      "url": "https://www.instagram.com/reel/Da3XXoXsCHZ/",
+      "hookStyle": "question",
+      "score": 2079,
+      "views": 1738,
+      "firstLine": "Would you believe brand new construction in San Antonio starts at $469,990?"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DatLhIJG9NC/",
+      "hookStyle": "wait_tease",
+      "score": 1678,
+      "views": 1343,
+      "firstLine": "wait until you see what $440k gets you in Hill Country San Antonio right now"
     }
   ],
   "history": [
@@ -84,6 +84,17 @@
         "vibe": 1.23
       },
       "reelsAnalyzed": 22
+    },
+    {
+      "date": "2026-07-19",
+      "weights": {
+        "question": 0.94,
+        "bold_claim": 1.22,
+        "wait_tease": 0.87,
+        "reaction": 0.72,
+        "vibe": 1.49
+      },
+      "reelsAnalyzed": 17
     }
   ]
 }
