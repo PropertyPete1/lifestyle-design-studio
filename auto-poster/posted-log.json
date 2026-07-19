@@ -729,6 +729,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1XZjXcsKOplOtJzigU3okpBV256qkOrJe/view"
+    },
+    {
+      "city": "dallas",
+      "timestamp": "2026-07-19T21:33:44.161Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1XZjXcsKOplOtJzigU3okpBV256qkOrJe",
+      "captionSnippet": "Would you believe you can get brand new construction in Fort Worth for under $500k?\n\nNew homes like this don't sit aroun",
+      "mainIgPostedAt": "2026-07-19T21:33:44.161Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
