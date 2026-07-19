@@ -704,6 +704,16 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         if (videoOverlays?.price) {
           console.log(`[Post] Video overlay price: ${videoOverlays.price}`);
         }
+        if (videoOverlays?.city) {
+          console.log(`[Post] Video overlay city: ${videoOverlays.city}`);
+          // Log mismatch between overlay city and run city
+          const { cleanOverlayCity } = await import("./caption.js");
+          const overlayClean = cleanOverlayCity(videoOverlays.city);
+          const runCityName = { san_antonio: "San Antonio", austin: "Austin", dallas: "Dallas / DFW" }[CITY] || CITY;
+          if (overlayClean && overlayClean.toLowerCase() !== runCityName.toLowerCase()) {
+            console.log(`[Post] ⚠️ City mismatch: overlay="${overlayClean}" vs run_city="${runCityName}" — using overlay as ground truth`);
+          }
+        }
       }
     } catch (err) {
       console.warn(`[Post] Overlay extraction failed (non-fatal): ${err.message}`);
@@ -908,10 +918,14 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       const brandSummary = result.brands
         ? result.brands.filter(b => b.ok).map(b => b.label).join(", ")
         : "unknown";
+      // Compute spoken_city for audit trail
+      const { cleanOverlayCity: _cleanCity } = await import("./caption.js");
+      const _spokenCity = _cleanCity(videoOverlays?.city) || ({ san_antonio: "San Antonio", austin: "Austin", dallas: "Dallas / DFW" }[CITY] || CITY);
       recordPost(log, {
         driveFileId: video.id,
         fileName: video.name,
         city: CITY,
+        spoken_city: _spokenCity,
         caption,
         voiceover: hasVoiceover,
         voiceover_reason: voiceoverReason,

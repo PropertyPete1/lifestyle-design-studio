@@ -39,6 +39,24 @@ const LOCKED_HASHTAGS = {
 };
 
 /**
+ * Sanitize the city extracted by vision from video overlays.
+ * Strip state suffixes, trim whitespace, reject noise (>3 words, digits, symbols).
+ * Returns cleaned city string or null (caller falls back to run city).
+ */
+export function cleanOverlayCity(rawCity) {
+  if (!rawCity || typeof rawCity !== "string") return null;
+  let cleaned = rawCity
+    .replace(/,?\s*(TX|Texas)$/i, "") // strip ", TX" or ", Texas"
+    .replace(/,?\s*$/, "")             // trailing comma/space
+    .trim();
+  if (!cleaned) return null;
+  // Reject noise: more than 3 words, or contains digits/symbols (vision garbage)
+  if (cleaned.split(/\s+/).length > 3) return null;
+  if (/[\d@#$%^&*(){}\[\]|\\<>]/.test(cleaned)) return null;
+  return cleaned;
+}
+
+/**
  * Load community knowledge base.
  */
 let communitiesCache = null;
@@ -358,11 +376,14 @@ function lockHashtags(caption, city) {
  * Does NOT invent amenities, HOA, school districts, or any other claims.
  */
 export async function generateCaption(city, videoOverlays = null) {
-  const cityName = CITY_NAMES[city] || city;
+  const runCityName = CITY_NAMES[city] || city;
+  // Overlay city is ground truth for location references in the caption
+  const overlayCity = cleanOverlayCity(videoOverlays?.city);
+  const captionCity = overlayCity || runCityName;
 
   let community = null;
   if (videoOverlays?.community) {
-    community = findCommunity(videoOverlays.community, cityName);
+    community = findCommunity(videoOverlays.community, runCityName);
   }
 
   const communityBlock = buildCommunityFactsBlock(community);
@@ -392,7 +413,7 @@ You MAY state:
 - Financing options (VA/FHA/USDA) since these are universally available for new construction
 `;
 
-  const prompt = `Write an Instagram Reel caption for a real estate video showcasing a brand new construction home in ${cityName}, Texas.
+  const prompt = `Write an Instagram Reel caption for a real estate video showcasing a brand new construction home in ${captionCity}, Texas.
 ${communityBlock}
 ${videoOverlays?.price ? `VIDEO SHOWS PRICE: ${videoOverlays.price}` : ""}
 ${videoOverlays?.beds_baths ? `VIDEO SHOWS: ${videoOverlays.beds_baths}` : ""}
@@ -402,7 +423,7 @@ ${LEAD_GATING_RULES}
 STRUCTURE (follow this EXACT order):
 
 1. HOOK (first line, under 100 chars): A curiosity line that makes people stop scrolling.
-   ${getHookInstruction(cityName)}
+   ${getHookInstruction(captionCity)}
    ${hasRealFacts ? `USE a real detail from the community KB in the hook (price, standout amenity description, etc.) but NEVER the community name.` : ""}
    NEVER start with a CTA. The hook must create curiosity.
 
@@ -470,7 +491,7 @@ ${CAPTION_RULES}`;
           }
           // Second attempt also failed — fall through to fallback
           console.error(`[Caption] ❌ BOTH attempts failed validation. Using hardcoded fallback.`);
-          return getFallbackCaption(city);
+          return getFallbackCaption(city, captionCity);
         }
         console.log(`[Caption] Generated fresh caption (${final.length} chars, community=${community?.name || "none"}, leaks_stripped=${leaksFound})`);
         return sanitizeCaption(final);
@@ -480,7 +501,7 @@ ${CAPTION_RULES}`;
     }
   }
   console.error(`[Caption] All generation attempts exhausted. Using hardcoded fallback.`);
-  return getFallbackCaption(city);
+  return getFallbackCaption(city, captionCity);
 }
 
 /**
@@ -488,7 +509,12 @@ ${CAPTION_RULES}`;
  * Script should be shorter than video duration to ensure natural ending.
  */
 export async function generateVoiceoverScript(city, videoDurationSec = 30, videoOverlays = null) {
-  const cityName = CITY_NAMES[city] || city;
+  const runCityName = CITY_NAMES[city] || city;
+  // Overlay city is ground truth for location (San Marcos, Kyle, Buda, Leander, etc.)
+  const overlayCity = cleanOverlayCity(videoOverlays?.city);
+  const spokenCity = overlayCity || runCityName;
+  const citySource = overlayCity ? "overlay" : "run_city";
+  console.log(`[VoiceoverScript] Spoken city: ${spokenCity} (source: ${citySource})`);
   const targetWords = Math.floor(videoDurationSec * 2.2);
 
   // Extract price and rate from overlay/KB for payment-tease script
@@ -511,7 +537,7 @@ export async function generateVoiceoverScript(city, videoDurationSec = 30, video
 
   // Try community KB for rate if not in overlay
   if (!rateFromOverlayOrKB && videoOverlays?.community) {
-    const communityData = findCommunity(videoOverlays.community, cityName);
+    const communityData = findCommunity(videoOverlays.community, runCityName);
     if (communityData?.incentives) {
       const kbRateMatch = communityData.incentives.match(/(\d+\.\d+)%\s*(?:fixed)?\s*(?:rate)?/i);
       if (kbRateMatch) {
@@ -527,7 +553,7 @@ export async function generateVoiceoverScript(city, videoDurationSec = 30, video
   const ctaInstruction = `CTA (use these EXACT words): "Comment TOUR and I'll send you the exact payment breakdown"`;
 
   if (priceFromOverlay) {
-    priceInstruction = `HOOK: Start with the real price from the video. Use this EXACT price (spelled out as words): "${priceFromOverlay}". Example opening: "Brand new construction in ${cityName} starting at [price spelled out]"`;
+    priceInstruction = `HOOK: Start with the real price from the video. Use this EXACT price (spelled out as words): "${priceFromOverlay}". Example opening: "Brand new construction in ${spokenCity} starting at [price spelled out]"`;
     if (rateFromOverlayOrKB) {
       paymentAngleInstruction = `PAYMENT ANGLE: Mention the rate "${rateFromOverlayOrKB}" (spelled out as words, e.g. "four point nine nine percent fixed rate") and tease the monthly payment WITHOUT stating a figure. Say something like: "with the [rate] fixed rate, the monthly payment on this is lower than most people guess"`;
     } else {
@@ -535,11 +561,11 @@ export async function generateVoiceoverScript(city, videoDurationSec = 30, video
     }
   } else {
     // No price overlay — use curiosity fallback
-    priceInstruction = `HOOK: Start with a curiosity hook about the home in ${cityName}. Do NOT mention a specific price since none is visible. Example: "Wait until you see this brand new home in ${cityName}"`;
+    priceInstruction = `HOOK: Start with a curiosity hook about the home in ${spokenCity}. Do NOT mention a specific price since none is visible. Example: "Wait until you see this brand new home in ${spokenCity}"`;
     paymentAngleInstruction = `PAYMENT ANGLE: Use the curiosity fallback. Say something like: "the payment on this one surprises people" or "the monthly payment is lower than most people guess"`;
   }
 
-  const prompt = `Write a short voiceover script for a real estate video in ${cityName}, Texas. This is a PAYMENT TEASE format. Follow this EXACT structure:
+  const prompt = `Write a short voiceover script for a real estate video in ${spokenCity}, Texas. This is a PAYMENT TEASE format. Follow this EXACT structure:
 
 1. ${priceInstruction}
 2. ONE FEATURE BEAT: Mention ONE visual feature only (the most striking thing visible in a new build tour, e.g. "look at this kitchen" or "these ceilings are massive"). Keep it to one sentence max.
@@ -576,7 +602,7 @@ Example (no price): "Wait until you see this brand new home in Austin. These cei
   } catch (err) {
     console.error("[VoiceoverScript] Anthropic API failed:", err.message);
   }
-  return getPaymentTeaseFallbackScript(city, priceFromOverlay, rateFromOverlayOrKB);
+  return getPaymentTeaseFallbackScript(spokenCity, priceFromOverlay, rateFromOverlayOrKB);
 }
 
 /**
@@ -720,8 +746,8 @@ ${CAPTION_RULES}`;
   return sanitizeCaption(final);
 }
 
-function getFallbackCaption(city) {
-  const cityName = CITY_NAMES[city] || city;
+function getFallbackCaption(city, overrideCityName = null) {
+  const cityName = overrideCityName || CITY_NAMES[city] || city;
   const hashtags = LOCKED_HASHTAGS[city] || LOCKED_HASHTAGS.austin;
   return `the kitchen in this one made me stop mid-tour 😮‍💨
 
@@ -760,14 +786,13 @@ function getFallbackScript(city) {
  * Payment-tease fallback script when Claude API fails.
  * Uses real price/rate from overlay if available.
  */
-function getPaymentTeaseFallbackScript(city, priceFromOverlay, rateFromOverlayOrKB) {
-  const cityName = CITY_NAMES[city] || city;
+function getPaymentTeaseFallbackScript(spokenCity, priceFromOverlay, rateFromOverlayOrKB) {
   if (priceFromOverlay && rateFromOverlayOrKB) {
     // sanitizeForTTS will convert the dollar amount and rate to words
-    return `Brand new construction in ${cityName} starting at ${priceFromOverlay}. Look at this open concept layout. With the ${rateFromOverlayOrKB} fixed rate, the monthly payment on this is lower than most people guess. Comment TOUR and I will send you the exact payment breakdown.`;
+    return `Brand new construction in ${spokenCity} starting at ${priceFromOverlay}. Look at this open concept layout. With the ${rateFromOverlayOrKB} fixed rate, the monthly payment on this is lower than most people guess. Comment TOUR and I will send you the exact payment breakdown.`;
   } else if (priceFromOverlay) {
-    return `Brand new construction in ${cityName} starting at ${priceFromOverlay}. Look at these finishes. The monthly payment on this is lower than most people guess. Comment TOUR and I will send you the exact payment breakdown.`;
+    return `Brand new construction in ${spokenCity} starting at ${priceFromOverlay}. Look at these finishes. The monthly payment on this is lower than most people guess. Comment TOUR and I will send you the exact payment breakdown.`;
   } else {
-    return `Wait until you see this brand new home in ${cityName}. These finishes are incredible. The payment on this one surprises people. Comment TOUR and I will send you the exact payment breakdown.`;
+    return `Wait until you see this brand new home in ${spokenCity}. These finishes are incredible. The payment on this one surprises people. Comment TOUR and I will send you the exact payment breakdown.`;
   }
 }
