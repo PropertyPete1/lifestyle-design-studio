@@ -814,6 +814,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1dcinnw5jXWrmO0r_xLey4ivM07qEdcRL/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-20T20:16:22.953Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1dcinnw5jXWrmO0r_xLey4ivM07qEdcRL",
+      "captionSnippet": "Wait until you see the kitchen in this one 😮‍💨\n\nNew construction like this doesn't sit long in Austin. Starting at $36",
+      "mainIgPostedAt": "2026-07-20T20:16:22.953Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
