@@ -931,6 +931,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1aOdo4SmHiHrQVrGvJJvSFiU-E6tc3svH/view"
+    },
+    {
+      "city": "dallas",
+      "timestamp": "2026-07-21T21:08:15.262Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1aOdo4SmHiHrQVrGvJJvSFiU-E6tc3svH",
+      "captionSnippet": "This might be the best new build value I've toured in Fort Worth this month.\n\nNew construction like this doesn't sit lon",
+      "mainIgPostedAt": "2026-07-21T21:08:15.262Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
