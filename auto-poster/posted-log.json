@@ -899,6 +899,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/10faHBd0p49Bgw4f1OK2NuVIL1264ns-q/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-21T20:14:47.429Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "10faHBd0p49Bgw4f1OK2NuVIL1264ns-q",
+      "captionSnippet": "This might be the best value I've seen at this price point in North Austin right now.\n\nNew construction like this moves ",
+      "mainIgPostedAt": "2026-07-21T20:14:47.429Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
