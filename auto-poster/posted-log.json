@@ -1062,6 +1062,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1O2b-UyGmR8T--XXaG3GTiM9NyzJ5WbO2/view"
+    },
+    {
+      "city": "dallas",
+      "timestamp": "2026-07-22T21:14:30.562Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1O2b-UyGmR8T--XXaG3GTiM9NyzJ5WbO2",
+      "captionSnippet": "This might be the best new build finishes I've toured in Fort Worth this month.\n\nNew construction at this quality doesn'",
+      "mainIgPostedAt": "2026-07-22T21:14:30.562Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
