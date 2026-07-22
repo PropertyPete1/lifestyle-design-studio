@@ -9,18 +9,20 @@
  * 
  * Only applied when voiceover IS added. Videos with existing speech get NO captions.
  *
- * ENCODE SETTINGS (optimized for 2-vCPU GitHub Actions runner):
- * - preset veryfast: ~4x faster than "fast" with minimal quality loss at CRF 23
- * - CRF 23: visually transparent for social media (IG/TikTok re-encode anyway)
- * - timeout 15 min: 4K re-encode on 2-vCPU needs 8-12 min typically
+ * ENCODE SETTINGS (optimized for quality — this is the ONLY video re-encode):
+ * - CRF 18: high quality (the one encode must be good since voiceover merge is -c:v copy)
+ * - preset veryfast: keeps burn time under 15 min on 2-vCPU
+ * - If output > 95MB: re-burn with two-pass targeting 90MB (still only 1 generation loss)
+ * - timeout 15 min per encode pass
  */
 import { execSync } from "child_process";
-import { writeFileSync, existsSync, unlinkSync } from "fs";
+import { writeFileSync, existsSync, unlinkSync, readFileSync, statSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
 const VOICEOVER_DELAY_MS = 500; // Must match the adelay=500 in mergeAudioWithVideo
 const BURN_TIMEOUT_MS = 900_000; // 15 minutes — 4K re-encode on 2-vCPU runner
+const MAX_OUTPUT_BYTES = 95 * 1024 * 1024; // 95MB — Metricool upload limit
 
 /**
  * Get word-level timestamps by running Whisper on the TTS audio file.
@@ -202,9 +204,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
  * Burn subtitles into video using ffmpeg.
  * This re-encodes the video (necessary for subtitle overlay).
  *
- * Uses -preset veryfast and -crf 23 for speed on 2-vCPU runners.
- * Quality is visually transparent for social media (IG/TikTok re-encode anyway).
- * Timeout: 15 minutes (4K re-encode on 2-vCPU needs 8-12 min typically).
+ * Strategy: CRF 18 first (high quality, single encode). If output > 95MB,
+ * re-burn with two-pass bitrate targeting 90MB so there's still only ONE
+ * generation of encode loss (the two-pass replaces the CRF output, not stacks on it).
  *
  * @param {string} videoPath - Input video (already merged with voiceover audio)
  * @param {string} assPath - ASS subtitle file
@@ -213,20 +215,77 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 export function burnCaptions(videoPath, assPath) {
   const outputPath = join(tmpdir(), `captioned_${Date.now()}.mp4`);
 
-  // -preset veryfast: ~4x faster than "fast" on 2-vCPU, minimal quality loss at CRF 23
-  // -crf 23: good quality for social media (platforms re-encode anyway)
-  // -c:a copy: pass audio through unchanged (already merged with ducked music + voiceover)
-  // -movflags +faststart: optimize for streaming playback
-  const cmd = `ffmpeg -y -i "${videoPath}" -vf "ass=${assPath}" -c:v libx264 -preset veryfast -crf 23 -c:a copy -movflags +faststart "${outputPath}" 2>&1`;
+  // First attempt: CRF 18 (high quality, the one encode must be good)
+  const crfCmd = `ffmpeg -y -i "${videoPath}" -vf "ass=${assPath}" -c:v libx264 -preset veryfast -crf 18 -c:a copy -movflags +faststart "${outputPath}" 2>&1`;
 
   try {
-    execSync(cmd, { encoding: "utf-8", timeout: BURN_TIMEOUT_MS });
-    console.log(`[Captions] Burned captions into video: ${outputPath}`);
-    return outputPath;
+    execSync(crfCmd, { encoding: "utf-8", timeout: BURN_TIMEOUT_MS });
   } catch (err) {
     const errMsg = err.message?.slice(0, 300) || "unknown error";
     console.error(`[Captions] ffmpeg burn failed: ${errMsg}`);
     throw new Error(`Caption burn failed: ${errMsg}`);
+  }
+
+  // Check output size
+  const outputSize = statSync(outputPath).size;
+  const outputMB = (outputSize / 1024 / 1024).toFixed(1);
+  console.log(`[Captions] CRF 18 burn complete: ${outputMB} MB`);
+
+  if (outputSize <= MAX_OUTPUT_BYTES) {
+    console.log(`[Captions] Burned captions into video: ${outputPath}`);
+    return outputPath;
+  }
+
+  // CRF 18 exceeded 95MB — re-burn with two-pass targeting 90MB
+  console.log(`[Captions] Output ${outputMB} MB exceeds 95MB limit — re-burning with two-pass targeting 90MB...`);
+  const twoPassOutput = join(tmpdir(), `captioned_2pass_${Date.now()}.mp4`);
+  const passLogFile = join(tmpdir(), `passlog_${Date.now()}`);
+
+  try {
+    // Get duration for bitrate calculation
+    const durationStr = execSync(
+      `ffprobe -v error -show_entries format=duration -of csv=p=0 "${videoPath}"`,
+      { encoding: "utf-8", timeout: 30_000 }
+    ).trim();
+    const durationSec = parseFloat(durationStr);
+    if (!durationSec || durationSec <= 0) throw new Error("Could not determine duration");
+
+    // Target 90MB, subtract audio (192kbps)
+    const targetBytes = 90 * 1024 * 1024;
+    const audioBits = 192_000 * durationSec;
+    const videoBitrate = Math.floor(((targetBytes * 8) - audioBits) / durationSec);
+    const videoBitrateK = `${Math.floor(videoBitrate / 1000)}k`;
+    console.log(`[Captions] Two-pass: target 90MB, video bitrate ${videoBitrateK}, duration ${durationSec.toFixed(1)}s`);
+
+    // Pass 1
+    execSync(
+      `ffmpeg -y -i "${videoPath}" -vf "ass=${assPath}" -c:v libx264 -preset veryfast -b:v ${videoBitrateK} -pass 1 -passlogfile "${passLogFile}" -an -f null /dev/null 2>&1`,
+      { encoding: "utf-8", timeout: BURN_TIMEOUT_MS }
+    );
+    // Pass 2
+    execSync(
+      `ffmpeg -y -i "${videoPath}" -vf "ass=${assPath}" -c:v libx264 -preset veryfast -b:v ${videoBitrateK} -pass 2 -passlogfile "${passLogFile}" -c:a copy -movflags +faststart "${twoPassOutput}" 2>&1`,
+      { encoding: "utf-8", timeout: BURN_TIMEOUT_MS }
+    );
+
+    // Cleanup pass log files
+    try { unlinkSync(`${passLogFile}-0.log`); } catch {}
+    try { unlinkSync(`${passLogFile}-0.log.mbtree`); } catch {}
+    // Remove the oversized CRF output
+    try { unlinkSync(outputPath); } catch {}
+
+    const finalSize = (statSync(twoPassOutput).size / 1024 / 1024).toFixed(1);
+    console.log(`[Captions] Two-pass burn complete: ${finalSize} MB`);
+    console.log(`[Captions] Burned captions into video: ${twoPassOutput}`);
+    return twoPassOutput;
+  } catch (err) {
+    // Two-pass failed — fall back to the CRF 18 output (oversized but still usable,
+    // the Metricool compressor will handle it downstream)
+    console.warn(`[Captions] Two-pass failed (${err.message?.slice(0, 100)}), using CRF 18 output (${outputMB} MB) — Metricool compressor will handle size`);
+    try { unlinkSync(twoPassOutput); } catch {}
+    try { unlinkSync(`${passLogFile}-0.log`); } catch {}
+    try { unlinkSync(`${passLogFile}-0.log.mbtree`); } catch {}
+    return outputPath;
   }
 }
 

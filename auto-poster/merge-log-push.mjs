@@ -27,7 +27,7 @@ const POST_SUCCESS = process.argv[3] === "true";
 const REPO_DIR = process.cwd(); // Should be auto-poster/
 
 // Files to merge
-const FILES = ["posted-log.json", "video-matches.json", "performance-weights.json", "qc-blocklist.json"];
+const FILES = ["posted-log.json", "video-matches.json", "performance-weights.json", "qc-blocklist.json", "linkedin-history.json"];
 const TMP_DIR = "/tmp/merge-push-local";
 
 function run(cmd, opts = {}) {
@@ -115,6 +115,19 @@ function mergeBlocklist(local, remote) {
   return merged;
 }
 
+function mergeLinkedinHistory(local, remote) {
+  // Union of posts by date, keep last 7
+  const allPosts = [...(remote?.posts || []), ...(local?.posts || [])];
+  // Dedupe by date (keep latest entry per date)
+  const byDate = new Map();
+  for (const p of allPosts) {
+    byDate.set(p.date || p.body?.slice(0, 30), p);
+  }
+  const merged = { posts: [...byDate.values()].slice(-7) };
+  console.log(`[Merge] linkedin-history: ${merged.posts.length} entries`);
+  return merged;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -168,6 +181,8 @@ async function main() {
           merged = mergePerformanceWeights(localData, remoteData);
         } else if (file === "qc-blocklist.json") {
           merged = mergeBlocklist(localData, remoteData);
+        } else if (file === "linkedin-history.json") {
+          merged = mergeLinkedinHistory(localData, remoteData || { posts: [] });
         } else {
           merged = localData; // Fallback: local wins
         }
@@ -176,7 +191,7 @@ async function main() {
       }
 
       // Stage and commit
-      run("git add posted-log.json video-matches.json performance-weights.json qc-blocklist.json 2>/dev/null || true", { allowFail: true });
+      run("git add posted-log.json video-matches.json performance-weights.json qc-blocklist.json linkedin-history.json 2>/dev/null || true", { allowFail: true });
 
       const diffResult = run("git diff --cached --quiet || echo changed", { allowFail: true }).trim();
       if (!diffResult.includes("changed")) {
