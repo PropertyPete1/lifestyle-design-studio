@@ -55,6 +55,7 @@ const CITY = process.env.CITY || "san_antonio";
 const FORCE = process.env.FORCE === "true"; // Manual override to bypass every-other-day check
 const TEST_DELIVERY_ONLY = process.env.TEST_DELIVERY_ONLY === "true"; // Test delivery pipeline only — no social posts, no log entry
 const FORCE_VIDEO_ID = process.env.FORCE_VIDEO_ID || ""; // Pin a specific Drive file ID for testing
+const SLOT = process.env.SLOT || "pm"; // "am" or "pm" — passed from crons/workflow_dispatch. Dallas is always "pm".
 
 // Match thresholds (asymmetric):
 // BLOCKING: distance < 10 = definite same video, block immediately
@@ -106,7 +107,7 @@ function captionCityMismatch(caption, postingCity) {
  * but hasn't committed yet (or committed after our checkout).
  * Returns true if a conflict is detected (should abort).
  */
-async function checkRemoteLog(city) {
+async function checkRemoteLog(city, slot) {
   try {
     const token = process.env.GITHUB_TOKEN;
     if (!token) {
@@ -127,14 +128,28 @@ async function checkRemoteLog(city) {
       return false;
     }
     const remoteLog = await resp.json();
-    const cutoff = Date.now() - 20 * 60 * 60 * 1000;
-    const conflict = (remoteLog.posts || []).some(
-      p => p.city === city && new Date(p.timestamp).getTime() > cutoff
-    );
-    if (conflict) {
-      console.log(`[RemoteCheck] ⚠️ CONFLICT: Remote posted-log shows ${city} was posted in last 20h`);
-    } else {
-      console.log(`[RemoteCheck] ✓ No conflict — remote log clear for ${city}`);
+    const slotCutoff = Date.now() - 20 * 60 * 60 * 1000;
+    const hardCooldown = Date.now() - 2 * 60 * 60 * 1000;
+    const posts = (remoteLog.posts || []).filter(p => p.city === city && !p.type);
+    let conflict = false;
+    for (const p of posts) {
+      const ts = new Date(p.timestamp).getTime();
+      // Hard cooldown: same city within 2h
+      if (ts > hardCooldown) {
+        console.log(`[RemoteCheck] ⚠️ CONFLICT: ${city} posted within 2h (hard cooldown)`);
+        conflict = true;
+        break;
+      }
+      // Slot guard: same city + same slot within 20h
+      const entrySlot = p.slot || "pm";
+      if (entrySlot === slot && ts > slotCutoff) {
+        console.log(`[RemoteCheck] ⚠️ CONFLICT: Remote posted-log shows ${city} slot ${slot} posted in last 20h`);
+        conflict = true;
+        break;
+      }
+    }
+    if (!conflict) {
+      console.log(`[RemoteCheck] ✓ No conflict — remote log clear for ${city} slot ${slot}`);
     }
     return conflict;
   } catch (err) {
@@ -145,21 +160,10 @@ async function checkRemoteLog(city) {
 
 async function main() {
   console.log("=".repeat(60));
-  console.log(`[AutoPoster] Starting for city: ${CITY}`);
+  console.log(`[AutoPoster] Starting for city: ${CITY}, slot: ${SLOT}`);
   console.log(`[AutoPoster] Mode: ${TEST_DELIVERY_ONLY ? "TEST DELIVERY ONLY (no social posts)" : DRY_RUN ? "DRY RUN" : "LIVE"}`);
   console.log(`[AutoPoster] Time: ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT`);
   console.log("=".repeat(60));
-
-  // DFW every-other-day check (applies to external-cron triggers too)
-  // FORCE=true bypasses this (for manual runs from GitHub UI)
-  if (CITY === "dallas" && !DRY_RUN && !FORCE) {
-    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
-    if (dayOfYear % 2 !== 0) {
-      console.log(`[AutoPoster] DFW posts every other day — skipping today (day ${dayOfYear} is odd)`);
-      process.exit(0);
-    }
-    console.log(`[AutoPoster] DFW posting today (day ${dayOfYear} is even)`);
-  }
 
   // Run weekly analytics feedback loop (if stale or missing)
   try {
@@ -179,10 +183,13 @@ async function main() {
   // Load state
   const log = loadLog();
 
-  // Idempotency guard: don't double-post if cron fires twice
-  if (!DRY_RUN && !TEST_DELIVERY_ONLY && hasRecentPost(log, CITY, 20)) {
-    console.log(`[AutoPoster] Already posted for ${CITY} in the last 20 hours. Exiting.`);
-    process.exit(0);
+  // Idempotency guard: don't double-post if cron fires twice (slot-aware)
+  if (!DRY_RUN && !TEST_DELIVERY_ONLY) {
+    const guard = hasRecentPost(log, CITY, SLOT, 20);
+    if (guard.blocked) {
+      console.log(`[AutoPoster] BLOCKED: ${guard.reason}. Exiting.`);
+      process.exit(0);
+    }
   }
 
   // Step 1: Check Instagram for recent posts (via Metricool) — get 30 days with full data
@@ -426,9 +433,9 @@ async function main() {
   saveMatches(matchCache);
 
   // LinkedIn: post text-only recruiting content (DECOUPLED from video success)
-  // Only fires on the san_antonio run to avoid duplicates across city runs.
+  // Only fires on san_antonio PM slot to avoid duplicates across city/slot runs.
   // Has its own 20-hour idempotency guard so manual re-runs can't double-post.
-  if (CITY === "san_antonio" && !TEST_DELIVERY_ONLY) {
+  if (CITY === "san_antonio" && SLOT === "pm" && !TEST_DELIVERY_ONLY) {
     const hasRecentLinkedin = log.posts.some(
       p => p.type === "linkedin" && (Date.now() - new Date(p.timestamp).getTime()) < 20 * 60 * 60 * 1000
     );
@@ -876,7 +883,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     // BELT-AND-SUSPENDERS: Re-check the LIVE remote posted-log before posting.
     // This catches races where another workflow run posted after our checkout.
     if (!DRY_RUN && !TEST_DELIVERY_ONLY) {
-      const remotePostConflict = await checkRemoteLog(CITY);
+      const remotePostConflict = await checkRemoteLog(CITY, SLOT);
       if (remotePostConflict) {
         console.log(`[Post] ABORT — remote posted-log shows ${CITY} was already posted in the last 20h (race detected). Exiting cleanly.`);
         process.exit(0);
@@ -925,6 +932,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         driveFileId: video.id,
         fileName: video.name,
         city: CITY,
+        slot: SLOT,
         spoken_city: _spokenCity,
         caption,
         voiceover: hasVoiceover,

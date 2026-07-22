@@ -44,13 +44,36 @@ export function wasPostedRecently(log, driveFileId, days = 30) {
 }
 
 /**
- * Check if there was already a post within the last 20 hours (idempotency guard).
+ * Check if there was already a post within the last 20 hours (slot-aware idempotency guard).
+ *
+ * Two rules:
+ * 1. Block if same city + same slot posted within 20h.
+ * 2. Hard cooldown: block if same city posted within 2h regardless of slot
+ *    (protects against delayed/overlapping runs).
+ *
+ * Old log entries without a slot field are treated as "pm".
+ * Returns { blocked: boolean, reason?: string }.
  */
-export function hasRecentPost(log, city, hoursAgo = 20) {
-  const cutoff = Date.now() - hoursAgo * 60 * 60 * 1000;
-  return log.posts.some(
-    p => p.city === city && new Date(p.timestamp).getTime() > cutoff
-  );
+export function hasRecentPost(log, city, slot, hoursAgo = 20) {
+  const slotCutoff = Date.now() - hoursAgo * 60 * 60 * 1000;
+  const hardCooldown = Date.now() - 2 * 60 * 60 * 1000;
+
+  for (const p of log.posts) {
+    if (p.city !== city) continue;
+    if (p.type === "linkedin") continue; // LinkedIn entries don't count as video posts
+    const ts = new Date(p.timestamp).getTime();
+
+    // Hard cooldown: same city within 2h regardless of slot
+    if (ts > hardCooldown) {
+      return { blocked: true, reason: `hard-cooldown (${city} posted within 2h)` };
+    }
+    // Slot guard: same city + same slot within 20h
+    const entrySlot = p.slot || "pm"; // Legacy entries default to "pm"
+    if (entrySlot === slot && ts > slotCutoff) {
+      return { blocked: true, reason: `already posted for ${city} slot ${slot} in the last ${hoursAgo} hours` };
+    }
+  }
+  return { blocked: false };
 }
 
 /**

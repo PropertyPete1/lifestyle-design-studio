@@ -1,17 +1,24 @@
 name: Daily Auto Post
 
-# BACKUP CRONS: GitHub cron is unreliable (delays, silent skips ).
-# Each city fires twice — the 20-hour idempotency guard in the script
-# makes this safe: if the first cron posted, the backup exits cleanly.
+# 5-SLOT SCHEDULE (Central Time → UTC during CDT):
+# SA-am 11:00 AM = 16:00, ATX-am 12:00 PM = 17:00,
+# SA-pm 2:00 PM = 19:00, ATX-pm 3:00 PM = 20:00, DFW-pm 4:00 PM = 21:00
+# Each slot has a :30 backup cron. The slot-aware idempotency guard makes this safe.
 on:
   schedule:
-    # San Antonio: 2:00 PM CT = 19:00 UTC (primary), 2:30 PM CT = 19:30 UTC (backup)
+    # SA AM: 11:00 AM CT = 16:00 UTC (primary), 11:30 AM CT = 16:30 UTC (backup)
+    - cron: '0 16 * * *'
+    - cron: '30 16 * * *'
+    # ATX AM: 12:00 PM CT = 17:00 UTC (primary), 12:30 PM CT = 17:30 UTC (backup)
+    - cron: '0 17 * * *'
+    - cron: '30 17 * * *'
+    # SA PM: 2:00 PM CT = 19:00 UTC (primary), 2:30 PM CT = 19:30 UTC (backup)
     - cron: '0 19 * * *'
     - cron: '30 19 * * *'
-    # Austin: 3:00 PM CT = 20:00 UTC (primary), 3:30 PM CT = 20:30 UTC (backup)
+    # ATX PM: 3:00 PM CT = 20:00 UTC (primary), 3:30 PM CT = 20:30 UTC (backup)
     - cron: '0 20 * * *'
     - cron: '30 20 * * *'
-    # Dallas: 4:00 PM CT = 21:00 UTC (primary), 4:30 PM CT = 21:30 UTC (backup)
+    # DFW PM: 4:00 PM CT = 21:00 UTC (primary), 4:30 PM CT = 21:30 UTC (backup)
     - cron: '0 21 * * *'
     - cron: '30 21 * * *'
   workflow_dispatch:
@@ -25,13 +32,21 @@ on:
           - san_antonio
           - austin
           - dallas
+      slot:
+        description: 'Time slot (am or pm). Dallas is always pm.'
+        required: false
+        default: 'pm'
+        type: choice
+        options:
+          - am
+          - pm
       dry_run:
         description: 'Dry run (no actual posting)'
         required: false
         default: false
         type: boolean
       force:
-        description: 'Force post (bypass every-other-day check for Dallas)'
+        description: 'Force post (bypass guards for manual testing)'
         required: false
         default: false
         type: boolean
@@ -53,6 +68,8 @@ jobs:
   post-san-antonio:
     if: >-
       (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'san_antonio')
+      || github.event.schedule == '0 16 * * *'
+      || github.event.schedule == '30 16 * * *'
       || github.event.schedule == '0 19 * * *'
       || github.event.schedule == '30 19 * * *'
     runs-on: ubuntu-latest
@@ -71,11 +88,22 @@ jobs:
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
+      - name: Determine slot
+        id: slot
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.slot || 'pm' }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 16 * * *" ] || [ "${{ github.event.schedule }}" = "30 16 * * *" ]; then
+            echo "value=am" >> $GITHUB_OUTPUT
+          else
+            echo "value=pm" >> $GITHUB_OUTPUT
+          fi
       - name: Run auto-poster (San Antonio)
         id: run-poster
         working-directory: auto-poster
         env:
           CITY: san_antonio
+          SLOT: ${{ steps.slot.outputs.value }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
@@ -109,6 +137,8 @@ jobs:
   post-austin:
     if: >-
       (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'austin')
+      || github.event.schedule == '0 17 * * *'
+      || github.event.schedule == '30 17 * * *'
       || github.event.schedule == '0 20 * * *'
       || github.event.schedule == '30 20 * * *'
     runs-on: ubuntu-latest
@@ -127,11 +157,22 @@ jobs:
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
+      - name: Determine slot
+        id: slot
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.slot || 'pm' }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 17 * * *" ] || [ "${{ github.event.schedule }}" = "30 17 * * *" ]; then
+            echo "value=am" >> $GITHUB_OUTPUT
+          else
+            echo "value=pm" >> $GITHUB_OUTPUT
+          fi
       - name: Run auto-poster (Austin)
         id: run-poster
         working-directory: auto-poster
         env:
           CITY: austin
+          SLOT: ${{ steps.slot.outputs.value }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
@@ -183,22 +224,12 @@ jobs:
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
-      - name: Check if DFW posts today (every other day)
-        id: check-day
-        run: |
-          DAY_OF_YEAR=$(date +%j)
-          if [ $((DAY_OF_YEAR % 2)) -eq 0 ]; then
-            echo "should_post=true" >> $GITHUB_OUTPUT
-          else
-            echo "should_post=false" >> $GITHUB_OUTPUT
-            echo "DFW posts every other day — skipping today"
-          fi
       - name: Run auto-poster (Dallas/DFW)
         id: run-poster
-        if: steps.check-day.outputs.should_post == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: auto-poster
         env:
           CITY: dallas
+          SLOT: pm
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
@@ -222,7 +253,7 @@ jobs:
             exit 1
           fi
       - name: Commit posted-log
-        if: always() && (steps.check-day.outputs.should_post == 'true' || github.event_name == 'workflow_dispatch')
+        if: always()
         run: |
           cd auto-poster
           git config user.name "Auto Poster Bot"
