@@ -130,7 +130,7 @@ async function checkRemoteLog(city, slot) {
     const remoteLog = await resp.json();
     const slotCutoff = Date.now() - 20 * 60 * 60 * 1000;
     const hardCooldown = Date.now() - 2 * 60 * 60 * 1000;
-    const posts = (remoteLog.posts || []).filter(p => p.city === city && !p.type);
+    const posts = (remoteLog.posts || []).filter(p => p.city === city && !p.type && p.platform !== "instagram_main_native");
     let conflict = false;
     for (const p of posts) {
       const ts = new Date(p.timestamp).getTime();
