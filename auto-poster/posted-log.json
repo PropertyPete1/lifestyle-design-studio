@@ -1095,6 +1095,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1qpMp3Gfva4K1Pazm23YDhi4hem91DhK2/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-07-23T16:35:48.933Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1qpMp3Gfva4K1Pazm23YDhi4hem91DhK2",
+      "captionSnippet": "Wait until you see what $279,995 gets you in San Antonio right now 😮‍💨\n\nNew construction like this doesn't stay on the",
+      "mainIgPostedAt": "2026-07-23T16:35:48.933Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
