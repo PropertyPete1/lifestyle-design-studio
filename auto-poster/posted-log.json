@@ -1230,6 +1230,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1nO1yqXGia3WNVTh9VYkiPaoNkZ6qVleL/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-07-24T16:39:44.943Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1nO1yqXGia3WNVTh9VYkiPaoNkZ6qVleL",
+      "captionSnippet": "I've never seen finishes like this at this price point in San Antonio.\n\nNew construction starting at $309,990 doesn't si",
+      "mainIgPostedAt": "2026-07-24T16:39:44.943Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
