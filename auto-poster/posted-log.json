@@ -1352,6 +1352,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1mYv3LIGbdBAhM_cYc2xM4hBwiJy9hOFn/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-24T20:44:07.763Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1mYv3LIGbdBAhM_cYc2xM4hBwiJy9hOFn",
+      "captionSnippet": "Would you believe brand new construction in South Austin starts at just $339,990?\n\nNew construction like this doesn't si",
+      "mainIgPostedAt": "2026-07-24T20:44:07.763Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
