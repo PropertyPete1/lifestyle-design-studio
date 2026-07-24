@@ -1318,6 +1318,17 @@
       ],
       "timestamp": "2026-07-24T19:20:04.921Z",
       "success": true
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-07-24T19:54:15.338Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1O7EXXOg5UkITbGcl7XGJxwIZ0CZcx9tK",
+      "captionSnippet": "Would you believe brand new construction in San Antonio starts at $469,990?\n\nNew construction like this doesn't sit long",
+      "mainIgPostedAt": "2026-07-24T19:54:15.338Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
