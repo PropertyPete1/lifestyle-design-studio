@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "leadership_culture",
-      "body": "Last week, one of our agents told me she almost quit real estate entirely.\n\nShe'd spent three years at another brokerage. Good commission split. Decent support. But she felt invisible. When deals went sideways, she was on her own. When she won, nobody celebrated. When she struggled, nobody noticed.\n\nShe joined us six months ago. Same market. Different everything.\n\nNow when she closes, the team actually knows about it. When she's stuck on a transaction, there are people here who've walked that exact path. She's learning from agents who've been where she is. And she's not just hitting numbers anymore. She's building something.\n\nThat's not a culture hack or a recruitment tactic. That's what happens when leadership actually invests in people instead of just managing them.\n\nWhat's the difference between the team that made her want to leave and the one that made her want to stay?",
-      "format": "story",
-      "ending": "question",
-      "date": "2026-07-27"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We've got more buyer and lease leads coming in than we can efficiently work right now. Mostly new construction in San Antonio and Austin, plus out-of-state relocations. They're warm leads but they need vetting and nurturing. Most aren't transaction-ready today.\n\n1. These are real opportunities, not tire kickers. They're actively looking or actively moving. The work is real.\n\n2. If you're someone who knows how to nurture a pipeline and convert leads over time, this is exactly what you need. Not everyone can do it. Most agents want deals that close next month.\n\n3. We're being honest about the timeline. You're building relationships now that turn into closings later. That takes skill and patience.\n\nIf this sounds like something you'd take on, send me a DM.",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "question",
       "date": "2026-08-02"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We've got more buyer and lease leads coming in than we can work efficiently right now. Mostly new construction in San Antonio and Austin, plus out-of-state relocations. They're warm but they need vetting and nurture. Most aren't ready today.\n\n1. These are real opportunities. People actively looking or actively moving. Not tire kickers. The work is genuine.\n\n2. This only works if you know how to build a pipeline and convert leads over time. Most agents want deals closing next month. You need someone who plays the longer game.\n\n3. We're being straight about the timeline. You're investing in relationships now that close later. That takes patience and skill most agents don't have.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "list",
+      "ending": "dm_cta",
+      "date": "2026-07-24"
     }
   ]
 }

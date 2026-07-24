@@ -1275,6 +1275,49 @@
       "captionSnippet": "Would you believe this is brand new construction in Buda for $420,000?\n\nNew construction like this doesn't sit long. Bui",
       "mainIgPostedAt": "2026-07-24T17:13:29.639Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "1UCUMSsESLlSU-7TGI6gs6ORxmXtEXBDV",
+      "fileName": "2CD47B1B-74AB-4357-B949-60E3D26DF8E5.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe brand new construction in San Antonio starts at $469,990?\n\nNew construction like this doesn't sit long. Builder incentives are actively on the table right now.\n\n✨ Open floor plans wi",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-24T19:20:02.091Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "Hello, we are in Alvarage. This is what you can",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1O7EXXOg5UkITbGcl7XGJxwIZ0CZcx9tK/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "lead_overflow",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-24T14:21:34"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-24T14:51:34"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-24T15:21:34"
+        }
+      ],
+      "timestamp": "2026-07-24T19:20:04.921Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
