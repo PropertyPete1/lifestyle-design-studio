@@ -1385,6 +1385,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1_QMp50QxDuzKnUshXLtCtPFmXO3VCPWX/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-07-25T16:10:44.196Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1_QMp50QxDuzKnUshXLtCtPFmXO3VCPWX",
+      "captionSnippet": "Would you believe this is brand new construction in San Antonio?\n\nNew construction like this doesn't sit long. Builder i",
+      "mainIgPostedAt": "2026-07-25T16:10:44.196Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
