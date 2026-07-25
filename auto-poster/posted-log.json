@@ -1507,6 +1507,17 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1nXqDxKJEQreaCtv7mfUX7SG4QYFHVmO3/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-25T21:14:06.409Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1nXqDxKJEQreaCtv7mfUX7SG4QYFHVmO3",
+      "captionSnippet": "the floor plan in this one made me stop mid-tour\n\nnew construction like this doesn't sit long in North Austin. starting ",
+      "mainIgPostedAt": "2026-07-25T21:14:06.409Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
