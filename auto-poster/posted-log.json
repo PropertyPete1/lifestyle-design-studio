@@ -1430,6 +1430,49 @@
       "captionSnippet": "the floor plan in this one made me stop mid-tour\n\nnew construction like this moves fast in austin. starting at $254,990.",
       "mainIgPostedAt": "2026-07-25T17:11:34.167Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "1Pzo7Qn2MgswBnH3t2-8WzPqWvOkBO9DQ",
+      "fileName": "36925B31-3E81-45DA-8C61-4533A35D8820.mp4",
+      "city": "san_antonio",
+      "caption": "Wait until you see the kitchen in this one 😮‍💨\n\nNew construction like this doesn't sit long in San Antonio. These homes are priced to move, starting at $279,995.\n\n✨ Open floor plans flooded with nat",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-25T19:11:52.090Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "You don't have to be an Adam to get this",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1q9TUaSGPR08Cf_ts913KRI7IVlSj7FFv/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "unpopular_opinion",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-25T14:13:25"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-25T14:43:25"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-25T15:13:25"
+        }
+      ],
+      "timestamp": "2026-07-25T19:11:56.574Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
