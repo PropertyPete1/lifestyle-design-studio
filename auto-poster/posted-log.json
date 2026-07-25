@@ -1419,6 +1419,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1IHH1IJYz5FVjKu6yEKBLSUGOKkAAJR4J/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-25T17:11:34.167Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1IHH1IJYz5FVjKu6yEKBLSUGOKkAAJR4J",
+      "captionSnippet": "the floor plan in this one made me stop mid-tour\n\nnew construction like this moves fast in austin. starting at $254,990.",
+      "mainIgPostedAt": "2026-07-25T17:11:34.167Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
