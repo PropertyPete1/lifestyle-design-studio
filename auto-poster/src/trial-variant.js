@@ -14,7 +14,7 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { downloadVideo, getAccessToken } from "./drive.js";
+import { downloadVideo } from "./drive.js";
 import { processVoiceover } from "./voiceover.js";
 import { processBurnedCaptions } from "./burned-captions.js";
 import { applyFreshness } from "./freshness.js";
@@ -301,9 +301,10 @@ export async function generateVariant(source, angle, dryRun = false) {
   console.log(`[TrialVariant] Angle: ${angle}, City: ${city}`);
 
   // Step 1: Download source video from Drive
-  const accessToken = await getAccessToken();
-  const videoPath = await downloadVideo(driveFileId, accessToken);
-  console.log(`[TrialVariant] Downloaded source video: ${videoPath}`);
+  const buffer = await downloadVideo(driveFileId, source.fileName);
+  const videoPath = join(dirname(fileURLToPath(import.meta.url)), `../tmp-trial-source-${Date.now()}.mp4`);
+  writeFileSync(videoPath, buffer);
+  console.log(`[TrialVariant] Downloaded source video to: ${videoPath} (${(buffer.length / 1024 / 1024).toFixed(1)} MB)`);
 
   // Step 2: Extract overlays for context (price, community, etc.)
   let videoOverlays = null;
