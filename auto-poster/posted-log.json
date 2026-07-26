@@ -1540,6 +1540,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1YKU-KkXa32_ZgYuzGTjt04PAGWxacHL8/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-07-26T16:35:40.102Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1YKU-KkXa32_ZgYuzGTjt04PAGWxacHL8",
+      "captionSnippet": "wait until you see what's inside 😮‍💨\n\nNew construction in San Antonio starting at $369,990 and homes like this don't s",
+      "mainIgPostedAt": "2026-07-26T16:35:40.102Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
