@@ -324,21 +324,20 @@ export async function generateVariant(source, angle, dryRun = false) {
     forceVoiceover: true,
     angleInstruction: getAngleInstruction(angle),
   });
-  
   const processedPath = voResult?.mergedPath || videoPath;
+  const voAudioPath = voResult?.audioPath || null;
+  const voScript = voResult?.script || null;
   console.log(`[TrialVariant] Voiceover ${voResult?.mergedPath ? "added" : "skipped (unexpected)"}`);
-
   // Step 4: Burn captions
-  const burnResult = await processBurnedCaptions(processedPath, dryRun);
+  const burnResult = await processBurnedCaptions(processedPath, voAudioPath, voScript);
   const captionBurnedPath = burnResult.videoPath;
   console.log(`[TrialVariant] Captions: ${burnResult.captions_burned ? "burned ✓" : "skipped"}`);
 
   // Step 5: Freshness micro-variations (end trim + audio gain) for byte-uniqueness
-  const freshPath = await applyFreshness(captionBurnedPath, {
-    alreadyReEncoded: true, // Don't re-encode video, just trim/gain
-    forceVariation: true,   // Always apply even if already fresh
+  const freshnessResult = applyFreshness(captionBurnedPath, {
+    alreadyReEncoded: false, // Force re-encode for byte-uniqueness
   });
-  console.log(`[TrialVariant] Freshness applied: ${freshPath}`);
+  console.log(`[TrialVariant] Freshness applied: ${JSON.stringify(freshnessResult)}`);
 
   // Step 6: Generate fresh caption with different hook style
   const caption = await generateCaption(city, videoOverlays, {
@@ -348,7 +347,7 @@ export async function generateVariant(source, angle, dryRun = false) {
   console.log(`[TrialVariant] Caption generated (${caption.length} chars)`);
 
   return {
-    videoPath: freshPath || captionBurnedPath,
+    videoPath: captionBurnedPath,
     caption,
     angle,
     variantNumber: variantNum,
