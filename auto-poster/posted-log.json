@@ -1702,6 +1702,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1LTSAmM_Acw2MlcwyyHxckPNjgcD3gOnN/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-26T22:24:29.441Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1LTSAmM_Acw2MlcwyyHxckPNjgcD3gOnN",
+      "captionSnippet": "this is what new construction is supposed to feel like\n\nWest Austin new construction starting at just $899,999. homes li",
+      "mainIgPostedAt": "2026-07-26T22:24:29.441Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
