@@ -1574,6 +1574,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1Kj_W4t4UOEj-1TnlQNZb7CmnxgJ8OPtC/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-07-26T18:14:05.987Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1Kj_W4t4UOEj-1TnlQNZb7CmnxgJ8OPtC",
+      "captionSnippet": "this is what new construction is supposed to feel like\n\nnew construction like this doesn't stay on the market long. star",
+      "mainIgPostedAt": "2026-07-26T18:14:05.987Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
