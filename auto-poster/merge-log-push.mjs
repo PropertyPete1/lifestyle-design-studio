@@ -27,7 +27,7 @@ const POST_SUCCESS = process.argv[3] === "true";
 const REPO_DIR = process.cwd(); // Should be auto-poster/
 
 // Files to merge
-const FILES = ["posted-log.json", "video-matches.json", "performance-weights.json", "qc-blocklist.json", "linkedin-history.json"];
+const FILES = ["posted-log.json", "video-matches.json", "performance-weights.json", "qc-blocklist.json", "linkedin-history.json", "trial-variants.json"];
 const TMP_DIR = "/tmp/merge-push-local";
 
 function run(cmd, opts = {}) {
@@ -128,6 +128,25 @@ function mergeLinkedinHistory(local, remote) {
   return merged;
 }
 
+function mergeTrialVariants(local, remote) {
+  // Union variants by generatedAt (dedup)
+  const all = [...(remote?.variants || []), ...(local?.variants || [])];
+  const seen = new Set();
+  const deduped = [];
+  for (const v of all) {
+    const key = v.generatedAt || `${v.date}-${v.window}-${v.sourceVideoId}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(v);
+    }
+  }
+  // Sort by date descending, keep last 100
+  deduped.sort((a, b) => (b.generatedAt || "").localeCompare(a.generatedAt || ""));
+  const merged = { variants: deduped.slice(0, 100) };
+  console.log(`[Merge] trial-variants: ${merged.variants.length} entries`);
+  return merged;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -183,6 +202,8 @@ async function main() {
           merged = mergeBlocklist(localData, remoteData);
         } else if (file === "linkedin-history.json") {
           merged = mergeLinkedinHistory(localData, remoteData || { posts: [] });
+        } else if (file === "trial-variants.json") {
+          merged = mergeTrialVariants(localData, remoteData || { variants: [] });
         } else {
           merged = localData; // Fallback: local wins
         }
@@ -191,7 +212,7 @@ async function main() {
       }
 
       // Stage and commit
-      run("git add posted-log.json video-matches.json performance-weights.json qc-blocklist.json linkedin-history.json 2>/dev/null || true", { allowFail: true });
+      run("git add posted-log.json video-matches.json performance-weights.json qc-blocklist.json linkedin-history.json trial-variants.json 2>/dev/null || true", { allowFail: true });
 
       const diffResult = run("git diff --cached --quiet || echo changed", { allowFail: true }).trim();
       if (!diffResult.includes("changed")) {

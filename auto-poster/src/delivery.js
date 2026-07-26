@@ -231,7 +231,32 @@ async function notifyDashboard(deliveryData) {
     return true;
   });
 }
+// ─── TRIAL VARIANT WEBHOOK ─────────────────────────────────────────────────
 
+async function notifyTrialDashboard(trialData) {
+  const dashboardUrl = process.env.DASHBOARD_URL;
+  const dashboardSecret = process.env.DASHBOARD_WEBHOOK_SECRET;
+  if (!dashboardUrl || !dashboardSecret) {
+    console.warn("[Delivery] DASHBOARD_URL or DASHBOARD_WEBHOOK_SECRET not set — trial webhook unavailable");
+    return { ok: false, lastError: new Error("Dashboard env vars not configured") };
+  }
+  return withRetry("Trial dashboard webhook", async () => {
+    const res = await fetch(`${dashboardUrl}/api/delivery/trial-webhook`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Webhook-Secret": dashboardSecret,
+      },
+      body: JSON.stringify(trialData),
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Trial dashboard returned ${res.status}: ${err}`);
+    }
+    console.log("[Delivery] ✓ Trial webhook — owner notified via push");
+    return true;
+  });
+}
 // ─── CHANNEL 2: Email Backup ─────────────────────────────────────────────────
 
 /**
@@ -417,11 +442,34 @@ async function writeManifestFile(accessToken, { city, caption, driveLink, fileNa
  * Video is NEVER auto-deleted — stays until owner confirms posted or skips.
  * Main IG is NEVER auto-published — owner posts natively only.
  */
-export async function deliverToOwner(accessToken, videoPath, city, caption) {
+export async function deliverToOwner(accessToken, videoPath, city, caption, options = {}) {
   console.log(`[Delivery] Starting bulletproof delivery for ${city}...`);
 
   // Step 1: Upload to Drive (3x retry — if this fails, nothing else matters)
   const upload = await uploadToReadyFolder(accessToken, videoPath, city);
+
+  // If this is a trial variant, call the trial webhook instead of the normal one
+  if (options.isTrial) {
+    const trialResult = await notifyTrialDashboard({
+      sourceVideoId: options.sourceVideoId || upload.fileId,
+      sourceFileName: upload.fileName,
+      city,
+      hookAngle: options.trialAngle,
+      variantNumber: options.trialVariantNumber || 1,
+      window: options.window || "am",
+      caption,
+      driveLink: upload.webViewLink,
+      driveFileId: upload.fileId,
+      sourceViews: options.sourceViews || 0,
+    });
+    return {
+      delivered: true,
+      channels: trialResult.ok ? ["trial-dashboard"] : [],
+      driveLink: upload.webViewLink,
+      driveFileId: upload.fileId,
+      fileName: upload.fileName,
+    };
+  }
 
   const deliveryPayload = {
     city,

@@ -508,7 +508,8 @@ ${CAPTION_RULES}`;
  * Generate a voiceover script for a video.
  * Script should be shorter than video duration to ensure natural ending.
  */
-export async function generateVoiceoverScript(city, videoDurationSec = 30, videoOverlays = null) {
+export async function generateVoiceoverScript(city, videoDurationSec = 30, videoOverlays = null, opts = {}) {
+  const { angleInstruction = null } = opts;
   const runCityName = CITY_NAMES[city] || city;
   // Overlay city is ground truth for location (San Marcos, Kyle, Buda, Leander, etc.)
   const overlayCity = cleanOverlayCity(videoOverlays?.city);
@@ -565,13 +566,33 @@ export async function generateVoiceoverScript(city, videoDurationSec = 30, video
     paymentAngleInstruction = `PAYMENT ANGLE: Use the curiosity fallback. Say something like: "the payment on this one surprises people" or "the monthly payment is lower than most people guess"`;
   }
 
-  const prompt = `Write a short voiceover script for a real estate video in ${spokenCity}, Texas. This is a PAYMENT TEASE format. Follow this EXACT structure:
+  // If an angle instruction is provided (trial variants), use a custom prompt
+  const prompt = angleInstruction
+    ? `Write a short voiceover script for a real estate video in ${spokenCity}, Texas.
 
+CONTEXT:
+- Price: ${priceFromOverlay || "not visible"}
+- Rate: ${rateFromOverlayOrKB || "not available"}
+
+ANGLE INSTRUCTION:
+${angleInstruction}
+
+RULES:
+- Maximum ${targetWords} words (MUST be shorter than ${videoDurationSec} seconds when spoken)
+- Sound confident and conversational, like you're showing a friend around
+- DO NOT mention community names, builder names, or addresses
+- DO NOT use hashtags or emojis
+- Do NOT use em-dashes or en-dashes. Use periods, commas, or line breaks instead.
+- Do NOT invent or compute any payment figures. NEVER state a monthly payment number.
+- Spell out ALL numbers as words. Never use digits. "four hundred forty thousand dollars" not "$440,000". "four point nine nine percent" not "4.99%".
+- Also spell out abbreviations: "square feet" not "sqft", "street" not "st".
+- End with: "Comment TOUR and I'll send you the exact payment breakdown"
+- Return ONLY the script text, nothing else`
+    : `Write a short voiceover script for a real estate video in ${spokenCity}, Texas. This is a PAYMENT TEASE format. Follow this EXACT structure:
 1. ${priceInstruction}
 2. ONE FEATURE BEAT: Mention ONE visual feature only (the most striking thing visible in a new build tour, e.g. "look at this kitchen" or "these ceilings are massive"). Keep it to one sentence max.
 3. ${paymentAngleInstruction}
 4. ${ctaInstruction}
-
 RULES:
 - Maximum ${targetWords} words (MUST be shorter than ${videoDurationSec} seconds when spoken)
 - The script has FOUR parts only: hook, one feature, payment angle, CTA. Nothing else.
@@ -583,9 +604,7 @@ RULES:
 - Spell out ALL numbers as words. Never use digits. "four hundred forty thousand dollars" not "$440,000". "four point nine nine percent" not "4.99%".
 - Also spell out abbreviations: "square feet" not "sqft", "street" not "st".
 - Return ONLY the script text, nothing else
-
 Example (with price and rate): "Brand new construction in San Antonio starting at three hundred eighty nine thousand dollars. Look at this open concept kitchen with the quartz countertops. With the four point nine nine percent fixed rate, the monthly payment on this is lower than most people guess. Comment TOUR and I'll send you the exact payment breakdown."
-
 Example (no price): "Wait until you see this brand new home in Austin. These ceilings are absolutely massive. The payment on this one surprises people. Comment TOUR and I'll send you the exact payment breakdown."`;
 
   try {

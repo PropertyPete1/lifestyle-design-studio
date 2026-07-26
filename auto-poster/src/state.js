@@ -62,6 +62,7 @@ export function hasRecentPost(log, city, slot, hoursAgo = 20) {
     if (p.city !== city) continue;
     if (p.type === "linkedin") continue; // LinkedIn entries don't count as video posts
     if (p.platform === "instagram_main_native") continue; // Manual-confirm receipts are not slot posts
+    if (p.type === "trial_variant" || p.type === "trial_variant_confirm") continue; // Trial variants are separate from slot posts
     const ts = new Date(p.timestamp).getTime();
 
     // Hard cooldown: same city within 2h regardless of slot
