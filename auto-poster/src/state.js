@@ -134,6 +134,19 @@ export function getRecentlyPostedIds(log, city, days = 30) {
   );
 }
 
+/**
+ * Get all fileNames posted in the last N days for a specific city.
+ * This catches re-uploaded files that have a new driveFileId but same content.
+ */
+export function getRecentlyPostedFileNames(log, city, days = 30) {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return new Set(
+    log.posts
+      .filter(p => p.city === city && p.fileName && new Date(p.timestamp).getTime() > cutoff)
+      .map(p => p.fileName)
+  );
+}
+
 // ─── QC Blocklist ────────────────────────────────────────────────────────────
 
 const BLOCKLIST_PATH = join(__dirname, "..", "qc-blocklist.json");

@@ -31,7 +31,7 @@ import { prePostQualityCheck } from "./quality-check.js";
 import { applyFreshness } from "./freshness.js";
 import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
-import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, loadBlocklist, blocklistVideo, isBlocklisted } from "./state.js";
+import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, loadBlocklist, blocklistVideo, isBlocklisted } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
@@ -251,7 +251,8 @@ async function main() {
   
   // Also check posted-log.json as belt-and-suspenders
   const recentLogIds = getRecentlyPostedIds(log, CITY, 30);
-  console.log(`[Step 3] ${recentLogIds.size} videos in posted-log from last 30 days`);
+  const recentFileNames = getRecentlyPostedFileNames(log, CITY, 30);
+  console.log(`[Step 3] ${recentLogIds.size} videos in posted-log from last 30 days (${recentFileNames.size} unique fileNames)`);
 
   // Load cached matches
   const matchCache = loadMatches();
@@ -285,9 +286,15 @@ async function main() {
       continue;
     }
 
-    // Check posted-log (fast)
+    // Check posted-log by driveFileId (fast)
     if (recentLogIds.has(video.id)) {
       blocked.push({ video, reason: "posted-log" });
+      continue;
+    }
+
+    // Check posted-log by fileName (catches re-uploaded files with new driveFileId)
+    if (recentFileNames.has(video.name)) {
+      blocked.push({ video, reason: "posted-log (fileName match — same content, different driveFileId)" });
       continue;
     }
 
@@ -297,7 +304,7 @@ async function main() {
       const matchedPost = cached[0];
       const postedDate = parsePublishedAt(matchedPost.publishedAt);
       const daysSince = (Date.now() - postedDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSince < 30) {
+      if (daysSince <= 30) {
         blocked.push({ video, reason: `matched IG post from ${daysSince.toFixed(0)} days ago` });
         continue;
       }
