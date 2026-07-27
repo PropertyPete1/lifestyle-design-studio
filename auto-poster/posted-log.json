@@ -1802,6 +1802,29 @@
       ],
       "timestamp": "2026-07-27T19:15:45.949Z",
       "success": true
+    },
+    {
+      "driveFileId": "1Rv4kblmgNMl-i4rUVdVlTRhts39T7dil",
+      "fileName": "FFFB1197-DA4A-4098-85BF-EFB2E040EE9A.mp4",
+      "city": "austin",
+      "caption": "This might be the best new build value I've toured in North Austin all month.\n\nNew construction like this moves fast. Builder incentives are actively available right now.\n\n✨ everyday living hits\n\nOpen",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-27T20:13:56.388Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "North Austin",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Quick payment breakdown on this one price is $689,000, raising",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1WCWqby71Bc2VkjU9p8jaGEMqQpF2W7cO/view"
     }
   ],
   "lastTemplateIndex": -1
