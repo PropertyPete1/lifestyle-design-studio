@@ -114,6 +114,26 @@ function getHookInstruction(cityName) {
 }
 
 /**
+ * Map trial variant angle to a matching caption hook instruction.
+ * Ensures the caption hook aligns with the voiceover angle.
+ */
+function getTrialHookInstruction(trialAngle, cityName) {
+  const mapping = {
+    price_hook: `Write a PRICE hook that leads with the exact price from the overlay. Example: "three hundred ninety thousand for brand new construction in ${cityName}..."`,
+    payment_tease: `Write a PAYMENT TEASE hook that hints at affordability without stating a monthly figure. Example: "the monthly payment on this one is lower than most people guess" or "wait until you hear what this costs per month"`,
+    feature_callout: `Write a FEATURE CALLOUT hook that opens with one standout interior feature. Example: "look at this kitchen island" or "the floor plan in this one is unreal"`,
+    question_hook: `Write a QUESTION hook that makes the viewer need to see the answer. Example: "would you believe this is brand new construction in ${cityName}?" or "what does three hundred thousand actually get you in ${cityName} right now?"`,
+    bold_claim: `Write a BOLD CLAIM hook. Example: "this might be the best new build I've toured this month" or "I've never seen finishes like this at this price point"`,
+  };
+  const instruction = mapping[trialAngle];
+  if (instruction) {
+    console.log(`[Caption] Using trial hook style: ${trialAngle}`);
+    return instruction;
+  }
+  return getHookInstruction(cityName);
+}
+
+/**
  * Build a community facts block for the prompt (when KB match found).
  * Facts are provided for CONTENT but community/builder/branded names are GATED.
  */
@@ -375,7 +395,7 @@ function lockHashtags(caption, city) {
  * When NO KB match: only states facts from the video overlay (price, city).
  * Does NOT invent amenities, HOA, school districts, or any other claims.
  */
-export async function generateCaption(city, videoOverlays = null) {
+export async function generateCaption(city, videoOverlays = null, options = {}) {
   const runCityName = CITY_NAMES[city] || city;
   // Overlay city is ground truth for location references in the caption
   const overlayCity = cleanOverlayCity(videoOverlays?.city);
@@ -423,7 +443,7 @@ ${LEAD_GATING_RULES}
 STRUCTURE (follow this EXACT order):
 
 1. HOOK (first line, under 100 chars): A curiosity line that makes people stop scrolling.
-   ${getHookInstruction(captionCity)}
+   ${options.trialAngle ? getTrialHookInstruction(options.trialAngle, captionCity) : getHookInstruction(captionCity)}
    ${hasRealFacts ? `USE a real detail from the community KB in the hook (price, standout amenity description, etc.) but NEVER the community name.` : ""}
    NEVER start with a CTA. The hook must create curiosity.
 

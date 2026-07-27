@@ -259,9 +259,10 @@ Example opening: "Three hundred ninety thousand for brand new construction in [c
 The hook must contain the price in the first sentence.`,
 
   payment_tease: `HOOK ANGLE: PAYMENT TEASE
-Open with the monthly payment or rate if available. Tease how affordable ownership is.
-Example opening: "Your monthly payment on this home would be under two thousand dollars..."
-If no rate/payment info available, estimate based on price and current conventional rates (~6.5%).`,
+Open with a payment TEASE using ONLY figures literally visible on the video overlay (price, rate, or monthly amount shown on screen). NEVER compute or state a monthly payment number yourself.
+If the overlay shows a monthly payment amount, you may speak that exact figure. If it only shows price or rate, tease around those without calculating a payment.
+If no payment/rate figures appear on the overlay, tease without any number: e.g. "the monthly payment on this one is lower than most people guess."
+NEVER estimate rates or calculate payments — the exact breakdown is what the viewer gets when they engage.`,
 
   feature_callout: `HOOK ANGLE: FEATURE CALLOUT
 Open by calling out ONE specific standout feature visible in the video (open floor plan, quartz counters, covered patio, etc.).
