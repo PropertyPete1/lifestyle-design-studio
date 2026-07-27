@@ -1759,6 +1759,49 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1iPj6A-45vRUCpi91f8Crgr6j3vmPpsqo/view"
+    },
+    {
+      "driveFileId": "1O3xEoZiFdQD26OMHQ0EiAFrwqPTEPeNX",
+      "fileName": "5B453E70-D4BC-4076-B244-295AFA21E005.mp4",
+      "city": "san_antonio",
+      "caption": "wait until you see the kitchen in this one 😮‍💨\n\nnew construction at $269,990 in San Antonio won't stay on the market long. builder incentives are live right now.\n\n✨ everyday living hits\nopen floor p",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-27T19:15:38.291Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "The house does not come with Stephen. He just happens",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1yqU-N6x3DOXNt8m9B6ie7ga97oqqNh8c/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "leadership_culture",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-27T14:17:14"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-27T14:47:14"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-27T15:17:14"
+        }
+      ],
+      "timestamp": "2026-07-27T19:15:45.949Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
