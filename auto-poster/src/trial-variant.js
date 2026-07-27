@@ -17,7 +17,6 @@ import { fileURLToPath } from "url";
 import { downloadVideo } from "./drive.js";
 import { processVoiceover } from "./voiceover.js";
 import { processBurnedCaptions } from "./burned-captions.js";
-import { applyFreshness } from "./freshness.js";
 import { generateCaption } from "./caption.js";
 import { readVideoOverlays, extractPriceCheckFrames } from "./price-check.js";
 import { loadLog } from "./state.js";
@@ -333,11 +332,9 @@ export async function generateVariant(source, angle, dryRun = false) {
   const captionBurnedPath = burnResult.videoPath;
   console.log(`[TrialVariant] Captions: ${burnResult.captions_burned ? "burned ✓" : "skipped"}`);
 
-  // Step 5: Freshness micro-variations (end trim + audio gain) for byte-uniqueness
-  const freshnessResult = applyFreshness(captionBurnedPath, {
-    alreadyReEncoded: false, // Force re-encode for byte-uniqueness
-  });
-  console.log(`[TrialVariant] Freshness applied: ${JSON.stringify(freshnessResult)}`);
+  // Step 5: Skip freshness — caption burn (different voiceover + burned text) already
+  // makes every variant file unique. No second encode needed.
+  console.log(`[TrialVariant] Freshness skipped (caption burn already provides byte-uniqueness)`);
 
   // Step 6: Generate fresh caption with different hook style
   const caption = await generateCaption(city, videoOverlays, {
