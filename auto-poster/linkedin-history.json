@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We've got more buyer and lease leads coming in than we can work efficiently right now. Mostly new construction in San Antonio and Austin, plus out-of-state relocations moving here. They're warm leads but they need vetting and nurturing. Most aren't ready to close today.\n\nHere's the honest part. These aren't tire kickers. These are people actively looking or actively moving. The work is real. But it requires someone who knows how to nurture a pipeline and convert leads over time. Most agents want deals that close next month, not relationships that turn into closings later.\n\nIf you're the type who can do that work, you should know we have it.\n\nIf this sounds like something you'd take on, send me a DM.",
-      "format": "story",
-      "ending": "dm_cta",
-      "date": "2026-07-31"
-    },
-    {
       "topic": "deal_story",
       "body": "This week a listing agent almost lost a deal because the buyer's lender missed a critical deadline. Three days before closing. The agent had to step in, call the lender, escalate the issue, and actually sit with the file until it got resolved. Deal closed on time.\n\n1. Most agents would have panicked or blamed the lender. This one took ownership of a problem that technically wasn't hers to own. That's the difference between an agent and someone building a real business.\n\n2. She knew exactly who to call and what questions to ask because she'd been through this before and learned from people here who had too. She didn't have to figure it out alone.\n\n3. When a deal nearly falls apart three days out, you find out fast who has your back. She knew we did.\n\nThat's the transaction nobody sees. That's the one that matters.",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "story",
       "ending": "question",
       "date": "2026-07-27"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We're running overflow right now on buyer and lease leads. New construction in San Antonio and Austin, plus out-of-state relocations. They're real opportunities with real people actively looking or actively moving.\n\n1. These leads aren't ready to close today. They need vetting and nurturing. Most agents see that and walk away. If you're built for pipeline work and converting relationships over time, this is yours.\n\n2. We're not overselling the timeline. You're investing in these relationships now so they close later. That takes patience and a different skill set than agents chasing next month's commissions.\n\n3. This only works if you know how to stay in touch, answer questions, and be the expert when they're ready to move. Speed doesn't matter here. Consistency and follow-up do.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "list",
+      "ending": "dm_cta",
+      "date": "2026-07-28"
     }
   ]
 }

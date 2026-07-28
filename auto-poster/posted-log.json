@@ -1848,6 +1848,49 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1yocMa6OsBP5zWqbliyecTnN8OxHPq3mo/view"
+    },
+    {
+      "driveFileId": "1CDfmUlFw3uOrx1iv0j89HStWqcfRUKO7",
+      "fileName": "60731120-BE09-423F-BE4D-51B42DDBBFA7.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe you can get brand new construction in San Antonio starting at $299,990?\n\nNew construction like this doesn't sit long. Builder incentives are real right now.\n\n✨ everyday living hits\nO",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-28T19:21:29.787Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Alright, quick payment math price is 29999. He was 3%",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1DhCOdEP1oRAZmipWF6-13mZDqV0L0dBH/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "lead_overflow",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-28T14:23:02"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-28T14:53:02"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-28T15:23:02"
+        }
+      ],
+      "timestamp": "2026-07-28T19:21:34.388Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
