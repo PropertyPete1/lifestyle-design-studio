@@ -1914,6 +1914,49 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1ZDW4ha1uNGkSq79rt4pe--poaTGvfOoh/view"
+    },
+    {
+      "driveFileId": "1iHTkR2bAisZYEzlguEGu-meFMe4EB57z",
+      "fileName": "6A84DB08-64EA-4D71-8BE2-13D9D5E03EA5.mp4",
+      "city": "san_antonio",
+      "caption": "Wait until you see the kitchen in this one 😮‍💨\n\nNew construction like this moves fast in San Antonio. Builder incentives are live right now.\n\n✨ everyday living hits\nOpen floor plan flooded with natu",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-29T19:27:58.352Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "If you love wide open spaces and houses in neighborhoods,",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1NMChBKlNikEKZZZ5k80Iay1ISTpwkGxf/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "mindset_motivation",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-29T14:29:31"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-29T14:59:31"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-29T15:29:31"
+        }
+      ],
+      "timestamp": "2026-07-29T19:28:02.980Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
