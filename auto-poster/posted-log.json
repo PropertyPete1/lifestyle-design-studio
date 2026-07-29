@@ -1891,6 +1891,29 @@
       ],
       "timestamp": "2026-07-28T19:21:34.388Z",
       "success": true
+    },
+    {
+      "driveFileId": "19Gg10vc-EO4n1ncjRCu8fJOId1tN0fdZ",
+      "fileName": "64051B6C-3775-40CA-AD36-EF40E78D8EBA.mp4",
+      "city": "san_antonio",
+      "caption": "would you believe this is brand new construction in San Antonio starting at $326,990?\n\nnew construction like this doesn't sit around long. builder incentives are actively flowing right now.\n\n✨ everyda",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-29T16:25:44.140Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Quick payment math price is $326990 with 3.5% down that's",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1ZDW4ha1uNGkSq79rt4pe--poaTGvfOoh/view"
     }
   ],
   "lastTemplateIndex": -1
