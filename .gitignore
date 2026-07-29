@@ -15,3 +15,9 @@ Thumbs.db
 # Temporary
 tmp/
 temp/
+
+# yt-comments local state (synced encrypted to the state branch instead)
+yt-comments/data/*.sqlite3
+yt-comments/data/*.sqlite3-journal
+yt-comments/data/weekly_digest.md
+yt-comments/**/__pycache__/

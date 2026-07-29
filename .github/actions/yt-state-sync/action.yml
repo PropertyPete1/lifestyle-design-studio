@@ -1,0 +1,100 @@
+name: "Sync YouTube Comment State (Encrypted)"
+description: "Pull/push the yt-comments SQLite DB + digest from/to the 'state' branch with AES-256 encryption"
+
+inputs:
+  mode:
+    description: "'pull' to fetch and decrypt state, 'push' to encrypt and commit state"
+    required: true
+  github_token:
+    description: "GitHub token for pushing"
+    required: true
+  encryption_key:
+    description: "AES-256 passphrase for encrypting/decrypting the state DB"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pull and decrypt state from 'state' branch
+      if: inputs.mode == 'pull'
+      shell: bash
+      env:
+        STATE_KEY: ${{ inputs.encryption_key }}
+      run: |
+        set -euo pipefail
+        mkdir -p yt-comments/data
+        git fetch origin state:state 2>/dev/null || true
+
+        if git show state:yt-comments/data/yt_comments.sqlite3.enc > /dev/null 2>&1; then
+          git show state:yt-comments/data/yt_comments.sqlite3.enc > /tmp/yt_state.enc
+          openssl enc -aes-256-cbc -pbkdf2 -d \
+            -in /tmp/yt_state.enc \
+            -out yt-comments/data/yt_comments.sqlite3 \
+            -pass env:STATE_KEY
+          rm -f /tmp/yt_state.enc
+          echo "✅ State DB pulled and decrypted ($(wc -c < yt-comments/data/yt_comments.sqlite3) bytes)"
+        else
+          echo "⚠️ No encrypted state DB on 'state' branch — starting fresh"
+        fi
+
+        # The digest is plain Markdown on purpose: it holds no credentials, and
+        # being readable straight from the branch is the point of it.
+        if git show state:yt-comments/data/weekly_digest.md > /dev/null 2>&1; then
+          git show state:yt-comments/data/weekly_digest.md > yt-comments/data/weekly_digest.md
+          echo "✅ Weekly digest pulled"
+        fi
+
+    - name: Encrypt and push state to 'state' branch
+      if: inputs.mode == 'push'
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        STATE_KEY: ${{ inputs.encryption_key }}
+      run: |
+        set -euo pipefail
+
+        if [ ! -f yt-comments/data/yt_comments.sqlite3 ]; then
+          echo "⚠️ No state DB to push"
+          exit 0
+        fi
+
+        openssl enc -aes-256-cbc -pbkdf2 \
+          -in yt-comments/data/yt_comments.sqlite3 \
+          -out /tmp/yt_state.enc \
+          -pass env:STATE_KEY
+        echo "✅ State DB encrypted ($(wc -c < /tmp/yt_state.enc) bytes)"
+
+        if [ -f yt-comments/data/weekly_digest.md ]; then
+          cp yt-comments/data/weekly_digest.md /tmp/yt_weekly_digest.md
+        fi
+
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Land on the state branch WITHOUT wiping it: other jobs may keep their
+        # own artifacts there, so only our two paths are touched.
+        git fetch origin state:state 2>/dev/null || true
+        if git rev-parse --verify state > /dev/null 2>&1; then
+          git checkout state
+        else
+          git checkout --orphan state
+          git rm -rf . > /dev/null 2>&1 || true
+        fi
+
+        mkdir -p yt-comments/data
+        cp /tmp/yt_state.enc yt-comments/data/yt_comments.sqlite3.enc
+        git add -f yt-comments/data/yt_comments.sqlite3.enc
+
+        if [ -f /tmp/yt_weekly_digest.md ]; then
+          cp /tmp/yt_weekly_digest.md yt-comments/data/weekly_digest.md
+          git add -f yt-comments/data/weekly_digest.md
+        fi
+
+        if git diff --cached --quiet; then
+          echo "ℹ️ No state change to commit"
+          exit 0
+        fi
+
+        git commit -m "state(yt-comments): update encrypted state [$(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+        git push origin state
+        echo "✅ Encrypted state pushed to 'state' branch"

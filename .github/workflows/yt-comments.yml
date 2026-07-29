@@ -1,0 +1,73 @@
+name: YouTube Comment Auto-Reply
+
+# Fires every 20 minutes. Safe to overlap-fire or double-fire: the
+# replied_comments ledger in the encrypted state DB makes replying
+# exactly-once per comment, so a delayed or repeated cron is a no-op.
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Generate replies but post nothing"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  # Serialize against itself — two passes writing the state branch at once
+  # would lose one of their reply ledgers.
+  group: yt-comments-state
+  cancel-in-progress: false
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          # Full history: pushing the 'state' branch from a shallow clone is
+          # rejected with "shallow update not allowed".
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: yt-comments/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r yt-comments/requirements.txt
+
+      - name: Pull state DB
+        uses: ./.github/actions/yt-state-sync
+        with:
+          mode: pull
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          encryption_key: ${{ secrets.YT_STATE_ENCRYPTION_KEY }}
+
+      - name: Run reply pass
+        working-directory: yt-comments
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          YT_LLM_MODEL: ${{ vars.YT_LLM_MODEL }}
+        run: python3 run_reply_pass.py
+
+      - name: Push state DB
+        if: always()
+        uses: ./.github/actions/yt-state-sync
+        with:
+          mode: push
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          encryption_key: ${{ secrets.YT_STATE_ENCRYPTION_KEY }}

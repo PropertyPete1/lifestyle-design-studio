@@ -1,0 +1,56 @@
+# YouTube comment auto-reply — monitored channels
+#
+# Add one entry per channel you own. `id` is the YouTube channel ID (starts
+# with "UC..."), NOT the handle. Find it at
+# https://studio.youtube.com → Settings → Channel → Advanced settings.
+#
+# `voice` is OPTIONAL. Leave it out and the channel uses the house voice from
+# `defaults.voice`. Fill it in when a market should sound distinct.
+
+defaults:
+  # Skip comments older than this many days (the [X] days knob).
+  max_comment_age_days: 14
+
+  # Hard cap on replies posted in a single workflow run.
+  max_replies_per_run: 20
+
+  # Second cap across a rolling 24h window. Each comments.insert costs 50
+  # YouTube quota units against a 10,000/day default, so this keeps a comment
+  # flood from burning the whole quota (100 replies = 5,000 units).
+  max_replies_per_day: 100
+
+  # Random pause between replies inside one run, in seconds.
+  min_seconds_between_replies: 3
+  max_seconds_between_replies: 5
+
+  # Skip a thread that already has this many replies or more — assumes it was
+  # already handled (manually or by an earlier run whose state push failed).
+  skip_if_reply_count_at_least: 1
+
+  # House voice, used for any channel with no `voice` of its own.
+  voice: |
+    Lifestyle Design Realty — a Texas real estate team. Warm, plainspoken,
+    lightly enthusiastic. Talks like a local who actually knows the market,
+    never like a brochure.
+
+channels:
+  - id: "UC_REPLACE_WITH_SAN_ANTONIO_CHANNEL_ID"
+    name: "San Antonio"
+    voice: |
+      San Antonio. Down-to-earth and neighborly. Comfortable mentioning
+      Stone Oak, Alamo Heights, Boerne, the 1604 loop. Values-and-space
+      framing: more house for the money, family-friendly, easy pace.
+
+  - id: "UC_REPLACE_WITH_AUSTIN_CHANNEL_ID"
+    name: "Austin"
+    voice: |
+      Austin. A little more energetic and current. Comfortable mentioning
+      East Austin, Mueller, Round Rock, Lake Travis. Frames things around
+      lifestyle, walkability, and where the market is actually heading.
+
+  - id: "UC_REPLACE_WITH_DFW_CHANNEL_ID"
+    name: "DFW"
+    voice: |
+      Dallas–Fort Worth. Confident and straightforward. Comfortable mentioning
+      Frisco, Plano, McKinney, Fort Worth proper. Frames things around growth,
+      schools, and new construction versus established neighborhoods.
