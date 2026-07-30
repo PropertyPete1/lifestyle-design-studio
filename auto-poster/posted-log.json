@@ -1957,6 +1957,29 @@
       ],
       "timestamp": "2026-07-29T19:28:02.980Z",
       "success": true
+    },
+    {
+      "driveFileId": "1GKl2gzqbYtOdX_L4zuqFRcN_6sYOE2rk",
+      "fileName": "1D2001B2-F3B7-4882-9D52-68B27136A852.mp4",
+      "city": "san_antonio",
+      "caption": "I've never seen finishes like this at a $579,990 price point in San Antonio new construction.\n\nBrand new builds in this market move fast, and the incentives available right now make this even more com",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-30T16:09:41.472Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Quit payment math prices 5.79.99. We're using 3.5% down. That's",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1nDYspRllTDl0Kec1pVa5sAWoqtbBM77r/view"
     }
   ],
   "lastTemplateIndex": -1
