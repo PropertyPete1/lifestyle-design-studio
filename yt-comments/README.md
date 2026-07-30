@@ -88,6 +88,26 @@ unit, `comments.insert` costs 50. Scanning 3 channels every 20 minutes is
 units/day, leaving headroom. On `quotaExceeded` the run stops early and leaves
 the remaining comments eligible for the next pass.
 
+## Check the credentials before trusting the workflow
+
+```bash
+cd yt-comments
+export YT_CLIENT_ID=... YT_CLIENT_SECRET=... YT_REFRESH_TOKEN=...
+python3 verify_credentials.py               # channels from config
+python3 verify_credentials.py UCxxxxxxxx    # or one explicit channel
+```
+
+Read-only: refreshes the token, reports the granted scopes, resolves the
+channel, and lists real comment threads. Posts nothing, prints no secrets.
+Common failures it names for you:
+
+| Error | Meaning |
+| --- | --- |
+| `invalid_client` + "client secret is invalid" | Client ID exists, secret doesn't match it — stale or regenerated secret |
+| `invalid_client` + "OAuth client was not found" | Wrong client ID, deleted client, or a different GCP project |
+| `invalid_grant` | Secret is fine; the refresh token is revoked, expired, or was issued by a different client |
+| Scopes listed without `youtube.force-ssl` | Can read comments, will 403 on posting — redo consent with that scope |
+
 ## Run it manually
 
 Actions → **YouTube Comment Auto-Reply** → Run workflow. The `dry_run` input
