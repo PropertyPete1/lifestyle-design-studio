@@ -2026,6 +2026,49 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1nhGsMrs5L-Wbhp1HMimWWONncl7RAa5E/view"
+    },
+    {
+      "driveFileId": "1R4g0iO-8u3KPa_LMr0tpC_asJw70wpTa",
+      "fileName": "7E47F148-4662-4508-80B9-3E2CADAC2F32.mp4",
+      "city": "san_antonio",
+      "caption": "I was speechless when I walked through this one. New construction starting at $338,990 in San Antonio hits different.\n\nBrand new builds like this move fast. Builder incentives are in play right now to",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-31T19:22:24.898Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Quick payment math at 4.75% fixed rate on the 30",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1J_4EuspperITpT19AyEPWLvm32TA9cdS/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "lead_overflow",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-07-31T14:23:57"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-07-31T14:53:57"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-07-31T15:23:57"
+        }
+      ],
+      "timestamp": "2026-07-31T19:22:28.521Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1

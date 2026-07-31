@@ -19,6 +19,16 @@
       "filename": "13527 Henri Castro, 78253.mov",
       "reason": "AI vision: Second image is horizontal/landscape orientation, not vertical (9:16). First image is vertical but appears to be a still photo, not a video.",
       "blockedAt": "2026-07-17T19:20:46.690Z"
+    },
+    "1xfi7U1t_zdw6Gp9hNwwBa6IH4diLYvun": {
+      "filename": "6B30314E-EADF-4DCA-ABE1-1AF49D429367.mp4",
+      "reason": "Too short: 3.8s (minimum 5s)",
+      "blockedAt": "2026-07-31T19:16:33.161Z"
+    },
+    "1HXuqpnoQCEL4ZQrZl1B8Kv_2SdSBcmgW": {
+      "filename": "6C3FA251-44C3-46F9-A753-7EBD3CB79F34.mp4",
+      "reason": "Too short: 3.8s (minimum 5s)",
+      "blockedAt": "2026-07-31T19:16:51.623Z"
     }
   }
 }

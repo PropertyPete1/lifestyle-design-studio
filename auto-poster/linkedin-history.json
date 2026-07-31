@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "market_now",
-      "body": "Pricing right in an uncertain market beats chasing it.\n\nWhen the market shifts, agents split into two groups. One group reprices constantly, chasing whatever they think the market wants. The other prices thoughtfully once and lets the market come to them. The second group closes more deals and spends less time on price negotiations that go nowhere. Pricing right means having a real conversation with your seller about what their home is actually worth based on condition, location, and comparable sales. Not emotion. Not hope. Then you defend that price when offers come in. Buyers know the difference between a realistic price and wishful thinking. So do other agents.\n\nWhat's more valuable to your sellers. A price that makes them feel good or a strategy that actually sells the house?",
-      "format": "bold_statement",
-      "ending": "question",
-      "date": "2026-08-02"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We've got more buyer and lease leads coming in than we can work efficiently right now. Mostly new construction in San Antonio and Austin, plus out-of-state relocations. They're warm but they need vetting and nurture. Most aren't ready today.\n\n1. These are real opportunities. People actively looking or actively moving. Not tire kickers. The work is genuine.\n\n2. This only works if you know how to build a pipeline and convert leads over time. Most agents want deals closing next month. You need someone who plays the longer game.\n\n3. We're being straight about the timeline. You're investing in relationships now that close later. That takes patience and skill most agents don't have.\n\nIf this sounds like something you'd take on, send me a DM.",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "strong_close",
       "date": "2026-07-29"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We've got more buyer and lease leads than we can handle right now. New construction in San Antonio and Austin, plus out-of-state relocations coming in every week. They're warm leads. Real people actively looking or actively moving. But here's the honest part. Most of them aren't ready to close today. They need vetting. They need nurturing. They need someone who knows how to build a pipeline instead of chase a quick commission. Most agents see that timeline and disappear. They want deals closing next month, not relationships closing next quarter. If you're the kind of agent who knows how to stay in touch, answer questions consistently, and be the expert when someone's actually ready to move, then you've got real work here. The conversion happens over time. The money follows after.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "story",
+      "ending": "dm_cta",
+      "date": "2026-07-31"
     }
   ]
 }
