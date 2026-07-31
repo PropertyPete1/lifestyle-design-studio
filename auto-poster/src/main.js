@@ -795,13 +795,15 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     if (!qcResult.ok) {
       throw new Error(`[QC] FAILED: ${qcResult.reason}`);
     }
-    // Freshness pass: light re-encode to make every upload byte-unique
-    // Skip if voiceover or compression already re-encoded the video
-    // NOTE ON GENERATIONS: the voiceover merge uses `-c:v copy`, so hasVoiceover
-    // alone does NOT mean the video was re-encoded. What actually re-encodes is
-    // the caption burn (CRF 18) and the QC compression. Track those explicitly so
-    // this stays correct if captions are ever burned without a voiceover.
-    const alreadyReEncoded = captionsBurned || Boolean(qcResult.details?.fileSize?.includes('compressed'));
+    // Freshness pass: light re-encode to make every upload byte-unique.
+    // Skip it only when something upstream has ALREADY re-encoded the video.
+    //
+    // NOTE ON GENERATIONS: the voiceover merge uses `-c:v copy`, so the presence
+    // of a voiceover does NOT mean the video was re-encoded. Before the Metricool
+    // upload, the caption burn (CRF 18) is now the only step that re-encodes —
+    // quality-check.js no longer compresses, and metricool.js compresses after
+    // this point. So the caption burn is the whole condition.
+    const alreadyReEncoded = captionsBurned;
     const freshnessResult = applyFreshness(
       existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath,
       { alreadyReEncoded, dryRun: DRY_RUN }
