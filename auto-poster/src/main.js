@@ -31,7 +31,7 @@ import { prePostQualityCheck } from "./quality-check.js";
 import { applyFreshness } from "./freshness.js";
 import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
-import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, loadBlocklist, blocklistVideo, isBlocklisted } from "./state.js";
+import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
@@ -252,7 +252,12 @@ async function main() {
   // Also check posted-log.json as belt-and-suspenders
   const recentLogIds = getRecentlyPostedIds(log, CITY, 30);
   const recentFileNames = getRecentlyPostedFileNames(log, CITY, 30);
-  console.log(`[Step 3] ${recentLogIds.size} videos in posted-log from last 30 days (${recentFileNames.size} unique fileNames)`);
+  // Cross-city guard: every city posts to the SAME IG/TikTok/YouTube accounts,
+  // so a video already posted under a different city is still a duplicate.
+  const recentIdsAnyCity = getRecentlyPostedIdsAllCities(log, 30);
+  const recentFileNamesAnyCity = getRecentlyPostedFileNamesAllCities(log, 30);
+  console.log(`[Step 3] ${recentLogIds.size} videos in posted-log from last 30 days for ${CITY} (${recentFileNames.size} unique fileNames)`);
+  console.log(`[Step 3] ${recentIdsAnyCity.size} videos posted across ALL cities in last 30 days (${recentFileNamesAnyCity.size} unique fileNames)`);
 
   // Load cached matches
   const matchCache = loadMatches();
@@ -295,6 +300,16 @@ async function main() {
     // Check posted-log by fileName (catches re-uploaded files with new driveFileId)
     if (recentFileNames.has(video.name)) {
       blocked.push({ video, reason: "posted-log (fileName match — same content, different driveFileId)" });
+      continue;
+    }
+
+    // Cross-city checks — same accounts receive every city's posts
+    if (recentIdsAnyCity.has(video.id)) {
+      blocked.push({ video, reason: "posted-log (same driveFileId posted under another city within 30d)" });
+      continue;
+    }
+    if (recentFileNamesAnyCity.has(video.name)) {
+      blocked.push({ video, reason: "posted-log (same fileName posted under another city within 30d)" });
       continue;
     }
 
@@ -782,7 +797,11 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     }
     // Freshness pass: light re-encode to make every upload byte-unique
     // Skip if voiceover or compression already re-encoded the video
-    const alreadyReEncoded = hasVoiceover || (qcResult.details?.fileSize?.includes('compressed'));
+    // NOTE ON GENERATIONS: the voiceover merge uses `-c:v copy`, so hasVoiceover
+    // alone does NOT mean the video was re-encoded. What actually re-encodes is
+    // the caption burn (CRF 18) and the QC compression. Track those explicitly so
+    // this stays correct if captions are ever burned without a voiceover.
+    const alreadyReEncoded = captionsBurned || Boolean(qcResult.details?.fileSize?.includes('compressed'));
     const freshnessResult = applyFreshness(
       existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath,
       { alreadyReEncoded, dryRun: DRY_RUN }

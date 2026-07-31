@@ -147,6 +147,38 @@ export function getRecentlyPostedFileNames(log, city, days = 30) {
   );
 }
 
+/**
+ * Get all Drive file IDs posted in the last N days across EVERY city.
+ *
+ * The per-city variants above are not sufficient on their own: all three city
+ * runs fan out to the SAME Metricool brands / IG accounts, so the same video
+ * living in two city folders can be published twice inside the 30-day window
+ * with each city's guard individually satisfied. From Instagram's perspective
+ * that is a repost of identical content to the same account.
+ */
+export function getRecentlyPostedIdsAllCities(log, days = 30) {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return new Set(
+    log.posts
+      .filter(p => p.driveFileId && new Date(p.timestamp).getTime() > cutoff)
+      .map(p => p.driveFileId)
+  );
+}
+
+/**
+ * Get all fileNames posted in the last N days across EVERY city.
+ * Catches the same video re-uploaded under a new driveFileId in a different
+ * city folder. See getRecentlyPostedIdsAllCities for why city scope is unsafe.
+ */
+export function getRecentlyPostedFileNamesAllCities(log, days = 30) {
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  return new Set(
+    log.posts
+      .filter(p => p.fileName && new Date(p.timestamp).getTime() > cutoff)
+      .map(p => p.fileName)
+  );
+}
+
 // ─── QC Blocklist ────────────────────────────────────────────────────────────
 
 const BLOCKLIST_PATH = join(__dirname, "..", "qc-blocklist.json");

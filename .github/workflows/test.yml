@@ -1,0 +1,26 @@
+name: Tests
+
+# The auto-poster publishes to live social accounts on a cron. A regression in the
+# duplicate guards or the caption safety rules is a business incident, not a failed
+# build — so these run on every push and PR that touches the poster.
+on:
+  push:
+    branches: [main]
+    paths: ["auto-poster/**", ".github/workflows/test.yml"]
+  pull_request:
+    paths: ["auto-poster/**", ".github/workflows/test.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Run test suite
+        working-directory: auto-poster
+        run: npm test

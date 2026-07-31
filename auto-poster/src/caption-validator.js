@@ -54,6 +54,53 @@ const FORBIDDEN_OPENING_ONLY = [
   { pattern: /Could you/i, label: 'assistant-speak opening: "Could you"' },
 ];
 
+// ─── Monthly-payment figure guard ────────────────────────────────────────────
+//
+// HARD BUSINESS RULE: the system must NEVER state a specific monthly payment.
+// Payments may only be TEASED ("lower than most people guess"); the real number
+// is what the lead receives after engaging. Stating a computed payment is both a
+// lead-gen leak and an advertising-compliance problem (an unlicensed party
+// quoting financing terms).
+//
+// Until now this rule existed ONLY as prompt text. Prompt instructions are not a
+// control — a model that ignores them publishes a number with nothing in the way.
+// These patterns are the deterministic backstop.
+//
+// Must NOT fire on legitimate copy:
+//   "starting at $389,000"                        (a price, not a payment)
+//   "the monthly payment is lower than you think" (a tease, no figure)
+//   "I'll send the exact payment breakdown"       (the CTA)
+const NUMBER_WORD = "(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)";
+
+const PAYMENT_FIGURE_PATTERNS = [
+  // "$1,850/mo", "$1850 per month", "$1,850 a month"
+  { pattern: /\$\s?\d[\d,]*(?:\.\d{2})?\s*(?:\/|per\s+|a\s+|each\s+|every\s+)\s*(?:mo\b|month)/i, label: "$X per month" },
+  // "1,850 dollars a month"
+  { pattern: /\b\d[\d,]*(?:\.\d{2})?\s*dollars?\s*(?:\/|per\s+|a\s+|each\s+|every\s+)\s*(?:mo\b|month)/i, label: "X dollars per month" },
+  // "monthly payment of $1,850" / "payment is about $1850" / "mortgage payment: $1,850"
+  { pattern: /(?:monthly\s+payment|mortgage\s+payment|payment|note|PITI)\b[^.!?\n]{0,25}?\$\s?\d[\d,]*/i, label: "payment tied to a $ figure" },
+  // "$1,850 monthly"
+  { pattern: /\$\s?\d[\d,]*(?:\.\d{2})?\s+monthly\b/i, label: "$X monthly" },
+  // spelled out: "eighteen hundred a month", "two thousand dollars per month"
+  { pattern: new RegExp(`\\b${NUMBER_WORD}(?:[\\s-]+${NUMBER_WORD})?\\s+(?:hundred|thousand)\\b[^.!?\\n]{0,20}?(?:\\/|per\\s+|a\\s+|each\\s+|every\\s+)\\s*(?:mo\\b|month)`, "i"), label: "spelled-out payment per month" },
+  // "payment ... eighteen hundred" (voiceover scripts spell numbers as words)
+  { pattern: new RegExp(`(?:monthly\\s+payment|mortgage\\s+payment)\\b[^.!?\\n]{0,25}?\\b${NUMBER_WORD}(?:[\\s-]+${NUMBER_WORD})?\\s+(?:hundred|thousand)\\b`, "i"), label: "payment tied to a spelled-out figure" },
+];
+
+/**
+ * Detect a stated monthly payment figure in generated text.
+ * Applies to BOTH captions and voiceover scripts.
+ * @returns {{ found: boolean, label?: string, match?: string }}
+ */
+export function findMonthlyPaymentFigure(text) {
+  if (!text || typeof text !== "string") return { found: false };
+  for (const { pattern, label } of PAYMENT_FIGURE_PATTERNS) {
+    const m = text.match(pattern);
+    if (m) return { found: true, label, match: m[0].trim() };
+  }
+  return { found: false };
+}
+
 /**
  * Validate a generated caption against required and forbidden markers.
  * @param {string} caption - The generated caption text
@@ -101,6 +148,12 @@ export function validateCaption(caption) {
     if (pattern.test(caption)) {
       failures.push(`CONTAINS forbidden: ${label}`);
     }
+  }
+
+  // HARD RULE: never state a monthly payment figure
+  const payment = findMonthlyPaymentFigure(caption);
+  if (payment.found) {
+    failures.push(`CONTAINS forbidden monthly payment figure (${payment.label}): "${payment.match}"`);
   }
 
   // Check FORBIDDEN markers — first 150 chars only (phrases that are legit mid-caption)
