@@ -7,7 +7,7 @@
     "post": "node src/main.js",
     "dry-run": "DRY_RUN=true node src/main.js",
     "get-token": "node scripts/get-refresh-token.js",
-    "test": "node --test \"tests/*.test.mjs\""
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
