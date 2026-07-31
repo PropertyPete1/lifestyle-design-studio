@@ -21,8 +21,16 @@ import http from "http";
 import { URL } from "url";
 import { exec } from "child_process";
 
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "1014621141316-fs30p38fo8a99gs6ggufu5hf39vb0e3q.apps.googleusercontent.com";
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "GOCSPX-6xA1ZbsFEtaV4uQlEvzvDkqCJ5B";
+// SECURITY: never hardcode credentials here. This file is committed to a PUBLIC repo.
+// Supply both values via environment variables when running the script:
+//   GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... node scripts/get-refresh-token.js
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+if (!CLIENT_ID || !CLIENT_SECRET) {
+  console.error("ERROR: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in the environment.");
+  console.error("Get them from Google Cloud Console → APIs & Services → Credentials.");
+  process.exit(1);
+}
 const REDIRECT_URI = "http://localhost:3847/callback";
 const SCOPES = [
   "https://www.googleapis.com/auth/drive",       // Full Drive access (read + write + delete)

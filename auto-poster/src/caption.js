@@ -13,7 +13,7 @@ import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { sanitizeCaption, sanitizeForTTS } from "./sanitize.js";
-import { validateCaption, RETRY_INSTRUCTION } from "./caption-validator.js";
+import { validateCaption, RETRY_INSTRUCTION, findMonthlyPaymentFigure } from "./caption-validator.js";
 import { pickHookStyle, loadWeights } from "./analytics.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -224,11 +224,75 @@ RULES:
 - "comment TOUR" appears EXACTLY ONCE in the entire caption (in the primary CTA at the end). The word "comment" must not appear anywhere else.
 `;
 
+// ─── Leak-scanner text normalization ─────────────────────────────────────────
+//
+// The leak scanner is the ONLY thing preventing gated community/builder names
+// from reaching a published caption, so it must not be defeated by cosmetic
+// variation that an LLM produces routinely: typographic apostrophes, dropped
+// diacritics, non-breaking spaces, hyphens instead of spaces, plurals.
+//
+// Strategy: fold the caption into a normalized search space while keeping a map
+// back to original character offsets, match there, then splice replacements into
+// the ORIGINAL string so untouched text keeps its exact formatting.
+
+const ZERO_WIDTH = new Set(["​", "‌", "‍", "﻿", "­"]);
+const SPACE_LIKE = new Set([" ", " ", " ", " ", " ", " "]);
+const PUNCT_FOLD = {
+  "’": "'", "‘": "'", "ʼ": "'",
+  "“": '"', "”": '"',
+  "‐": "-", "‑": "-", "‒": "-", "–": "-", "—": "-", "−": "-",
+};
+
+/**
+ * Fold text to a normalized search space.
+ * Returns { normalized, map } where map[i] is the ORIGINAL index of normalized[i].
+ */
+function normalizeForMatching(text) {
+  let normalized = "";
+  const map = [];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ZERO_WIDTH.has(ch)) continue;               // drop entirely
+    let out;
+    if (SPACE_LIKE.has(ch)) out = " ";
+    else if (PUNCT_FOLD[ch]) out = PUNCT_FOLD[ch];
+    else {
+      // Decompose and strip combining marks so "ó" matches "o"
+      out = ch.normalize("NFKD").replace(/[̀-ͯ]/g, "");
+    }
+    out = out.toLowerCase();
+    for (const c of out) {
+      normalized += c;
+      map.push(i);                                   // every produced char maps to this original index
+    }
+  }
+  return { normalized, map };
+}
+
+/** Build a variation-tolerant regex source for a gated term. */
+function gatedTermPattern(term) {
+  const { normalized } = normalizeForMatching(term);
+  const escaped = normalized
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    // separator between words may be space, hyphen, underscore, or a line break
+    .join("[\\s\\-_]+");
+  // Optional possessive / plural suffix so "Esperanza's" and "Esperanzas" both match
+  return `\\b${escaped}(?:'s|s|es)?\\b`;
+}
+
+// Builder-count leak: digits OR spelled-out numbers. The voiceover prompts
+// explicitly instruct the model to spell numbers as words, so "five different
+// builders" is at least as likely as "5 different builders".
+const BUILDER_COUNT_PATTERN =
+  /\b(?:\d+|a\s+few|several|multiple|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a\s+dozen)\s+(?:different\s+|separate\s+|distinct\s+)?builders?\b/gi;
+
 /**
  * Build the list of gated terms from the KB for post-generation scanning.
  * Returns an array of { term, type } objects.
  */
-function buildGatedTerms(community) {
+export function buildGatedTerms(community) {
   const terms = [];
   const kb = loadCommunities();
 
@@ -289,34 +353,52 @@ function buildGatedTerms(community) {
  * Checks the generated caption against gated terms and strips any leaks.
  * Returns { caption, leaksFound, leakDetails }.
  */
-function scanAndStripLeaks(caption, community) {
+export function scanAndStripLeaks(caption, community) {
   const gatedTerms = buildGatedTerms(community);
   const leakDetails = [];
 
+  const REPLACEMENTS = {
+    community_name: "this community",
+    builder_name: "the builder",
+    branded_amenity: "the amenity center",
+  };
+
   let cleaned = caption;
+
+  // Match in normalized space, then splice into the ORIGINAL string.
+  // Re-normalize each pass because a replacement changes the offsets.
   for (const { term, type } of gatedTerms) {
-    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`\\b${escaped}\\b`, "gi");
-    if (regex.test(cleaned)) {
+    const replacement = REPLACEMENTS[type];
+    if (!replacement) continue;
+
+    let guard = 0;
+    for (;;) {
+      if (++guard > 50) break; // safety: never loop forever on pathological input
+      const { normalized, map } = normalizeForMatching(cleaned);
+      const re = new RegExp(gatedTermPattern(term), "g");
+      const m = re.exec(normalized);
+      if (!m) break;
+
+      const startOrig = map[m.index];
+      // end = one past the original index of the last matched normalized char
+      const lastIdx = m.index + m[0].length - 1;
+      const endOrig = map[lastIdx] + 1;
+
       leakDetails.push({ term, type });
-      // Reset lastIndex after test() since we reuse the regex
-      regex.lastIndex = 0;
-      if (type === "community_name") {
-        cleaned = cleaned.replace(regex, "this community");
-      } else if (type === "builder_name") {
-        cleaned = cleaned.replace(regex, "the builder");
-      } else if (type === "branded_amenity") {
-        cleaned = cleaned.replace(regex, "the amenity center");
-      }
+      cleaned = cleaned.slice(0, startOrig) + replacement + cleaned.slice(endOrig);
     }
   }
 
-  // Also check for "X builders" or "X different builders" patterns
-  const builderCountPattern = /\b\d+\s+(different\s+)?builders?\b/gi;
-  if (builderCountPattern.test(cleaned)) {
+  // Builder-shopping leak: "5 builders" / "five different builders"
+  BUILDER_COUNT_PATTERN.lastIndex = 0;
+  if (BUILDER_COUNT_PATTERN.test(cleaned)) {
     leakDetails.push({ term: "builder count", type: "builder_shopping" });
-    cleaned = cleaned.replace(builderCountPattern, "multiple floor plan options");
+    BUILDER_COUNT_PATTERN.lastIndex = 0;
+    cleaned = cleaned.replace(BUILDER_COUNT_PATTERN, "multiple floor plan options");
   }
+
+  // Tidy up grammar artifacts left by replacement (e.g. "the builder' team")
+  cleaned = cleaned.replace(/\b(this community|the builder|the amenity center)\s*['’](?!s)/gi, "$1's");
 
   return {
     caption: cleaned,
@@ -635,8 +717,15 @@ Example (no price): "Wait until you see this brand new home in Austin. These cei
     });
     const content = response.content[0]?.text;
     if (content && content.length > 30) {
-      console.log(`[VoiceoverScript] Generated payment-tease (${content.length} chars, ~${content.split(/\s+/).length} words)`);
-      return sanitizeForTTS(sanitizeCaption(content));
+      // HARD RULE: a payment-tease script must never state a payment figure.
+      // Fall back to the hand-written script rather than speaking a number.
+      const payment = findMonthlyPaymentFigure(content);
+      if (payment.found) {
+        console.error(`[VoiceoverScript] ❌ BLOCKED: script stated a monthly payment figure (${payment.label}): "${payment.match}" — using safe fallback script`);
+      } else {
+        console.log(`[VoiceoverScript] Generated payment-tease (${content.length} chars, ~${content.split(/\s+/).length} words)`);
+        return sanitizeForTTS(sanitizeCaption(content));
+      }
     }
   } catch (err) {
     console.error("[VoiceoverScript] Anthropic API failed:", err.message);

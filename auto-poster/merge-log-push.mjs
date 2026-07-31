@@ -20,6 +20,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync, copyFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { MERGE_STRATEGIES, MERGE_FILES } from "./merge-strategies.mjs";
 
 const MAX_ATTEMPTS = 5;
 const CITY = process.argv[2] || "unknown";
@@ -27,16 +28,40 @@ const POST_SUCCESS = process.argv[3] === "true";
 const REPO_DIR = process.cwd(); // Should be auto-poster/
 
 // Files to merge
-const FILES = ["posted-log.json", "video-matches.json", "performance-weights.json", "qc-blocklist.json", "linkedin-history.json", "trial-variants.json"];
+const FILES = MERGE_FILES;
 const TMP_DIR = "/tmp/merge-push-local";
 
-function run(cmd, opts = {}) {
+/**
+ * Run a command, returning BOTH the exit status and the combined output.
+ *
+ * Never infer success from stdout contents — `git push` reports most failures on
+ * stderr with wording that varies by failure class (e.g. "Could not resolve host"
+ * contains none of "rejected"/"error:"/"failed"). Exit status is the only
+ * trustworthy signal.
+ */
+function runStatus(cmd, opts = {}) {
   try {
-    return execSync(cmd, { cwd: REPO_DIR, encoding: "utf-8", stdio: "pipe", ...opts });
+    const stdout = execSync(cmd, {
+      cwd: REPO_DIR,
+      encoding: "utf-8",
+      stdio: "pipe",
+      ...opts,
+    });
+    return { ok: true, code: 0, output: stdout || "" };
   } catch (e) {
-    if (opts.allowFail) return e.stdout || "";
-    throw e;
+    const output = `${e.stdout || ""}${e.stderr || ""}`;
+    return { ok: false, code: e.status ?? 1, output };
   }
+}
+
+function run(cmd, opts = {}) {
+  const r = runStatus(cmd, opts);
+  if (!r.ok && !opts.allowFail) {
+    const err = new Error(`Command failed (exit ${r.code}): ${cmd}\n${r.output}`);
+    err.status = r.code;
+    throw err;
+  }
+  return r.output;
 }
 
 function readJSON(path) {
@@ -49,102 +74,6 @@ function readJSON(path) {
 
 function writeJSON(path, data) {
   writeFileSync(path, JSON.stringify(data, null, 2) + "\n");
-}
-
-// ─── Merge strategies ────────────────────────────────────────────────────────
-
-function mergePostedLog(local, remote) {
-  // Both have a "posts" array. Append local entries not already in remote.
-  const remotePosts = remote?.posts || [];
-  const localPosts = local?.posts || [];
-
-  // Build a set of existing timestamps for dedup
-  const existingTimestamps = new Set(
-    remotePosts.map((p) => p.timestamp).filter(Boolean)
-  );
-
-  let added = 0;
-  for (const entry of localPosts) {
-    if (entry.timestamp && !existingTimestamps.has(entry.timestamp)) {
-      remotePosts.push(entry);
-      existingTimestamps.add(entry.timestamp);
-      added++;
-    }
-  }
-
-  // Also merge any other top-level keys (like "version")
-  const merged = { ...remote, ...local, posts: remotePosts };
-  console.log(`[Merge] posted-log: ${added} new entries appended (total: ${remotePosts.length})`);
-  return merged;
-}
-
-function mergeVideoMatches(local, remote) {
-  // Object with keys → local wins on conflict (has fresher match data)
-  const merged = { ...remote, ...local };
-  const localKeys = Object.keys(local || {}).length;
-  const remoteKeys = Object.keys(remote || {}).length;
-  const mergedKeys = Object.keys(merged).length;
-  console.log(`[Merge] video-matches: local=${localKeys}, remote=${remoteKeys}, merged=${mergedKeys}`);
-  return merged;
-}
-
-function mergePerformanceWeights(local, remote) {
-  // Object with keys, each having a lastUpdated field. Take newer per key.
-  const merged = { ...(remote || {}) };
-  for (const [key, localVal] of Object.entries(local || {})) {
-    if (!merged[key]) {
-      merged[key] = localVal;
-    } else if (localVal && typeof localVal === "object" && localVal.lastUpdated) {
-      const remoteUpdated = merged[key]?.lastUpdated || "";
-      if (localVal.lastUpdated > remoteUpdated) {
-        merged[key] = localVal;
-      }
-    } else {
-      // No lastUpdated — local wins
-      merged[key] = localVal;
-    }
-  }
-  console.log(`[Merge] performance-weights: ${Object.keys(merged).length} keys`);
-  return merged;
-}
-
-function mergeBlocklist(local, remote) {
-  // Union of all blocked IDs — once blocked, always blocked
-  const merged = { blockedDriveIds: { ...(remote?.blockedDriveIds || {}), ...(local?.blockedDriveIds || {}) } };
-  console.log(`[Merge] qc-blocklist: ${Object.keys(merged.blockedDriveIds).length} blocked videos`);
-  return merged;
-}
-
-function mergeLinkedinHistory(local, remote) {
-  // Union of posts by date, keep last 7
-  const allPosts = [...(remote?.posts || []), ...(local?.posts || [])];
-  // Dedupe by date (keep latest entry per date)
-  const byDate = new Map();
-  for (const p of allPosts) {
-    byDate.set(p.date || p.body?.slice(0, 30), p);
-  }
-  const merged = { posts: [...byDate.values()].slice(-7) };
-  console.log(`[Merge] linkedin-history: ${merged.posts.length} entries`);
-  return merged;
-}
-
-function mergeTrialVariants(local, remote) {
-  // Union variants by generatedAt (dedup)
-  const all = [...(remote?.variants || []), ...(local?.variants || [])];
-  const seen = new Set();
-  const deduped = [];
-  for (const v of all) {
-    const key = v.generatedAt || `${v.date}-${v.window}-${v.sourceVideoId}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      deduped.push(v);
-    }
-  }
-  // Sort by date descending, keep last 100
-  deduped.sort((a, b) => (b.generatedAt || "").localeCompare(a.generatedAt || ""));
-  const merged = { variants: deduped.slice(0, 100) };
-  console.log(`[Merge] trial-variants: ${merged.variants.length} entries`);
-  return merged;
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -191,31 +120,24 @@ async function main() {
 
         if (!localData) continue;
 
-        let merged;
-        if (file === "posted-log.json") {
-          merged = mergePostedLog(localData, remoteData || { posts: [] });
-        } else if (file === "video-matches.json") {
-          merged = mergeVideoMatches(localData, remoteData);
-        } else if (file === "performance-weights.json") {
-          merged = mergePerformanceWeights(localData, remoteData);
-        } else if (file === "qc-blocklist.json") {
-          merged = mergeBlocklist(localData, remoteData);
-        } else if (file === "linkedin-history.json") {
-          merged = mergeLinkedinHistory(localData, remoteData || { posts: [] });
-        } else if (file === "trial-variants.json") {
-          merged = mergeTrialVariants(localData, remoteData || { variants: [] });
-        } else {
-          merged = localData; // Fallback: local wins
-        }
+        const strategy = MERGE_STRATEGIES[file];
+        const merged = strategy ? strategy(localData, remoteData, console.log) : localData;
 
         writeJSON(remotePath, merged);
       }
 
-      // Stage and commit
-      run("git add posted-log.json video-matches.json performance-weights.json qc-blocklist.json linkedin-history.json trial-variants.json 2>/dev/null || true", { allowFail: true });
+      // Stage only the files that actually exist. `git add` with a pathspec that
+      // matches nothing fails for the WHOLE invocation, which previously staged
+      // nothing at all and made the run look like a clean no-op.
+      const filesToAdd = FILES.filter((f) => existsSync(join(REPO_DIR, f)));
+      if (filesToAdd.length === 0) {
+        throw new Error("No merge-managed files exist on disk — refusing to continue");
+      }
+      run(`git add ${filesToAdd.map((f) => `"${f}"`).join(" ")}`);
 
-      const diffResult = run("git diff --cached --quiet || echo changed", { allowFail: true }).trim();
-      if (!diffResult.includes("changed")) {
+      const staged = runStatus("git diff --cached --quiet");
+      // exit 0 => no staged changes; exit 1 => staged changes present
+      if (staged.ok) {
         console.log("[MergePush] No diff after merge — files already in sync.");
         process.exit(0);
       }
@@ -227,19 +149,26 @@ async function main() {
       run(`git commit -m "${commitMsg}"`);
       console.log(`[MergePush] Committed: ${commitMsg}`);
 
-      // Push
-      const pushResult = run("git push origin main 2>&1", { allowFail: true });
-      if (pushResult.includes("rejected") || pushResult.includes("error:") || pushResult.includes("failed")) {
-        console.log(`[MergePush] Push rejected on attempt ${attempt} — will retry with fresh merge`);
-        if (attempt < MAX_ATTEMPTS) {
-          const backoff = attempt * 3;
-          console.log(`[MergePush] Waiting ${backoff}s before retry...`);
-          await new Promise((r) => setTimeout(r, backoff * 1000));
-          continue;
+      // Push — success is determined by EXIT STATUS, never by grepping output.
+      const push = runStatus("git push origin main");
+      if (push.ok) {
+        // Verify the remote actually advanced to our commit before declaring victory.
+        const localSha = run("git rev-parse HEAD").trim();
+        const remoteSha = runStatus("git ls-remote origin refs/heads/main").output.split(/\s+/)[0] || "";
+        if (remoteSha && remoteSha !== localSha) {
+          console.log(`[MergePush] Push reported success but remote is at ${remoteSha.slice(0, 8)}, expected ${localSha.slice(0, 8)} — retrying`);
+        } else {
+          console.log(`[MergePush] ✓ Push succeeded on attempt ${attempt} (remote at ${localSha.slice(0, 8)})`);
+          process.exit(0);
         }
       } else {
-        console.log(`[MergePush] ✓ Push succeeded on attempt ${attempt}`);
-        process.exit(0);
+        console.log(`[MergePush] Push FAILED on attempt ${attempt} (exit ${push.code}): ${push.output.trim().slice(0, 300)}`);
+      }
+      if (attempt < MAX_ATTEMPTS) {
+        const backoff = attempt * 3;
+        console.log(`[MergePush] Waiting ${backoff}s before retry...`);
+        await new Promise((r) => setTimeout(r, backoff * 1000));
+        continue;
       }
     } catch (err) {
       console.error(`[MergePush] Error on attempt ${attempt}: ${err.message}`);
