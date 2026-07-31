@@ -750,7 +750,9 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
 
     // Voiceover pipeline (now receives videoOverlays for payment-tease script)
     console.log("[Post] Running voiceover detection...");
-    const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN, videoOverlays);
+    // `log` is passed through so persona rotation can see this city's history
+    // without re-reading posted-log.json from disk.
+    const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN, videoOverlays, { log });
     finalVideoPath = voResult.videoPath;
     const hasVoiceover = !voResult.skipped;
     // Build voiceover reason for audit trail
@@ -966,6 +968,8 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         voiceover: hasVoiceover,
         voiceover_reason: voiceoverReason,
         voiceover_transcript: voiceoverTranscript,
+        // Persisted so the next run for this city can avoid repeating the persona
+        voiceover_persona: voResult.persona || null,
         captions_burned: captionsBurned,
         captions_error: captionsError,
         freshness: freshnessResult.applied ? "re_encoded" : freshnessResult.reason,

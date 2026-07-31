@@ -11,12 +11,20 @@
  */
 
 import { execSync } from "child_process";
-import { writeFileSync, readFileSync, unlinkSync, existsSync } from "fs";
+import { writeFileSync, readFileSync, unlinkSync, existsSync, statSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import Anthropic from "@anthropic-ai/sdk";
 import { generateVoiceoverScript } from "./caption.js";
 import { detectSpeech } from "./speech-detect.js";
+import { loadLog } from "./state.js";
+import {
+  resolveTempo,
+  buildAudioFilterChain,
+  resolveVoiceSettings,
+  pickPersona,
+  getRecentTranscripts,
+} from "./voiceover-style.js";
 
 // Voice ID from env var (changeable without code edits) with hardcoded fallback
 const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "qnTRoadmcb87J7GRHnhG";
@@ -134,12 +142,10 @@ async function generateTTS(script) {
     body: JSON.stringify({
       text: script,
       model_id: "eleven_multilingual_v2",
-      voice_settings: {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: 0.4,
-        use_speaker_boost: true,
-      },
+      // Tuned for energetic marketer delivery; each knob documented in
+      // voiceover-style.js and overridable via ELEVENLABS_STABILITY /
+      // ELEVENLABS_STYLE / ELEVENLABS_SIMILARITY.
+      voice_settings: resolveVoiceSettings(),
     }),
   });
 
@@ -154,6 +160,48 @@ async function generateTTS(script) {
 
   console.log(`[Voiceover] TTS generated (${(audioBuffer.length / 1024).toFixed(0)} KB)`);
   return outputPath;
+}
+
+/**
+ * Post-process the TTS MP3 for fast, dead-air-free delivery.
+ *
+ * Two passes in one ffmpeg invocation:
+ *   1. silenceremove — collapse inter-sentence gaps down to ~250ms. ElevenLabs
+ *      leaves long pauses that read as dead air over fast-cut listing footage.
+ *   2. atempo — speed the whole read up (default 1.18x, VOICEOVER_TEMPO override,
+ *      clamped 1.0–1.30 so it never becomes hard to understand).
+ *
+ * AUDIO ONLY. This runs on the MP3 before the merge, so it adds no video
+ * re-encode generation — the merge still uses `-c:v copy`.
+ *
+ * Non-fatal: if ffmpeg fails we return the original audio rather than losing the
+ * whole post over a pacing tweak.
+ */
+function postProcessVoiceoverAudio(audioPath) {
+  const tempo = resolveTempo();
+  const chain = buildAudioFilterChain(tempo);
+  const outputPath = audioPath.replace(/\.mp3$/, "_fast.mp3");
+
+  try {
+    const before = statSync(audioPath).size;
+    execSync(
+      `ffmpeg -y -i "${audioPath}" -af "${chain}" -c:a libmp3lame -q:a 2 "${outputPath}" 2>&1`,
+      { encoding: "utf-8", timeout: 60000 }
+    );
+    if (!existsSync(outputPath) || statSync(outputPath).size < 1024) {
+      console.warn("[Voiceover] Post-process produced no usable audio — keeping original");
+      try { unlinkSync(outputPath); } catch {}
+      return audioPath;
+    }
+    const after = statSync(outputPath).size;
+    console.log(`[Voiceover] Pacing: silence>${0.25}s trimmed, tempo ${tempo}x (${(before / 1024).toFixed(0)}KB -> ${(after / 1024).toFixed(0)}KB)`);
+    try { unlinkSync(audioPath); } catch {}
+    return outputPath;
+  } catch (err) {
+    console.warn(`[Voiceover] Audio post-process failed (non-fatal): ${err.message?.slice(0, 120)}`);
+    try { unlinkSync(outputPath); } catch {}
+    return audioPath;
+  }
 }
 
 /**
@@ -202,11 +250,19 @@ export async function processVoiceover(videoPath, city, dryRun = false, videoOve
       return { videoPath, skipped: false, reason: "force_voiceover_dry_run", detection: { hasSpeech: false } };
     }
     const duration = getVideoDuration(videoPath);
-    const script = await generateVoiceoverScript(city, duration, videoOverlays, { angleInstruction });
+    const styleLog = opts.log || loadLog();
+    const persona = pickPersona(styleLog, city);
+    const avoidTranscripts = getRecentTranscripts(styleLog, 5);
+    const script = await generateVoiceoverScript(city, duration, videoOverlays, {
+      angleInstruction,
+      persona,
+      avoidTranscripts,
+    });
     console.log(`[Voiceover] Script: "${script.slice(0, 80)}..."`);
-    const audioPath = await generateTTS(script);
+    let audioPath = await generateTTS(script);
+    audioPath = postProcessVoiceoverAudio(audioPath);
     const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
-    return { videoPath: mergedPath, mergedPath, skipped: false, reason: "force_voiceover", script, detection: { hasSpeech: false }, audioPath };
+    return { videoPath: mergedPath, mergedPath, skipped: false, reason: "force_voiceover", script, detection: { hasSpeech: false }, audioPath, persona: persona.id };
   }
 
   // Step 1: Detect speech using Whisper (with volume pre-filter)
@@ -253,20 +309,30 @@ export async function processVoiceover(videoPath, city, dryRun = false, videoOve
 
   // Step 3: Get video duration and generate script
   const duration = getVideoDuration(videoPath);
-  const script = await generateVoiceoverScript(city, duration, videoOverlays, { angleInstruction });
+  const styleLog = opts.log || loadLog();
+  const persona = pickPersona(styleLog, city);
+  const avoidTranscripts = getRecentTranscripts(styleLog, 5);
+  const script = await generateVoiceoverScript(city, duration, videoOverlays, {
+    angleInstruction,
+    persona,
+    avoidTranscripts,
+  });
   console.log(`[Voiceover] Script: "${script.slice(0, 80)}..."`);
 
-  // Step 4: Generate TTS
-  const audioPath = await generateTTS(script);
+  // Step 4: Generate TTS, then tighten pacing (silence trim + speedup)
+  let audioPath = await generateTTS(script);
+  audioPath = postProcessVoiceoverAudio(audioPath);
 
   // Step 5: Merge (ducks original audio to 12% automatically)
   const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
 
   // NOTE: Do NOT delete audioPath here — caller needs it for burned captions (Whisper word timing).
+  // It intentionally points at the POST-PROCESSED audio, so burned captions stay
+  // in sync with what is actually in the merged video.
   // Caller is responsible for cleanup via cleanup(audioPath) after caption burn.
 
   const reason = detection._overrideReason || (detection.silent ? "silent_add_voiceover" : "music_only_add_voiceover");
-  return { videoPath: mergedPath, skipped: false, reason, script, detection, audioPath };
+  return { videoPath: mergedPath, skipped: false, reason, script, detection, audioPath, persona: persona.id };
 }
 
 /**

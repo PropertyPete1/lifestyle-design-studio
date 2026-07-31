@@ -14,6 +14,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { sanitizeCaption, sanitizeForTTS } from "./sanitize.js";
 import { validateCaption, RETRY_INSTRUCTION, findMonthlyPaymentFigure } from "./caption-validator.js";
+import { targetWordsForDuration, resolveTempo, buildAvoidBlock } from "./voiceover-style.js";
 import { pickHookStyle, loadWeights } from "./analytics.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -611,14 +612,19 @@ ${CAPTION_RULES}`;
  * Script should be shorter than video duration to ensure natural ending.
  */
 export async function generateVoiceoverScript(city, videoDurationSec = 30, videoOverlays = null, opts = {}) {
-  const { angleInstruction = null } = opts;
+  const { angleInstruction = null, persona = null, avoidTranscripts = [] } = opts;
   const runCityName = CITY_NAMES[city] || city;
   // Overlay city is ground truth for location (San Marcos, Kyle, Buda, Leander, etc.)
   const overlayCity = cleanOverlayCity(videoOverlays?.city);
   const spokenCity = overlayCity || runCityName;
   const citySource = overlayCity ? "overlay" : "run_city";
   console.log(`[VoiceoverScript] Spoken city: ${spokenCity} (source: ${citySource})`);
-  const targetWords = Math.floor(videoDurationSec * 2.2);
+  // Word budget scales with the delivery tempo — the TTS audio is sped up after
+  // generation, so a script written for 1.0x would leave the clip's tail silent.
+  const targetWords = targetWordsForDuration(videoDurationSec, resolveTempo());
+  const personaBlock = persona ? `\n${persona.instruction}\n` : "";
+  const avoidBlock = buildAvoidBlock(avoidTranscripts);
+  if (persona) console.log(`[VoiceoverScript] Persona: ${persona.label} (${persona.id})`);
 
   // Extract price and rate from overlay/KB for payment-tease script
   let priceFromOverlay = null;
@@ -678,10 +684,13 @@ CONTEXT:
 
 ANGLE INSTRUCTION:
 ${angleInstruction}
-
+${personaBlock}${avoidBlock}
 RULES:
-- Maximum ${targetWords} words (MUST be shorter than ${videoDurationSec} seconds when spoken)
-- Sound confident and conversational, like you're showing a friend around
+- Target ${targetWords} words. This read gets sped up after recording, so write for FAST delivery and fill the clip densely.
+- FRONT-LOAD THE HOOK: the first five words must stop a scroll. No "welcome to" / "take a look at" / "imagine" openers.
+- Short punchy sentences. Zero filler words ("really", "very", "just", "actually", "absolutely").
+- MINIMAL COMMAS, and NEVER use ellipses (...) — the TTS engine pauses on punctuation and pauses read as dead air.
+- DO NOT invent facts about this specific property, its builder, its incentives, or any named person.
 - DO NOT mention community names, builder names, or addresses
 - DO NOT use hashtags or emojis
 - Do NOT use em-dashes or en-dashes. Use periods, commas, or line breaks instead.
@@ -690,24 +699,35 @@ RULES:
 - Also spell out abbreviations: "square feet" not "sqft", "street" not "st".
 - End with: "Comment TOUR and I'll send you the exact payment breakdown"
 - Return ONLY the script text, nothing else`
-    : `Write a short voiceover script for a real estate video in ${spokenCity}, Texas. This is a PAYMENT TEASE format. Follow this EXACT structure:
+    : `You are the voice of a high-energy real estate marketer on short-form video. Write a voiceover script for a listing video in ${spokenCity}, Texas.
+
+This read gets sped up after recording, so it MUST be written for FAST delivery.
+${personaBlock}
+STRUCTURE:
 1. ${priceInstruction}
-2. ONE FEATURE BEAT: Mention ONE visual feature only (the most striking thing visible in a new build tour, e.g. "look at this kitchen" or "these ceilings are massive"). Keep it to one sentence max.
+2. ONE FEATURE BEAT: the single most striking thing visible in a new build tour. One sentence, concrete, no adjective pile-ups.
 3. ${paymentAngleInstruction}
 4. ${ctaInstruction}
-RULES:
-- Maximum ${targetWords} words (MUST be shorter than ${videoDurationSec} seconds when spoken)
-- The script has FOUR parts only: hook, one feature, payment angle, CTA. Nothing else.
-- Sound confident and conversational, like you're showing a friend around
-- DO NOT mention community names, builder names, or addresses
-- DO NOT use hashtags or emojis
-- Do NOT use em-dashes or en-dashes. Use periods, commas, or line breaks instead.
-- Do NOT invent or compute any payment figures. NEVER state a monthly payment number.
-- Spell out ALL numbers as words. Never use digits. "four hundred forty thousand dollars" not "$440,000". "four point nine nine percent" not "4.99%".
+
+WRITING FOR SPEED — this is the most important part:
+- Target ${targetWords} words. Fill the clip densely; do not finish early.
+- FRONT-LOAD THE HOOK. The first five words must make someone stop scrolling. No throat-clearing.
+- BANNED OPENERS: "welcome to", "take a look at", "let me show you", "this beautiful home", "nestled in", "imagine". Start mid-thought instead.
+- Short punchy sentences. Fragments are good. Vary sentence length so it has rhythm.
+- ZERO filler words: "really", "very", "just", "actually", "absolutely", "truly", "simply", "literally".
+- MINIMAL COMMAS. Prefer a period over a comma. The TTS engine pauses on punctuation and pauses read as dead air.
+- NEVER use ellipses (...). NEVER use em-dashes or en-dashes. They create long TTS pauses.
+${avoidBlock}
+HARD RULES — these are not style preferences:
+- DO NOT invent or compute any payment figures. NEVER state a monthly payment number.
+- DO NOT invent facts about this specific property, its builder, its incentives, or any named person.
+- DO NOT mention community names, builder names, or addresses.
+- DO NOT use hashtags or emojis.
+- Spell out ALL numbers as words. "four hundred forty thousand dollars" not "$440,000". "four point nine nine percent" not "4.99%".
 - Also spell out abbreviations: "square feet" not "sqft", "street" not "st".
-- Return ONLY the script text, nothing else
-Example (with price and rate): "Brand new construction in San Antonio starting at three hundred eighty nine thousand dollars. Look at this open concept kitchen with the quartz countertops. With the four point nine nine percent fixed rate, the monthly payment on this is lower than most people guess. Comment TOUR and I'll send you the exact payment breakdown."
-Example (no price): "Wait until you see this brand new home in Austin. These ceilings are absolutely massive. The payment on this one surprises people. Comment TOUR and I'll send you the exact payment breakdown."`;
+- Return ONLY the script text, nothing else.
+
+Example of the ENERGY to hit (do not copy the wording): "Three hundred twenty six thousand. Brand new. In ${spokenCity}. Look at this kitchen. The payment on this one surprises people. Comment TOUR and I'll send you the exact payment breakdown."`;
 
   try {
     const response = await getClient().messages.create({
