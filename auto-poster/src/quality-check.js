@@ -1,13 +1,22 @@
 /**
  * Pre-Post Quality Check — verify video is suitable before uploading to 4 accounts.
- * 
+ *
  * 1. Programmatic checks: aspect ratio (vertical 9:16), duration (5s-3min), file size
  * 2. AI vision check: send 2 frames to Claude Haiku for content verification
- * 
- * Returns { ok: boolean, reason: string }
+ *
+ * NOTE ON COMPRESSION: this module does NOT compress. Compression happens in
+ * exactly one place — metricool.js, which fits the video under its 95MB upload
+ * cap using a high-quality two-pass encode. QC previously ran its own CRF 28 /
+ * ultrafast pass on anything over 200MB, which was both redundant (any file that
+ * large goes through the Metricool compressor anyway) and quality-destroying
+ * (a throwaway low-quality generation ahead of the real encode).
+ *
+ * The size check here is now a sanity cap only: a file over 500MB is almost
+ * certainly the wrong file or a corrupt download, so it fails loudly rather than
+ * being silently re-encoded.
  */
 import { execSync } from "child_process";
-import { statSync, readFileSync, unlinkSync, existsSync, renameSync } from "fs";
+import { statSync, readFileSync, unlinkSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { createHash } from "crypto";
@@ -66,39 +75,22 @@ export async function prePostQualityCheck(videoPath) {
       return { ok: false, reason: `Too long: ${duration.toFixed(1)}s (maximum 180s)`, details };
     }
 
-    // File size check: must be > 100KB (not empty/corrupt) and < 200MB (reasonable)
+    // File size check: must be > 100KB (not empty/corrupt) and under the 500MB
+    // sanity cap. Anything between is passed through untouched — metricool.js
+    // compresses it to fit its 95MB upload cap as the single compression point.
     const fileSize = statSync(videoPath).size;
     details.fileSize = `${(fileSize / 1024 / 1024).toFixed(1)}MB`;
 
     if (fileSize < 100 * 1024) {
       return { ok: false, reason: `File too small: ${(fileSize / 1024).toFixed(0)}KB — likely corrupted`, details };
     }
-    if (fileSize > 200 * 1024 * 1024) {
-      // Auto-compress oversized videos instead of failing
-      console.log(`[QC] File is ${(fileSize / 1024 / 1024).toFixed(0)}MB — compressing to fit under 200MB...`);
-      const compressedPath = videoPath.replace(/\.mp4$/, '_compressed.mp4');
-      try {
-        // Use CRF 28 with ultrafast preset — optimized for GitHub Actions 2-vCPU runners
-        // 260MB videos need ~3-4 min with ultrafast (vs 7-8 min with fast)
-        execSync(
-          `ffmpeg -y -i "${videoPath}" -c:v libx264 -crf 28 -preset ultrafast -c:a aac -b:a 128k -movflags +faststart "${compressedPath}"`,
-          { timeout: 600000, stdio: 'pipe' }
-        );
-        const compressedSize = statSync(compressedPath).size;
-        if (compressedSize > 200 * 1024 * 1024) {
-          // Still too large even after compression — fail
-          try { unlinkSync(compressedPath); } catch {}
-          return { ok: false, reason: `File still too large after compression: ${(compressedSize / 1024 / 1024).toFixed(0)}MB — exceeds 200MB limit`, details };
-        }
-        // Replace the original with the compressed version
-        unlinkSync(videoPath);
-        renameSync(compressedPath, videoPath);
-        details.fileSize = `${(compressedSize / 1024 / 1024).toFixed(1)}MB (compressed from ${(fileSize / 1024 / 1024).toFixed(0)}MB)`;
-        console.log(`[QC] Compressed: ${(fileSize / 1024 / 1024).toFixed(0)}MB → ${(compressedSize / 1024 / 1024).toFixed(0)}MB ✓`);
-      } catch (compErr) {
-        try { unlinkSync(compressedPath); } catch {}
-        return { ok: false, reason: `File too large (${(fileSize / 1024 / 1024).toFixed(0)}MB) and compression failed: ${compErr.message?.slice(0, 80)}`, details };
-      }
+    if (fileSize > 500 * 1024 * 1024) {
+      // Sanity cap: at this size it's almost certainly the wrong file or a
+      // corrupt download. Fail loudly rather than feeding it to the compressor.
+      return { ok: false, reason: `File too large: ${(fileSize / 1024 / 1024).toFixed(0)}MB — exceeds 500MB sanity cap (likely corrupt or wrong file)`, details };
+    }
+    if (fileSize > 95 * 1024 * 1024) {
+      console.log(`[QC] File is ${(fileSize / 1024 / 1024).toFixed(0)}MB — over Metricool's 95MB cap; metricool.js will compress it on upload.`);
     }
 
     console.log(`[QC] Programmatic: ${width}x${height}, ${duration.toFixed(1)}s, ${(fileSize / 1024 / 1024).toFixed(1)}MB — PASS`);
