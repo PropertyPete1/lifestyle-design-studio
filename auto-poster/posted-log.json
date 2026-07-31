@@ -2069,6 +2069,29 @@
       ],
       "timestamp": "2026-07-31T19:22:28.521Z",
       "success": true
+    },
+    {
+      "driveFileId": "1dy8XR_o8UfM2ikHi9EUhhxEmkKj-uCAb",
+      "fileName": "3F37BDA3-B4C6-46EF-8ACB-6CC7908E5443.mp4",
+      "city": "austin",
+      "caption": "Would you believe brand new construction in North Austin starts at $470,000?\n\nNew construction like this moves fast. Builder incentives are real right now, and if you're ready to move, the timing is s",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-07-31T20:13:24.511Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "North Austin",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Are you looking for luxury at an affordable price? Today",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1Ynyqyau8hxU42b7TlxItpnPmFBCZssFz/view"
     }
   ],
   "lastTemplateIndex": -1
