@@ -99,8 +99,25 @@ export async function prePostQualityCheck(videoPath) {
   }
 
   // ─── AI Vision Check ───────────────────────────────────────────────────────
+  //
+  // Failure policy is deliberately split:
+  //   - MISCONFIGURATION (missing / invalid / revoked API key) is FATAL. A bad key
+  //     never fixes itself, so failing open would silently disable content checks
+  //     on every future run while the workflow stayed green.
+  //   - TRANSIENT failures (timeout, 5xx, rate limit, connection reset) remain
+  //     non-fatal. Those recover on their own, and a missed vision check on one
+  //     run is not worth blocking a post over.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return {
+      ok: false,
+      reason: "ANTHROPIC_API_KEY is not set — refusing to post without the AI vision content check. Set the secret and re-run.",
+      details,
+    };
+  }
+
+  let frames = [];
   try {
-    const frames = extractQCFrames(videoPath);
+    frames = extractQCFrames(videoPath);
     if (frames.length === 0) {
       return { ok: false, reason: "Could not extract frames for vision check", details };
     }
@@ -108,22 +125,48 @@ export async function prePostQualityCheck(videoPath) {
     const visionResult = await checkFramesWithVision(frames);
     details.visionResult = visionResult;
 
-    // Clean up frames
-    frames.forEach(f => { try { unlinkSync(f); } catch {} });
-
     if (!visionResult.ok) {
       return { ok: false, reason: `AI vision: ${visionResult.reason}`, details };
     }
 
     console.log(`[QC] AI vision: OK — "${visionResult.reason}"`);
   } catch (err) {
-    // AI vision failure is non-fatal — log but allow
-    console.warn(`[QC] AI vision check failed (non-fatal): ${err.message?.slice(0, 100)}`);
-    details.visionError = err.message;
+    const msg = err?.message || String(err);
+    if (isAuthError(err)) {
+      // Fatal: the key is missing, invalid, revoked, or lacks permission.
+      details.visionError = msg;
+      return {
+        ok: false,
+        reason: `AI vision auth failure (check ANTHROPIC_API_KEY): ${msg.slice(0, 150)}`,
+        details,
+      };
+    }
+    // Transient — log and allow the post through.
+    console.warn(`[QC] AI vision check failed (non-fatal, transient): ${msg.slice(0, 100)}`);
+    details.visionError = msg;
+  } finally {
+    frames.forEach(f => { try { unlinkSync(f); } catch {} });
   }
 
   console.log("[QC] All checks PASSED ✓");
   return { ok: true, reason: "All checks passed", details };
+}
+
+/**
+ * Is this error a credential/permission problem rather than a transient one?
+ *
+ * Auth failures are fatal for QC because they never self-heal — a revoked key
+ * would otherwise disable the content check silently on every subsequent run.
+ * Everything NOT matched here (timeouts, 429, 5xx, socket errors) is treated as
+ * transient and allowed through.
+ */
+export function isAuthError(err) {
+  // The SDK sets .status on API errors; 401 = bad key, 403 = key lacks permission.
+  const status = err?.status ?? err?.response?.status;
+  if (status === 401 || status === 403) return true;
+  // Constructing the client with no key throws before any HTTP request is made.
+  const msg = String(err?.message || "");
+  return /could not resolve authentication|authentication[_ ]error|invalid[- ]?x-api-key|invalid api[- ]?key|unauthorized|permission[_ ]denied/i.test(msg);
 }
 
 /**
