@@ -63,6 +63,44 @@ export function buildAudioFilterChain(tempo = resolveTempo()) {
   return `${silence},atempo=${tempo}`;
 }
 
+// ─── Fitting the read inside the clip ────────────────────────────────────────
+//
+// The merge mixes the voiceover with `amix=duration=first` and `-shortest`, so
+// the output is clamped to the CLIP's length. Anything the voiceover has left
+// over at that point is discarded with no error — and since every script ends
+// on the CTA, an overrun deletes the call to action silently.
+//
+// The word budget alone cannot prevent this. It assumes the tempo speedup is
+// applied, but that step is best-effort (ffmpeg failure falls back to the
+// original audio), and the word count itself is only a prompt instruction the
+// model may overshoot. So the audio is measured against the clip AFTER
+// processing, and the tempo is adjusted to whatever actually makes it fit.
+
+/** Voiceover lead-in. MUST match `adelay=500|500` in mergeAudioWithVideo. */
+export const AUDIO_LEAD_IN_SEC = 0.5;
+
+/** Seconds of voiceover the clip can actually carry. */
+export function availableAudioSeconds(clipDurationSec) {
+  return Math.max(0, clipDurationSec - AUDIO_LEAD_IN_SEC);
+}
+
+/** Does this much audio survive the merge intact? */
+export function fitsInClip(audioDurationSec, clipDurationSec) {
+  if (!Number.isFinite(audioDurationSec) || !Number.isFinite(clipDurationSec)) return true;
+  return audioDurationSec <= availableAudioSeconds(clipDurationSec);
+}
+
+/**
+ * Tempo multiplier that would make `audioDurationSec` fit the clip.
+ * Returned UNCLAMPED so callers can tell "needs 1.2x" (achievable) from
+ * "needs 1.9x" (not achievable without becoming unintelligible).
+ */
+export function requiredTempoToFit(audioDurationSec, clipDurationSec) {
+  const available = availableAudioSeconds(clipDurationSec);
+  if (available <= 0 || !Number.isFinite(audioDurationSec) || audioDurationSec <= 0) return TEMPO_DEFAULT;
+  return audioDurationSec / available;
+}
+
 // ─── Words-per-second budget ─────────────────────────────────────────────────
 //
 // Script length must track the tempo speedup: at 1.18x the same clip fits ~18%
