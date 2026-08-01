@@ -2116,6 +2116,50 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1CVHwZa4Y8XgoZore2g8jcoC0IZ4fJtgT/view"
+    },
+    {
+      "driveFileId": "1bt2oufNohqnhTrtD6j50T1qeEtpUJ8-j",
+      "fileName": "8C7A00AA-399A-45DE-8637-9516355FA21B.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe brand new construction in San Antonio starts at $290,990?\n\nNew construction like this doesn't sit long. Builder incentives are moving these.\n\n✨ everyday living hits\n\nOpen floor plans",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-01T19:31:41.583Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "I just hit legs at the gym this morning so",
+      "content_hash": "7fffff43e00e0000:bfffff21700e0000:4080f03f0fe2f6ff:0f0fffe766eec680:0e1f1f3f181e181f",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1IkvRZ_3lE_4NLr1jG23BrO4V7xxpLOkV/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "deal_story",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-01T14:33:19"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-01T15:03:19"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-01T15:33:19"
+        }
+      ],
+      "timestamp": "2026-08-01T19:31:50.252Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
