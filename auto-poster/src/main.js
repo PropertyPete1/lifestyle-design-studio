@@ -432,6 +432,10 @@ async function main() {
       // move on to the next one rather than ending the slot with no post.
       if (postResult && postResult.contentDuplicate) {
         console.log(`[Trying] BLOCKED by content dedupe (matches ${postResult.matched}) — trying next candidate`);
+        // Record why, so full exhaustion reports the real cause instead of
+        // "Last error: undefined" — with a duplicate-heavy library this is the
+        // most likely way a slot runs out of candidates.
+        lastError = new Error(`content duplicate of ${postResult.matched} (${candidate.name})`);
         continue;
       }
 

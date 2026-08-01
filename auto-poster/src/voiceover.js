@@ -24,6 +24,11 @@ import {
   resolveVoiceSettings,
   pickPersona,
   getRecentTranscripts,
+  fitsInClip,
+  availableAudioSeconds,
+  requiredTempoToFit,
+  TEMPO_MAX,
+  SILENCE_KEEP_SEC,
 } from "./voiceover-style.js";
 
 // Voice ID from env var (changeable without code edits) with hardcoded fallback
@@ -162,8 +167,34 @@ async function generateTTS(script) {
   return outputPath;
 }
 
+/** Duration of an audio/video file in seconds, or 0 if it can't be read. */
+function getMediaDuration(path) {
+  try {
+    return parseFloat(
+      execSync(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${path}"`, {
+        encoding: "utf-8",
+        timeout: 30000,
+      }).trim()
+    ) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Run the pacing chain at a specific tempo. Returns the output path or null. */
+function runPacingPass(audioPath, tempo, outputPath) {
+  const chain = buildAudioFilterChain(tempo);
+  execSync(`ffmpeg -y -i "${audioPath}" -af "${chain}" -c:a libmp3lame -q:a 2 "${outputPath}" 2>&1`, {
+    encoding: "utf-8",
+    timeout: 60000,
+  });
+  if (!existsSync(outputPath) || statSync(outputPath).size < 1024) return null;
+  return outputPath;
+}
+
 /**
- * Post-process the TTS MP3 for fast, dead-air-free delivery.
+ * Post-process the TTS MP3 for fast, dead-air-free delivery — and guarantee the
+ * result actually fits inside the clip.
  *
  * Two passes in one ffmpeg invocation:
  *   1. silenceremove — collapse inter-sentence gaps down to ~250ms. ElevenLabs
@@ -174,34 +205,81 @@ async function generateTTS(script) {
  * AUDIO ONLY. This runs on the MP3 before the merge, so it adds no video
  * re-encode generation — the merge still uses `-c:v copy`.
  *
- * Non-fatal: if ffmpeg fails we return the original audio rather than losing the
- * whole post over a pacing tweak.
+ * FIT ENFORCEMENT (integration audit, issue #7): the merge uses
+ * `amix=duration=first` + `-shortest`, so any audio past the clip length is
+ * discarded silently — and the CTA is the last line of every script. Two
+ * independent things can cause an overrun:
+ *
+ *   1. this post-process failing (it is best-effort, so the read stays at 1.0x
+ *      while the word budget assumed 1.18x), and
+ *   2. the model overshooting its word target, which is only a prompt
+ *      instruction and is not enforced anywhere.
+ *
+ * Measuring the finished audio against the clip catches BOTH, so the fit check
+ * is the authoritative gate rather than the word budget. If the read overruns we
+ * re-run at exactly the tempo needed (still clamped to TEMPO_MAX); if even that
+ * cannot fit it, we log loudly instead of letting the CTA vanish quietly.
+ *
+ * Still non-fatal: a pacing failure must never cost the whole post.
  */
-function postProcessVoiceoverAudio(audioPath) {
+export function postProcessVoiceoverAudio(audioPath, clipDurationSec = 0) {
   const tempo = resolveTempo();
-  const chain = buildAudioFilterChain(tempo);
   const outputPath = audioPath.replace(/\.mp3$/, "_fast.mp3");
+  const hasClip = Number.isFinite(clipDurationSec) && clipDurationSec > 0;
 
+  let current = audioPath;
   try {
     const before = statSync(audioPath).size;
-    execSync(
-      `ffmpeg -y -i "${audioPath}" -af "${chain}" -c:a libmp3lame -q:a 2 "${outputPath}" 2>&1`,
-      { encoding: "utf-8", timeout: 60000 }
-    );
-    if (!existsSync(outputPath) || statSync(outputPath).size < 1024) {
+    const produced = runPacingPass(audioPath, tempo, outputPath);
+    if (!produced) {
       console.warn("[Voiceover] Post-process produced no usable audio — keeping original");
       try { unlinkSync(outputPath); } catch {}
-      return audioPath;
+    } else {
+      const after = statSync(outputPath).size;
+      console.log(`[Voiceover] Pacing: silence>${SILENCE_KEEP_SEC}s trimmed, tempo ${tempo}x (${(before / 1024).toFixed(0)}KB -> ${(after / 1024).toFixed(0)}KB)`);
+      current = outputPath;
     }
-    const after = statSync(outputPath).size;
-    console.log(`[Voiceover] Pacing: silence>${0.25}s trimmed, tempo ${tempo}x (${(before / 1024).toFixed(0)}KB -> ${(after / 1024).toFixed(0)}KB)`);
-    try { unlinkSync(audioPath); } catch {}
-    return outputPath;
   } catch (err) {
     console.warn(`[Voiceover] Audio post-process failed (non-fatal): ${err.message?.slice(0, 120)}`);
     try { unlinkSync(outputPath); } catch {}
-    return audioPath;
   }
+
+  // ─── Fit check ─────────────────────────────────────────────────────────────
+  if (hasClip) {
+    const audioSec = getMediaDuration(current);
+    if (audioSec > 0 && !fitsInClip(audioSec, clipDurationSec)) {
+      const available = availableAudioSeconds(clipDurationSec);
+      console.warn(`[Voiceover] Read overruns the clip: ${audioSec.toFixed(1)}s of audio vs ${available.toFixed(1)}s available — CTA would be cut`);
+
+      // The retry re-paces from the ORIGINAL audio (so tempo is never applied
+      // twice), which means the required multiplier must be computed against the
+      // ORIGINAL duration too. Deriving it from the already-paced duration
+      // understates it and produces a retry that still overruns.
+      const originalSec = getMediaDuration(audioPath) || audioSec;
+      const needed = requiredTempoToFit(originalSec, clipDurationSec);
+      const retryTempo = Math.min(TEMPO_MAX, needed * 1.02); // 2% safety margin
+      const retryPath = audioPath.replace(/\.mp3$/, "_fit.mp3");
+      try {
+        const fitted = runPacingPass(audioPath, retryTempo, retryPath);
+        const fittedSec = fitted ? getMediaDuration(fitted) : 0;
+        if (fitted && fittedSec > 0 && fitsInClip(fittedSec, clipDurationSec)) {
+          console.log(`[Voiceover] ✓ Re-paced at ${retryTempo.toFixed(2)}x — now ${fittedSec.toFixed(1)}s, fits in ${available.toFixed(1)}s`);
+          if (current !== audioPath) { try { unlinkSync(current); } catch {} }
+          try { unlinkSync(audioPath); } catch {}
+          return retryPath;
+        }
+        try { unlinkSync(retryPath); } catch {}
+        // Needed more speedup than TEMPO_MAX allows — refuse to garble the read.
+        console.error(`::warning::[Voiceover] CTA WILL BE TRUNCATED: script needs ${needed.toFixed(2)}x to fit but max is ${TEMPO_MAX}x. Audio ${audioSec.toFixed(1)}s > ${available.toFixed(1)}s available. Shorten the script or lengthen the clip.`);
+      } catch (err) {
+        console.error(`::warning::[Voiceover] Re-pacing failed: ${err.message?.slice(0, 120)} — CTA may be truncated`);
+        try { unlinkSync(retryPath); } catch {}
+      }
+    }
+  }
+
+  if (current !== audioPath) { try { unlinkSync(audioPath); } catch {} }
+  return current;
 }
 
 /**
@@ -260,7 +338,7 @@ export async function processVoiceover(videoPath, city, dryRun = false, videoOve
     });
     console.log(`[Voiceover] Script: "${script.slice(0, 80)}..."`);
     let audioPath = await generateTTS(script);
-    audioPath = postProcessVoiceoverAudio(audioPath);
+    audioPath = postProcessVoiceoverAudio(audioPath, duration);
     const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
     return { videoPath: mergedPath, mergedPath, skipped: false, reason: "force_voiceover", script, detection: { hasSpeech: false }, audioPath, persona: persona.id };
   }
@@ -321,7 +399,7 @@ export async function processVoiceover(videoPath, city, dryRun = false, videoOve
 
   // Step 4: Generate TTS, then tighten pacing (silence trim + speedup)
   let audioPath = await generateTTS(script);
-  audioPath = postProcessVoiceoverAudio(audioPath);
+  audioPath = postProcessVoiceoverAudio(audioPath, duration);
 
   // Step 5: Merge (ducks original audio to 12% automatically)
   const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
