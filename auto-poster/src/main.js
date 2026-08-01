@@ -31,7 +31,7 @@ import { prePostQualityCheck } from "./quality-check.js";
 import { applyFreshness } from "./freshness.js";
 import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
-import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted } from "./state.js";
+import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
 import { computeContentHash, findContentDuplicate, CONTENT_DUP_THRESHOLD } from "./content-hash.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
@@ -265,6 +265,13 @@ async function main() {
 
   // Load QC blocklist
   const blocklist = loadBlocklist();
+
+  // Skip list — videos the owner explicitly skipped in the dashboard.
+  // Empty until the dashboard is wired up; see the schema block in state.js.
+  const skippedIds = getSkippedDriveIds(loadSkipList());
+  if (skippedIds.size > 0) {
+    console.log(`[Step 3] Skip list: ${skippedIds.size} videos skipped by the owner`);
+  }
   const blocklistCount = Object.keys(blocklist.blockedDriveIds).length;
   if (blocklistCount > 0) {
     console.log(`[Step 3] QC blocklist: ${blocklistCount} permanently blocked videos`);
@@ -279,6 +286,12 @@ async function main() {
     // Check QC blocklist first (instant)
     if (isBlocklisted(blocklist, video.id)) {
       blocked.push({ video, reason: `qc-blocklist: ${blocklist.blockedDriveIds[video.id].reason.slice(0, 50)}` });
+      continue;
+    }
+
+    // Owner explicitly skipped this video in the dashboard — never reselect it
+    if (skippedIds.has(video.id)) {
+      blocked.push({ video, reason: "skip-list (owner skipped in dashboard)" });
       continue;
     }
 

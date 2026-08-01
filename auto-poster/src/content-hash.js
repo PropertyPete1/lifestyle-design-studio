@@ -23,6 +23,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { createHash } from "crypto";
 import { computePhash, hammingDistance } from "./matcher.js";
+import { validPosts } from "./state.js";
 
 /** Sample points across the clip. Spread out so a shared intro can't alone cause a match. */
 export const CONTENT_HASH_OFFSETS = [0.1, 0.3, 0.5, 0.7, 0.9];
@@ -144,7 +145,7 @@ export function findContentDuplicate(log, contentHash, opts = {}) {
   const cutoff = now - days * 24 * 60 * 60 * 1000;
   let best = null;
 
-  for (const p of log?.posts || []) {
+  for (const p of validPosts(log)) {
     if (!p.content_hash) continue;                       // pre-feature entry
     const ts = new Date(p.timestamp).getTime();
     if (!Number.isFinite(ts) || ts <= cutoff) continue;

@@ -1,3 +1,5 @@
+import { validPosts } from "./state.js";
+
 /**
  * voiceover-style.js — delivery pacing + persona rotation for generated voiceovers.
  *
@@ -187,7 +189,8 @@ export const PERSONA_IDS = PERSONAS.map((p) => p.id);
 
 /** Look up the persona used for this city's most recent generated voiceover. */
 export function getLastPersonaForCity(log, city) {
-  const posts = log?.posts || [];
+  // validPosts drops null/malformed entries so a blemished log cannot kill a run
+  const posts = validPosts(log);
   for (let i = posts.length - 1; i >= 0; i--) {
     const p = posts[i];
     if (p.city === city && p.voiceover_persona) return p.voiceover_persona;
@@ -216,7 +219,7 @@ export function pickPersona(log, city, rand = Math.random) {
  * to emulate.
  */
 export function getRecentTranscripts(log, limit = 5) {
-  const posts = log?.posts || [];
+  const posts = validPosts(log);
   const out = [];
   for (let i = posts.length - 1; i >= 0 && out.length < limit; i--) {
     const p = posts[i];

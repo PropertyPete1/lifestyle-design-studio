@@ -95,6 +95,24 @@ export function mergeTrialVariants(local, remote, log = console.log) {
   return merged;
 }
 
+/**
+ * skip-list.json: union by driveFileId — a skip is never un-done by a
+ * concurrent runner that happened to check out an older copy.
+ */
+export function mergeSkipList(local, remote, log = console.log) {
+  const all = [...(Array.isArray(remote) ? remote : []), ...(Array.isArray(local) ? local : [])];
+  const byId = new Map();
+  for (const e of all) {
+    if (e && typeof e === "object" && typeof e.driveFileId === "string" && e.driveFileId) {
+      // Keep the earliest skip for an id — first skip wins, later ones add nothing.
+      if (!byId.has(e.driveFileId)) byId.set(e.driveFileId, e);
+    }
+  }
+  const merged = [...byId.values()];
+  log(`[Merge] skip-list: ${merged.length} skipped videos`);
+  return merged;
+}
+
 /** Dispatch table used by merge-log-push.mjs. */
 export const MERGE_STRATEGIES = {
   "posted-log.json": (l, r, log) => mergePostedLog(l, r || { posts: [] }, log),
@@ -103,6 +121,7 @@ export const MERGE_STRATEGIES = {
   "qc-blocklist.json": mergeBlocklist,
   "linkedin-history.json": (l, r, log) => mergeLinkedinHistory(l, r || { posts: [] }, log),
   "trial-variants.json": (l, r, log) => mergeTrialVariants(l, r || { variants: [] }, log),
+  "skip-list.json": (l, r, log) => mergeSkipList(l, r || [], log),
 };
 
 export const MERGE_FILES = Object.keys(MERGE_STRATEGIES);
