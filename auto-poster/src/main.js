@@ -33,6 +33,7 @@ import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
+import { computeContentHash, findContentDuplicate, CONTENT_DUP_THRESHOLD } from "./content-hash.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
@@ -426,6 +427,14 @@ async function main() {
 
       // Pass the already-downloaded video path to avoid double download
       const postResult = await postVideo(candidate, log, igWithHashes, matchCache, liveResult.videoPath);
+
+      // Content dedupe rejected this candidate before anything was published —
+      // move on to the next one rather than ending the slot with no post.
+      if (postResult && postResult.contentDuplicate) {
+        console.log(`[Trying] BLOCKED by content dedupe (matches ${postResult.matched}) — trying next candidate`);
+        continue;
+      }
+
       posted = true;
       // Store post result for verification
       if (postResult && postResult.brands) {
@@ -719,6 +728,47 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
   }
 
   try {
+    // ─── CONTENT DEDUPE GUARD ────────────────────────────────────────────────
+    // Fingerprint what the video LOOKS like, before any processing touches it.
+    //
+    // The id and fileName guards only catch the same FILE. On 2026-07-31 Austin
+    // published the same footage twice because it existed in Drive as two
+    // separate uploads — different id, different name, identical pictures. Both
+    // guards passed correctly; nothing compared the content.
+    //
+    // Scans every city: all cities fan out to the same accounts, so the same
+    // footage under another city is still a repost. Entries predating this
+    // feature carry no content_hash and are skipped, never treated as matches.
+    let contentHash = null;
+    if (!TEST_DELIVERY_ONLY) {
+      try {
+        const dur = getLocalDuration(tempVideoPath);
+        contentHash = await computeContentHash(tempVideoPath, dur);
+        if (!contentHash) {
+          console.warn("[ContentDedupe] Could not fingerprint this video — skipping content comparison");
+        } else {
+          const dupe = findContentDuplicate(log, contentHash, { days: 30 });
+          if (dupe && !FORCE) {
+            console.log(`[ContentDedupe] ⛔ BLOCKED: content matches ${dupe.fileName} (${dupe.city}, ${dupe.timestamp}) at distance ${dupe._distance.toFixed(2)} (threshold ${CONTENT_DUP_THRESHOLD})`);
+            console.log(`[ContentDedupe] Same footage, different Drive file — this is the 2026-07-31 duplicate class. Not posting.`);
+            blocklistVideo(
+              loadBlocklist(),
+              video.id,
+              video.name,
+              `content duplicate of ${dupe.fileName} posted ${dupe.timestamp} (distance ${dupe._distance.toFixed(2)})`
+            );
+            return { contentDuplicate: true, matched: dupe.fileName };
+          }
+          if (dupe && FORCE) {
+            console.warn(`[ContentDedupe] ⚠️ Content matches ${dupe.fileName} (distance ${dupe._distance.toFixed(2)}) but FORCE=true — posting anyway`);
+          }
+        }
+      } catch (err) {
+        // Never let fingerprinting take down a run — degrade to the existing guards.
+        console.warn(`[ContentDedupe] Fingerprint failed (non-fatal): ${err.message?.slice(0, 120)}`);
+      }
+    }
+
     // Extract video overlays FIRST — needed for voiceover script generation (payment tease)
     // Must read from original downloaded video (before any re-encode)
     let videoOverlays = null;
@@ -970,6 +1020,10 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         voiceover_transcript: voiceoverTranscript,
         // Persisted so the next run for this city can avoid repeating the persona
         voiceover_persona: voResult.persona || null,
+        // Perceptual fingerprint of the ORIGINAL footage (pre-processing) so
+        // future runs can detect the same content re-uploaded under a new
+        // Drive id / fileName. Null when fingerprinting failed.
+        content_hash: contentHash,
         captions_burned: captionsBurned,
         captions_error: captionsError,
         freshness: freshnessResult.applied ? "re_encoded" : freshnessResult.reason,
