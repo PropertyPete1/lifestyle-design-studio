@@ -1,7 +1,37 @@
 /**
  * State Management — posted-log.json tracking
- * 
+ *
  * Stores which videos have been posted and when, committed back to the repo.
+ *
+ * ─── skip-list.json — INTERFACE FOR THE DASHBOARD SKIP BUTTON ────────────────
+ *
+ * The auto-poster makes only OUTBOUND calls to the dashboard (9 POSTs, 0 reads),
+ * so it currently cannot observe a Skip at all. A skipped video therefore stays
+ * fully eligible and can be selected again — see issue #7 for the audit.
+ *
+ * `skip-list.json` is the landing place for that signal. This side is complete:
+ * selection already excludes anything listed here, and merge-log-push manages
+ * the file so concurrent runners can't lose writes. Nothing is guessed about the
+ * dashboard's own behaviour — until the dashboard writes to it the file stays
+ * empty and behaviour is unchanged.
+ *
+ * SCHEMA — a JSON array (not an object), newest-last:
+ *
+ *   [
+ *     {
+ *       "driveFileId": "1o3-yTnUY5-21wNwv-EH99sZQz-w20Ecf",  // REQUIRED, the match key
+ *       "fileName":    "38AC81FB-0672-47C6-830C-B6EF01D3D044.mp4", // optional, for humans
+ *       "skippedAt":   "2026-08-01T20:13:24.511Z",           // optional, ISO 8601
+ *       "source":      "dashboard"                            // optional, who skipped it
+ *     }
+ *   ]
+ *
+ * Only `driveFileId` is load-bearing. Entries missing it are ignored rather than
+ * throwing, so a partially-written file can never take down a posting run.
+ *
+ * To integrate: append an entry when Skip is pressed and commit the file. The
+ * union merge in merge-log-push.mjs means a concurrent auto-poster run will not
+ * clobber it.
  */
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -34,11 +64,25 @@ export function saveLog(log) {
 }
 
 /**
+ * Every readable entry in a log, defensively.
+ *
+ * posted-log.json is merged by an external script and can in principle be hand
+ * edited, so a `null` or non-object element is possible. Dereferencing one threw
+ * out of hasRecentPost — the FIRST guard every run touches — which turned a data
+ * blemish into a dead slot. Every reader funnels through here instead.
+ */
+export function validPosts(log) {
+  const posts = log?.posts;
+  if (!Array.isArray(posts)) return [];
+  return posts.filter(p => p && typeof p === "object");
+}
+
+/**
  * Check if a video (by Drive file ID) was posted in the last N days.
  */
 export function wasPostedRecently(log, driveFileId, days = 30) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  return log.posts.some(
+  return validPosts(log).some(
     p => p.driveFileId === driveFileId && new Date(p.timestamp).getTime() > cutoff
   );
 }
@@ -58,7 +102,7 @@ export function hasRecentPost(log, city, slot, hoursAgo = 20) {
   const slotCutoff = Date.now() - hoursAgo * 60 * 60 * 1000;
   const hardCooldown = Date.now() - 2 * 60 * 60 * 1000;
 
-  for (const p of log.posts) {
+  for (const p of validPosts(log)) {
     if (p.city !== city) continue;
     if (p.type === "linkedin") continue; // LinkedIn entries don't count as video posts
     if (p.platform === "instagram_main_native") continue; // Manual-confirm receipts are not slot posts
@@ -117,7 +161,7 @@ export function recordPost(log, entry) {
 
   // Keep only last 365 days of history
   const yearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000;
-  log.posts = log.posts.filter(p => new Date(p.timestamp).getTime() > yearAgo);
+  log.posts = validPosts(log).filter(p => new Date(p.timestamp).getTime() > yearAgo);
 
   saveLog(log);
 }
@@ -128,7 +172,7 @@ export function recordPost(log, entry) {
 export function getRecentlyPostedIds(log, city, days = 30) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return new Set(
-    log.posts
+    validPosts(log)
       .filter(p => p.city === city && new Date(p.timestamp).getTime() > cutoff)
       .map(p => p.driveFileId)
   );
@@ -141,7 +185,7 @@ export function getRecentlyPostedIds(log, city, days = 30) {
 export function getRecentlyPostedFileNames(log, city, days = 30) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return new Set(
-    log.posts
+    validPosts(log)
       .filter(p => p.city === city && p.fileName && new Date(p.timestamp).getTime() > cutoff)
       .map(p => p.fileName)
   );
@@ -159,7 +203,7 @@ export function getRecentlyPostedFileNames(log, city, days = 30) {
 export function getRecentlyPostedIdsAllCities(log, days = 30) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return new Set(
-    log.posts
+    validPosts(log)
       .filter(p => p.driveFileId && new Date(p.timestamp).getTime() > cutoff)
       .map(p => p.driveFileId)
   );
@@ -173,7 +217,7 @@ export function getRecentlyPostedIdsAllCities(log, days = 30) {
 export function getRecentlyPostedFileNamesAllCities(log, days = 30) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return new Set(
-    log.posts
+    validPosts(log)
       .filter(p => p.fileName && new Date(p.timestamp).getTime() > cutoff)
       .map(p => p.fileName)
   );
@@ -224,4 +268,41 @@ export function isBlocklisted(blocklist, driveFileId) {
   return !!blocklist.blockedDriveIds[driveFileId];
 }
 
-export { LOG_PATH, BLOCKLIST_PATH };
+// ─── Skip list ───────────────────────────────────────────────────────────────
+// Schema documented in the module header above.
+
+const SKIP_LIST_PATH = join(__dirname, "..", "skip-list.json");
+
+/**
+ * Load the skip list. Always returns an array — a missing, empty, malformed or
+ * wrong-shaped file degrades to "nothing skipped" rather than throwing, because
+ * this file is written by an external system.
+ */
+export function loadSkipList() {
+  if (!existsSync(SKIP_LIST_PATH)) return [];
+  try {
+    const parsed = JSON.parse(readFileSync(SKIP_LIST_PATH, "utf-8"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Set of skipped Drive file IDs. Entries without a driveFileId are ignored. */
+export function getSkippedDriveIds(skipList) {
+  const ids = new Set();
+  for (const entry of skipList || []) {
+    if (entry && typeof entry.driveFileId === "string" && entry.driveFileId) {
+      ids.add(entry.driveFileId);
+    }
+  }
+  return ids;
+}
+
+/** Is this video on the skip list? */
+export function isSkipped(skipList, driveFileId) {
+  if (!driveFileId) return false;
+  return getSkippedDriveIds(skipList).has(driveFileId);
+}
+
+export { LOG_PATH, BLOCKLIST_PATH, SKIP_LIST_PATH };
