@@ -15,6 +15,7 @@ on:
   push:
     paths:
       - "auto-poster/scripts/probe-capabilities.mjs"
+      - "auto-poster/scripts/probe-capabilities-2.mjs"
       - ".github/workflows/probe-capabilities.yml"
 
 jobs:
@@ -25,10 +26,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Run capability probe
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Run capability probe (round 2)
         working-directory: auto-poster
         env:
           METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
-        run: node scripts/probe-capabilities.mjs
+        run: node scripts/probe-capabilities-2.mjs
