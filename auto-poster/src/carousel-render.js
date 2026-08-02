@@ -46,8 +46,18 @@ function esc(s) {
 const NARROW = new Set("ijlt.,;:'\"!|()[]{}/\\`".split(""));
 const WIDE = new Set("WMQ@%mw".split(""));
 
+/**
+ * Width multipliers by style. The per-character table below was fitted against
+ * normal-weight text; bold serif renders materially wider than that estimate.
+ * Measured against actual rasterised ink, bold serif came in 1.10-1.17x the
+ * estimate across sample headlines, so BOLD_SERIF carries margin above the
+ * worst observed case. Under-measuring here pushes headlines off the canvas.
+ */
+export const BOLD_SERIF = 1.22;
+export const ITALIC_SERIF = 1.05;
+
 /** Approximate advance width of a string at a given font size. */
-export function measure(text, fontSize) {
+export function measure(text, fontSize, factor = 1) {
   let units = 0;
   for (const ch of String(text)) {
     if (ch === " ") units += 0.27;
@@ -57,18 +67,18 @@ export function measure(text, fontSize) {
     else if (ch >= "0" && ch <= "9") units += 0.55;
     else units += 0.50;
   }
-  return units * fontSize;
+  return units * fontSize * factor;
 }
 
 /** Greedy word wrap to a pixel width. Long single words are left intact. */
-export function wrapText(text, fontSize, maxWidth) {
+export function wrapText(text, fontSize, maxWidth, factor = 1) {
   const words = String(text || "").trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
   const lines = [];
   let line = words[0];
   for (const word of words.slice(1)) {
     const candidate = `${line} ${word}`;
-    if (measure(candidate, fontSize) <= maxWidth) {
+    if (measure(candidate, fontSize, factor) <= maxWidth) {
       line = candidate;
     } else {
       lines.push(line);
@@ -83,14 +93,14 @@ export function wrapText(text, fontSize, maxWidth) {
  * Shrink the font until the wrapped block fits a line budget.
  * Keeps long hooks on-canvas instead of letting them overflow.
  */
-function fitText(text, { start, min, maxWidth, maxLines }) {
+function fitText(text, { start, min, maxWidth, maxLines, factor = 1 }) {
   let size = start;
-  let lines = wrapText(text, size, maxWidth);
+  let lines = wrapText(text, size, maxWidth, factor);
   while (lines.length > maxLines && size > min) {
     size -= 4;
-    lines = wrapText(text, size, maxWidth);
+    lines = wrapText(text, size, maxWidth, factor);
   }
-  return { size, lines };
+  return { size, lines, factor };
 }
 
 // ─── Chrome ─────────────────────────────────────────────────────────────────
@@ -132,7 +142,7 @@ const CONTENT_W = WIDTH - MARGIN * 2;
 
 /** Layout 1 — the hook. Oversized serif, accent rule under the final line. */
 export function hookSvg(hook, accent) {
-  const { size, lines } = fitText(hook, { start: 92, min: 56, maxWidth: CONTENT_W, maxLines: 5 });
+  const { size, lines } = fitText(hook, { start: 92, min: 56, maxWidth: CONTENT_W, maxLines: 5, factor: BOLD_SERIF });
   const lineHeight = size * 1.22;
   const blockH = lines.length * lineHeight;
   const startY = (HEIGHT - blockH) / 2 + size * 0.78;
@@ -141,7 +151,7 @@ export function hookSvg(hook, accent) {
     .map((l, i) => textLine(MARGIN, startY + i * lineHeight, l, { size, weight: "bold" }))
     .join("\n  ");
 
-  const lastWidth = Math.min(measure(lines[lines.length - 1], size), CONTENT_W);
+  const lastWidth = Math.min(measure(lines[lines.length - 1], size, BOLD_SERIF), CONTENT_W);
   const underlineY = startY + (lines.length - 1) * lineHeight + size * 0.30;
 
   return frame(`
@@ -166,7 +176,7 @@ export function mapSvg(fragments, accent) {
 
   const nodes = items.map((fragment, i) => {
     const y = top + i * gap;
-    const { size, lines } = fitText(fragment, { start: 46, min: 32, maxWidth: CONTENT_W - 120, maxLines: 2 });
+    const { size, lines } = fitText(fragment, { start: 46, min: 32, maxWidth: CONTENT_W - 120, maxLines: 2, factor: BOLD_SERIF });
     const text = lines
       .map((l, li) => textLine(spineX + 78, y + li * size * 1.18, l, { size, weight: "bold" }))
       .join("\n  ");
@@ -190,10 +200,10 @@ export function mapSvg(fragments, accent) {
 /** Layout 3 — a numbered point. Counter, title with rule, body, loop at the foot. */
 export function pointSvg(point, index, total, accent) {
   const counter = `${index} of ${total}`;
-  const title = fitText(point.title, { start: 76, min: 50, maxWidth: CONTENT_W, maxLines: 3 });
+  const title = fitText(point.title, { start: 76, min: 50, maxWidth: CONTENT_W, maxLines: 3, factor: BOLD_SERIF });
   const titleLH = title.size * 1.20;
 
-  const loop = fitText(point.loop, { start: 40, min: 30, maxWidth: CONTENT_W, maxLines: 2 });
+  const loop = fitText(point.loop, { start: 40, min: 30, maxWidth: CONTENT_W, maxLines: 2, factor: ITALIC_SERIF });
   const loopY = HEIGHT - 150 - (loop.lines.length - 1) * loop.size * 1.2;
 
   // Pre-wrap the body so the title+body block can be centred as one unit in the
@@ -220,7 +230,7 @@ export function pointSvg(point, index, total, accent) {
     .join("\n  ");
 
   const titleEndY = titleY + titleH;
-  const lastTitleW = Math.min(measure(title.lines[title.lines.length - 1], title.size), CONTENT_W);
+  const lastTitleW = Math.min(measure(title.lines[title.lines.length - 1], title.size, BOLD_SERIF), CONTENT_W);
 
   let cursor = titleEndY + ruleToBody;
   const bodyParts = [];
@@ -246,7 +256,7 @@ export function pointSvg(point, index, total, accent) {
 export function ctaSvg(keyword, payoff, accent) {
   const payoffFit = fitText(payoff, { start: 50, min: 36, maxWidth: CONTENT_W, maxLines: 3 });
   const kwSize = 132;
-  const kwWidth = Math.min(measure(keyword, kwSize), CONTENT_W);
+  const kwWidth = Math.min(measure(keyword, kwSize, BOLD_SERIF), CONTENT_W);
 
   // Centre the whole CTA stack between the top of the canvas and the pinned
   // "Save this for later." footer, so a long payoff doesn't crowd the footer and

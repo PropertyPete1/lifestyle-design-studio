@@ -498,3 +498,61 @@ test("callModel picks the first text block, not content[0]", async () => {
   assert.equal(block.text, '{"ok":true}');
   assert.ok(typeof callModel === "function");
 });
+
+// ─── Render overflow ────────────────────────────────────────────────────────
+
+/**
+ * Right-most column containing text ink.
+ *
+ * Measures the raster, not measure() — the estimate under-measured bold serif
+ * by up to 17%, which pushed a real headline off the right edge of a sample
+ * slide, so trusting measure() here would test the bug against itself.
+ *
+ * Note the canvas CLIPS: overflowing text is cut at 1080px, so ink can never
+ * report wider than the canvas. Overflow is therefore detected by ink reaching
+ * INTO the margin, which correctly-fitted text never does.
+ */
+async function inkRightEdge(png) {
+  const sharp = (await import("sharp")).default;
+  const { data, info } = await sharp(png).greyscale().raw().toBuffer({ resolveWithObject: true });
+  // The faint grid sits near 20/255; text ink is far brighter.
+  const THRESHOLD = 90;
+  let right = 0;
+  for (let y = 0; y < info.height; y++) {
+    for (let x = info.width - 1; x > right; x--) {
+      if (data[y * info.width + x] > THRESHOLD) { right = x; break; }
+    }
+  }
+  return right;
+}
+
+// Text is laid out inside a 96px margin, so ink past this is overflow.
+const MAX_INK_X = 1080 - 96 + 8;
+
+test("long bold headlines stay inside the canvas", async () => {
+  const { pointSvg, renderSvgs } = await import("../src/carousel-render.js");
+  // These overflowed at the original measurement factor.
+  const titles = [
+    "Two Speeds, One Market",
+    "Nobody Owes You Repairs",
+    "What Actually Changes Everything",
+    "The Twenty Minute Lie",
+  ];
+  for (const title of titles) {
+    const svg = pointSvg(
+      { title, body: ["Short body line.", "Another short line."], loop: "and it gets worse." },
+      1, 5, ACCENTS[0]
+    );
+    const [png] = await renderSvgs([svg]);
+    const right = await inkRightEdge(png);
+    assert.ok(right <= MAX_INK_X, `"${title}" ink reaches x=${right}, past the ${MAX_INK_X} content edge`);
+  }
+});
+
+test("a very long hook stays inside the canvas", async () => {
+  const { hookSvg, renderSvgs } = await import("../src/carousel-render.js");
+  const svg = hookSvg("The forty seven day stretch that nobody ever warns transplants about", ACCENTS[2]);
+  const [png] = await renderSvgs([svg]);
+  const right = await inkRightEdge(png);
+  assert.ok(right <= MAX_INK_X, `hook ink reaches x=${right}, past the ${MAX_INK_X} content edge`);
+});
