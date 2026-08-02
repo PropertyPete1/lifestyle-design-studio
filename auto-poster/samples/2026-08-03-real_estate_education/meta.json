@@ -1,0 +1,80 @@
+{
+  "date": "2026-08-03",
+  "pillar": "real_estate_education",
+  "pillarLabel": "Real estate education",
+  "topic": "Texas option period mechanics",
+  "hook": "Two lines in his contract cost him $27,000.",
+  "keyword": "TOUR",
+  "accent": "#E879A6",
+  "scores": {
+    "hook": 7,
+    "loops": 6,
+    "cta": 8,
+    "worst_problem": "The hook promises a specific $27,000 loss but no slide ever delivers that story or number, so the opening curiosity gap is baited and abandoned.",
+    "fix": "Pay off the hook explicitly on slide 2 by naming the two contract lines and the $27,000 outcome, and swap the flat 'and inspectors are booked solid' loop plus the mismatched keyword TOUR for a tease that withholds (e.g. 'the mistake costs you the window') and a keyword tied to the topic like OPTION."
+  },
+  "attemptsUsed": 3,
+  "belowBar": true,
+  "deck": {
+    "topic": "Texas option period mechanics",
+    "hook": "Two lines in his contract cost him $27,000.",
+    "map": [
+      "the clock nobody starts",
+      "what the fee buys",
+      "weekends still count",
+      "book before you sign",
+      "one ask, not three"
+    ],
+    "points": [
+      {
+        "title": "The Clock Starts Without You",
+        "body": [
+          "A buyer signed on a Friday and mailed his option fee Monday.",
+          "By then his window to walk was already dead, and the foundation report came back ugly.",
+          "The fee has to be delivered fast or the whole right disappears."
+        ],
+        "loop": "most buyers misread what it buys"
+      },
+      {
+        "title": "You Are Renting Time",
+        "body": [
+          "That fee is not a deposit on the house. It is payment for the right to cancel for any reason at all.",
+          "Bad inspection. Cold feet. Nosy neighbour. Does not matter."
+        ],
+        "loop": "but the calendar is the trap"
+      },
+      {
+        "title": "Weekends Still Count",
+        "body": [
+          "These are calendar days, not business days.",
+          "Sign on a Thursday and you just burned a chunk of your window on a weekend nobody works.",
+          "The deadline hits at a fixed hour on the last day. Not end of day."
+        ],
+        "loop": "and inspectors are booked solid"
+      },
+      {
+        "title": "Book Before You Sign",
+        "body": [
+          "Good inspectors run five to eight days out in a busy month.",
+          "If you start calling after the contract is executed, you get the report with almost no time left to act on it.",
+          "Line up the appointment while the offer is still being negotiated."
+        ],
+        "loop": "then most people fumble the ask"
+      },
+      {
+        "title": "One Ask, Not Three",
+        "body": [
+          "Buyers send a repair request, then remember something, then send another.",
+          "Every follow up tells the seller you are emotionally in the house already.",
+          "Bundle it. Send once. Give a real deadline."
+        ],
+        "loop": "here is the whole timeline"
+      }
+    ],
+    "cta": {
+      "payoff": "the day by day option period timeline with every deadline marked, plus the question list I give my buyers to hand their inspector"
+    }
+  },
+  "caption": "Two lines in his contract cost him $27,000.\n\nThe Clock Starts Without You: A buyer signed on a Friday and mailed his option fee Monday.\nYou Are Renting Time: That fee is not a deposit on the house. It is payment for the right to cancel for any reason at all.\nWeekends Still Count: These are calendar days, not business days.\nBook Before You Sign: Good inspectors run five to eight days out in a busy month.\nOne Ask, Not Three: Buyers send a repair request, then remember something, then send another.\n\nComment TOUR and I'll DM you the day by day option period timeline with every deadline marked, plus the question list I give my buyers to hand their inspector.\nSave this for later.",
+  "linkedinCaption": "The Texas option period is the most misunderstood part of a residential contract, and the mistakes are usually procedural rather than strategic.\n\nThe fee has to be delivered inside a short window. Late delivery can void the right entirely, regardless of what an inspection later reveals.\n\nThose are calendar days. Weekends count. The deadline lands at a set hour on the final day, not at midnight.\n\nInspectors in a busy month can book out five to eight days. Scheduling after execution leaves almost no room to act on the findings.\n\nRepair requests should go out once, bundled, with a stated deadline. Multiple rounds signal attachment.\n\nFor the agents here: how early in the offer process do you start coordinating the inspection?"
+}

@@ -1,0 +1,76 @@
+{
+  "date": "2026-08-04",
+  "pillar": "texas_lifestyle",
+  "pillarLabel": "Texas lifestyle",
+  "topic": "What actually changes your cost of living across San Antonio, Austin and DFW",
+  "hook": "Two identical houses, three miles apart. One owner pays $4,800 more.",
+  "keyword": "PLAN",
+  "accent": "#A78BFA",
+  "scores": {
+    "hook": 8,
+    "loops": 6,
+    "cta": 8,
+    "worst_problem": "Loop one, \"And the rate is not fixed,\" is a flat headline for the next slide rather than a tease, and the final loop is a CTA handoff instead of an open loop.",
+    "fix": "Rewrite slide 1's loop to withhold a consequence instead of announcing the topic (e.g. \"That number can climb later\") and give slide 5 a real forward pull before the CTA."
+  },
+  "attemptsUsed": 3,
+  "belowBar": true,
+  "deck": {
+    "topic": "What actually changes your cost of living across San Antonio, Austin and DFW",
+    "hook": "Two identical houses, three miles apart. One owner pays $4,800 more.",
+    "map": [
+      "Three blocks, different bill",
+      "Rates that move",
+      "The 7:40am reality",
+      "August electric shock",
+      "Your Saturday radius"
+    ],
+    "points": [
+      {
+        "title": "The Invisible Line",
+        "body": [
+          "Texas stacks city, county, school and special district rates onto one bill.",
+          "Cross one boundary by three blocks and the whole stack changes. The house looks identical from the street."
+        ],
+        "loop": "And the rate is not fixed."
+      },
+      {
+        "title": "Your Rate Can Move",
+        "body": [
+          "Newer areas often carry a bond that paid for the roads and pipes before anyone lived there.",
+          "In some spots that rate falls off over time. In others it gets voted back up. Nobody hands you that history."
+        ],
+        "loop": "The next cost is not money."
+      },
+      {
+        "title": "The Twenty Minute Lie",
+        "body": [
+          "Every drive time you read was measured at 10am on a Tuesday.",
+          "Sit in it at 7:40 on a weekday. In Austin and DFW that number can double, and you pay it twice a day forever."
+        ],
+        "loop": "And you have not met August."
+      },
+      {
+        "title": "August Runs The Budget",
+        "body": [
+          "Summer electric bills here can run triple what you pay in February.",
+          "West facing glass, ceiling height and roof age move that number more than square footage does. Most transplants find out in year one."
+        ],
+        "loop": "Saturday is where people break."
+      },
+      {
+        "title": "The Weekend Radius",
+        "body": [
+          "San Antonio puts you inside an hour of the Hill Country and a short run to the coast.",
+          "Austin trades traffic for water. DFW gives you lakes and the easier airport. You are picking a Saturday, not just a house."
+        ],
+        "loop": "I put all this on paper."
+      }
+    ],
+    "cta": {
+      "payoff": "the three metro cost sheet with tax rates by area, average summer utility ranges, real rush hour drive times, and the exact payment breakdown on any house you send me"
+    }
+  },
+  "caption": "Two identical houses, three miles apart. One owner pays $4,800 more.\n\nThe Invisible Line: Texas stacks city, county, school and special district rates onto one bill.\nYour Rate Can Move: Newer areas often carry a bond that paid for the roads and pipes before anyone lived there.\nThe Twenty Minute Lie: Every drive time you read was measured at 10am on a Tuesday.\nAugust Runs The Budget: Summer electric bills here can run triple what you pay in February.\nThe Weekend Radius: San Antonio puts you inside an hour of the Hill Country and a short run to the coast.\n\nComment PLAN and I'll DM you the three metro cost sheet with tax rates by area, average summer utility ranges, real rush hour drive times, and the exact payment breakdown on any house you send me.\nSave this for later.",
+  "linkedinCaption": "Two houses on the same road can carry very different annual costs in Texas. The tax stack is built from city, county, school and special district rates, and crossing a boundary by a few blocks changes all of it.\n\nI put together five things that move cost of living across San Antonio, Austin and DFW. Bond history in newer developments. Drive times that were measured at 10am on a Tuesday. August electric bills, which respond more to west facing glass and roof age than to square footage. And the weekend radius each metro actually gives you.\n\nFor those of you advising relocating clients, which of these gets underestimated most often in the first year?"
+}

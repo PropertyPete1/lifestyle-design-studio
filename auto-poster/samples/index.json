@@ -1,0 +1,56 @@
+[
+  {
+    "date": "2026-08-03",
+    "pillar": "Real estate education",
+    "topic": "Texas option period mechanics",
+    "hook": "Two lines in his contract cost him $27,000.",
+    "keyword": "TOUR",
+    "scores": {
+      "hook": 7,
+      "loops": 6,
+      "cta": 8,
+      "worst_problem": "The hook promises a specific $27,000 loss but no slide ever delivers that story or number, so the opening curiosity gap is baited and abandoned.",
+      "fix": "Pay off the hook explicitly on slide 2 by naming the two contract lines and the $27,000 outcome, and swap the flat 'and inspectors are booked solid' loop plus the mismatched keyword TOUR for a tease that withholds (e.g. 'the mistake costs you the window') and a keyword tied to the topic like OPTION."
+    },
+    "attemptsUsed": 3,
+    "belowBar": true,
+    "slides": 8,
+    "dir": "2026-08-03-real_estate_education"
+  },
+  {
+    "date": "2026-08-04",
+    "pillar": "Texas lifestyle",
+    "topic": "What actually changes your cost of living across San Antonio, Austin and DFW",
+    "hook": "Two identical houses, three miles apart. One owner pays $4,800 more.",
+    "keyword": "PLAN",
+    "scores": {
+      "hook": 8,
+      "loops": 6,
+      "cta": 8,
+      "worst_problem": "Loop one, \"And the rate is not fixed,\" is a flat headline for the next slide rather than a tease, and the final loop is a CTA handoff instead of an open loop.",
+      "fix": "Rewrite slide 1's loop to withhold a consequence instead of announcing the topic (e.g. \"That number can climb later\") and give slide 5 a real forward pull before the CTA."
+    },
+    "attemptsUsed": 3,
+    "belowBar": true,
+    "slides": 8,
+    "dir": "2026-08-04-texas_lifestyle"
+  },
+  {
+    "date": "2026-08-09",
+    "pillar": "Market insight",
+    "topic": "Texas market reality check: concessions vs price cuts",
+    "hook": "Texas sellers are giving away something worth more than discounts.",
+    "keyword": "LIST",
+    "scores": {
+      "hook": 7,
+      "loops": 7,
+      "cta": 7,
+      "worst_problem": "The keyword LIST has nothing to do with the promised deliverable (a concession script and a buydown payment comparison), so the ask feels arbitrary and forgettable at the exact moment friction matters most.",
+      "fix": "Change the keyword to one that names the payoff — BUYDOWN or CONCESSION — and tighten the last loop from the vague 'I keep a list for this' to something that previews the actual asset, e.g. 'The exact line to write'."
+    },
+    "attemptsUsed": 3,
+    "belowBar": true,
+    "slides": 8,
+    "dir": "2026-08-09-market_insight"
+  }
+]

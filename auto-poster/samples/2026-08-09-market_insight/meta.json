@@ -1,0 +1,76 @@
+{
+  "date": "2026-08-09",
+  "pillar": "market_insight",
+  "pillarLabel": "Market insight",
+  "topic": "Texas market reality check: concessions vs price cuts",
+  "hook": "Texas sellers are giving away something worth more than discounts.",
+  "keyword": "LIST",
+  "accent": "#E879A6",
+  "scores": {
+    "hook": 7,
+    "loops": 7,
+    "cta": 7,
+    "worst_problem": "The keyword LIST has nothing to do with the promised deliverable (a concession script and a buydown payment comparison), so the ask feels arbitrary and forgettable at the exact moment friction matters most.",
+    "fix": "Change the keyword to one that names the payoff — BUYDOWN or CONCESSION — and tighten the last loop from the vague 'I keep a list for this' to something that previews the actual asset, e.g. 'The exact line to write'."
+  },
+  "attemptsUsed": 3,
+  "belowBar": true,
+  "deck": {
+    "topic": "Texas market reality check: concessions vs price cuts",
+    "hook": "Texas sellers are giving away something worth more than discounts.",
+    "map": [
+      "Inventory at decade highs",
+      "Why price cuts backfire",
+      "Concessions beat discounts",
+      "Days on market leverage",
+      "Selling in week one"
+    ],
+    "points": [
+      {
+        "title": "Supply Flipped",
+        "body": [
+          "Texas has more homes sitting on the market than any point in over a decade.",
+          "That is not a crash. It is just competition, and for once it is not aimed at you."
+        ],
+        "loop": "Price cuts are the bait."
+      },
+      {
+        "title": "The Price Cut Trap",
+        "body": [
+          "Most cuts you see are just an overpriced home walking back to normal.",
+          "You are not getting a deal. You are watching a correction and calling it one."
+        ],
+        "loop": "The rate math nobody shows."
+      },
+      {
+        "title": "Ask For The Rate",
+        "body": [
+          "A seller paying down your rate moves your money more than a small price drop does.",
+          "Same seller cost. Very different outcome for you every single month you own it."
+        ],
+        "loop": "But timing decides who pays."
+      },
+      {
+        "title": "Watch The Calendar",
+        "body": [
+          "A home listed nine weeks ago has a seller doing math on two housing payments.",
+          "That is when concession requests stop being rude and start getting accepted."
+        ],
+        "loop": "Sellers read this backwards."
+      },
+      {
+        "title": "If You Are Selling",
+        "body": [
+          "Your first ten days pull more real buyers than the next sixty combined.",
+          "Price for that window. Chasing the market down with cuts is how homes go stale."
+        ],
+        "loop": "I keep a list for this."
+      }
+    ],
+    "cta": {
+      "payoff": "the exact concession ask to write into your offer, plus a side by side payment breakdown with and without a seller paid rate buydown"
+    }
+  },
+  "caption": "Texas sellers are giving away something worth more than discounts.\n\nSupply Flipped: Texas has more homes sitting on the market than any point in over a decade.\nThe Price Cut Trap: Most cuts you see are just an overpriced home walking back to normal.\nAsk For The Rate: A seller paying down your rate moves your money more than a small price drop does.\nWatch The Calendar: A home listed nine weeks ago has a seller doing math on two housing payments.\nIf You Are Selling: Your first ten days pull more real buyers than the next sixty combined.\n\nComment LIST and I'll DM you the exact concession ask to write into your offer, plus a side by side payment breakdown with and without a seller paid rate buydown.\nSave this for later.",
+  "linkedinCaption": "Texas inventory is at its highest level in over a decade. That is competition, not collapse, and buyers finally have room to negotiate.\n\nMost price cuts I see are not deals. They are overpriced listings correcting back to market. The buyer who celebrates a reduction is often just paying what the home was always worth.\n\nThe more useful ask is a rate buydown. Same cost to the seller. Very different math for the buyer over the life of the loan.\n\nTiming matters too. A seller nine weeks into a listing is carrying two housing obligations. That is when concession requests get taken seriously.\n\nFor sellers, the first ten days do the heavy lifting.\n\nAre you seeing buyers prioritize rate structure over sticker price in your market?"
+}
