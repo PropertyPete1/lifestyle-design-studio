@@ -288,10 +288,66 @@ test("wrapText handles a single word without looping forever", () => {
   assert.equal(lines.length, 1);
 });
 
-test("accent rotates across the three-colour palette", () => {
-  const seen = new Set([accentFor("2026-08-03"), accentFor("2026-08-04"), accentFor("2026-08-05")]);
-  assert.equal(seen.size, 3);
-  for (const a of seen) assert.ok(ACCENTS.includes(a));
+// ─── Brand palette ──────────────────────────────────────────────────────────
+
+test("accents come from the brand config, never hardcoded", async () => {
+  const { BRAND } = await import("../src/carousel-render.js");
+  assert.deepEqual(ACCENTS, BRAND.accentRotation);
+  for (let i = 0; i < 5; i++) {
+    const a = accentFor(`2026-08-0${3 + i}`);
+    assert.ok(ACCENTS.includes(a), `${a} is not in the configured rotation`);
+  }
+});
+
+test("the palette is the brand gold, not the reference example's colours", async () => {
+  const { BRAND } = await import("../src/carousel-render.js");
+  // #C8AA6A is --gold / --primary / --accent / --ring on lifestyledesignrealty.com,
+  // and appears literally in the site's CSS bundle.
+  assert.equal(BRAND.colors.accent.toUpperCase(), "#C8AA6A");
+  assert.equal(BRAND.colors.accentDim.toUpperCase(), "#9C834B");
+  assert.equal(BRAND.colors.ink.toUpperCase(), "#F6F5F1");
+
+  const retired = ["#4FD1C5", "#E879A6", "#A78BFA"];
+  const palette = JSON.stringify(BRAND).toUpperCase();
+  for (const c of retired) {
+    assert.ok(!palette.includes(c), `retired reference colour ${c} still in the palette`);
+  }
+});
+
+test("no brand colour is hardcoded in the render module", async () => {
+  const { readFileSync } = await import("fs");
+  const raw = readFileSync(new URL("../src/carousel-render.js", import.meta.url), "utf-8");
+  // Strip comments first — this checks the code, not the prose explaining it.
+  const src = raw.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  // Pure black and white are structural (canvas, not brand), everything else
+  // must come through the config so a palette tweak is one edit.
+  const hexes = (src.match(/#[0-9A-Fa-f]{6}/g) || []).map((h) => h.toUpperCase());
+  const allowed = new Set(["#000000", "#FFFFFF"]);
+  const offenders = hexes.filter((h) => !allowed.has(h));
+  assert.deepEqual(offenders, [], `hardcoded colours in carousel-render.js: ${offenders.join(", ")}`);
+});
+
+test("rendered slides actually paint the brand accent", async () => {
+  const sharp = (await import("sharp")).default;
+  const { hookSvg, renderSvgs, BRAND } = await import("../src/carousel-render.js");
+  const [png] = await renderSvgs([hookSvg("A hook with an accent rule beneath it.", BRAND.colors.accent)]);
+  const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+
+  const target = [0xC8, 0xAA, 0x6A];
+  let found = false;
+  for (let i = 0; i < data.length && !found; i += info.channels) {
+    if (Math.abs(data[i] - target[0]) < 6 &&
+        Math.abs(data[i + 1] - target[1]) < 6 &&
+        Math.abs(data[i + 2] - target[2]) < 6) found = true;
+  }
+  assert.ok(found, "brand gold does not appear in the rendered slide");
+});
+
+test("the grid is config-driven", async () => {
+  const { BRAND, hookSvg } = await import("../src/carousel-render.js");
+  assert.equal(typeof BRAND.grid.step, "number");
+  assert.equal(typeof BRAND.grid.opacity, "number");
+  assert.ok(hookSvg("x", BRAND.colors.accent).includes(`stroke-opacity="${BRAND.grid.opacity}"`));
 });
 
 // ─── Render ─────────────────────────────────────────────────────────────────

@@ -16,18 +16,37 @@
 
 import sharp from "sharp";
 import { PDFDocument } from "pdf-lib";
+import { readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 export const WIDTH = 1080;
 export const HEIGHT = 1350;
 
-const BG = "#08090B";
-const INK = "#F5F3EF";
-const MUTED = "#8B8D93";
+/**
+ * Slide colours come from carousel-brand.json, which carries the palette
+ * extracted from the live site. Nothing below hardcodes a brand colour — a
+ * palette change is one edit to that file, not template surgery.
+ */
+const BRAND_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "carousel-brand.json");
+export const BRAND = JSON.parse(readFileSync(BRAND_PATH, "utf-8"));
+
+const C = BRAND.colors;
+
+// The canvas is pure black rather than the brand's #0A0A0C: feeds composite
+// thumbnails against #000, and a near-black that is a few percent off reads as
+// a visible grey card. See _adapted in carousel-brand.json.
+const BG = "#000000";
+const INK = C.ink;
+const MUTED = C.muted;
 const SERIF = "Georgia, 'DejaVu Serif', 'Liberation Serif', 'Times New Roman', serif";
 const SANS = "'Helvetica Neue', Helvetica, 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif";
 
-/** Accent trio. One is chosen per carousel and used across all its slides. */
-export const ACCENTS = ["#4FD1C5", "#E879A6", "#A78BFA"];
+/** Accents in rotation. The brand resolves to a single gold, so this is one entry. */
+export const ACCENTS = BRAND.accentRotation;
+
+/** Supporting tone for secondary rules — a support colour on the site, not an accent. */
+export const ACCENT_DIM = C.accentDim;
 
 export function accentFor(dateStr) {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -119,13 +138,13 @@ function fitText(text, { start, min, maxWidth, maxLines, factor = 1 }) {
 
 /** Faint grid, drawn once per slide behind everything else. */
 function grid() {
-  const step = 90;
+  const { step, opacity } = BRAND.grid;
   const parts = [];
   for (let x = step; x < WIDTH; x += step) {
-    parts.push(`<line x1="${x}" y1="0" x2="${x}" y2="${HEIGHT}" stroke="${INK}" stroke-opacity="0.045" stroke-width="1"/>`);
+    parts.push(`<line x1="${x}" y1="0" x2="${x}" y2="${HEIGHT}" stroke="${INK}" stroke-opacity="${opacity}" stroke-width="1"/>`);
   }
   for (let y = step; y < HEIGHT; y += step) {
-    parts.push(`<line x1="0" y1="${y}" x2="${WIDTH}" y2="${y}" stroke="${INK}" stroke-opacity="0.045" stroke-width="1"/>`);
+    parts.push(`<line x1="0" y1="${y}" x2="${WIDTH}" y2="${y}" stroke="${INK}" stroke-opacity="${opacity}" stroke-width="1"/>`);
   }
   return parts.join("");
 }
@@ -170,7 +189,7 @@ export function hookSvg(hook, accent) {
   ${body}
   ${rule(MARGIN, underlineY, lastWidth, accent)}
   ${textLine(MARGIN, HEIGHT - 84, "swipe", { size: 30, family: SANS, fill: MUTED })}
-  ${rule(MARGIN + 92, HEIGHT - 94, 46, accent, 0.55)}
+  ${rule(MARGIN + 92, HEIGHT - 94, 46, ACCENT_DIM)}
 `);
 }
 
@@ -294,7 +313,7 @@ export function ctaSvg(keyword, payoff, accent) {
   ${rule(MARGIN, kwY + 34, kwWidth, accent)}
   ${textLine(MARGIN, dmY, "and I'll DM you", { size: 46, fill: INK, opacity: 0.75 })}
   ${payoffBlock}
-  ${rule(MARGIN, HEIGHT - 214, 120, accent, 0.5)}
+  ${rule(MARGIN, HEIGHT - 214, 120, ACCENT_DIM)}
   ${textLine(MARGIN, HEIGHT - 150, "Save this for later.", { size: 42, family: SANS, fill: MUTED })}
 `);
 }
