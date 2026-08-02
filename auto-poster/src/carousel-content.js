@@ -88,6 +88,7 @@ SLIDE 1 — THE HOOK
 - It must be impossible to know the answer without swiping.
 - Max 12 words. Short is stronger.
 - BANNED: "Here's why", "Let's talk about", "A thread", "Everything you need to know", "The ultimate guide", any phrasing that announces a topic instead of opening a gap.
+- PAY IT OFF. If the hook names a specific number, person, or outcome, a later slide must explicitly deliver that exact thing. A hook that promises "$27,000" and never mentions it again is a bait and switch, and it is the single most common way these fail.
 
 SLIDE 2 — THE MAP
 - A mind-map overview of every point coming. 4 to 6 fragments, 2 to 5 words each.
@@ -98,7 +99,8 @@ SLIDES 3 TO 8 — THE POINTS
 - Each has a short bold title (2 to 6 words) and 2 to 3 plain lines of body.
 - Body lines are plain spoken English. No jargon, no filler, no throat-clearing.
 - CRITICAL: each of these slides ENDS with an open loop of 3 to 6 words that teases the next slide. Examples of the shape: "...but that's not the expensive part." / "...and it gets worse." / "...most people stop here."
-- The LAST point slide's loop must point at the payoff, not at another point.
+- A loop WITHHOLDS. It must not be a headline for the next slide. "And the rate is not fixed." announces what is coming and is worthless. "That number can climb later." withholds and is what you want.
+- The LAST point slide's loop must ALSO withhold. Do not announce the CTA. "I keep a list for this." and "Here is the whole timeline." are failures — they hand off to the CTA instead of pulling the reader into it. Tease the value of the payoff without naming the mechanism.
 - The open loop is a separate final line, not folded into the body.
 
 FINAL SLIDE — THE CTA
@@ -134,6 +136,8 @@ Score three things from 1 to 10:
 "loops" — the per-slide open loops on the point slides. Does EVERY point slide end in a genuine 3 to 6 word tease that creates a reason to swipe? One weak or missing loop caps this at 5. Loops that just restate the slide score 3.
 
 "cta" — the final slide. Is the payoff concrete and specific enough that someone would actually type the keyword to get it? Vague payoffs ("more info", "the details", "my guide") score 3 or below.
+
+IMPORTANT: the comment keyword is drawn from a fixed four-word rotation the writer does not choose. Do NOT penalise the CTA for a keyword that has little to do with the topic — that is not the writer's decision. Score only the specificity and pull of the payoff itself.
 
 Be stingy. An 8 means genuinely good. A 10 should be rare.
 
