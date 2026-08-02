@@ -96,6 +96,36 @@ export function mergeTrialVariants(local, remote, log = console.log) {
 }
 
 /**
+ * carousel-log.json: union by timestamp, oldest first, keep the last 120.
+ *
+ * Append-only like posted-log, but with a second dedup key. The carousel job
+ * has its own concurrency group, so two runners writing the same day's entry
+ * should not happen — if it does, `date` catches the duplicate that `timestamp`
+ * would miss, since two runs of the same day produce different ms stamps but
+ * the same date. Losing that check would put two entries for one day into the
+ * writer's anti-example window and waste it.
+ */
+export function mergeCarouselLog(local, remote, log = console.log) {
+  const all = [...(remote?.posts || []), ...(local?.posts || [])];
+  const seenTimestamps = new Set();
+  const seenDates = new Set();
+  const merged = [];
+  for (const p of all) {
+    if (!p || typeof p !== "object") continue;
+    const ts = p.timestamp;
+    if (ts && seenTimestamps.has(ts)) continue;
+    if (p.date && seenDates.has(p.date)) continue;
+    if (ts) seenTimestamps.add(ts);
+    if (p.date) seenDates.add(p.date);
+    merged.push(p);
+  }
+  merged.sort((a, b) => String(a.timestamp || "").localeCompare(String(b.timestamp || "")));
+  const kept = merged.slice(-120);
+  log(`[Merge] carousel-log: ${kept.length} entries`);
+  return { ...remote, ...local, posts: kept };
+}
+
+/**
  * skip-list.json: union by driveFileId — a skip is never un-done by a
  * concurrent runner that happened to check out an older copy.
  */
@@ -122,6 +152,7 @@ export const MERGE_STRATEGIES = {
   "linkedin-history.json": (l, r, log) => mergeLinkedinHistory(l, r || { posts: [] }, log),
   "trial-variants.json": (l, r, log) => mergeTrialVariants(l, r || { variants: [] }, log),
   "skip-list.json": (l, r, log) => mergeSkipList(l, r || [], log),
+  "carousel-log.json": (l, r, log) => mergeCarouselLog(l, r || { posts: [] }, log),
 };
 
 export const MERGE_FILES = Object.keys(MERGE_STRATEGIES);

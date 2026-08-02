@@ -1,0 +1,126 @@
+#!/usr/bin/env node
+/**
+ * carousel-main.js — the daily carousel run.
+ *
+ *   1. Pick the pillar and keyword for today, read the log for anti-examples
+ *   2. Write the deck, critic-gate it, regenerate anything under 8/10
+ *   3. Render 1080x1350 slides and assemble the LinkedIn PDF
+ *   4. Fan out to the proven paths, and deliver to the owner for main Instagram
+ *   5. Append to carousel-log.json
+ *
+ * DRY_RUN=true generates and renders everything but publishes nothing.
+ * SAMPLE_OUT=<dir> writes the rendered slides to disk instead of distributing —
+ * used to produce the PR samples.
+ */
+
+import { writeFileSync, mkdirSync, existsSync } from "fs";
+import { join } from "path";
+import { generateCarousel, buildSocialCaption, buildLinkedinCaption, todayInChicago } from "./carousel-content.js";
+import { renderDeck, buildPdf, accentFor, isNonBlank } from "./carousel-render.js";
+import { distributeCarousel } from "./carousel-distribute.js";
+import { deliverCarouselToOwner } from "./delivery.js";
+import { getAccessToken } from "./drive.js";
+import {
+  loadCarouselLog, recentEntries, alreadyPostedToday, appendEntry, saveCarouselLog, buildEntry,
+} from "./carousel-state.js";
+
+const DRY_RUN = process.env.DRY_RUN === "true";
+const SAMPLE_OUT = process.env.SAMPLE_OUT || "";
+const FORCE = process.env.FORCE === "true";
+
+export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DRY_RUN } = {}) {
+  const date = dateStr || todayInChicago();
+  const log = loadCarouselLog();
+
+  // Idempotency guard, matching the poster's: the workflow runs on a cron that
+  // GitHub sometimes fires twice, and a duplicate carousel is a visible mistake.
+  if (!FORCE && !sampleOut && alreadyPostedToday(log, date)) {
+    console.log(`[Carousel] Already posted a carousel for ${date} — exiting cleanly.`);
+    return { skipped: "already posted today" };
+  }
+
+  const recent = recentEntries(log, 14);
+  console.log(`[Carousel] ${date} — ${recent.length} prior entries as anti-examples`);
+
+  const result = await generateCarousel({ dateStr: date, recent });
+  console.log(`[Carousel] pillar=${result.pillar} topic="${result.topic}" keyword=${result.keyword}`);
+  console.log(`[Carousel] hook: ${result.hook}`);
+  console.log(`[Carousel] scores: hook=${result.scores.hook} loops=${result.scores.loops} cta=${result.scores.cta}${result.belowBar ? " (BELOW BAR — best-of)" : ""}`);
+  if (result.leaksStripped?.length) {
+    console.log(`[Carousel] leak scanner stripped ${result.leaksStripped.length} term(s)`);
+  }
+
+  const accent = accentFor(date);
+  const slides = await renderDeck(result.deck, result.keyword, accent);
+  console.log(`[Carousel] rendered ${slides.length} slides`);
+
+  // A blank slide is worse than a failed run — it would publish as a black square.
+  for (const [i, png] of slides.entries()) {
+    if (!(await isNonBlank(png))) throw new Error(`slide ${i + 1} rendered blank`);
+  }
+
+  const pdf = await buildPdf(slides, result.topic);
+  const caption = buildSocialCaption(result);
+  const linkedinCaption = await buildLinkedinCaption(result);
+
+  // Sample mode: write everything to disk, publish nothing.
+  if (sampleOut) {
+    if (!existsSync(sampleOut)) mkdirSync(sampleOut, { recursive: true });
+    slides.forEach((png, i) => writeFileSync(join(sampleOut, `slide-${String(i + 1).padStart(2, "0")}.png`), png));
+    writeFileSync(join(sampleOut, "carousel.pdf"), pdf);
+    writeFileSync(join(sampleOut, "meta.json"), JSON.stringify({
+      date, pillar: result.pillar, pillarLabel: result.pillarLabel, topic: result.topic,
+      hook: result.hook, keyword: result.keyword, accent, scores: result.scores,
+      attemptsUsed: result.attemptsUsed, belowBar: result.belowBar,
+      deck: result.deck, caption, linkedinCaption,
+    }, null, 2) + "\n");
+    console.log(`[Carousel] sample written to ${sampleOut}`);
+    return { sample: sampleOut, result };
+  }
+
+  const distribution = await distributeCarousel({
+    slides, caption, linkedinCaption, documentTitle: result.topic, dryRun,
+  });
+
+  // Main Instagram: never auto-published. Owner posts it natively.
+  let delivered = false;
+  if (!dryRun) {
+    const tmp = join("/tmp", `carousel-${date}`);
+    if (!existsSync(tmp)) mkdirSync(tmp, { recursive: true });
+    const files = slides.map((png, i) => {
+      const p = join(tmp, `slide-${String(i + 1).padStart(2, "0")}.png`);
+      writeFileSync(p, png);
+      return { path: p, mimeType: "image/png" };
+    });
+    const pdfPath = join(tmp, "carousel.pdf");
+    writeFileSync(pdfPath, pdf);
+    files.push({ path: pdfPath, mimeType: "application/pdf" });
+
+    const token = await getAccessToken();
+    const delivery = await deliverCarouselToOwner(token, files, {
+      caption, keyword: result.keyword, topic: result.topic, city: "CAROUSEL",
+    });
+    delivered = delivery.delivered;
+  } else {
+    console.log("[Carousel] DRY RUN — skipping owner delivery");
+  }
+
+  const entry = buildEntry(result, {
+    accent, slideCount: slides.length, distribution: distribution.results, delivered,
+  });
+
+  if (!dryRun) {
+    saveCarouselLog(appendEntry(log, entry));
+    console.log(`[Carousel] logged ${date} (keyword ${result.keyword})`);
+  }
+
+  return { result, distribution, delivered, entry };
+}
+
+// Only run when invoked directly, so tests can import the module freely.
+if (process.argv[1] && process.argv[1].endsWith("carousel-main.js")) {
+  runCarousel().catch((err) => {
+    console.error(`[Carousel] FAILED: ${err.message}`);
+    process.exit(1);
+  });
+}
