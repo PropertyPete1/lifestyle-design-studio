@@ -2,81 +2,81 @@
   "date": "2026-08-03",
   "pillar": "real_estate_education",
   "pillarLabel": "Real estate education",
-  "topic": "New build inspections: the pre drywall window and the eleven month warranty visit",
-  "hook": "Drywall goes up Thursday. What it hides is permanent.",
+  "topic": "New build inspections: the three walks that are not yours",
+  "hook": "New builds get inspected three times. None of them for you.",
   "keyword": "CHECKLIST",
   "closeType": "dm",
   "accent": "#C8AA6A",
   "scores": {
-    "hook": 9,
+    "hook": 8,
     "loops": 8,
     "cta": 8,
-    "worst_problem": "The close splits the ask — \"Comment CHECKLIST\" is immediately undercut by a tacked-on \"Save this for later,\" giving the reader two competing actions plus a stray double period.",
-    "fix": "Cut \"Save this for later,\" fix the double period, and swap the generic keyword for a deck-specific one like DRYWALL so the trigger word echoes the hook."
+    "worst_problem": "The payoff is scoped only to the pre-drywall walk while the deck's sharpest, most novel beat is the month-eleven warranty deadline, so the artefact under-delivers on half the promise the carousel built.",
+    "fix": "Widen the DM payoff to cover both windows explicitly — e.g. 'the two-page checklist I hand buyers: what to photograph at pre-drywall and what to flag at month eleven'."
   },
-  "attemptsUsed": 3,
+  "attemptsUsed": 2,
   "belowBar": false,
   "deck": {
-    "topic": "New build inspections: the pre drywall window and the eleven month warranty visit",
-    "hook": "Drywall goes up Thursday. What it hides is permanent.",
+    "topic": "New build inspections: the three walks that are not yours",
+    "hook": "New builds get inspected three times. None of them for you.",
     "map": [
-      "Pre drywall window",
-      "The inspector myth",
-      "Two visits, not one",
-      "Blue tape day",
-      "Month eleven"
+      "Three inspections, none yours",
+      "The pre-drywall window",
+      "Walkthrough sign off trap",
+      "Month eleven deadline",
+      "What it actually costs"
     ],
     "points": [
       {
-        "title": "The Pre Drywall Window",
+        "title": "Who Those Three Serve",
         "body": [
-          "Before the walls close, every wire, pipe, duct and brace is sitting there in the open.",
-          "The day sheetrock goes up, all of it is sealed in for the life of the house.",
-          "You will not see it again until something leaks or trips."
+          "The city inspector checks code minimums and leaves.",
+          "The builder's own walk protects the builder.",
+          "The final walkthrough is a paint and scratch tour."
         ],
-        "loop": "You are told it already passed."
+        "loop": "The expensive stuff hides earlier."
       },
       {
-        "title": "That Stamp Is Not For You",
+        "title": "The Pre-Drywall Window",
         "body": [
-          "The city inspector is checking code minimum on behalf of the city.",
-          "He is on site for minutes and he is not looking out for your future repair bill.",
-          "Passing and built well are two different results."
+          "Framing, wiring, plumbing and ducts are visible for about a week.",
+          "After insulation and drywall, all of it disappears behind a wall.",
+          "Ask for that date the moment the frame goes up."
         ],
-        "loop": "One phone call changes that."
+        "loop": "You get one more shot."
       },
       {
-        "title": "Two Visits, Not One",
+        "title": "The Sign Off Trap",
         "body": [
-          "Hire your own independent inspector at frame stage, then again before closing.",
-          "It runs a few hundred per visit and it is the cheapest money you will spend on the house.",
-          "The builder cannot keep you out. They will just act like nobody asks."
+          "At the walkthrough they hand you a punch list and a pen.",
+          "Buyers write down nail pops and miss the grading and the attic.",
+          "Anything you sign off on quietly becomes yours."
         ],
-        "loop": "Then comes the day everyone rushes."
-      },
-      {
-        "title": "Blue Tape Is Not A List",
-        "body": [
-          "At the final walkthrough they hand you tape and you mark scuffs and nail pops.",
-          "Tape on a wall is not a promise. It falls off and it proves nothing.",
-          "Get every item written, numbered and signed with a date next to it."
-        ],
-        "loop": "The clock is already running."
+        "loop": "Then a clock starts running."
       },
       {
         "title": "Month Eleven",
         "body": [
-          "Most builder warranties on the small stuff run twelve months from closing.",
-          "A full season of heat, cold and settling shows you what the house actually does.",
-          "Bring your inspector back one more time while it is still their problem."
+          "Most builder workmanship coverage runs one year from closing.",
+          "Book your own inspection at month eleven, not month thirteen.",
+          "That gives you weeks to file while the claim still counts."
         ],
-        "loop": "Most people miss it by weeks."
+        "loop": "Someone has to pay this."
+      },
+      {
+        "title": "What It Runs You",
+        "body": [
+          "A pre-drywall visit and an eleven month visit each cost a few hundred.",
+          "One missed framing or drainage issue costs many times that.",
+          "The builder is never going to offer to book it for you."
+        ],
+        "loop": "Knowing what to flag is harder."
       }
     ],
     "cta": {
-      "payoff": "the new build inspection checklist I hand my buyers. Exactly what to look at before drywall, what to write down at the final walkthrough, and the items to chase before your warranty year quietly ends."
+      "payoff": "the new build inspection checklist I hand buyers before their pre-drywall walk"
     }
   },
-  "caption": "Drywall goes up Thursday. What it hides is permanent.\n\nThe Pre Drywall Window: Before the walls close, every wire, pipe, duct and brace is sitting there in the open.\nThat Stamp Is Not For You: The city inspector is checking code minimum on behalf of the city.\nTwo Visits, Not One: Hire your own independent inspector at frame stage, then again before closing.\nBlue Tape Is Not A List: At the final walkthrough they hand you tape and you mark scuffs and nail pops.\nMonth Eleven: Most builder warranties on the small stuff run twelve months from closing.\n\nComment CHECKLIST and I'll DM you the new build inspection checklist I hand my buyers. Exactly what to look at before drywall, what to write down at the final walkthrough, and the items to chase before your warranty year quietly ends..\nSave this for later.",
-  "linkedinCaption": "New construction has two inspection windows most buyers never use.\n\nThe first is at frame stage, before drywall. Every wire, pipe, duct and brace is visible. Once sheetrock goes up, none of it is seen again until something fails. The city inspector who signs off is checking code minimum on behalf of the city, not protecting your future repair bill.\n\nThe second is month eleven. Most builder warranties on smaller items expire at twelve months from closing. One full season of heat, cold and settling reveals what the house actually does.\n\nBlue tape at the walkthrough is not documentation. Written, numbered, dated and signed is documentation.\n\nFor those of you building or representing buyers on new construction, how are you handling the eleven month visit?"
+  "caption": "New builds get inspected three times. None of them for you.\n\nWho Those Three Serve: The city inspector checks code minimums and leaves.\nThe Pre-Drywall Window: Framing, wiring, plumbing and ducts are visible for about a week.\nThe Sign Off Trap: At the walkthrough they hand you a punch list and a pen.\nMonth Eleven: Most builder workmanship coverage runs one year from closing.\nWhat It Runs You: A pre-drywall visit and an eleven month visit each cost a few hundred.\n\nComment CHECKLIST and I'll DM you the new build inspection checklist I hand buyers before their pre-drywall walk.\nSave this for later.",
+  "linkedinCaption": "Three people walk a new build before you own it. None of them work for you. The city inspector confirms code minimums. The builder's walk protects the builder. The final walkthrough is largely a paint and scratch tour.\n\nThat leaves two windows worth paying for. Pre-drywall, when framing, wiring, plumbing and ducts are still visible for roughly a week. And month eleven, before most builder workmanship coverage expires at one year.\n\nEach visit runs a few hundred dollars. A missed framing or drainage issue runs many times that. And the punch list at walkthrough matters more than buyers realize. What you sign off on quietly becomes yours.\n\nFor agents working new construction: how early do you raise the pre-drywall inspection with your buyers?"
 }
