@@ -1,0 +1,59 @@
+[
+  {
+    "date": "2026-08-03",
+    "pillar": "Real estate education",
+    "closeType": "dm",
+    "topic": "New build inspections: the three walks that are not yours",
+    "hook": "New builds get inspected three times. None of them for you.",
+    "keyword": "CHECKLIST",
+    "scores": {
+      "hook": 8,
+      "loops": 8,
+      "cta": 8,
+      "worst_problem": "The payoff is scoped only to the pre-drywall walk while the deck's sharpest, most novel beat is the month-eleven warranty deadline, so the artefact under-delivers on half the promise the carousel built.",
+      "fix": "Widen the DM payoff to cover both windows explicitly — e.g. 'the two-page checklist I hand buyers: what to photograph at pre-drywall and what to flag at month eleven'."
+    },
+    "attemptsUsed": 2,
+    "belowBar": false,
+    "slides": 8,
+    "dir": "2026-08-03-real_estate_education"
+  },
+  {
+    "date": "2026-08-04",
+    "pillar": "Texas lifestyle",
+    "closeType": "question",
+    "topic": "What surprises Texas transplants (SA, Austin, DFW)",
+    "hook": "Nobody warns transplants about the 11 weeks.",
+    "keyword": null,
+    "scores": {
+      "hook": 8,
+      "loops": 8,
+      "cta": 7,
+      "worst_problem": "The close splits the ask — an answerable three-way question is immediately undercut by 'Save this for later,' giving the reader two competing actions and letting the easier one win.",
+      "fix": "Cut 'Save this for later' and make the question carry the whole slide, e.g. 'Hill country afternoon, Gulf coast weekend, or DFW lake day? One word in the comments.'"
+    },
+    "attemptsUsed": 3,
+    "belowBar": true,
+    "slides": 9,
+    "dir": "2026-08-04-texas_lifestyle"
+  },
+  {
+    "date": "2026-08-05",
+    "pillar": "Motivation and business",
+    "closeType": "share",
+    "topic": "Year one four houses to year four pipeline",
+    "hook": "Year one I sold four houses. Year four explains why.",
+    "keyword": null,
+    "scores": {
+      "hook": 7,
+      "loops": 8,
+      "cta": 8,
+      "worst_problem": "The hook withholds detail but not shape — \"year four explains why\" telegraphs a patience-compounds arc that a reader can guess before swiping, so the deck confirms rather than reveals.",
+      "fix": "Rewrite slide 1 so the gap is a contradiction rather than a timeline, e.g. lead with the specific thing the slow year cost you or the deal you refused, so the reader cannot pre-write the lesson."
+    },
+    "attemptsUsed": 3,
+    "belowBar": true,
+    "slides": 8,
+    "dir": "2026-08-05-motivation_business"
+  }
+]

@@ -119,7 +119,7 @@ async function getOrCreateFolder(accessToken) {
  * Upload the finished video to the "Ready to Post" folder (with 3x retry).
  * Returns { fileId, fileName, webViewLink, directLink }
  */
-async function uploadToReadyFolder(accessToken, videoPath, city) {
+async function uploadToReadyFolder(accessToken, videoPath, city, mimeType = "video/mp4") {
   const folderId = await getOrCreateFolder(accessToken);
   const fileName = `${city.toUpperCase()}_${new Date().toISOString().slice(0, 10)}_${basename(videoPath)}`;
   const fileSize = statSync(videoPath).size;
@@ -137,12 +137,12 @@ async function uploadToReadyFolder(accessToken, videoPath, city) {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
           "X-Upload-Content-Length": String(fileSize),
-          "X-Upload-Content-Type": "video/mp4",
+          "X-Upload-Content-Type": mimeType,
         },
         body: JSON.stringify({
           name: fileName,
           parents: [folderId],
-          mimeType: "video/mp4",
+          mimeType,
         }),
       }
     );
@@ -160,7 +160,7 @@ async function uploadToReadyFolder(accessToken, videoPath, city) {
       method: "PUT",
       headers: {
         "Content-Length": String(fileSize),
-        "Content-Type": "video/mp4",
+        "Content-Type": mimeType,
       },
       body: fileBuffer,
     });
@@ -526,5 +526,90 @@ export async function deliverToOwner(accessToken, videoPath, city, caption, opti
     driveLink: upload.webViewLink,
     driveFileId: upload.fileId,
     fileName: upload.fileName,
+  };
+}
+
+/**
+ * Deliver a rendered carousel to the owner for native posting.
+ *
+ * Same contract as deliverToOwner: main Instagram is never auto-published, so
+ * the slides go to "Ready to Post" and the owner posts them natively — which is
+ * also the only route to genuine trending audio, since the Metricool API has no
+ * field that carries it (issue #11).
+ *
+ * Differs from deliverToOwner in that a carousel is many files, not one: every
+ * slide plus the PDF is uploaded, then ONE notification is sent covering the
+ * set. Notifying per file would send eight pushes for one post.
+ *
+ * @param {string} accessToken
+ * @param {Array<{path: string, mimeType: string}>} files  slides then PDF, in order
+ * @param {object} meta  { caption, keyword, closeType, topic, city }
+ */
+export async function deliverCarouselToOwner(accessToken, files, meta) {
+  const { caption, keyword, closeType = "dm", topic, city = "CAROUSEL" } = meta;
+  console.log(`[Delivery] Delivering carousel "${topic}" (${files.length} files) to owner...`);
+
+  const uploaded = [];
+  for (const file of files) {
+    // Individual slide uploads already retry 3x inside uploadToReadyFolder.
+    uploaded.push(await uploadToReadyFolder(accessToken, file.path, city, file.mimeType));
+  }
+
+  const slideLinks = uploaded.map((u) => u.webViewLink);
+  const primary = uploaded[0];
+
+  // The caption carries the posting instructions the owner needs, since the
+  // dashboard record is built for a single video and has no slide-list field.
+  const ownerNote =
+    `${caption}\n\n` +
+    `— Carousel: ${uploaded.length} files in Ready to Post. Post slides in order.\n` +
+    (keyword ? `— Comment keyword: ${keyword}\n` : `— Close type: ${closeType} (no comment keyword)\n`) +
+    `— Add trending audio natively when you post.\n` +
+    slideLinks.map((l, i) => `  ${i + 1}. ${l}`).join("\n");
+
+  const deliveryPayload = {
+    city,
+    caption: ownerNote,
+    driveFileId: primary.fileId,
+    driveFileName: primary.fileName,
+    driveLink: primary.webViewLink,
+    directDownloadLink: primary.directLink,
+    deliveredAt: new Date().toISOString(),
+  };
+
+  const ch1 = await notifyDashboard(deliveryPayload);
+  const ch2 = await sendEmailBackup(accessToken, {
+    city,
+    caption: ownerNote,
+    driveLink: primary.webViewLink,
+    fileName: primary.fileName,
+  });
+
+  if (!ch1.ok && !ch2.ok) {
+    console.error("[Delivery] ⚠️ BOTH notification channels failed for the carousel!");
+    await writeManifestFile(accessToken, {
+      city,
+      caption: ownerNote,
+      driveLink: primary.webViewLink,
+      fileName: primary.fileName,
+      fileId: primary.fileId,
+    });
+    throw new Error(
+      `Both notification channels failed after retries. ` +
+      `Carousel uploaded to Drive (${primary.webViewLink}) and manifest written. ` +
+      `Workflow will exit red — GitHub sends failure email.`
+    );
+  }
+
+  const channels = [];
+  if (ch1.ok) channels.push("dashboard");
+  if (ch2.ok) channels.push("email");
+  console.log(`[Delivery] ✓ Carousel delivered via: ${channels.join(" + ")}`);
+
+  return {
+    delivered: true,
+    channels,
+    files: uploaded.map((u) => ({ fileName: u.fileName, link: u.webViewLink })),
+    driveLink: primary.webViewLink,
   };
 }

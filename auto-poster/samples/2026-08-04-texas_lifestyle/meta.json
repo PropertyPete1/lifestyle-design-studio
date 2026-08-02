@@ -1,0 +1,86 @@
+{
+  "date": "2026-08-04",
+  "pillar": "texas_lifestyle",
+  "pillarLabel": "Texas lifestyle",
+  "topic": "What surprises Texas transplants (SA, Austin, DFW)",
+  "hook": "Nobody warns transplants about the 11 weeks.",
+  "keyword": null,
+  "closeType": "question",
+  "accent": "#C8AA6A",
+  "scores": {
+    "hook": 8,
+    "loops": 8,
+    "cta": 7,
+    "worst_problem": "The close splits the ask — an answerable three-way question is immediately undercut by 'Save this for later,' giving the reader two competing actions and letting the easier one win.",
+    "fix": "Cut 'Save this for later' and make the question carry the whole slide, e.g. 'Hill country afternoon, Gulf coast weekend, or DFW lake day? One word in the comments.'"
+  },
+  "attemptsUsed": 3,
+  "belowBar": true,
+  "deck": {
+    "topic": "What surprises Texas transplants (SA, Austin, DFW)",
+    "hook": "Nobody warns transplants about the 11 weeks.",
+    "map": [
+      "The 11 week stretch",
+      "No income tax, but",
+      "Commute math by metro",
+      "The school zone trap",
+      "Breakfast taco loyalty",
+      "Your weekend range"
+    ],
+    "points": [
+      {
+        "title": "The 11 Weeks",
+        "body": [
+          "Late June to early September, triple digits is the default, not the news story.",
+          "Life moves indoors, or into water, and you plan errands around 7am."
+        ],
+        "loop": "That is not what stings."
+      },
+      {
+        "title": "No Income Tax, But",
+        "body": [
+          "Texas gets paid another way, and property tax rates swing hard by county and district.",
+          "Two nearly identical houses ten minutes apart can carry very different bills."
+        ],
+        "loop": "The map decides more than money."
+      },
+      {
+        "title": "Commutes Lie By Metro",
+        "body": [
+          "In DFW the distance is fine and the sprawl is not. Twenty miles can eat forty five minutes.",
+          "Austin has corridors that seize up and take the whole city with them. San Antonio loops mostly behave."
+        ],
+        "loop": "Then people pick for the wrong reason."
+      },
+      {
+        "title": "The School Zone Trap",
+        "body": [
+          "Buyers shop the district name and never look at the actual campus they are zoned to.",
+          "Boundaries get redrawn as rooftops go up, and yours can move before you finish unpacking."
+        ],
+        "loop": "Locals judge you on something else."
+      },
+      {
+        "title": "Breakfast Tacos Are Regional",
+        "body": [
+          "San Antonio and Austin argue about this the way other states argue about sports teams.",
+          "Move north and the morning question quietly changes to kolaches and brisket by noon."
+        ],
+        "loop": "The best part sits outside city limits."
+      },
+      {
+        "title": "Your Weekend Range",
+        "body": [
+          "From Austin the hill country is forty minutes. From San Antonio the coast is about three hours.",
+          "DFW trades scenery for water and puts a lake within twenty five minutes of almost everyone."
+        ],
+        "loop": "Most people never use half of it."
+      }
+    ],
+    "cta": {
+      "question": "Hill country afternoon, Gulf coast weekend, or a DFW lake day?"
+    }
+  },
+  "caption": "Nobody warns transplants about the 11 weeks.\n\nThe 11 Weeks: Late June to early September, triple digits is the default, not the news story.\nNo Income Tax, But: Texas gets paid another way, and property tax rates swing hard by county and district.\nCommutes Lie By Metro: In DFW the distance is fine and the sprawl is not. Twenty miles can eat forty five minutes.\nThe School Zone Trap: Buyers shop the district name and never look at the actual campus they are zoned to.\nBreakfast Tacos Are Regional: San Antonio and Austin argue about this the way other states argue about sports teams.\nYour Weekend Range: From Austin the hill country is forty minutes. From San Antonio the coast is about three hours.\n\nHill country afternoon, Gulf coast weekend, or a DFW lake day?\nSave this for later.",
+  "linkedinCaption": "I work with a lot of out of state buyers, and the same five things catch them off guard every time.\n\nSummer is not a season here, it is eleven weeks of planning your day around 7am. No income tax gets the headlines, but property tax rates vary widely by county and district, and two similar homes ten minutes apart can carry very different bills. Commute math works differently in each metro. And the district name on the listing is not the campus you are zoned to, especially where boundaries keep shifting.\n\nThe slides break down all of it, including the breakfast taco geography.\n\nFor those of you who relocated to Texas, what caught you off guard that no one warned you about?"
+}

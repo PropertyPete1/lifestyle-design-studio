@@ -1,0 +1,43 @@
+{
+  "_comment": "Brand palette for the daily carousel. Single source of truth for slide colours — change here, not in the SVG templates. Extracted from the live site's CSS bundle; see _source.",
+  "_source": {
+    "site": "https://lifestyledesignrealty.com",
+    "bundle": "/assets/index-uFyaaYHs.css",
+    "extractedOn": "2026-08-02",
+    "method": "Design tokens are authored in oklch(). Converted to sRGB hex via the Oklab transform, then verified three ways: the literal #c8aa6a appears in the CSS bundle, the live page computes its primary CTA background to oklch(0.75 0.09 85), and a screenshot confirms gold-on-near-black.",
+    "note": "The brand site is already a dark theme, so no light-on-white adaptation was needed — the carousel's black canvas already matches it. See _adapted for the two places the mapping is not literal."
+  },
+  "colors": {
+    "background": "#0A0A0C",
+    "surface": "#121215",
+    "ink": "#F6F5F1",
+    "muted": "#A7A49E",
+    "border": "#323237",
+    "accent": "#C8AA6A",
+    "accentDim": "#9C834B"
+  },
+  "_tokenMap": {
+    "background": "--background  oklch(14.5% .005 285)",
+    "surface": "--card  oklch(18.5% .006 285)",
+    "ink": "--foreground  oklch(97% .005 90)",
+    "muted": "--muted-foreground  oklch(72% .01 90)",
+    "border": "--border  oklch(32% .008 285)",
+    "accent": "--gold / --primary / --accent / --ring  oklch(75% .09 85)",
+    "accentDim": "--gold-dim  oklch(62% .08 85)"
+  },
+  "_adapted": [
+    "The slide canvas uses #000000 rather than the site's #0A0A0C. Instagram and LinkedIn composite thumbnails against pure black, and a near-black that is 4% off reads as a visible grey rectangle in a feed. The brand's own near-black is kept as `background` for any surface that is not the full-bleed canvas.",
+    "The brand has effectively ONE accent: --gold, --primary, --accent and --ring all resolve to the same value. So accentRotation ships with a single entry and every carousel is gold, which is what the site does. accentDim is used for the supporting rules (the swipe marker, the CTA footer rule) rather than being rotated in as a co-equal accent, since on the site it is a supporting tone, not an alternative brand colour.",
+    "Chart tokens (--chart-2..5: blue, green, orange, violet) were deliberately excluded. They are a data-visualisation ramp, not brand accents, and using them would reintroduce exactly the arbitrary colours this change removes."
+  ],
+  "accentRotation": ["#C8AA6A"],
+  "grid": {
+    "step": 90,
+    "opacity": 0.045
+  },
+  "_fonts": {
+    "note": "Not applied — recorded for reference. The site pairs Cormorant Garamond (headlines) with Montserrat (labels). Its own CSS falls back to Georgia, which is already the first entry in the renderer's serif stack, so the rendered result is in the same family without adding a font dependency to the runner.",
+    "siteHeadline": "'Cormorant Garamond', Georgia, serif",
+    "siteBody": "Montserrat, sans-serif"
+  }
+}

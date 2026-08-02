@@ -15,3 +15,7 @@ Thumbs.db
 # Temporary
 tmp/
 temp/
+
+# Python bytecode
+__pycache__/
+*.pyc

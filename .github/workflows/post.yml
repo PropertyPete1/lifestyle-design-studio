@@ -24,10 +24,12 @@ on:
     # TRIAL VARIANT: 8:15 AM CT = 13:15 UTC, 6:45 PM CT = 23:45 UTC
     - cron: '15 13 * * *'
     - cron: '45 23 * * *'
+    # DAILY CAROUSEL: 9:00 AM CT = 14:00 UTC
+    - cron: '0 14 * * *'
   workflow_dispatch:
     inputs:
       city:
-        description: 'City to post for (san_antonio, austin, dallas, trial_variant)'
+        description: 'City to post for (san_antonio, austin, dallas, trial_variant, carousel)'
         required: true
         default: 'san_antonio'
         type: choice
@@ -36,6 +38,7 @@ on:
           - austin
           - dallas
           - trial_variant
+          - carousel
       slot:
         description: 'Time slot (am or pm). Dallas is always pm.'
         required: false
@@ -333,3 +336,55 @@ jobs:
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
           node merge-log-push.mjs TRIAL "${{ steps.run-trial.outputs.post_success }}"
+
+  # ─── DAILY CAROUSEL ────────────────────────────────────────────────────────
+  # Photo carousel to the paths Phase 1 proved (issue #11): Instagram
+  # satellites, TikTok, Facebook, and LinkedIn as a PDF document. Main
+  # Instagram is delivered to the owner and never auto-published.
+  #
+  # Own concurrency group so a carousel run never queues behind a city post.
+  post-carousel:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'carousel')
+      || github.event.schedule == '0 14 * * *'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: autopost-carousel
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Run daily carousel
+        id: run-carousel
+        working-directory: auto-poster
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          FORCE: ${{ github.event.inputs.force || 'false' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: |
+          if node src/carousel-main.js; then
+            echo "post_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "post_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Commit carousel log
+        if: always()
+        run: |
+          cd auto-poster
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs CAROUSEL "${{ steps.run-carousel.outputs.post_success }}"
