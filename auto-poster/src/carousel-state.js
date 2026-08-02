@@ -69,6 +69,7 @@ export function buildEntry(result, { accent, slideCount, distribution, delivered
     attemptsUsed: result.attemptsUsed,
     regenerated: result.regenerated,
     belowBar: Boolean(result.belowBar),
+    criticUnavailable: Boolean(result.criticUnavailable),
     leaksStripped: result.leaksStripped?.length || 0,
     distribution: (distribution || []).map((d) => ({
       label: d.label, network: d.network, ok: Boolean(d.ok), skipped: d.skipped || undefined,

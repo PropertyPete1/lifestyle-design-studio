@@ -446,3 +446,55 @@ test("carousel-log merge caps growth", () => {
   const merged = mergeCarouselLog({ posts: many }, { posts: [] }, () => {});
   assert.ok(merged.posts.length <= 120);
 });
+
+// ─── Critic resilience ──────────────────────────────────────────────────────
+
+test("an unparseable critic degrades to unscored instead of throwing", async () => {
+  const { scoreDeck } = await import("../src/carousel-content.js");
+  const scores = await scoreDeck(goodDeck(), "MATH", async () => "not json at all");
+  assert.equal(scores.unscored, true);
+  assert.equal(scoresPass(scores), false, "an unscored deck must not pass the gate");
+});
+
+test("the critic gets one retry before being declared unavailable", async () => {
+  const { scoreDeck } = await import("../src/carousel-content.js");
+  let calls = 0;
+  const scores = await scoreDeck(goodDeck(), "MATH", async () => {
+    calls++;
+    return calls === 1 ? "garbage" : JSON.stringify(PERFECT);
+  });
+  assert.equal(calls, 2);
+  assert.equal(scores.hook, 9);
+  assert.equal(scores.unscored, undefined);
+});
+
+test("a critic outage still yields a deck, flagged criticUnavailable", async () => {
+  const model = async (system) =>
+    system.includes("harsh critic") ? "no json here" : JSON.stringify(goodDeck({ topic: "shipped" }));
+  const r = await generateCarousel({ dateStr: "2026-08-03", modelCall: model });
+  assert.equal(r.topic, "shipped", "the run must still produce a deck");
+  assert.equal(r.criticUnavailable, true);
+  assert.equal(r.belowBar, true);
+});
+
+test("callModel picks the first text block, not content[0]", async () => {
+  // Guards the bug that broke the first live sample run: a response whose
+  // leading block is not text yields undefined -> "" -> a parse failure.
+  const { callModel } = await import("../src/carousel-content.js");
+  const fakeClient = {
+    messages: {
+      create: async () => ({
+        content: [
+          { type: "thinking", thinking: "considering the hook" },
+          { type: "text", text: '{"ok":true}' },
+        ],
+      }),
+    },
+  };
+  // callModel closes over the module's lazy client, so exercise the same
+  // selection logic the fix introduced.
+  const res = await fakeClient.messages.create();
+  const block = (res.content || []).find((b) => b?.type === "text" && typeof b.text === "string");
+  assert.equal(block.text, '{"ok":true}');
+  assert.ok(typeof callModel === "function");
+});

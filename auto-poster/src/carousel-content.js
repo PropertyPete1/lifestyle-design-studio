@@ -155,15 +155,18 @@ function parseJson(raw) {
  * injectable parameter so the critic gate and the retry logic can be tested
  * against scripted responses instead of the live API.
  */
-export async function callModel(system, userPrompt, maxTokens = 2000) {
+export async function callModel(system, userPrompt, maxTokens = 4000) {
   const res = await getClient().messages.create({
     model: MODEL,
     max_tokens: maxTokens,
     system,
     messages: [{ role: "user", content: userPrompt }],
   });
-  const raw = res.content[0]?.text;
-  return typeof raw === "string" ? raw : "";
+  // Pick the first *text* block rather than content[0]. The response can lead
+  // with a non-text block, and indexing blindly yields undefined -> "" -> a
+  // parse failure that looks like the model returned nothing.
+  const textBlock = (res.content || []).find((b) => b?.type === "text" && typeof b.text === "string");
+  return textBlock ? textBlock.text : "";
 }
 
 // ─── Safety gates ───────────────────────────────────────────────────────────
@@ -250,16 +253,31 @@ export async function scoreDeck(deck, keyword, modelCall = callModel) {
     points: deck.points,
     cta: `Comment ${keyword} and I'll DM you ${deck.cta?.payoff}.`,
   }, null, 2);
-  const raw = await modelCall(CRITIC_SYSTEM, `Score this carousel.\n\n${rendered}`, 700);
-  const s = parseJson(raw);
   const clamp = (n) => Math.max(1, Math.min(10, Number(n) || 1));
-  return {
-    hook: clamp(s.hook),
-    loops: clamp(s.loops),
-    cta: clamp(s.cta),
-    worst_problem: String(s.worst_problem || ""),
-    fix: String(s.fix || ""),
-  };
+
+  // The critic is a quality gate, not a safety gate. If it cannot be parsed we
+  // retry once and then degrade to "unscored" rather than throwing — a critic
+  // outage must not take down the day's post. The hard gates (leak scanner,
+  // payment figure) are enforced separately and still block.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const nudge = attempt === 0 ? "" : "\n\nReturn ONLY the JSON object. No prose.";
+    try {
+      const raw = await modelCall(CRITIC_SYSTEM, `Score this carousel.\n\n${rendered}${nudge}`, 1000);
+      const s = parseJson(raw);
+      return {
+        hook: clamp(s.hook),
+        loops: clamp(s.loops),
+        cta: clamp(s.cta),
+        worst_problem: String(s.worst_problem || ""),
+        fix: String(s.fix || ""),
+      };
+    } catch (err) {
+      console.warn(`[Carousel] critic attempt ${attempt + 1} unparseable: ${err.message}`);
+    }
+  }
+
+  console.warn("[Carousel] critic unavailable — deck will be treated as unscored");
+  return { hook: 0, loops: 0, cta: 0, worst_problem: "critic unavailable", fix: "", unscored: true };
 }
 
 export function scoresPass(scores, mark = PASS_MARK) {
@@ -364,6 +382,9 @@ function finish(attempt, meta) {
     attemptsUsed: meta.attemptsUsed,
     regenerated: Boolean(meta.regenerated),
     belowBar: Boolean(meta.belowBar),
+    // Surfaced so a run that shipped without a working critic is visible in the
+    // log rather than looking like a deck that simply scored zero.
+    criticUnavailable: Boolean(attempt.scores.unscored),
   };
 }
 
