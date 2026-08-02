@@ -2,55 +2,58 @@
   {
     "date": "2026-08-03",
     "pillar": "Real estate education",
-    "topic": "Low appraisal and the gap clause most buyers sign blind",
-    "hook": "Appraisal came in $14,000 short. Seller kept every dollar.",
-    "keyword": "TOUR",
+    "closeType": "dm",
+    "topic": "New build inspections: the pre drywall window and the eleven month warranty visit",
+    "hook": "Drywall goes up Thursday. What it hides is permanent.",
+    "keyword": "CHECKLIST",
     "scores": {
-      "hook": 8,
-      "loops": 7,
-      "cta": 9,
-      "worst_problem": "The final point slide's loop, \"You can size this risk early,\" is a soft generality rather than a concrete tease, and slide 1's \"who blinks first\" is similarly abstract, so the swipe momentum sags at both ends of the deck.",
-      "fix": "Rewrite the two weak loops with a specific withheld noun — e.g. slide 5 becomes \"There's a number for this\" and slide 1 becomes \"Sellers know this, buyers don't.\""
+      "hook": 9,
+      "loops": 8,
+      "cta": 8,
+      "worst_problem": "The close splits the ask — \"Comment CHECKLIST\" is immediately undercut by a tacked-on \"Save this for later,\" giving the reader two competing actions plus a stray double period.",
+      "fix": "Cut \"Save this for later,\" fix the double period, and swap the generic keyword for a deck-specific one like DRYWALL so the trigger word echoes the hook."
     },
     "attemptsUsed": 3,
-    "belowBar": true,
+    "belowBar": false,
     "slides": 8,
     "dir": "2026-08-03-real_estate_education"
   },
   {
     "date": "2026-08-04",
     "pillar": "Texas lifestyle",
-    "topic": "What surprises Texas transplants (SA, Austin, DFW)",
-    "hook": "Most transplants misjudge Texas by exactly 47 minutes",
-    "keyword": "PLAN",
+    "closeType": "question",
+    "topic": "Texas transplant reality check across San Antonio, Austin, DFW",
+    "hook": "I moved 14 miles closer and lost 20 minutes.",
+    "keyword": null,
     "scores": {
       "hook": 8,
-      "loops": 8,
-      "cta": 8,
-      "worst_problem": "The final loop, \"Most transplants learn this year three,\" dangles a vague future-regret idea that the CTA slide never pays off, so the handoff into the offer is soft.",
-      "fix": "Rewrite the last loop to point directly at the deliverable, e.g. \"The fix is one document,\" so the swipe to the CTA feels earned."
-    },
-    "attemptsUsed": 1,
-    "belowBar": false,
-    "slides": 8,
-    "dir": "2026-08-04-texas_lifestyle"
-  },
-  {
-    "date": "2026-08-09",
-    "pillar": "Market insight",
-    "topic": "Texas market reality check: price cuts, reset clocks, concessions, timing",
-    "hook": "41% of Texas listings cut price. That's not the problem.",
-    "keyword": "LIST",
-    "scores": {
-      "hook": 8,
-      "loops": 5,
-      "cta": 9,
-      "worst_problem": "Slide 1's loop, \"The first cut is never real,\" just restates the slide's own conclusion instead of teasing the next slide, so the first swipe has no forward pull while every later loop does.",
-      "fix": "Rewrite slide 1's loop to point at the second-cut damage ahead — e.g. \"It's the second cut that kills\" — so it withholds rather than summarises."
+      "loops": 7,
+      "cta": 7,
+      "worst_problem": "The first loop, \"The cheaper address costs more,\" just re-states the slide it sits on rather than pointing forward at the tax-rate reveal, so the strongest slide ends without pull.",
+      "fix": "Rewrite loop 1 to point at the next idea instead of summarising this one — something like \"Miles aren't the worst number\" — and drop \"Save this for later\" so the closing question is the only ask."
     },
     "attemptsUsed": 3,
     "belowBar": true,
     "slides": 8,
-    "dir": "2026-08-09-market_insight"
+    "dir": "2026-08-04-texas_lifestyle"
+  },
+  {
+    "date": "2026-08-05",
+    "pillar": "Motivation and business",
+    "closeType": "share",
+    "topic": "The $18,000 lesson and the long game in real estate",
+    "hook": "I lost $18,000 on my third deal. Best money I ever spent.",
+    "keyword": null,
+    "scores": {
+      "hook": 7,
+      "loops": 7,
+      "cta": 8,
+      "worst_problem": "Several loops lean on vague mystery phrasing ('does something strange later', 'a price nobody quotes') rather than concrete specifics, so they blur together instead of each pulling in its own direction — and the CTA slide literally repeats 'Follow for more' twice.",
+      "fix": "Rewrite the loops on slides 3 and 4 to tease a concrete noun or number the next slide actually delivers (e.g. 'It costs one boring habit.'), and delete the duplicated follow line."
+    },
+    "attemptsUsed": 3,
+    "belowBar": true,
+    "slides": 8,
+    "dir": "2026-08-05-motivation_business"
   }
 ]

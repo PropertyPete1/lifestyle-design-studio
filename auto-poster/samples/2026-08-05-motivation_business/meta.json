@@ -1,0 +1,77 @@
+{
+  "date": "2026-08-05",
+  "pillar": "motivation_business",
+  "pillarLabel": "Motivation and business",
+  "topic": "The $18,000 lesson and the long game in real estate",
+  "hook": "I lost $18,000 on my third deal. Best money I ever spent.",
+  "keyword": null,
+  "closeType": "share",
+  "accent": "#C8AA6A",
+  "scores": {
+    "hook": 7,
+    "loops": 7,
+    "cta": 8,
+    "worst_problem": "Several loops lean on vague mystery phrasing ('does something strange later', 'a price nobody quotes') rather than concrete specifics, so they blur together instead of each pulling in its own direction — and the CTA slide literally repeats 'Follow for more' twice.",
+    "fix": "Rewrite the loops on slides 3 and 4 to tease a concrete noun or number the next slide actually delivers (e.g. 'It costs one boring habit.'), and delete the duplicated follow line."
+  },
+  "attemptsUsed": 3,
+  "belowBar": true,
+  "deck": {
+    "topic": "The $18,000 lesson and the long game in real estate",
+    "hook": "I lost $18,000 on my third deal. Best money I ever spent.",
+    "map": [
+      "the $18,000 mistake",
+      "why month one lies",
+      "boring beats brilliant",
+      "the habit nobody keeps",
+      "what year five does"
+    ],
+    "points": [
+      {
+        "title": "The $18,000 Mistake",
+        "body": [
+          "I bought a rental because it showed well and the seller was motivated.",
+          "I ran the numbers for one month and called it a deal. Eighteen thousand dollars later I understood the difference between a good house and a good investment."
+        ],
+        "loop": "The house was never the problem."
+      },
+      {
+        "title": "Month One Lies",
+        "body": [
+          "Every property looks profitable on day thirty. Rent lands, nothing is broken yet, and you feel like a genius.",
+          "Then the vacancy, the roof, the tax reassessment. Real returns only show up over years, not weeks."
+        ],
+        "loop": "Most people quit before that shows."
+      },
+      {
+        "title": "Boring Beats Brilliant",
+        "body": [
+          "Nobody I know with a real portfolio did it with one clever move.",
+          "They bought a decent property, held it, fixed it, and did the same unremarkable thing again five years later."
+        ],
+        "loop": "There is a price nobody quotes."
+      },
+      {
+        "title": "Pay Yourself First",
+        "body": [
+          "The buyers who move fast when the right deal shows up are not the ones who earn the most.",
+          "They are the ones who moved money into an untouchable account every single month while everyone else waited to feel ready."
+        ],
+        "loop": "That habit does something strange later."
+      },
+      {
+        "title": "Bet On Yourself",
+        "body": [
+          "Nobody hands you permission to start. There is no year where the market feels safe and your income feels certain.",
+          "You decide you are the asset, and you buy anyway, and you keep going while the doubters watch."
+        ],
+        "loop": "Almost nobody lasts that long."
+      }
+    ],
+    "cta": {
+      "shareLine": "Send this to someone who has been researching their first investment property for two years and still has not made an offer.\nFollow for more."
+    }
+  },
+  "caption": "I lost $18,000 on my third deal. Best money I ever spent.\n\nThe $18,000 Mistake: I bought a rental because it showed well and the seller was motivated.\nMonth One Lies: Every property looks profitable on day thirty. Rent lands, nothing is broken yet, and you feel like a genius.\nBoring Beats Brilliant: Nobody I know with a real portfolio did it with one clever move.\nPay Yourself First: The buyers who move fast when the right deal shows up are not the ones who earn the most.\nBet On Yourself: Nobody hands you permission to start. There is no year where the market feels safe and your income feels certain.\n\nSend this to someone who has been researching their first investment property for two years and still has not made an offer.\nFollow for more.\nFollow for more.",
+  "linkedinCaption": "I lost about $18,000 on a rental that looked great on paper for exactly one month. Rent came in, nothing broke, and I decided I had a gift for this. Then came the vacancy, the roof, and the tax reassessment.\n\nThe lesson was simple. A good house and a good investment are not the same thing, and thirty days of performance tells you nothing.\n\nEveryone I know with a real portfolio built it the boring way. Buy something decent. Hold it. Repair it. Do it again in five years. They also funded a separate account every month, long before they felt ready, so they could act when the right property surfaced.\n\nWhat is the most useful lesson a bad deal taught you?"
+}

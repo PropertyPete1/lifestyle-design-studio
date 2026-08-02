@@ -2,75 +2,81 @@
   "date": "2026-08-03",
   "pillar": "real_estate_education",
   "pillarLabel": "Real estate education",
-  "topic": "Low appraisal and the gap clause most buyers sign blind",
-  "hook": "Appraisal came in $14,000 short. Seller kept every dollar.",
-  "keyword": "TOUR",
+  "topic": "New build inspections: the pre drywall window and the eleven month warranty visit",
+  "hook": "Drywall goes up Thursday. What it hides is permanent.",
+  "keyword": "CHECKLIST",
+  "closeType": "dm",
   "accent": "#C8AA6A",
   "scores": {
-    "hook": 8,
-    "loops": 7,
-    "cta": 9,
-    "worst_problem": "The final point slide's loop, \"You can size this risk early,\" is a soft generality rather than a concrete tease, and slide 1's \"who blinks first\" is similarly abstract, so the swipe momentum sags at both ends of the deck.",
-    "fix": "Rewrite the two weak loops with a specific withheld noun — e.g. slide 5 becomes \"There's a number for this\" and slide 1 becomes \"Sellers know this, buyers don't.\""
+    "hook": 9,
+    "loops": 8,
+    "cta": 8,
+    "worst_problem": "The close splits the ask — \"Comment CHECKLIST\" is immediately undercut by a tacked-on \"Save this for later,\" giving the reader two competing actions plus a stray double period.",
+    "fix": "Cut \"Save this for later,\" fix the double period, and swap the generic keyword for a deck-specific one like DRYWALL so the trigger word echoes the hook."
   },
   "attemptsUsed": 3,
-  "belowBar": true,
+  "belowBar": false,
   "deck": {
-    "topic": "Low appraisal and the gap clause most buyers sign blind",
-    "hook": "Appraisal came in $14,000 short. Seller kept every dollar.",
+    "topic": "New build inspections: the pre drywall window and the eleven month warranty visit",
+    "hook": "Drywall goes up Thursday. What it hides is permanent.",
     "map": [
-      "Who actually orders it",
-      "Low number, unchanged price",
-      "The $14,000 answer",
-      "Cap versus waive",
-      "The deadline nobody reads"
+      "Pre drywall window",
+      "The inspector myth",
+      "Two visits, not one",
+      "Blue tape day",
+      "Month eleven"
     ],
     "points": [
       {
-        "title": "The Appraisal Is Not Yours",
+        "title": "The Pre Drywall Window",
         "body": [
-          "You pay for it. The lender orders it and owns the result.",
-          "It exists to protect the loan amount, not the price you agreed to."
+          "Before the walls close, every wire, pipe, duct and brace is sitting there in the open.",
+          "The day sheetrock goes up, all of it is sealed in for the life of the house.",
+          "You will not see it again until something leaks or trips."
         ],
-        "loop": "Which changes who blinks first."
+        "loop": "You are told it already passed."
       },
       {
-        "title": "Low Value Is Not A Discount",
+        "title": "That Stamp Is Not For You",
         "body": [
-          "The lender funds off the appraised number. Your contract price stays exactly where it was.",
-          "Nothing about a low appraisal automatically lowers what you owe the seller."
+          "The city inspector is checking code minimum on behalf of the city.",
+          "He is on site for minutes and he is not looking out for your future repair bill.",
+          "Passing and built well are two different results."
         ],
-        "loop": "One buyer paid it anyway."
+        "loop": "One phone call changes that."
       },
       {
-        "title": "Where The $14,000 Went",
+        "title": "Two Visits, Not One",
         "body": [
-          "That buyer had signed an appraisal gap clause agreeing to cover a shortfall in cash.",
-          "So the price never moved. The $14,000 came straight out of their savings at closing."
+          "Hire your own independent inspector at frame stage, then again before closing.",
+          "It runs a few hundred per visit and it is the cheapest money you will spend on the house.",
+          "The builder cannot keep you out. They will just act like nobody asks."
         ],
-        "loop": "Almost nobody reads the cap."
+        "loop": "Then comes the day everyone rushes."
       },
       {
-        "title": "Cap It, Do Not Waive It",
+        "title": "Blue Tape Is Not A List",
         "body": [
-          "Waiving means you cover any shortfall, however big it turns out to be.",
-          "Capping sets a ceiling you pick. It still beats most competing offers."
+          "At the final walkthrough they hand you tape and you mark scuffs and nail pops.",
+          "Tape on a wall is not a promise. It falls off and it proves nothing.",
+          "Get every item written, numbered and signed with a date next to it."
         ],
-        "loop": "Ceiling is not the only lever."
+        "loop": "The clock is already running."
       },
       {
-        "title": "The Clock You Missed",
+        "title": "Month Eleven",
         "body": [
-          "In Texas the right to walk after a low appraisal lives on its own addendum with its own deadline.",
-          "Blow past that date and your earnest money quietly stops being yours."
+          "Most builder warranties on the small stuff run twelve months from closing.",
+          "A full season of heat, cold and settling shows you what the house actually does.",
+          "Bring your inspector back one more time while it is still their problem."
         ],
-        "loop": "You can size this risk early."
+        "loop": "Most people miss it by weeks."
       }
     ],
     "cta": {
-      "payoff": "the gap clause wording I use, the addendum deadline checklist, and the exact payment breakdown at each cap amount"
+      "payoff": "the new build inspection checklist I hand my buyers. Exactly what to look at before drywall, what to write down at the final walkthrough, and the items to chase before your warranty year quietly ends."
     }
   },
-  "caption": "Appraisal came in $14,000 short. Seller kept every dollar.\n\nThe Appraisal Is Not Yours: You pay for it. The lender orders it and owns the result.\nLow Value Is Not A Discount: The lender funds off the appraised number. Your contract price stays exactly where it was.\nWhere The $14,000 Went: That buyer had signed an appraisal gap clause agreeing to cover a shortfall in cash.\nCap It, Do Not Waive It: Waiving means you cover any shortfall, however big it turns out to be.\nThe Clock You Missed: In Texas the right to walk after a low appraisal lives on its own addendum with its own deadline.\n\nComment TOUR and I'll DM you the gap clause wording I use, the addendum deadline checklist, and the exact payment breakdown at each cap amount.\nSave this for later.",
-  "linkedinCaption": "An appraisal comes back low and most buyers assume the price drops. It does not. The lender funds off the appraised value. Your contract price stays where you signed it, and the difference becomes cash you bring to closing.\n\nOne buyer brought $14,000. They had signed an appraisal gap clause months earlier without reading it closely.\n\nThe slides below cover who the appraisal actually protects, why capping a gap beats waiving it, and the Texas addendum deadline that quietly ends your right to walk.\n\nMost of this is fixable at the offer stage. Very little of it is fixable at the closing table.\n\nFor the agents here: how are you explaining gap coverage to first time buyers in a competitive offer?"
+  "caption": "Drywall goes up Thursday. What it hides is permanent.\n\nThe Pre Drywall Window: Before the walls close, every wire, pipe, duct and brace is sitting there in the open.\nThat Stamp Is Not For You: The city inspector is checking code minimum on behalf of the city.\nTwo Visits, Not One: Hire your own independent inspector at frame stage, then again before closing.\nBlue Tape Is Not A List: At the final walkthrough they hand you tape and you mark scuffs and nail pops.\nMonth Eleven: Most builder warranties on the small stuff run twelve months from closing.\n\nComment CHECKLIST and I'll DM you the new build inspection checklist I hand my buyers. Exactly what to look at before drywall, what to write down at the final walkthrough, and the items to chase before your warranty year quietly ends..\nSave this for later.",
+  "linkedinCaption": "New construction has two inspection windows most buyers never use.\n\nThe first is at frame stage, before drywall. Every wire, pipe, duct and brace is visible. Once sheetrock goes up, none of it is seen again until something fails. The city inspector who signs off is checking code minimum on behalf of the city, not protecting your future repair bill.\n\nThe second is month eleven. Most builder warranties on smaller items expire at twelve months from closing. One full season of heat, cold and settling reveals what the house actually does.\n\nBlue tape at the walkthrough is not documentation. Written, numbered, dated and signed is documentation.\n\nFor those of you building or representing buyers on new construction, how are you handling the eleven month visit?"
 }

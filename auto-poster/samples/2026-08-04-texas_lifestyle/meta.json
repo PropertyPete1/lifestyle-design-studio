@@ -2,76 +2,81 @@
   "date": "2026-08-04",
   "pillar": "texas_lifestyle",
   "pillarLabel": "Texas lifestyle",
-  "topic": "What surprises Texas transplants (SA, Austin, DFW)",
-  "hook": "Most transplants misjudge Texas by exactly 47 minutes",
-  "keyword": "PLAN",
+  "topic": "Texas transplant reality check across San Antonio, Austin, DFW",
+  "hook": "I moved 14 miles closer and lost 20 minutes.",
+  "keyword": null,
+  "closeType": "question",
   "accent": "#C8AA6A",
   "scores": {
     "hook": 8,
-    "loops": 8,
-    "cta": 8,
-    "worst_problem": "The final loop, \"Most transplants learn this year three,\" dangles a vague future-regret idea that the CTA slide never pays off, so the handoff into the offer is soft.",
-    "fix": "Rewrite the last loop to point directly at the deliverable, e.g. \"The fix is one document,\" so the swipe to the CTA feels earned."
+    "loops": 7,
+    "cta": 7,
+    "worst_problem": "The first loop, \"The cheaper address costs more,\" just re-states the slide it sits on rather than pointing forward at the tax-rate reveal, so the strongest slide ends without pull.",
+    "fix": "Rewrite loop 1 to point at the next idea instead of summarising this one — something like \"Miles aren't the worst number\" — and drop \"Save this for later\" so the closing question is the only ask."
   },
-  "attemptsUsed": 1,
-  "belowBar": false,
+  "attemptsUsed": 3,
+  "belowBar": true,
   "deck": {
-    "topic": "What surprises Texas transplants (SA, Austin, DFW)",
-    "hook": "Most transplants misjudge Texas by exactly 47 minutes",
+    "topic": "Texas transplant reality check across San Antonio, Austin, DFW",
+    "hook": "I moved 14 miles closer and lost 20 minutes.",
     "map": [
-      "The 47 minute miss",
-      "Tax math flips",
-      "August is its own season",
-      "Schools by street",
-      "The weekend problem"
+      "The 14 mile trap",
+      "Rate, not price",
+      "Boundaries beat district names",
+      "Two weeks a year",
+      "Your real weekend radius"
     ],
     "points": [
       {
-        "title": "The 47 Minutes",
+        "title": "The 14 Mile Trap",
         "body": [
-          "On a map, twelve miles looks like nothing.",
-          "In Austin or DFW at 5pm, that same twelve miles runs 47 minutes each way. Almost eight hours a week gone.",
-          "People pick the house before they drive the route once."
+          "I cut 14 miles off my Austin drive and it cost me 20 minutes each way.",
+          "The new route crossed a highway that stacks up at 7:40 and never recovers.",
+          "In Texas you commute the chokepoints, not the mileage."
         ],
-        "loop": "That is not the expensive part."
+        "loop": "The cheaper address costs more."
       },
       {
-        "title": "The Tax Flip",
+        "title": "Rate, Not Price",
         "body": [
-          "No state income tax gets everyone excited on the flight in.",
-          "Then the property tax bill lands and the math looks very different depending on which side of a county line you bought on."
+          "No state income tax gets all the attention. The property tax rate is the part that actually moves.",
+          "Two nearly identical houses, opposite sides of one line, and the annual bills are thousands apart.",
+          "People shop list price and never pull the rate."
         ],
-        "loop": "Your bills are not done yet."
+        "loop": "That line does something worse."
       },
       {
-        "title": "August Is A Season",
+        "title": "Districts Lie, Boundaries Don't",
         "body": [
-          "It is not one hot month. It is a stretch where the ground pulls away from the slab and your electric use doubles.",
-          "Locals water the foundation. Newcomers do not know that is a thing."
+          "Especially around DFW. One district name covers campuses that look nothing alike.",
+          "And boundaries get redrawn when a few hundred new roofs go up.",
+          "Buy the attendance zone. Not the logo on the water tower."
         ],
-        "loop": "One street can change everything."
+        "loop": "None of it survives February."
       },
       {
-        "title": "Schools By Street",
+        "title": "Two Weeks Run The Year",
         "body": [
-          "Two houses on the same road can feed two different schools.",
-          "Boundaries also get redrawn, and growth in San Antonio and north of DFW means they get redrawn often."
+          "Fifty weeks here are genuinely great. Two of them decide how you feel about the house.",
+          "One stretch of triple digits and one freeze week where pipes and power get tested.",
+          "Ask about shade orientation, attic work, and how the place handled the last freeze."
         ],
-        "loop": "Then there is the fun problem."
+        "loop": "The map gets smaller fast."
       },
       {
-        "title": "The Weekend Problem",
+        "title": "The 90 Minute Circle",
         "body": [
-          "The coast, the Hill Country, and the good barbecue are all within a few hours, and the line starts before you wake up.",
-          "Where you live decides how many of those you actually do instead of talk about."
+          "Every transplant says they will drive anywhere. By month three, weekends live inside 90 minutes.",
+          "San Antonio buys you Hill Country and a shot at the coast. Austin buys you rivers and lakes close in. DFW weekends run toward water east and quiet south.",
+          "Pick the city whose 90 minute circle you actually want."
         ],
-        "loop": "Most transplants learn this year three."
+        "loop": "Almost nobody picks right first."
       }
     ],
     "cta": {
-      "payoff": "a city by city breakdown for San Antonio, Austin, and DFW with real commute times, tax rates, and your exact payment math"
+      "question": "Shorter commute or lower tax rate?"
     }
   },
-  "caption": "Most transplants misjudge Texas by exactly 47 minutes\n\nThe 47 Minutes: On a map, twelve miles looks like nothing.\nThe Tax Flip: No state income tax gets everyone excited on the flight in.\nAugust Is A Season: It is not one hot month. It is a stretch where the ground pulls away from the slab and your electric use doubles.\nSchools By Street: Two houses on the same road can feed two different schools.\nThe Weekend Problem: The coast, the Hill Country, and the good barbecue are all within a few hours, and the line starts before you wake up.\n\nComment PLAN and I'll DM you a city by city breakdown for San Antonio, Austin, and DFW with real commute times, tax rates, and your exact payment math.\nSave this for later.",
-  "linkedinCaption": "Most relocation regret in Texas does not come from the house. It comes from things that never show up on a listing.\n\nTwelve miles on a map can run 47 minutes each way at 5pm in Austin or DFW. No state income tax feels great until the property tax bill arrives and you learn how much a county line matters. August is not a hot month, it is a season, and locals water their foundations for a reason. Two houses on the same street can feed different schools, and those boundaries move as growth pushes north of DFW and around San Antonio.\n\nFor those of you who have relocated clients here, which of these catches people off guard most often?"
+  "caption": "I moved 14 miles closer and lost 20 minutes.\n\nThe 14 Mile Trap: I cut 14 miles off my Austin drive and it cost me 20 minutes each way.\nRate, Not Price: No state income tax gets all the attention. The property tax rate is the part that actually moves.\nDistricts Lie, Boundaries Don't: Especially around DFW. One district name covers campuses that look nothing alike.\nTwo Weeks Run The Year: Fifty weeks here are genuinely great. Two of them decide how you feel about the house.\nThe 90 Minute Circle: Every transplant says they will drive anywhere. By month three, weekends live inside 90 minutes.\n\nShorter commute or lower tax rate?\nSave this for later.",
+  "linkedinCaption": "Four years of relocation clients and the same five surprises keep coming up. None of them show up in a listing.\n\nMileage does not predict commute time in Texas. Chokepoints do. I cut 14 miles off an Austin drive and added 20 minutes each way.\n\nNo state income tax gets the headlines. The property tax rate is what actually changes the math, and two nearly identical houses on opposite sides of one line can be thousands apart annually.\n\nDistrict names mean less than attendance zones, especially in DFW. Boundaries move when the roofs go up.\n\nFifty weeks here are great. The heat stretch and the freeze week decide how you feel about the house.\n\nWhat do you wish buyers understood about your market before they toured anything?"
 }
