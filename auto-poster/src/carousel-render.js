@@ -47,14 +47,26 @@ const NARROW = new Set("ijlt.,;:'\"!|()[]{}/\\`".split(""));
 const WIDE = new Set("WMQ@%mw".split(""));
 
 /**
- * Width multipliers by style. The per-character table below was fitted against
- * normal-weight text; bold serif renders materially wider than that estimate.
- * Measured against actual rasterised ink, bold serif came in 1.10-1.17x the
- * estimate across sample headlines, so BOLD_SERIF carries margin above the
- * worst observed case. Under-measuring here pushes headlines off the canvas.
+ * Per-style width multipliers correcting the character table below.
+ *
+ * These are FONT-SPECIFIC and calibrated for the CI runner, where the font
+ * stack resolves to DejaVu. They were originally fitted on macOS, where it
+ * resolves to Helvetica and Georgia — which are enough narrower that real
+ * headlines and body lines clipped at the canvas edge once rendered on ubuntu.
+ *
+ * Values are the worst measured ratio plus 5% margin, from
+ * scripts/calibrate-text-metrics.mjs run on the runner:
+ *   bold serif   worst 1.315
+ *   sans body    worst 1.176
+ *   italic serif worst 1.190
+ *
+ * Re-run that script and update these if the layouts or the runner image
+ * change. Over-estimating only costs a slightly smaller font; under-estimating
+ * pushes text off the slide.
  */
-export const BOLD_SERIF = 1.22;
-export const ITALIC_SERIF = 1.05;
+export const BOLD_SERIF = 1.38;
+export const SANS_BODY = 1.24;
+export const ITALIC_SERIF = 1.25;
 
 /** Approximate advance width of a string at a given font size. */
 export function measure(text, fontSize, factor = 1) {
@@ -211,7 +223,7 @@ export function pointSvg(point, index, total, accent) {
   // fixed y leaves short slides bottom-heavy with dead space.
   const bodyLines = [];
   for (const line of point.body || []) {
-    const { size, lines } = fitText(line, { start: 42, min: 32, maxWidth: CONTENT_W, maxLines: 3 });
+    const { size, lines } = fitText(line, { start: 42, min: 32, maxWidth: CONTENT_W, maxLines: 3, factor: SANS_BODY });
     for (const l of lines) bodyLines.push({ text: l, size });
     if (lines.length) bodyLines[bodyLines.length - 1].trailing = 14;
   }
@@ -254,7 +266,7 @@ export function pointSvg(point, index, total, accent) {
 
 /** Layout 4 — the CTA. Keyword is the visual anchor. */
 export function ctaSvg(keyword, payoff, accent) {
-  const payoffFit = fitText(payoff, { start: 50, min: 36, maxWidth: CONTENT_W, maxLines: 3 });
+  const payoffFit = fitText(payoff, { start: 50, min: 36, maxWidth: CONTENT_W, maxLines: 3, factor: SANS_BODY });
   const kwSize = 132;
   const kwWidth = Math.min(measure(keyword, kwSize, BOLD_SERIF), CONTENT_W);
 

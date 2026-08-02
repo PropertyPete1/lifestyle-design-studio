@@ -10,9 +10,11 @@
  * Dates are picked to hit three different pillars.
  */
 
+import sharp from "sharp";
 import { runCarousel } from "../src/carousel-main.js";
 import { pillarFor } from "../src/carousel-content.js";
-import { writeFileSync, mkdirSync, existsSync, rmSync } from "fs";
+import { WIDTH } from "../src/carousel-render.js";
+import { writeFileSync, mkdirSync, existsSync, rmSync, readdirSync, readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -47,6 +49,33 @@ async function main() {
   }
 
   writeFileSync(join(OUT, "index.json"), JSON.stringify(index, null, 2) + "\n");
+
+  // End-to-end overflow guard. The unit tests can only catch this on a machine
+  // whose fonts match the renderer's; here we are on the runner, checking the
+  // slides that were actually produced. Text clipped at the canvas edge is the
+  // one render fault that looks fine to every dimension check.
+  const MAX_INK_X = WIDTH - 96 + 8;
+  const overflows = [];
+  for (const entry of index) {
+    for (const file of readdirSync(join(OUT, entry.dir)).filter((f) => f.endsWith(".png"))) {
+      const path = join(OUT, entry.dir, file);
+      const { data, info } = await sharp(path).greyscale().raw().toBuffer({ resolveWithObject: true });
+      let right = 0;
+      for (let y = 0; y < info.height; y++) {
+        for (let x = info.width - 1; x > right; x--) {
+          if (data[y * info.width + x] > 90) { right = x; break; }
+        }
+      }
+      if (right > MAX_INK_X) overflows.push(`${entry.dir}/${file}: ink to x=${right}`);
+    }
+  }
+  if (overflows.length) {
+    console.error(`\nTEXT OVERFLOW on ${overflows.length} slide(s):`);
+    for (const o of overflows) console.error(`  ${o}`);
+    console.error("Re-run scripts/calibrate-text-metrics.mjs and raise the factors in carousel-render.js.");
+    process.exit(1);
+  }
+  console.log(`\nOverflow check: all slides inside the ${MAX_INK_X}px content edge.`);
 
   console.log("\n=== SAMPLE SUMMARY ===");
   for (const s of index) {

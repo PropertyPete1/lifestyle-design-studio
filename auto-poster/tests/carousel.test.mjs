@@ -549,6 +549,29 @@ test("long bold headlines stay inside the canvas", async () => {
   }
 });
 
+test("long body and CTA text stays inside the canvas", async () => {
+  // The body is sans, not serif, and was the case the first overflow test
+  // missed: a real sample clipped "Roofers and plumbers quote on their
+  // schedule," because the sans factor was left at 1.0.
+  const { pointSvg, ctaSvg, renderSvgs } = await import("../src/carousel-render.js");
+  const svgs = [
+    pointSvg({
+      title: "Bids Eat The Rest",
+      body: [
+        "Roofers and plumbers quote on their schedule, not on yours.",
+        "A foundation note means you now need a structural engineer.",
+      ],
+      loop: "but that's not the expensive part.",
+    }, 3, 5, ACCENTS[1]),
+    ctaSvg("MATH", "the exact payment breakdown for your price range, plus the full closing cost sheet", ACCENTS[1]),
+  ];
+  const pngs = await renderSvgs(svgs);
+  for (const [i, png] of pngs.entries()) {
+    const right = await inkRightEdge(png);
+    assert.ok(right <= MAX_INK_X, `slide ${i + 1} ink reaches x=${right}, past the ${MAX_INK_X} content edge`);
+  }
+});
+
 test("a very long hook stays inside the canvas", async () => {
   const { hookSvg, renderSvgs } = await import("../src/carousel-render.js");
   const svg = hookSvg("The forty seven day stretch that nobody ever warns transplants about", ACCENTS[2]);
