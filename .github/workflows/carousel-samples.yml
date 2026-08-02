@@ -12,6 +12,7 @@ on:
       - ".github/workflows/carousel-samples.yml"
       - "auto-poster/scripts/generate-samples.mjs"
       - "auto-poster/src/carousel-*.js"
+      - "auto-poster/scripts/calibrate-text-metrics.mjs"
 
 permissions:
   contents: write
@@ -27,6 +28,9 @@ jobs:
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
+      - name: Calibrate text metrics on the runner's fonts
+        working-directory: auto-poster
+        run: node scripts/calibrate-text-metrics.mjs
       - name: Generate samples
         working-directory: auto-poster
         env:
