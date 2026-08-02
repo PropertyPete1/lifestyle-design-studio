@@ -5,9 +5,13 @@ name: Carousel Samples
 #
 # Manual/branch-scoped like the capability probe — this never runs on main.
 
+# Branch-scoped: this must never run from main. It has contents:write and
+# pushes generated samples, which would commit sample images straight to main.
 on:
   workflow_dispatch:
   push:
+    branches:
+      - 'feat/**'
     paths:
       - ".github/workflows/carousel-samples.yml"
       - "auto-poster/scripts/generate-samples.mjs"

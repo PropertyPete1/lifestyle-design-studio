@@ -10,9 +10,13 @@ name: Capability Probe
 # Dispatch-by-push: workflow_dispatch only works off the default branch, and this
 # workflow deliberately never lands on main. Scoped to the probe's own files so
 # it fires when the probe changes, not on every commit to the feature branch.
+# Branch-scoped: this must never run from main. It is kept as the evidence
+# behind the Phase 1 findings, not as part of any pipeline.
 on:
   workflow_dispatch:
   push:
+    branches:
+      - 'feat/**'
     paths:
       - "auto-poster/scripts/probe-capabilities.mjs"
       - "auto-poster/scripts/probe-capabilities-2.mjs"
