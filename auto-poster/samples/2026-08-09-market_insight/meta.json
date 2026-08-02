@@ -2,75 +2,76 @@
   "date": "2026-08-09",
   "pillar": "market_insight",
   "pillarLabel": "Market insight",
-  "topic": "Texas market reality check: days on market, quiet price cuts, concessions",
-  "hook": "The 37 day shift nobody priced in yet",
+  "topic": "Texas market reality check: price cuts, inventory, concessions, and the 60 day window",
+  "hook": "Four in ten Texas sellers did this last month",
   "keyword": "LIST",
   "accent": "#E879A6",
   "scores": {
     "hook": 7,
-    "loops": 7,
-    "cta": 8,
-    "worst_problem": "The hook leans on a stat-plus-vague-authority formula ('nobody priced in yet') that a skeptical scroller can pattern-match to generic market-update content, so the curiosity gap is narrower than the specific number suggests.",
-    "fix": "Rewrite slide 1 to withhold the consequence rather than the metric — e.g. name what the 37 days quietly costs a seller without naming the number — and tighten the slide 5 loop to under six words so the loop cadence stays uniform."
+    "loops": 8,
+    "cta": 9,
+    "worst_problem": "The hook leans on the tired \"did this\" construction and, given the topic, most readers will correctly guess \"cut their price\" before swiping, so the gap is thinner than it looks.",
+    "fix": "Rewrite slide 1 to withhold something less guessable than the obvious price-cut answer — e.g. lead with the two-speed contradiction (\"Same street, same month: one house sold in 9 days, one has cut twice\") so the reader cannot predict the mechanism."
   },
   "attemptsUsed": 3,
   "belowBar": true,
   "deck": {
-    "topic": "Texas market reality check: days on market, quiet price cuts, concessions",
-    "hook": "The 37 day shift nobody priced in yet",
+    "topic": "Texas market reality check: price cuts, inventory, concessions, and the 60 day window",
+    "hook": "Four in ten Texas sellers did this last month",
     "map": [
-      "The 37 day math",
-      "Quiet price cuts",
-      "Inventory nobody counts",
-      "Concessions over price",
-      "The 90 day trap"
+      "Four in ten",
+      "Two speeds, one market",
+      "Inventory nobody expected",
+      "What sellers pay now",
+      "The 60 day window"
     ],
     "points": [
       {
-        "title": "The 37 Day Number",
+        "title": "Four In Ten",
         "body": [
-          "Homes that sold in a weekend two years ago now average about 37 days across most Texas metros.",
-          "Nothing broke. The clock just went back to normal."
+          "Roughly four out of ten active Texas listings cut their asking price last month.",
+          "That is not a crash. That is sellers finally letting go of 2022 numbers."
         ],
-        "loop": "Normal costs sellers something."
+        "loop": "The cuts are not random."
       },
       {
-        "title": "Price Cuts Are Quiet",
+        "title": "Two Speeds, One Market",
         "body": [
-          "Roughly a third of active listings have already taken a reduction.",
-          "You never see it. It just shows up as a new number one Tuesday morning."
+          "Priced right, homes here still go in under two weeks with multiple offers.",
+          "Priced on hope, they sit for months and cut twice.",
+          "Same street. Completely different outcome."
         ],
-        "loop": "The second cut hurts more."
+        "loop": "Something bigger caused the split."
       },
       {
-        "title": "Inventory Nobody Counts",
+        "title": "Inventory Came Back",
         "body": [
-          "Finished new construction sitting empty competes directly with your resale listing.",
-          "It does not show up in the numbers most people quote you."
+          "Texas is carrying more homes for sale than it has in over a decade.",
+          "Buyers can walk away now, and sellers know it."
         ],
-        "loop": "It follows you to closing."
+        "loop": "Sellers are already paying for it."
       },
       {
-        "title": "Concessions Beat Price",
+        "title": "What Sellers Pay Now",
         "body": [
-          "Sellers are covering closing costs and buying rates down instead of slashing the sticker.",
-          "Buyers who ask get help. Buyers who assume get nothing."
+          "Closing costs, rate buydowns, repairs, even the first year of taxes.",
+          "A large share of Texas deals close with the seller covering something."
         ],
-        "loop": "There is a window for asking."
+        "loop": "Not everyone gets the same deal."
       },
       {
-        "title": "The 90 Day Trap",
+        "title": "The 60 Day Window",
         "body": [
-          "Past 90 days on market, buyers stop asking about the house and start asking what is wrong with it.",
-          "Pulling it and relisting does not erase the history anymore."
+          "A seller who said no at day 20 says yes at day 70.",
+          "Nothing about the house changed. The math in their head did."
         ],
-        "loop": "Most of this is fixable in a week."
+        "loop": "The difference is measured in thousands."
       }
     ],
     "cta": {
-      "payoff": "the current days on market, price cut percentage, and active inventory count for your exact zip code"
+      "payoff": "my running list of Texas homes that have sat past 60 days, plus the exact payment breakdown on any one you pick"
     }
   },
-  "caption": "The 37 day shift nobody priced in yet\n\nThe 37 Day Number: Homes that sold in a weekend two years ago now average about 37 days across most Texas metros.\nPrice Cuts Are Quiet: Roughly a third of active listings have already taken a reduction.\nInventory Nobody Counts: Finished new construction sitting empty competes directly with your resale listing.\nConcessions Beat Price: Sellers are covering closing costs and buying rates down instead of slashing the sticker.\nThe 90 Day Trap: Past 90 days on market, buyers stop asking about the house and start asking what is wrong with it.\n\nComment LIST and I'll DM you the current days on market, price cut percentage, and active inventory count for your exact zip code.\nSave this for later.",
-  "linkedinCaption": "Texas homes are averaging roughly 37 days on market across most metros. Two years ago that was a weekend. Nothing broke. The clock simply went back to where it used to sit.\n\nWhat gets missed is everything happening underneath that number. About a third of active listings have already taken a reduction, and those cuts are quiet. Finished new construction sitting empty competes directly with resale inventory and rarely shows up in the stats people quote. Sellers are leaning on concessions and rate buydowns instead of dropping the sticker price. Buyers who ask receive help. Buyers who assume receive nothing.\n\nPast 90 days, the conversation shifts from the house to what is wrong with it.\n\nAre you seeing concessions outperform price reductions in your market?"
+  "caption": "Four in ten Texas sellers did this last month\n\nFour In Ten: Roughly four out of ten active Texas listings cut their asking price last month.\nTwo Speeds, One Market: Priced right, homes here still go in under two weeks with multiple offers.\nInventory Came Back: Texas is carrying more homes for sale than it has in over a decade.\nWhat Sellers Pay Now: Closing costs, rate buydowns, repairs, even the first year of taxes.\nThe 60 Day Window: A seller who said no at day 20 says yes at day 70.\n\nComment LIST and I'll DM you my running list of Texas homes that have sat past 60 days, plus the exact payment breakdown on any one you pick.\nSave this for later.",
+  "linkedinCaption": "Roughly four out of ten active Texas listings cut their asking price last month. That is not a crash. That is sellers adjusting to a market that stopped rewarding 2022 pricing.\n\nInventory is the highest it has been in over a decade. Buyers have options again, and sellers feel it.\n\nThe split is stark. Homes priced correctly still move in under two weeks with competing offers. Homes priced on hope sit for months and cut twice. Same street, different outcome.\n\nConcessions are now normal. Closing costs, rate buydowns, repairs, sometimes the first year of taxes.\n\nAnd time changes minds. The seller who declined at day 20 often accepts at day 70.\n\nWhat are you seeing on days on market in your submarket right now?"
 }

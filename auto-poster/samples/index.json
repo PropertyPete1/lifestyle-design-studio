@@ -2,51 +2,51 @@
   {
     "date": "2026-08-03",
     "pillar": "Real estate education",
-    "topic": "Texas option period mechanics",
-    "hook": "Most buyers burn 3 of their 7 option days.",
+    "topic": "Texas option period: how buyers burn their walk-away window",
+    "hook": "You lose 3 of your 7 walk away days.",
     "keyword": "TOUR",
     "scores": {
-      "hook": 6,
-      "loops": 6,
-      "cta": 7,
-      "worst_problem": "The hook gives away its own payoff structurally — 'burn 3 of their 7 days' names both the number and the outcome, so a reader can half-guess the answer (inspector scheduling delays) without swiping.",
-      "fix": "Rewrite slide 1 to withhold the number or the cause — e.g. 'Your 7 day option period is really 4' — and tighten the weak loop 'Fewer days than you think' into something that names a concrete unseen cost, like 'Two days are already gone.'"
+      "hook": 8,
+      "loops": 8,
+      "cta": 8,
+      "worst_problem": "Slide 4's loop (\"There is a wrong week for that\") points at timing/scheduling, but slide 5 is about written notice — the promised payoff never arrives, so that swipe feels like a bait-and-switch.",
+      "fix": "Rewrite slide 4's loop so it sets up the actual next slide, e.g. \"Saying it out loud fails\" or \"Then people blow the exit.\""
     },
-    "attemptsUsed": 3,
-    "belowBar": true,
-    "slides": 9,
+    "attemptsUsed": 1,
+    "belowBar": false,
+    "slides": 8,
     "dir": "2026-08-03-real_estate_education"
   },
   {
     "date": "2026-08-04",
     "pillar": "Texas lifestyle",
-    "topic": "What actually surprises Texas transplants (SA, Austin, DFW)",
-    "hook": "The heat is not what breaks transplants here.",
+    "topic": "What surprises Texas transplants (SA, Austin, DFW)",
+    "hook": "The 47 day stretch nobody warns transplants about.",
     "keyword": "PLAN",
     "scores": {
-      "hook": 6,
-      "loops": 5,
+      "hook": 8,
+      "loops": 8,
       "cta": 8,
-      "worst_problem": "The final point slide's loop just restates the body copy it sits under, killing the swipe momentum right before the ask.",
-      "fix": "Rewrite the last loop to tease the deliverable itself (e.g. \"The sheet settles this in minutes\") and tighten slide one's loop from the vague \"two more things\" to a concrete hint of the toll charge."
+      "worst_problem": "A couple of loops lean on empty abstraction — \"Your street decides something bigger\" and \"Where you buy changes more than that\" tease a category without naming a stake, so they pull weaker than the concrete ones like \"The bigger bill lands once yearly.\"",
+      "fix": "Rewrite the vague loops to name the noun being withheld — e.g. swap \"Your street decides something bigger\" for \"Your street decides your school\" and \"Where you buy changes more than that\" for \"Same house, different tax bill.\""
     },
-    "attemptsUsed": 3,
-    "belowBar": true,
+    "attemptsUsed": 1,
+    "belowBar": false,
     "slides": 9,
     "dir": "2026-08-04-texas_lifestyle"
   },
   {
     "date": "2026-08-09",
     "pillar": "Market insight",
-    "topic": "Texas market reality check: days on market, quiet price cuts, concessions",
-    "hook": "The 37 day shift nobody priced in yet",
+    "topic": "Texas market reality check: price cuts, inventory, concessions, and the 60 day window",
+    "hook": "Four in ten Texas sellers did this last month",
     "keyword": "LIST",
     "scores": {
       "hook": 7,
-      "loops": 7,
-      "cta": 8,
-      "worst_problem": "The hook leans on a stat-plus-vague-authority formula ('nobody priced in yet') that a skeptical scroller can pattern-match to generic market-update content, so the curiosity gap is narrower than the specific number suggests.",
-      "fix": "Rewrite slide 1 to withhold the consequence rather than the metric — e.g. name what the 37 days quietly costs a seller without naming the number — and tighten the slide 5 loop to under six words so the loop cadence stays uniform."
+      "loops": 8,
+      "cta": 9,
+      "worst_problem": "The hook leans on the tired \"did this\" construction and, given the topic, most readers will correctly guess \"cut their price\" before swiping, so the gap is thinner than it looks.",
+      "fix": "Rewrite slide 1 to withhold something less guessable than the obvious price-cut answer — e.g. lead with the two-speed contradiction (\"Same street, same month: one house sold in 9 days, one has cut twice\") so the reader cannot predict the mechanism."
     },
     "attemptsUsed": 3,
     "belowBar": true,
