@@ -9,6 +9,12 @@
  *
  * Dates are picked to hit three different pillars AND all three close types,
  * so the DM, engagement-question and share closes can each be judged.
+ *
+ * Run on demand — needs ANTHROPIC_API_KEY. Output lands in auto-poster/samples/,
+ * which is gitignored: attach the slides to a PR or a comment rather than
+ * committing them. The workflow that used to commit them was removed, because a
+ * workflow holding contents:write in order to push generated files is a standing
+ * hazard for the value it returns.
  */
 
 import sharp from "sharp";

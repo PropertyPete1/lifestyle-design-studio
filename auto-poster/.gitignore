@@ -2,3 +2,6 @@ node_modules/
 .env
 *.tmp
 *.log
+
+# Generated carousel review samples — regenerate on demand, never commit
+samples/

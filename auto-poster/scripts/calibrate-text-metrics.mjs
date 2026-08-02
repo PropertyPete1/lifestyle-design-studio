@@ -10,8 +10,9 @@
  * wider. Calibrating on the laptop and shipping to the runner is how a headline
  * ends up clipped at the canvas edge.
  *
- * Run this on the runner (see the Carousel Samples workflow) and set the
- * factors in carousel-render.js from the WORST ratio reported per style.
+ * Run this wherever the slides will actually be rendered — for the daily job
+ * that is an ubuntu-latest GitHub runner, not a laptop — and set the factors in
+ * carousel-render.js from the WORST ratio reported per style.
  */
 
 import sharp from "sharp";
