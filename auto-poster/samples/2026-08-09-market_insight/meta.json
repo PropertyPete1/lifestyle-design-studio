@@ -2,80 +2,76 @@
   "date": "2026-08-09",
   "pillar": "market_insight",
   "pillarLabel": "Market insight",
-  "topic": "Texas market reality check: hidden discounts and the two speed market",
-  "hook": "Texas has 7 months of inventory. That number is lying.",
+  "topic": "Texas market reality check: price cuts vs concessions",
+  "hook": "4 in 10 Texas listings cut price. The rest did this.",
   "keyword": "LIST",
   "accent": "#E879A6",
   "scores": {
     "hook": 8,
     "loops": 8,
     "cta": 9,
-    "worst_problem": "Slide 3's loop, \"Your speed is set early,\" is abstract restatement of the two-speeds point rather than a withheld promise, so it pulls weakest of the five.",
-    "fix": "Rewrite slide 3's loop into a concrete withheld consequence tied to the next slide, e.g. \"You get fourteen days, total.\""
+    "worst_problem": "The first point slide's loop, \"The clock is doing something too,\" is abstract enough that it teases a vibe rather than a specific withheld fact, making it the one soft link in an otherwise tight chain.",
+    "fix": "Rewrite slide 1's loop to name a concrete unknown, e.g. \"Then week three hits\" or \"Day 14 is the tell.\""
   },
   "attemptsUsed": 2,
   "belowBar": false,
   "deck": {
-    "topic": "Texas market reality check: hidden discounts and the two speed market",
-    "hook": "Texas has 7 months of inventory. That number is lying.",
+    "topic": "Texas market reality check: price cuts vs concessions",
+    "hook": "4 in 10 Texas listings cut price. The rest did this.",
     "map": [
-      "The 7 month lie",
-      "Where discounts actually hide",
-      "Two speeds, one market",
-      "Your first two weeks",
-      "Sellers who cannot wait"
+      "More listings than usual",
+      "The day 30 shift",
+      "Price cuts vs quiet money",
+      "What the other 6 did",
+      "The ask that works"
     ],
     "points": [
       {
-        "title": "The 7 Month Lie",
+        "title": "Inventory Is Back",
         "body": [
-          "Texas is sitting on roughly seven months of supply statewide.",
-          "On paper that reads like a buyer's market.",
-          "Almost all of that pile is stacked in the upper price bands."
+          "Texas has more homes for sale than it has had in over a decade.",
+          "Buyers have real choices again, so nobody feels rushed."
         ],
-        "loop": "Yet nothing is listed cheaper."
+        "loop": "The clock is doing something too."
       },
       {
-        "title": "The Discount Is Hidden",
+        "title": "Homes Sit Longer Now",
         "body": [
-          "Sellers hate a public price cut. It sits on the record forever.",
-          "So they hold the list price and pay you a different way.",
-          "Closing costs, rate buydowns, repairs credited back at the table."
+          "The first two weeks is when a listing gets its real attention.",
+          "After that the showings thin out and the calls slow down."
         ],
-        "loop": "Not every seller will do it."
+        "loop": "Something changes around day 30."
       },
       {
-        "title": "Two Speeds, One Market",
+        "title": "The Price Cut Trap",
         "body": [
-          "Correctly priced homes are still going under contract inside two weeks.",
-          "Everything else is sitting past ninety days and going stale.",
-          "There is almost no middle left."
+          "Four out of ten sellers respond by dropping the number.",
+          "Buyers read a price cut as blood in the water and wait for the next one."
         ],
-        "loop": "Your speed is set early."
+        "loop": "The rest moved a lot quieter."
       },
       {
-        "title": "Your First Two Weeks",
+        "title": "What The Other Six Did",
         "body": [
-          "Nearly every showing you will get is crammed into the first fourteen days.",
-          "Overprice it and you spend that window teaching buyers to scroll past you.",
-          "The price cut you make later never wins that traffic back."
+          "They left the list price alone and paid the buyer instead.",
+          "Closing costs covered. Rate bought down. Repairs handled up front.",
+          "The seller nets more and the buyer feels it every single month."
         ],
-        "loop": "Then you become the deal."
+        "loop": "Buyers leave this on the table."
       },
       {
-        "title": "Sellers Who Cannot Wait",
+        "title": "Ask For The Money",
         "body": [
-          "The real bargains right now are people who already closed on their next house.",
-          "They are covering two payments and counting weeks, not months.",
-          "None of that ever shows up in the listing."
+          "Right now you can ask a seller to cover costs and still win the house.",
+          "Put it in the offer. Not after the inspection, when your leverage is already spent."
         ],
-        "loop": "How many depends on your ZIP."
+        "loop": "Your street is not the average."
       }
     ],
     "cta": {
-      "payoff": "this month's real numbers for your ZIP. Days on market, average seller concessions, and how many listings have gone stale"
+      "payoff": "the current days on market and concession numbers for your price range, plus the exact payment breakdown once a seller covers the buydown"
     }
   },
-  "caption": "Texas has 7 months of inventory. That number is lying.\n\nThe 7 Month Lie: Texas is sitting on roughly seven months of supply statewide.\nThe Discount Is Hidden: Sellers hate a public price cut. It sits on the record forever.\nTwo Speeds, One Market: Correctly priced homes are still going under contract inside two weeks.\nYour First Two Weeks: Nearly every showing you will get is crammed into the first fourteen days.\nSellers Who Cannot Wait: The real bargains right now are people who already closed on their next house.\n\nComment LIST and I'll DM you this month's real numbers for your ZIP. Days on market, average seller concessions, and how many listings have gone stale.\nSave this for later.",
-  "linkedinCaption": "Texas is carrying roughly seven months of supply statewide. That reads like a buyer's market until you look at where the inventory actually sits. Most of it is stacked in the upper price bands.\n\nMeanwhile, correctly priced homes are still going under contract inside two weeks. Everything else is aging past ninety days. The middle has mostly disappeared.\n\nThe concessions are real, but they are quiet. Sellers resist public price cuts because the record follows the listing. They pay through closing costs, rate buydowns, and repair credits instead. None of that shows up in the list price.\n\nThe strongest leverage comes from sellers already carrying two homes.\n\nFor the agents here: are you seeing concessions replace price reductions in your market too?"
+  "caption": "4 in 10 Texas listings cut price. The rest did this.\n\nInventory Is Back: Texas has more homes for sale than it has had in over a decade.\nHomes Sit Longer Now: The first two weeks is when a listing gets its real attention.\nThe Price Cut Trap: Four out of ten sellers respond by dropping the number.\nWhat The Other Six Did: They left the list price alone and paid the buyer instead.\nAsk For The Money: Right now you can ask a seller to cover costs and still win the house.\n\nComment LIST and I'll DM you the current days on market and concession numbers for your price range, plus the exact payment breakdown once a seller covers the buydown.\nSave this for later.",
+  "linkedinCaption": "Texas has more homes on the market than it has in over a decade. That changes how a listing behaves after week two, when showings thin out and the phone gets quiet.\n\nAbout four in ten sellers react by cutting the price. Buyers tend to read that as a signal to wait for the next one.\n\nThe other six hold the list price and pay the buyer directly. Closing costs. A rate buydown. Repairs handled before the inspection. The seller often nets more, and the buyer feels the benefit every month.\n\nFor buyers, the ask belongs in the original offer, not after inspection when leverage is gone.\n\nAre you seeing concessions hold value better than price reductions in your market?"
 }

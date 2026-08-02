@@ -2,17 +2,17 @@
   {
     "date": "2026-08-03",
     "pillar": "Real estate education",
-    "topic": "Texas option period: why 10 days is really 6",
-    "hook": "Buyers pay for 10 option days. Most only get 6.",
+    "topic": "Texas option period mechanics",
+    "hook": "You bought 10 days to walk away. Most use four.",
     "keyword": "TOUR",
     "scores": {
       "hook": 8,
       "loops": 8,
       "cta": 9,
-      "worst_problem": "The hook states the arithmetic conclusion outright (10 becomes 6), so a savvy buyer can half-guess the payoff — scheduling and report lag — before swiping.",
-      "fix": "Rewrite slide 1 to withhold the number, e.g. \"You paid for 10 option days. Your inspector already took most of them.\" — keep the loss vivid but the size and cause unstated."
+      "worst_problem": "The slide 4 loop, \"Walking is rarely what you want,\" drifts off the slide's own stake (silent auto-acceptance) and offers a soft, abstract pull compared to the crisp countdown tension carrying the rest of the deck.",
+      "fix": "Rewrite slide 4's loop to point at the money on the table, e.g. \"The seller is watching that clock,\" so it hands directly into the 4:55 stall."
     },
-    "attemptsUsed": 2,
+    "attemptsUsed": 3,
     "belowBar": false,
     "slides": 8,
     "dir": "2026-08-03-real_estate_education"
@@ -20,33 +20,33 @@
   {
     "date": "2026-08-04",
     "pillar": "Texas lifestyle",
-    "topic": "Texas transplant reality check: pick the city before the house",
-    "hook": "The house is the last thing you should pick.",
+    "topic": "Three Texas metros, same salary, $9,000 gap",
+    "hook": "Three transplants. Same salary. One keeps $9,000 more.",
     "keyword": "PLAN",
     "scores": {
-      "hook": 7,
+      "hook": 8,
       "loops": 8,
-      "cta": 9,
-      "worst_problem": "The hook states a familiar real-estate truism ('location before house'), so a reader can half-guess the payoff without swiping.",
-      "fix": "Rewrite slide 1 to withhold a Texas-specific consequence instead of the generic principle — e.g. 'Four filters run before the house. Skip the third and it costs you every month.'"
+      "cta": 8,
+      "worst_problem": "The last point slide's loop, \"Three of the four move,\" opens a specific promise (which costs you can actually control) that the CTA never pays off — it offers a static cost sheet instead.",
+      "fix": "Either change the final loop to point directly at the cost sheet (e.g. \"See all three side by side\") or rewrite the CTA to deliver the levers, i.e. which three of the four costs you can move and by how much."
     },
-    "attemptsUsed": 3,
-    "belowBar": true,
+    "attemptsUsed": 2,
+    "belowBar": false,
     "slides": 9,
     "dir": "2026-08-04-texas_lifestyle"
   },
   {
     "date": "2026-08-09",
     "pillar": "Market insight",
-    "topic": "Texas market reality check: hidden discounts and the two speed market",
-    "hook": "Texas has 7 months of inventory. That number is lying.",
+    "topic": "Texas market reality check: price cuts vs concessions",
+    "hook": "4 in 10 Texas listings cut price. The rest did this.",
     "keyword": "LIST",
     "scores": {
       "hook": 8,
       "loops": 8,
       "cta": 9,
-      "worst_problem": "Slide 3's loop, \"Your speed is set early,\" is abstract restatement of the two-speeds point rather than a withheld promise, so it pulls weakest of the five.",
-      "fix": "Rewrite slide 3's loop into a concrete withheld consequence tied to the next slide, e.g. \"You get fourteen days, total.\""
+      "worst_problem": "The first point slide's loop, \"The clock is doing something too,\" is abstract enough that it teases a vibe rather than a specific withheld fact, making it the one soft link in an otherwise tight chain.",
+      "fix": "Rewrite slide 1's loop to name a concrete unknown, e.g. \"Then week three hits\" or \"Day 14 is the tell.\""
     },
     "attemptsUsed": 2,
     "belowBar": false,
