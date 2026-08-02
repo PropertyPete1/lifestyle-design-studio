@@ -2,84 +2,84 @@
   "date": "2026-08-04",
   "pillar": "texas_lifestyle",
   "pillarLabel": "Texas lifestyle",
-  "topic": "What surprises Texas transplants (SA, Austin, DFW)",
-  "hook": "The 47 day stretch nobody warns transplants about.",
+  "topic": "Texas transplant reality check: pick the city before the house",
+  "hook": "The house is the last thing you should pick.",
   "keyword": "PLAN",
   "accent": "#A78BFA",
   "scores": {
-    "hook": 8,
+    "hook": 7,
     "loops": 8,
-    "cta": 8,
-    "worst_problem": "A couple of loops lean on empty abstraction — \"Your street decides something bigger\" and \"Where you buy changes more than that\" tease a category without naming a stake, so they pull weaker than the concrete ones like \"The bigger bill lands once yearly.\"",
-    "fix": "Rewrite the vague loops to name the noun being withheld — e.g. swap \"Your street decides something bigger\" for \"Your street decides your school\" and \"Where you buy changes more than that\" for \"Same house, different tax bill.\""
+    "cta": 9,
+    "worst_problem": "The hook states a familiar real-estate truism ('location before house'), so a reader can half-guess the payoff without swiping.",
+    "fix": "Rewrite slide 1 to withhold a Texas-specific consequence instead of the generic principle — e.g. 'Four filters run before the house. Skip the third and it costs you every month.'"
   },
-  "attemptsUsed": 1,
-  "belowBar": false,
+  "attemptsUsed": 3,
+  "belowBar": true,
   "deck": {
-    "topic": "What surprises Texas transplants (SA, Austin, DFW)",
-    "hook": "The 47 day stretch nobody warns transplants about.",
+    "topic": "Texas transplant reality check: pick the city before the house",
+    "hook": "The house is the last thing you should pick.",
     "map": [
-      "47 days explained",
-      "The water bill trap",
-      "No income tax, but",
-      "Commutes that lie",
-      "School zoning shifts",
-      "Weekends by city"
+      "House comes last",
+      "Heat runs the clock",
+      "The twenty minute myth",
+      "Tax swing by county",
+      "School lines move",
+      "Weekend radius"
     ],
     "points": [
       {
-        "title": "The 47 Day Stretch",
+        "title": "Summer Owns Your Day",
         "body": [
-          "Some Texas summers stack 47 days over 100 degrees.",
-          "It changes when you run errands, not if you run them. Mornings and after dark."
+          "June through September, real life happens before ten or after eight.",
+          "Locals plan around shade the way other states plan around snow."
         ],
-        "loop": "Cooling is not the expensive part."
+        "loop": "The map lies too."
       },
       {
-        "title": "The Water Bill Trap",
+        "title": "Twenty Minutes Is Fiction",
         "body": [
-          "Summer water beats summer electricity for a lot of people here.",
-          "Clay soil moves. You water the foundation on a schedule or you pay a repair crew later."
+          "That twenty minute drive across Austin at 8am is closer to fifty.",
+          "San Antonio loops move better. In DFW, distance is honest distance and there is a lot of it."
         ],
-        "loop": "The bigger bill lands once yearly."
+        "loop": "Where you land costs more."
       },
       {
         "title": "No Income Tax, But",
         "body": [
-          "Texas gets it back through property tax.",
-          "Rates swing hard between counties, cities, and school districts. Two nearly identical houses can be taxed very differently."
+          "Texas takes it back through property tax and insurance, and the rate changes by county and district.",
+          "Two houses at the same price can carry very different yearly costs."
         ],
-        "loop": "Where you buy changes more than that."
+        "loop": "One map line changes everything."
       },
       {
-        "title": "Commutes That Lie",
+        "title": "School Zones Get Redrawn",
         "body": [
-          "Austin's 20 minute drive is 55 minutes at five o'clock.",
-          "DFW feels easy until a toll road or a lake sits between you and work. San Antonio loops back up fast at rush hour."
+          "Districts grow fast here and attendance boundaries move with them.",
+          "The campus everyone raved about three years ago may not be the one you are zoned to today."
         ],
-        "loop": "Your street decides something bigger."
+        "loop": "Saturdays get expensive too."
       },
       {
-        "title": "School Zoning Shifts",
+        "title": "Weekends Have A Radius",
         "body": [
-          "Districts here grow fast, so attendance boundaries get redrawn.",
-          "The rating follows the boundary, not the house. People buy for a campus and get reassigned two years later."
+          "From San Antonio you are ninety minutes from river country and a morning from the coast.",
+          "Austin trades that for lake and greenbelt. DFW weekends point at lakes and a longer drive to get anywhere else."
         ],
-        "loop": "Weekdays are only half the problem."
+        "loop": "Wrong order costs you thousands."
       },
       {
-        "title": "Weekends By City",
+        "title": "Run It This Way",
         "body": [
-          "From San Antonio and Austin, the Hill Country is under an hour.",
-          "From DFW you are driving to lakes and small towns instead. Same state, completely different Saturday."
+          "City first. Then commute. Then the tax and insurance number. Then schools.",
+          "The house is what is left standing after those four filters, not the thing you start with."
         ],
-        "loop": "Most people pick the wrong city."
+        "loop": "Most people learn this after closing."
       }
     ],
     "cta": {
-      "payoff": "the Texas transplant plan: tax rate ranges by county, real drive times for each metro, and the exact payment breakdown for your budget"
+      "payoff": "the city by city sheet on San Antonio, Austin and DFW with commute times, tax and insurance ranges, and your exact payment breakdown for each"
     }
   },
-  "caption": "The 47 day stretch nobody warns transplants about.\n\nThe 47 Day Stretch: Some Texas summers stack 47 days over 100 degrees.\nThe Water Bill Trap: Summer water beats summer electricity for a lot of people here.\nNo Income Tax, But: Texas gets it back through property tax.\nCommutes That Lie: Austin's 20 minute drive is 55 minutes at five o'clock.\nSchool Zoning Shifts: Districts here grow fast, so attendance boundaries get redrawn.\nWeekends By City: From San Antonio and Austin, the Hill Country is under an hour.\n\nComment PLAN and I'll DM you the Texas transplant plan: tax rate ranges by county, real drive times for each metro, and the exact payment breakdown for your budget.\nSave this for later.",
-  "linkedinCaption": "Most people relocating to Texas research the housing market carefully and the daily reality barely at all.\n\nThen they arrive in July.\n\nI put together six things that catch transplants off guard in San Antonio, Austin, and DFW. Not the obvious heat complaint. The specifics. Why summer water bills can outrun electricity. Why clay soil makes foundation watering a maintenance schedule, not a suggestion. How two nearly identical houses land in very different tax situations depending on which taxing entities they sit inside. How fast school attendance boundaries get redrawn in growing districts.\n\nNone of it should stop a move. It should shape which neighborhood you choose.\n\nFor agents working with out of state buyers: which of these do you find hardest to explain before they see it firsthand?"
+  "caption": "The house is the last thing you should pick.\n\nSummer Owns Your Day: June through September, real life happens before ten or after eight.\nTwenty Minutes Is Fiction: That twenty minute drive across Austin at 8am is closer to fifty.\nNo Income Tax, But: Texas takes it back through property tax and insurance, and the rate changes by county and district.\nSchool Zones Get Redrawn: Districts grow fast here and attendance boundaries move with them.\nWeekends Have A Radius: From San Antonio you are ninety minutes from river country and a morning from the coast.\nRun It This Way: City first. Then commute. Then the tax and insurance number. Then schools.\n\nComment PLAN and I'll DM you the city by city sheet on San Antonio, Austin and DFW with commute times, tax and insurance ranges, and your exact payment breakdown for each.\nSave this for later.",
+  "linkedinCaption": "Most relocation regret I see in Texas is not about the house. It is about the city, the commute, or the tax line nobody modeled before closing.\n\nBuyers arrive with a price range and a wish list. What actually shapes daily life here is heat that reorders your schedule, traffic that makes twenty minutes a fiction, county and district costs that vary widely at the same purchase price, and school boundaries that move as districts grow.\n\nThe order matters. City. Commute. Tax and insurance. Schools. The house is what survives those four filters.\n\nFor those of you working with out of state buyers, what part of Texas living do they underestimate most?"
 }

@@ -2,76 +2,80 @@
   "date": "2026-08-09",
   "pillar": "market_insight",
   "pillarLabel": "Market insight",
-  "topic": "Texas market reality check: price cuts, inventory, concessions, and the 60 day window",
-  "hook": "Four in ten Texas sellers did this last month",
+  "topic": "Texas market reality check: hidden discounts and the two speed market",
+  "hook": "Texas has 7 months of inventory. That number is lying.",
   "keyword": "LIST",
   "accent": "#E879A6",
   "scores": {
-    "hook": 7,
+    "hook": 8,
     "loops": 8,
     "cta": 9,
-    "worst_problem": "The hook leans on the tired \"did this\" construction and, given the topic, most readers will correctly guess \"cut their price\" before swiping, so the gap is thinner than it looks.",
-    "fix": "Rewrite slide 1 to withhold something less guessable than the obvious price-cut answer — e.g. lead with the two-speed contradiction (\"Same street, same month: one house sold in 9 days, one has cut twice\") so the reader cannot predict the mechanism."
+    "worst_problem": "Slide 3's loop, \"Your speed is set early,\" is abstract restatement of the two-speeds point rather than a withheld promise, so it pulls weakest of the five.",
+    "fix": "Rewrite slide 3's loop into a concrete withheld consequence tied to the next slide, e.g. \"You get fourteen days, total.\""
   },
-  "attemptsUsed": 3,
-  "belowBar": true,
+  "attemptsUsed": 2,
+  "belowBar": false,
   "deck": {
-    "topic": "Texas market reality check: price cuts, inventory, concessions, and the 60 day window",
-    "hook": "Four in ten Texas sellers did this last month",
+    "topic": "Texas market reality check: hidden discounts and the two speed market",
+    "hook": "Texas has 7 months of inventory. That number is lying.",
     "map": [
-      "Four in ten",
+      "The 7 month lie",
+      "Where discounts actually hide",
       "Two speeds, one market",
-      "Inventory nobody expected",
-      "What sellers pay now",
-      "The 60 day window"
+      "Your first two weeks",
+      "Sellers who cannot wait"
     ],
     "points": [
       {
-        "title": "Four In Ten",
+        "title": "The 7 Month Lie",
         "body": [
-          "Roughly four out of ten active Texas listings cut their asking price last month.",
-          "That is not a crash. That is sellers finally letting go of 2022 numbers."
+          "Texas is sitting on roughly seven months of supply statewide.",
+          "On paper that reads like a buyer's market.",
+          "Almost all of that pile is stacked in the upper price bands."
         ],
-        "loop": "The cuts are not random."
+        "loop": "Yet nothing is listed cheaper."
+      },
+      {
+        "title": "The Discount Is Hidden",
+        "body": [
+          "Sellers hate a public price cut. It sits on the record forever.",
+          "So they hold the list price and pay you a different way.",
+          "Closing costs, rate buydowns, repairs credited back at the table."
+        ],
+        "loop": "Not every seller will do it."
       },
       {
         "title": "Two Speeds, One Market",
         "body": [
-          "Priced right, homes here still go in under two weeks with multiple offers.",
-          "Priced on hope, they sit for months and cut twice.",
-          "Same street. Completely different outcome."
+          "Correctly priced homes are still going under contract inside two weeks.",
+          "Everything else is sitting past ninety days and going stale.",
+          "There is almost no middle left."
         ],
-        "loop": "Something bigger caused the split."
+        "loop": "Your speed is set early."
       },
       {
-        "title": "Inventory Came Back",
+        "title": "Your First Two Weeks",
         "body": [
-          "Texas is carrying more homes for sale than it has in over a decade.",
-          "Buyers can walk away now, and sellers know it."
+          "Nearly every showing you will get is crammed into the first fourteen days.",
+          "Overprice it and you spend that window teaching buyers to scroll past you.",
+          "The price cut you make later never wins that traffic back."
         ],
-        "loop": "Sellers are already paying for it."
+        "loop": "Then you become the deal."
       },
       {
-        "title": "What Sellers Pay Now",
+        "title": "Sellers Who Cannot Wait",
         "body": [
-          "Closing costs, rate buydowns, repairs, even the first year of taxes.",
-          "A large share of Texas deals close with the seller covering something."
+          "The real bargains right now are people who already closed on their next house.",
+          "They are covering two payments and counting weeks, not months.",
+          "None of that ever shows up in the listing."
         ],
-        "loop": "Not everyone gets the same deal."
-      },
-      {
-        "title": "The 60 Day Window",
-        "body": [
-          "A seller who said no at day 20 says yes at day 70.",
-          "Nothing about the house changed. The math in their head did."
-        ],
-        "loop": "The difference is measured in thousands."
+        "loop": "How many depends on your ZIP."
       }
     ],
     "cta": {
-      "payoff": "my running list of Texas homes that have sat past 60 days, plus the exact payment breakdown on any one you pick"
+      "payoff": "this month's real numbers for your ZIP. Days on market, average seller concessions, and how many listings have gone stale"
     }
   },
-  "caption": "Four in ten Texas sellers did this last month\n\nFour In Ten: Roughly four out of ten active Texas listings cut their asking price last month.\nTwo Speeds, One Market: Priced right, homes here still go in under two weeks with multiple offers.\nInventory Came Back: Texas is carrying more homes for sale than it has in over a decade.\nWhat Sellers Pay Now: Closing costs, rate buydowns, repairs, even the first year of taxes.\nThe 60 Day Window: A seller who said no at day 20 says yes at day 70.\n\nComment LIST and I'll DM you my running list of Texas homes that have sat past 60 days, plus the exact payment breakdown on any one you pick.\nSave this for later.",
-  "linkedinCaption": "Roughly four out of ten active Texas listings cut their asking price last month. That is not a crash. That is sellers adjusting to a market that stopped rewarding 2022 pricing.\n\nInventory is the highest it has been in over a decade. Buyers have options again, and sellers feel it.\n\nThe split is stark. Homes priced correctly still move in under two weeks with competing offers. Homes priced on hope sit for months and cut twice. Same street, different outcome.\n\nConcessions are now normal. Closing costs, rate buydowns, repairs, sometimes the first year of taxes.\n\nAnd time changes minds. The seller who declined at day 20 often accepts at day 70.\n\nWhat are you seeing on days on market in your submarket right now?"
+  "caption": "Texas has 7 months of inventory. That number is lying.\n\nThe 7 Month Lie: Texas is sitting on roughly seven months of supply statewide.\nThe Discount Is Hidden: Sellers hate a public price cut. It sits on the record forever.\nTwo Speeds, One Market: Correctly priced homes are still going under contract inside two weeks.\nYour First Two Weeks: Nearly every showing you will get is crammed into the first fourteen days.\nSellers Who Cannot Wait: The real bargains right now are people who already closed on their next house.\n\nComment LIST and I'll DM you this month's real numbers for your ZIP. Days on market, average seller concessions, and how many listings have gone stale.\nSave this for later.",
+  "linkedinCaption": "Texas is carrying roughly seven months of supply statewide. That reads like a buyer's market until you look at where the inventory actually sits. Most of it is stacked in the upper price bands.\n\nMeanwhile, correctly priced homes are still going under contract inside two weeks. Everything else is aging past ninety days. The middle has mostly disappeared.\n\nThe concessions are real, but they are quiet. Sellers resist public price cuts because the record follows the listing. They pay through closing costs, rate buydowns, and repair credits instead. None of that shows up in the list price.\n\nThe strongest leverage comes from sellers already carrying two homes.\n\nFor the agents here: are you seeing concessions replace price reductions in your market too?"
 }
