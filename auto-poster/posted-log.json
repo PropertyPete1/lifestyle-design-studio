@@ -2308,6 +2308,50 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1Xy55qEf6VMK8xS2MvNLNtX_1UHB7pr51/view"
+    },
+    {
+      "driveFileId": "1uKn-rn6TaBMYK_UwC8J8giSsHd3NskJy",
+      "fileName": "B263BF46-405B-4416-8868-421A95B1719E.mp4",
+      "city": "san_antonio",
+      "caption": "the floor plan in this one made me stop mid-tour\n\nnew construction in Cibolo at this price point doesn't sit around long\n\n✨ open floor plan that floods the space with natural light, modern finishes th",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-02T19:37:20.970Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "Cibolo",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Payment math. These homes start at $311,000. Zero down is",
+      "content_hash": "70fee14048ff1c83:fffffff7f70c0200:ffff83e737376000:fffffff702020000:7efc3f3e382c0600",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1C5mAlBnOlszILUBC93ot7PdvoW0m1REu/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "market_now",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-02T14:38:58"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-02T15:08:58"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-02T15:38:58"
+        }
+      ],
+      "timestamp": "2026-08-02T19:37:29.756Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
