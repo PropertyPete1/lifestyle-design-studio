@@ -3,50 +3,50 @@
     "date": "2026-08-03",
     "pillar": "Real estate education",
     "topic": "Texas option period mechanics",
-    "hook": "Two lines in his contract cost him $27,000.",
+    "hook": "Most buyers burn 3 of their 7 option days.",
     "keyword": "TOUR",
     "scores": {
-      "hook": 7,
+      "hook": 6,
       "loops": 6,
-      "cta": 8,
-      "worst_problem": "The hook promises a specific $27,000 loss but no slide ever delivers that story or number, so the opening curiosity gap is baited and abandoned.",
-      "fix": "Pay off the hook explicitly on slide 2 by naming the two contract lines and the $27,000 outcome, and swap the flat 'and inspectors are booked solid' loop plus the mismatched keyword TOUR for a tease that withholds (e.g. 'the mistake costs you the window') and a keyword tied to the topic like OPTION."
+      "cta": 7,
+      "worst_problem": "The hook gives away its own payoff structurally — 'burn 3 of their 7 days' names both the number and the outcome, so a reader can half-guess the answer (inspector scheduling delays) without swiping.",
+      "fix": "Rewrite slide 1 to withhold the number or the cause — e.g. 'Your 7 day option period is really 4' — and tighten the weak loop 'Fewer days than you think' into something that names a concrete unseen cost, like 'Two days are already gone.'"
     },
     "attemptsUsed": 3,
     "belowBar": true,
-    "slides": 8,
+    "slides": 9,
     "dir": "2026-08-03-real_estate_education"
   },
   {
     "date": "2026-08-04",
     "pillar": "Texas lifestyle",
-    "topic": "What actually changes your cost of living across San Antonio, Austin and DFW",
-    "hook": "Two identical houses, three miles apart. One owner pays $4,800 more.",
+    "topic": "What actually surprises Texas transplants (SA, Austin, DFW)",
+    "hook": "The heat is not what breaks transplants here.",
     "keyword": "PLAN",
     "scores": {
-      "hook": 8,
-      "loops": 6,
+      "hook": 6,
+      "loops": 5,
       "cta": 8,
-      "worst_problem": "Loop one, \"And the rate is not fixed,\" is a flat headline for the next slide rather than a tease, and the final loop is a CTA handoff instead of an open loop.",
-      "fix": "Rewrite slide 1's loop to withhold a consequence instead of announcing the topic (e.g. \"That number can climb later\") and give slide 5 a real forward pull before the CTA."
+      "worst_problem": "The final point slide's loop just restates the body copy it sits under, killing the swipe momentum right before the ask.",
+      "fix": "Rewrite the last loop to tease the deliverable itself (e.g. \"The sheet settles this in minutes\") and tighten slide one's loop from the vague \"two more things\" to a concrete hint of the toll charge."
     },
     "attemptsUsed": 3,
     "belowBar": true,
-    "slides": 8,
+    "slides": 9,
     "dir": "2026-08-04-texas_lifestyle"
   },
   {
     "date": "2026-08-09",
     "pillar": "Market insight",
-    "topic": "Texas market reality check: concessions vs price cuts",
-    "hook": "Texas sellers are giving away something worth more than discounts.",
+    "topic": "Texas market reality check: days on market, quiet price cuts, concessions",
+    "hook": "The 37 day shift nobody priced in yet",
     "keyword": "LIST",
     "scores": {
       "hook": 7,
       "loops": 7,
-      "cta": 7,
-      "worst_problem": "The keyword LIST has nothing to do with the promised deliverable (a concession script and a buydown payment comparison), so the ask feels arbitrary and forgettable at the exact moment friction matters most.",
-      "fix": "Change the keyword to one that names the payoff — BUYDOWN or CONCESSION — and tighten the last loop from the vague 'I keep a list for this' to something that previews the actual asset, e.g. 'The exact line to write'."
+      "cta": 8,
+      "worst_problem": "The hook leans on a stat-plus-vague-authority formula ('nobody priced in yet') that a skeptical scroller can pattern-match to generic market-update content, so the curiosity gap is narrower than the specific number suggests.",
+      "fix": "Rewrite slide 1 to withhold the consequence rather than the metric — e.g. name what the 37 days quietly costs a seller without naming the number — and tighten the slide 5 loop to under six words so the loop cadence stays uniform."
     },
     "attemptsUsed": 3,
     "belowBar": true,

@@ -2,75 +2,75 @@
   "date": "2026-08-09",
   "pillar": "market_insight",
   "pillarLabel": "Market insight",
-  "topic": "Texas market reality check: concessions vs price cuts",
-  "hook": "Texas sellers are giving away something worth more than discounts.",
+  "topic": "Texas market reality check: days on market, quiet price cuts, concessions",
+  "hook": "The 37 day shift nobody priced in yet",
   "keyword": "LIST",
   "accent": "#E879A6",
   "scores": {
     "hook": 7,
     "loops": 7,
-    "cta": 7,
-    "worst_problem": "The keyword LIST has nothing to do with the promised deliverable (a concession script and a buydown payment comparison), so the ask feels arbitrary and forgettable at the exact moment friction matters most.",
-    "fix": "Change the keyword to one that names the payoff — BUYDOWN or CONCESSION — and tighten the last loop from the vague 'I keep a list for this' to something that previews the actual asset, e.g. 'The exact line to write'."
+    "cta": 8,
+    "worst_problem": "The hook leans on a stat-plus-vague-authority formula ('nobody priced in yet') that a skeptical scroller can pattern-match to generic market-update content, so the curiosity gap is narrower than the specific number suggests.",
+    "fix": "Rewrite slide 1 to withhold the consequence rather than the metric — e.g. name what the 37 days quietly costs a seller without naming the number — and tighten the slide 5 loop to under six words so the loop cadence stays uniform."
   },
   "attemptsUsed": 3,
   "belowBar": true,
   "deck": {
-    "topic": "Texas market reality check: concessions vs price cuts",
-    "hook": "Texas sellers are giving away something worth more than discounts.",
+    "topic": "Texas market reality check: days on market, quiet price cuts, concessions",
+    "hook": "The 37 day shift nobody priced in yet",
     "map": [
-      "Inventory at decade highs",
-      "Why price cuts backfire",
-      "Concessions beat discounts",
-      "Days on market leverage",
-      "Selling in week one"
+      "The 37 day math",
+      "Quiet price cuts",
+      "Inventory nobody counts",
+      "Concessions over price",
+      "The 90 day trap"
     ],
     "points": [
       {
-        "title": "Supply Flipped",
+        "title": "The 37 Day Number",
         "body": [
-          "Texas has more homes sitting on the market than any point in over a decade.",
-          "That is not a crash. It is just competition, and for once it is not aimed at you."
+          "Homes that sold in a weekend two years ago now average about 37 days across most Texas metros.",
+          "Nothing broke. The clock just went back to normal."
         ],
-        "loop": "Price cuts are the bait."
+        "loop": "Normal costs sellers something."
       },
       {
-        "title": "The Price Cut Trap",
+        "title": "Price Cuts Are Quiet",
         "body": [
-          "Most cuts you see are just an overpriced home walking back to normal.",
-          "You are not getting a deal. You are watching a correction and calling it one."
+          "Roughly a third of active listings have already taken a reduction.",
+          "You never see it. It just shows up as a new number one Tuesday morning."
         ],
-        "loop": "The rate math nobody shows."
+        "loop": "The second cut hurts more."
       },
       {
-        "title": "Ask For The Rate",
+        "title": "Inventory Nobody Counts",
         "body": [
-          "A seller paying down your rate moves your money more than a small price drop does.",
-          "Same seller cost. Very different outcome for you every single month you own it."
+          "Finished new construction sitting empty competes directly with your resale listing.",
+          "It does not show up in the numbers most people quote you."
         ],
-        "loop": "But timing decides who pays."
+        "loop": "It follows you to closing."
       },
       {
-        "title": "Watch The Calendar",
+        "title": "Concessions Beat Price",
         "body": [
-          "A home listed nine weeks ago has a seller doing math on two housing payments.",
-          "That is when concession requests stop being rude and start getting accepted."
+          "Sellers are covering closing costs and buying rates down instead of slashing the sticker.",
+          "Buyers who ask get help. Buyers who assume get nothing."
         ],
-        "loop": "Sellers read this backwards."
+        "loop": "There is a window for asking."
       },
       {
-        "title": "If You Are Selling",
+        "title": "The 90 Day Trap",
         "body": [
-          "Your first ten days pull more real buyers than the next sixty combined.",
-          "Price for that window. Chasing the market down with cuts is how homes go stale."
+          "Past 90 days on market, buyers stop asking about the house and start asking what is wrong with it.",
+          "Pulling it and relisting does not erase the history anymore."
         ],
-        "loop": "I keep a list for this."
+        "loop": "Most of this is fixable in a week."
       }
     ],
     "cta": {
-      "payoff": "the exact concession ask to write into your offer, plus a side by side payment breakdown with and without a seller paid rate buydown"
+      "payoff": "the current days on market, price cut percentage, and active inventory count for your exact zip code"
     }
   },
-  "caption": "Texas sellers are giving away something worth more than discounts.\n\nSupply Flipped: Texas has more homes sitting on the market than any point in over a decade.\nThe Price Cut Trap: Most cuts you see are just an overpriced home walking back to normal.\nAsk For The Rate: A seller paying down your rate moves your money more than a small price drop does.\nWatch The Calendar: A home listed nine weeks ago has a seller doing math on two housing payments.\nIf You Are Selling: Your first ten days pull more real buyers than the next sixty combined.\n\nComment LIST and I'll DM you the exact concession ask to write into your offer, plus a side by side payment breakdown with and without a seller paid rate buydown.\nSave this for later.",
-  "linkedinCaption": "Texas inventory is at its highest level in over a decade. That is competition, not collapse, and buyers finally have room to negotiate.\n\nMost price cuts I see are not deals. They are overpriced listings correcting back to market. The buyer who celebrates a reduction is often just paying what the home was always worth.\n\nThe more useful ask is a rate buydown. Same cost to the seller. Very different math for the buyer over the life of the loan.\n\nTiming matters too. A seller nine weeks into a listing is carrying two housing obligations. That is when concession requests get taken seriously.\n\nFor sellers, the first ten days do the heavy lifting.\n\nAre you seeing buyers prioritize rate structure over sticker price in your market?"
+  "caption": "The 37 day shift nobody priced in yet\n\nThe 37 Day Number: Homes that sold in a weekend two years ago now average about 37 days across most Texas metros.\nPrice Cuts Are Quiet: Roughly a third of active listings have already taken a reduction.\nInventory Nobody Counts: Finished new construction sitting empty competes directly with your resale listing.\nConcessions Beat Price: Sellers are covering closing costs and buying rates down instead of slashing the sticker.\nThe 90 Day Trap: Past 90 days on market, buyers stop asking about the house and start asking what is wrong with it.\n\nComment LIST and I'll DM you the current days on market, price cut percentage, and active inventory count for your exact zip code.\nSave this for later.",
+  "linkedinCaption": "Texas homes are averaging roughly 37 days on market across most metros. Two years ago that was a weekend. Nothing broke. The clock simply went back to where it used to sit.\n\nWhat gets missed is everything happening underneath that number. About a third of active listings have already taken a reduction, and those cuts are quiet. Finished new construction sitting empty competes directly with resale inventory and rarely shows up in the stats people quote. Sellers are leaning on concessions and rate buydowns instead of dropping the sticker price. Buyers who ask receive help. Buyers who assume receive nothing.\n\nPast 90 days, the conversation shifts from the house to what is wrong with it.\n\nAre you seeing concessions outperform price reductions in your market?"
 }

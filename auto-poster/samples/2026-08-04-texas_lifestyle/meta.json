@@ -2,75 +2,84 @@
   "date": "2026-08-04",
   "pillar": "texas_lifestyle",
   "pillarLabel": "Texas lifestyle",
-  "topic": "What actually changes your cost of living across San Antonio, Austin and DFW",
-  "hook": "Two identical houses, three miles apart. One owner pays $4,800 more.",
+  "topic": "What actually surprises Texas transplants (SA, Austin, DFW)",
+  "hook": "The heat is not what breaks transplants here.",
   "keyword": "PLAN",
   "accent": "#A78BFA",
   "scores": {
-    "hook": 8,
-    "loops": 6,
+    "hook": 6,
+    "loops": 5,
     "cta": 8,
-    "worst_problem": "Loop one, \"And the rate is not fixed,\" is a flat headline for the next slide rather than a tease, and the final loop is a CTA handoff instead of an open loop.",
-    "fix": "Rewrite slide 1's loop to withhold a consequence instead of announcing the topic (e.g. \"That number can climb later\") and give slide 5 a real forward pull before the CTA."
+    "worst_problem": "The final point slide's loop just restates the body copy it sits under, killing the swipe momentum right before the ask.",
+    "fix": "Rewrite the last loop to tease the deliverable itself (e.g. \"The sheet settles this in minutes\") and tighten slide one's loop from the vague \"two more things\" to a concrete hint of the toll charge."
   },
   "attemptsUsed": 3,
   "belowBar": true,
   "deck": {
-    "topic": "What actually changes your cost of living across San Antonio, Austin and DFW",
-    "hook": "Two identical houses, three miles apart. One owner pays $4,800 more.",
+    "topic": "What actually surprises Texas transplants (SA, Austin, DFW)",
+    "hook": "The heat is not what breaks transplants here.",
     "map": [
-      "Three blocks, different bill",
-      "Rates that move",
-      "The 7:40am reality",
-      "August electric shock",
-      "Your Saturday radius"
+      "Ten miles, thirty five minutes",
+      "Toll roads, every day",
+      "School lines split streets",
+      "The January envelope",
+      "Hail, not heat",
+      "Pick your city by weekend"
     ],
     "points": [
       {
-        "title": "The Invisible Line",
+        "title": "It Is The Drive",
         "body": [
-          "Texas stacks city, county, school and special district rates onto one bill.",
-          "Cross one boundary by three blocks and the whole stack changes. The house looks identical from the street."
+          "This is the part that actually breaks people. Ten miles in Texas is not ten miles anywhere else.",
+          "Buyers tour a house at noon on a Sunday and never see the same road at seven on a Tuesday."
         ],
-        "loop": "And the rate is not fixed."
+        "loop": "The map hides two more things."
       },
       {
-        "title": "Your Rate Can Move",
+        "title": "Toll Roads Are Daily",
         "body": [
-          "Newer areas often carry a bond that paid for the roads and pipes before anyone lived there.",
-          "In some spots that rate falls off over time. In others it gets voted back up. Nobody hands you that history."
+          "Your phone will route you the fast way. In Austin and DFW especially, the fast way is often paid.",
+          "It is a small charge twice a day, five days a week, forever."
         ],
-        "loop": "The next cost is not money."
+        "loop": "Something else splits the same street."
       },
       {
-        "title": "The Twenty Minute Lie",
+        "title": "School Lines Cut Houses",
         "body": [
-          "Every drive time you read was measured at 10am on a Tuesday.",
-          "Sit in it at 7:40 on a weekday. In Austin and DFW that number can double, and you pay it twice a day forever."
+          "District boundaries were drawn decades ago and nobody redraws them to make sense.",
+          "Two houses across the road from each other can feed into completely different schools."
         ],
-        "loop": "And you have not met August."
+        "loop": "Then January brings its own envelope."
       },
       {
-        "title": "August Runs The Budget",
+        "title": "No Income Tax, But",
         "body": [
-          "Summer electric bills here can run triple what you pay in February.",
-          "West facing glass, ceiling height and roof age move that number more than square footage does. Most transplants find out in year one."
+          "The money comes back through property tax, and the rate depends on your county, your city, and your school district.",
+          "Notices land in spring. The real bill lands at the end of the year."
         ],
-        "loop": "Saturday is where people break."
+        "loop": "Year two is where it stings."
       },
       {
-        "title": "The Weekend Radius",
+        "title": "Hail, Not Heat",
         "body": [
-          "San Antonio puts you inside an hour of the Hill Country and a short run to the coast.",
-          "Austin trades traffic for water. DFW gives you lakes and the easier airport. You are picking a Saturday, not just a house."
+          "Heat is boring. You run the AC and move on with your life.",
+          "It is hail and the winter freeze that hit insurance premiums, and the age of the roof decides how bad."
         ],
-        "loop": "I put all this on paper."
+        "loop": "One choice makes all of this easier."
+      },
+      {
+        "title": "Choose By Saturday",
+        "body": [
+          "San Antonio, Austin and DFW are three different lives, not three versions of the same one.",
+          "Most people compare listings first and lifestyle second. That is backwards."
+        ],
+        "loop": "Most people pick this the wrong way round."
       }
     ],
     "cta": {
-      "payoff": "the three metro cost sheet with tax rates by area, average summer utility ranges, real rush hour drive times, and the exact payment breakdown on any house you send me"
+      "payoff": "the three city comparison sheet with tax rates, real drive times, and the exact payment breakdown for each"
     }
   },
-  "caption": "Two identical houses, three miles apart. One owner pays $4,800 more.\n\nThe Invisible Line: Texas stacks city, county, school and special district rates onto one bill.\nYour Rate Can Move: Newer areas often carry a bond that paid for the roads and pipes before anyone lived there.\nThe Twenty Minute Lie: Every drive time you read was measured at 10am on a Tuesday.\nAugust Runs The Budget: Summer electric bills here can run triple what you pay in February.\nThe Weekend Radius: San Antonio puts you inside an hour of the Hill Country and a short run to the coast.\n\nComment PLAN and I'll DM you the three metro cost sheet with tax rates by area, average summer utility ranges, real rush hour drive times, and the exact payment breakdown on any house you send me.\nSave this for later.",
-  "linkedinCaption": "Two houses on the same road can carry very different annual costs in Texas. The tax stack is built from city, county, school and special district rates, and crossing a boundary by a few blocks changes all of it.\n\nI put together five things that move cost of living across San Antonio, Austin and DFW. Bond history in newer developments. Drive times that were measured at 10am on a Tuesday. August electric bills, which respond more to west facing glass and roof age than to square footage. And the weekend radius each metro actually gives you.\n\nFor those of you advising relocating clients, which of these gets underestimated most often in the first year?"
+  "caption": "The heat is not what breaks transplants here.\n\nIt Is The Drive: This is the part that actually breaks people. Ten miles in Texas is not ten miles anywhere else.\nToll Roads Are Daily: Your phone will route you the fast way. In Austin and DFW especially, the fast way is often paid.\nSchool Lines Cut Houses: District boundaries were drawn decades ago and nobody redraws them to make sense.\nNo Income Tax, But: The money comes back through property tax, and the rate depends on your county, your city, and your school district.\nHail, Not Heat: Heat is boring. You run the AC and move on with your life.\nChoose By Saturday: San Antonio, Austin and DFW are three different lives, not three versions of the same one.\n\nComment PLAN and I'll DM you the three city comparison sheet with tax rates, real drive times, and the exact payment breakdown for each.\nSave this for later.",
+  "linkedinCaption": "Most out of state buyers I work with arrive with a spreadsheet of listings and no sense of what daily life here actually costs them.\n\nThe surprises are rarely the house. It is the drive at seven on a Tuesday versus noon on a Sunday. It is toll roads becoming a fixed part of the commute. It is school boundaries that split neighbors across the road. It is property tax rates that shift by county, city and district. It is hail and freeze driving insurance, not heat.\n\nSan Antonio, Austin and DFW are three different lives. Compare the Saturday first, then the listings.\n\nFor those of you advising relocating clients, what do you find they underestimate most?"
 }

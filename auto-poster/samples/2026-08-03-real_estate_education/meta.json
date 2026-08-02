@@ -3,78 +3,86 @@
   "pillar": "real_estate_education",
   "pillarLabel": "Real estate education",
   "topic": "Texas option period mechanics",
-  "hook": "Two lines in his contract cost him $27,000.",
+  "hook": "Most buyers burn 3 of their 7 option days.",
   "keyword": "TOUR",
   "accent": "#E879A6",
   "scores": {
-    "hook": 7,
+    "hook": 6,
     "loops": 6,
-    "cta": 8,
-    "worst_problem": "The hook promises a specific $27,000 loss but no slide ever delivers that story or number, so the opening curiosity gap is baited and abandoned.",
-    "fix": "Pay off the hook explicitly on slide 2 by naming the two contract lines and the $27,000 outcome, and swap the flat 'and inspectors are booked solid' loop plus the mismatched keyword TOUR for a tease that withholds (e.g. 'the mistake costs you the window') and a keyword tied to the topic like OPTION."
+    "cta": 7,
+    "worst_problem": "The hook gives away its own payoff structurally — 'burn 3 of their 7 days' names both the number and the outcome, so a reader can half-guess the answer (inspector scheduling delays) without swiping.",
+    "fix": "Rewrite slide 1 to withhold the number or the cause — e.g. 'Your 7 day option period is really 4' — and tighten the weak loop 'Fewer days than you think' into something that names a concrete unseen cost, like 'Two days are already gone.'"
   },
   "attemptsUsed": 3,
   "belowBar": true,
   "deck": {
     "topic": "Texas option period mechanics",
-    "hook": "Two lines in his contract cost him $27,000.",
+    "hook": "Most buyers burn 3 of their 7 option days.",
     "map": [
-      "the clock nobody starts",
-      "what the fee buys",
-      "weekends still count",
-      "book before you sign",
-      "one ask, not three"
+      "When the clock starts",
+      "The 5 PM cutoff",
+      "Where 3 days vanish",
+      "What the fee buys",
+      "Repairs are not automatic",
+      "Buying more time"
     ],
     "points": [
       {
-        "title": "The Clock Starts Without You",
+        "title": "The Clock Starts Early",
         "body": [
-          "A buyer signed on a Friday and mailed his option fee Monday.",
-          "By then his window to walk was already dead, and the foundation report came back ugly.",
-          "The fee has to be delivered fast or the whole right disappears."
+          "Your option period starts the day the contract is executed.",
+          "Not the day you book the inspection. Not the day you feel ready."
         ],
-        "loop": "most buyers misread what it buys"
+        "loop": "It ends at a strange hour."
       },
       {
-        "title": "You Are Renting Time",
+        "title": "The 5 PM Wall",
         "body": [
-          "That fee is not a deposit on the house. It is payment for the right to cancel for any reason at all.",
-          "Bad inspection. Cold feet. Nosy neighbour. Does not matter."
+          "The deadline is 5 PM on the last day, not midnight.",
+          "Miss it by ten minutes and your right to walk is gone."
         ],
-        "loop": "but the calendar is the trap"
+        "loop": "Fewer days than you think."
       },
       {
-        "title": "Weekends Still Count",
+        "title": "Where 3 Days Go",
         "body": [
-          "These are calendar days, not business days.",
-          "Sign on a Thursday and you just burned a chunk of your window on a weekend nobody works.",
-          "The deadline hits at a fixed hour on the last day. Not end of day."
+          "Good inspectors are booked 2 to 3 days out.",
+          "The report usually lands a day after they walk the house.",
+          "That is 3 of your 7 days spent before you learn a single thing."
         ],
-        "loop": "and inspectors are booked solid"
+        "loop": "The fee has one job."
       },
       {
-        "title": "Book Before You Sign",
+        "title": "The Fee Buys One Thing",
         "body": [
-          "Good inspectors run five to eight days out in a busy month.",
-          "If you start calling after the contract is executed, you get the report with almost no time left to act on it.",
-          "Line up the appointment while the offer is still being negotiated."
+          "The option fee buys the right to walk for any reason at all.",
+          "It does not buy repairs and it does not buy a price cut.",
+          "Whether it gets credited back at closing is a checkbox most people never read."
         ],
-        "loop": "then most people fumble the ask"
+        "loop": "Asking is the easy part."
       },
       {
-        "title": "One Ask, Not Three",
+        "title": "Nobody Has To Fix It",
         "body": [
-          "Buyers send a repair request, then remember something, then send another.",
-          "Every follow up tells the seller you are emotionally in the house already.",
-          "Bundle it. Send once. Give a real deadline."
+          "An inspection report does not obligate a seller to repair anything.",
+          "You ask, they can say no, and then you decide before the clock runs out."
         ],
-        "loop": "here is the whole timeline"
+        "loop": "You are not out of moves."
+      },
+      {
+        "title": "You Can Buy Time",
+        "body": [
+          "An extension has to be agreed in writing before the current period expires.",
+          "It usually costs another fee, and the seller can refuse.",
+          "Ask at 4:55 on the last day and the answer is no."
+        ],
+        "loop": "Improvising this costs real money."
       }
     ],
     "cta": {
-      "payoff": "the day by day option period timeline with every deadline marked, plus the question list I give my buyers to hand their inspector"
+      "payoff": "my day by day option period checklist with every deadline and who to call first"
     }
   },
-  "caption": "Two lines in his contract cost him $27,000.\n\nThe Clock Starts Without You: A buyer signed on a Friday and mailed his option fee Monday.\nYou Are Renting Time: That fee is not a deposit on the house. It is payment for the right to cancel for any reason at all.\nWeekends Still Count: These are calendar days, not business days.\nBook Before You Sign: Good inspectors run five to eight days out in a busy month.\nOne Ask, Not Three: Buyers send a repair request, then remember something, then send another.\n\nComment TOUR and I'll DM you the day by day option period timeline with every deadline marked, plus the question list I give my buyers to hand their inspector.\nSave this for later.",
-  "linkedinCaption": "The Texas option period is the most misunderstood part of a residential contract, and the mistakes are usually procedural rather than strategic.\n\nThe fee has to be delivered inside a short window. Late delivery can void the right entirely, regardless of what an inspection later reveals.\n\nThose are calendar days. Weekends count. The deadline lands at a set hour on the final day, not at midnight.\n\nInspectors in a busy month can book out five to eight days. Scheduling after execution leaves almost no room to act on the findings.\n\nRepair requests should go out once, bundled, with a stated deadline. Multiple rounds signal attachment.\n\nFor the agents here: how early in the offer process do you start coordinating the inspection?"
+  "caption": "Most buyers burn 3 of their 7 option days.\n\nThe Clock Starts Early: Your option period starts the day the contract is executed.\nThe 5 PM Wall: The deadline is 5 PM on the last day, not midnight.\nWhere 3 Days Go: Good inspectors are booked 2 to 3 days out.\nThe Fee Buys One Thing: The option fee buys the right to walk for any reason at all.\nNobody Has To Fix It: An inspection report does not obligate a seller to repair anything.\nYou Can Buy Time: An extension has to be agreed in writing before the current period expires.\n\nComment TOUR and I'll DM you my day by day option period checklist with every deadline and who to call first.\nSave this for later.",
+  "linkedinCaption": "The Texas option period is the most misunderstood clause in the contract. It starts the day the contract is executed, not the day the buyer books an inspection. It ends at 5 PM on the final day, not midnight.\n\nThe math is unforgiving. Good inspectors are booked two to three days out, and the report often lands a day after they walk the house. On a seven day option, three days are gone before the buyer learns anything.\n\nThe fee buys one thing. The right to terminate for any reason. It does not obligate a seller to repair anything or reduce the price.\n\nFor the agents here: what option period length are you writing in this market, and why?"
 }
