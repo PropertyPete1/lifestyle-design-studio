@@ -2,35 +2,35 @@
   {
     "date": "2026-08-03",
     "pillar": "Real estate education",
-    "topic": "Texas option period: 10 paper days vs 6 real days",
-    "hook": "You paid for 10 option days. You got 6.",
+    "topic": "Low appraisal and the gap clause most buyers sign blind",
+    "hook": "Appraisal came in $14,000 short. Seller kept every dollar.",
     "keyword": "TOUR",
     "scores": {
       "hook": 8,
-      "loops": 8,
-      "cta": 8,
-      "worst_problem": "The hook already states the arithmetic (10 becomes 6), so slide 4's reveal lands as confirmation rather than payoff and the middle slides lose tension.",
-      "fix": "Either withhold the number in the hook (\"You paid for 10 option days. You will not get 10.\") or make slide 4 deliver something the hook didn't — a cost figure or the one day nobody counts."
+      "loops": 7,
+      "cta": 9,
+      "worst_problem": "The final point slide's loop, \"You can size this risk early,\" is a soft generality rather than a concrete tease, and slide 1's \"who blinks first\" is similarly abstract, so the swipe momentum sags at both ends of the deck.",
+      "fix": "Rewrite the two weak loops with a specific withheld noun — e.g. slide 5 becomes \"There's a number for this\" and slide 1 becomes \"Sellers know this, buyers don't.\""
     },
-    "attemptsUsed": 2,
-    "belowBar": false,
+    "attemptsUsed": 3,
+    "belowBar": true,
     "slides": 8,
     "dir": "2026-08-03-real_estate_education"
   },
   {
     "date": "2026-08-04",
     "pillar": "Texas lifestyle",
-    "topic": "Texas transplant reality check: taxes, commutes, heat, schools, and what you get back",
-    "hook": "Transplants budget for month one. Month 14 is what breaks them.",
+    "topic": "What surprises Texas transplants (SA, Austin, DFW)",
+    "hook": "Most transplants misjudge Texas by exactly 47 minutes",
     "keyword": "PLAN",
     "scores": {
       "hook": 8,
       "loops": 8,
-      "cta": 9,
-      "worst_problem": "A couple of the loops ('Your calendar shrinks anyway', 'You get something back for this') are abstract enough that they point vaguely forward rather than naming a specific unanswered thing.",
-      "fix": "Rewrite the softest two loops to hint at a concrete noun from the next slide, e.g. 'Nine to eight disappears' and 'Zero percent changes things'."
+      "cta": 8,
+      "worst_problem": "The final loop, \"Most transplants learn this year three,\" dangles a vague future-regret idea that the CTA slide never pays off, so the handoff into the offer is soft.",
+      "fix": "Rewrite the last loop to point directly at the deliverable, e.g. \"The fix is one document,\" so the swipe to the CTA feels earned."
     },
-    "attemptsUsed": 3,
+    "attemptsUsed": 1,
     "belowBar": false,
     "slides": 8,
     "dir": "2026-08-04-texas_lifestyle"
@@ -38,18 +38,18 @@
   {
     "date": "2026-08-09",
     "pillar": "Market insight",
-    "topic": "Texas market reality check, fall 2025",
-    "hook": "One in four Texas listings did something quiet last month.",
+    "topic": "Texas market reality check: price cuts, reset clocks, concessions, timing",
+    "hook": "41% of Texas listings cut price. That's not the problem.",
     "keyword": "LIST",
     "scores": {
       "hook": 8,
-      "loops": 8,
+      "loops": 5,
       "cta": 9,
-      "worst_problem": "The hook's withheld element is the most guessable thing in real estate right now — 'did something quiet' resolves to 'cut the price' for most readers before they swipe, and slide 1 confirms exactly that.",
-      "fix": "Rewrite the hook so the withheld piece is the consequence rather than the action — e.g. 'One in four Texas listings quietly did the one thing sellers swore they wouldn't' — and make slide 1's payoff the number, not the reveal."
+      "worst_problem": "Slide 1's loop, \"The first cut is never real,\" just restates the slide's own conclusion instead of teasing the next slide, so the first swipe has no forward pull while every later loop does.",
+      "fix": "Rewrite slide 1's loop to point at the second-cut damage ahead — e.g. \"It's the second cut that kills\" — so it withholds rather than summarises."
     },
-    "attemptsUsed": 1,
-    "belowBar": false,
+    "attemptsUsed": 3,
+    "belowBar": true,
     "slides": 8,
     "dir": "2026-08-09-market_insight"
   }

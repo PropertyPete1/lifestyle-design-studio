@@ -2,75 +2,80 @@
   "date": "2026-08-09",
   "pillar": "market_insight",
   "pillarLabel": "Market insight",
-  "topic": "Texas market reality check, fall 2025",
-  "hook": "One in four Texas listings did something quiet last month.",
+  "topic": "Texas market reality check: price cuts, reset clocks, concessions, timing",
+  "hook": "41% of Texas listings cut price. That's not the problem.",
   "keyword": "LIST",
-  "accent": "#E879A6",
+  "accent": "#C8AA6A",
   "scores": {
     "hook": 8,
-    "loops": 8,
+    "loops": 5,
     "cta": 9,
-    "worst_problem": "The hook's withheld element is the most guessable thing in real estate right now — 'did something quiet' resolves to 'cut the price' for most readers before they swipe, and slide 1 confirms exactly that.",
-    "fix": "Rewrite the hook so the withheld piece is the consequence rather than the action — e.g. 'One in four Texas listings quietly did the one thing sellers swore they wouldn't' — and make slide 1's payoff the number, not the reveal."
+    "worst_problem": "Slide 1's loop, \"The first cut is never real,\" just restates the slide's own conclusion instead of teasing the next slide, so the first swipe has no forward pull while every later loop does.",
+    "fix": "Rewrite slide 1's loop to point at the second-cut damage ahead — e.g. \"It's the second cut that kills\" — so it withholds rather than summarises."
   },
-  "attemptsUsed": 1,
-  "belowBar": false,
+  "attemptsUsed": 3,
+  "belowBar": true,
   "deck": {
-    "topic": "Texas market reality check, fall 2025",
-    "hook": "One in four Texas listings did something quiet last month.",
+    "topic": "Texas market reality check: price cuts, reset clocks, concessions, timing",
+    "hook": "41% of Texas listings cut price. That's not the problem.",
     "map": [
-      "The quiet price cut",
-      "Inventory nobody expected",
-      "Sellers priced for 2022",
-      "The three week window",
-      "Concessions are normal again"
+      "The 41% mirage",
+      "Second cut damage",
+      "Reset clocks",
+      "The quiet discount",
+      "Two timing mistakes"
     ],
     "points": [
       {
-        "title": "The Quiet Price Cut",
+        "title": "The 41% Mirage",
         "body": [
-          "Roughly one in four active Texas listings took a price reduction last month.",
-          "That is not a crash. That is sellers meeting the number buyers will actually pay."
+          "Roughly 41% of active Texas listings took a price cut recently.",
+          "That reads like panic. It isn't.",
+          "Most of those cuts came off a number that was never real to begin with."
         ],
-        "loop": "The cause is hiding in plain sight."
+        "loop": "The first cut is never real."
       },
       {
-        "title": "Buyers Have Options Again",
+        "title": "Cut Twice, Sell Once",
         "body": [
-          "There are more homes sitting on the Texas market than we have seen in over a decade.",
-          "A buyer can tour eight houses in a weekend and walk away from all eight."
+          "A home that cuts once usually cuts again inside a month.",
+          "By then buyers assume something is wrong with the house.",
+          "Pricing at the last real comp on day one beats two cuts every time."
         ],
-        "loop": "Choice does something strange to people."
+        "loop": "The clock is being reset."
       },
       {
-        "title": "Priced For A Market That Ended",
+        "title": "Days On Market Lies",
         "body": [
-          "Plenty of sellers are still anchored to what their neighbor got three years ago.",
-          "The buyer is not comparing your house to 2022. They are comparing it to the eleven others open right now."
+          "Plenty of listings get withdrawn and relisted so the counter starts over.",
+          "You see 6 days. The house has actually been sitting for 96.",
+          "Read the price history, not the days on market field."
         ],
-        "loop": "There is a clock on that mistake."
+        "loop": "Sellers found a quieter discount."
       },
       {
-        "title": "The First Three Weeks",
+        "title": "Concessions Beat Cuts",
         "body": [
-          "Homes that sell almost always find their buyer early.",
-          "Miss that window and showings thin out, and every offer after that comes in lower than the one you turned down."
+          "Texas sellers are holding the sticker price and paying buyer costs instead.",
+          "Rate buydowns and closing credits are moving more money than price drops are.",
+          "It protects the comp for them and lowers the real cost for you."
         ],
-        "loop": "Price is only half of the problem."
+        "loop": "Most people time this wrong twice."
       },
       {
-        "title": "Everything Is Negotiable Now",
+        "title": "The Quiet Stretch",
         "body": [
-          "Buyers are asking for rate buydowns, closing costs, and repairs. Often all three.",
-          "A seller paying those is not desperate anymore. That is just what a deal looks like this year."
+          "Buyers shop in spring, when they have the least leverage all year.",
+          "Sellers list in January because it feels fresh, then sit and wait.",
+          "The deals get made in the weeks nobody is paying attention."
         ],
-        "loop": "Your zip code is not the average."
+        "loop": "Your zip code changes everything."
       }
     ],
     "cta": {
-      "payoff": "the current days on market, price cut rate, and active inventory count for your specific area"
+      "payoff": "this month's price cut percentage and true days on market for your zip code, plus the full payment breakdown on any house you're watching"
     }
   },
-  "caption": "One in four Texas listings did something quiet last month.\n\nThe Quiet Price Cut: Roughly one in four active Texas listings took a price reduction last month.\nBuyers Have Options Again: There are more homes sitting on the Texas market than we have seen in over a decade.\nPriced For A Market That Ended: Plenty of sellers are still anchored to what their neighbor got three years ago.\nThe First Three Weeks: Homes that sell almost always find their buyer early.\nEverything Is Negotiable Now: Buyers are asking for rate buydowns, closing costs, and repairs. Often all three.\n\nComment LIST and I'll DM you the current days on market, price cut rate, and active inventory count for your specific area.\nSave this for later.",
-  "linkedinCaption": "Roughly one in four active Texas listings took a price reduction last month. That is not a crash. That is sellers adjusting to the number buyers will actually pay.\n\nInventory is the highest it has been in over a decade. A buyer can tour eight homes in a weekend and pass on all eight. That changes how pricing works.\n\nThe first three weeks still decide most outcomes. Homes that sell find their buyer early. Miss that window and showings thin out, and later offers tend to come in below the one you declined.\n\nConcessions are common now. Rate buydowns, closing costs, repairs. Often all three.\n\nFor the agents and lenders here: what is the most effective way you have found to reset a seller's price expectation before listing?"
+  "caption": "41% of Texas listings cut price. That's not the problem.\n\nThe 41% Mirage: Roughly 41% of active Texas listings took a price cut recently.\nCut Twice, Sell Once: A home that cuts once usually cuts again inside a month.\nDays On Market Lies: Plenty of listings get withdrawn and relisted so the counter starts over.\nConcessions Beat Cuts: Texas sellers are holding the sticker price and paying buyer costs instead.\nThe Quiet Stretch: Buyers shop in spring, when they have the least leverage all year.\n\nComment LIST and I'll DM you this month's price cut percentage and true days on market for your zip code, plus the full payment breakdown on any house you're watching.\nSave this for later.",
+  "linkedinCaption": "About 41% of active Texas listings have taken a price cut. That number gets read as a market in trouble. It usually means the first number was never grounded in a real comp.\n\nA few things I'm watching right now.\n\nHomes that cut once tend to cut again within a month, and by the second cut buyers assume there's a defect.\n\nDays on market is unreliable. Withdrawn and relisted inventory resets the counter. The price history tells the truth.\n\nMore sellers are holding list price and paying buyer costs instead. Rate buydowns and closing credits are moving real money while protecting the comp.\n\nAnd the best terms are rarely available in spring.\n\nAre you seeing concessions outperform price reductions in your market too?"
 }
