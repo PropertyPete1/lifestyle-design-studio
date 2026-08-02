@@ -2352,6 +2352,30 @@
       ],
       "timestamp": "2026-08-02T19:37:29.756Z",
       "success": true
+    },
+    {
+      "driveFileId": "1aEBWjoDPE2Ucx0xXm1xMA8Cg7FhlzV55",
+      "fileName": "C756555D-A9E9-4061-8699-5A9BFC3180F8.mp4",
+      "city": "dallas",
+      "caption": "this is what new construction is supposed to feel like\n\nstarting around $295K with quick move-in options climbing into the low $300s. VA, FHA, and conventional financing available with rate buydowns a",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-02T21:12:45.277Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "Fort Worth",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Peter, I know you thought you were coming to Dallas,",
+      "content_hash": "c79d01e7f67f0980:00c0c8fcfce0e7cf:c79903e3f27f0900:fefefc08a2e0c3c0:03ffff9a763f0307",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/13K0akmChCCR2iwa2A2ouAhNyHZ1Pn2Fr/view"
     }
   ],
   "lastTemplateIndex": -1
