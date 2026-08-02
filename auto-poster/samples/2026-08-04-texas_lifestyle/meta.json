@@ -2,84 +2,80 @@
   "date": "2026-08-04",
   "pillar": "texas_lifestyle",
   "pillarLabel": "Texas lifestyle",
-  "topic": "Three Texas metros, same salary, $9,000 gap",
-  "hook": "Three transplants. Same salary. One keeps $9,000 more.",
+  "topic": "Texas transplant reality check: taxes, commutes, heat, schools, and what you get back",
+  "hook": "Transplants budget for month one. Month 14 is what breaks them.",
   "keyword": "PLAN",
   "accent": "#A78BFA",
   "scores": {
     "hook": 8,
     "loops": 8,
-    "cta": 8,
-    "worst_problem": "The last point slide's loop, \"Three of the four move,\" opens a specific promise (which costs you can actually control) that the CTA never pays off — it offers a static cost sheet instead.",
-    "fix": "Either change the final loop to point directly at the cost sheet (e.g. \"See all three side by side\") or rewrite the CTA to deliver the levers, i.e. which three of the four costs you can move and by how much."
+    "cta": 9,
+    "worst_problem": "A couple of the loops ('Your calendar shrinks anyway', 'You get something back for this') are abstract enough that they point vaguely forward rather than naming a specific unanswered thing.",
+    "fix": "Rewrite the softest two loops to hint at a concrete noun from the next slide, e.g. 'Nine to eight disappears' and 'Zero percent changes things'."
   },
-  "attemptsUsed": 2,
+  "attemptsUsed": 3,
   "belowBar": false,
   "deck": {
-    "topic": "Three Texas metros, same salary, $9,000 gap",
-    "hook": "Three transplants. Same salary. One keeps $9,000 more.",
+    "topic": "Texas transplant reality check: taxes, commutes, heat, schools, and what you get back",
+    "hook": "Transplants budget for month one. Month 14 is what breaks them.",
     "map": [
-      "Same house, three prices",
-      "Tax rates stack",
-      "Hail alley premium",
-      "Miles versus minutes",
-      "The ninety day tax",
-      "Where nine grand sits"
+      "The month 14 bill",
+      "Commute math, not miles",
+      "Heat you plan around",
+      "School ratings that move",
+      "What Texas gives back"
     ],
     "points": [
       {
-        "title": "Same House, Three Prices",
+        "title": "Month Fourteen",
         "body": [
-          "A 2,300 square foot house prices very differently in San Antonio, Austin and DFW.",
-          "Most people moving here only compare that one number."
+          "Your first Texas tax bill often reflects the old owner's value, or a bare lot if the house was new.",
+          "Month 14 is when the county sends one based on what you actually paid.",
+          "That jump is the number nobody puts in their moving budget."
         ],
-        "loop": "The sticker price lies twice."
+        "loop": "Distance is not the problem."
       },
       {
-        "title": "Your Tax Rate Has Layers",
+        "title": "Miles Lie",
         "body": [
-          "County, city, school district and sometimes a special district all stack on the same house.",
-          "Two identical homes ten minutes apart can sit half a point away from each other."
+          "Twelve miles in Austin at 8am is a different life than twelve miles at 10am.",
+          "In DFW people pay tolls daily just to buy back twenty minutes.",
+          "Ask for drive times, not distances, before you fall in love with a house."
         ],
-        "loop": "The sky sends its own bill."
+        "loop": "Your calendar shrinks anyway."
       },
       {
-        "title": "Hail Has A Price Tag",
+        "title": "The Summer Tax",
         "body": [
-          "North of Dallas sits in one of the worst hail corridors in the country.",
-          "The same house insured in San Antonio quotes like a different property."
+          "June through September, outdoor life happens before nine and after eight.",
+          "San Antonio holds the heat longer than Austin does, and the electric bill follows.",
+          "Shade, orientation, and a working patio matter more here than square footage."
         ],
-        "loop": "Thirty miles can beat twelve."
+        "loop": "Your rating can move."
       },
       {
-        "title": "Miles Are Not Minutes",
+        "title": "Ratings Are A Snapshot",
         "body": [
-          "Twelve miles in Austin at five o'clock loses to thirty in San Antonio most days.",
-          "Toll roads across DFW and Austin bill you quietly, every single workday."
+          "Texas districts redraw attendance boundaries as new rooftops go up.",
+          "The campus you bought for can change while you still own the house.",
+          "Buy the district and the trend, not one number on an app."
         ],
-        "loop": "Ninety days a year cost extra."
+        "loop": "You get something back for this."
       },
       {
-        "title": "August Runs The House",
+        "title": "What You Get Back",
         "body": [
-          "Roughly ninety days of triple digit heat every year.",
-          "Your electric meter, your lawn watering and your weekend plans all reroute around it."
+          "No state income tax means your take home is bigger from the first paycheck.",
+          "A full Saturday out costs a fraction of what it did in California or Illinois.",
+          "Hill country, the coast, and lake weekends are all one tank of gas away."
         ],
-        "loop": "Now add those four numbers."
-      },
-      {
-        "title": "Where The $9,000 Sits",
-        "body": [
-          "Taxes, insurance, tolls and summer utilities. Four lines, nothing else.",
-          "That is the whole gap between the three transplants. Same salary, same square footage, nine grand a year apart."
-        ],
-        "loop": "Three of the four move."
+        "loop": "Most people run this too late."
       }
     ],
     "cta": {
-      "payoff": "the side by side cost sheet for San Antonio, Austin and DFW with your exact payment breakdown"
+      "payoff": "a month by month first year cost plan for San Antonio, Austin, or DFW, including the tax reassessment timing and your full payment breakdown"
     }
   },
-  "caption": "Three transplants. Same salary. One keeps $9,000 more.\n\nSame House, Three Prices: A 2,300 square foot house prices very differently in San Antonio, Austin and DFW.\nYour Tax Rate Has Layers: County, city, school district and sometimes a special district all stack on the same house.\nHail Has A Price Tag: North of Dallas sits in one of the worst hail corridors in the country.\nMiles Are Not Minutes: Twelve miles in Austin at five o'clock loses to thirty in San Antonio most days.\nAugust Runs The House: Roughly ninety days of triple digit heat every year.\nWhere The $9,000 Sits: Taxes, insurance, tolls and summer utilities. Four lines, nothing else.\n\nComment PLAN and I'll DM you the side by side cost sheet for San Antonio, Austin and DFW with your exact payment breakdown.\nSave this for later.",
-  "linkedinCaption": "Three people took the same salary to three different Texas metros last year. Same square footage, roughly the same purchase price. Their annual cost of living came out about $9,000 apart.\n\nThe gap was not the house. It was four lines: property tax layers, insurance, tolls and summer utilities.\n\nTax rates stack by county, city, school district and sometimes a special district. Two identical homes ten minutes apart can sit half a point away from each other. North of Dallas quotes very differently on insurance than San Antonio because of hail. Commute miles bill differently than commute minutes. And ninety days of triple digit heat reshapes a utility budget.\n\nRelocation clients rarely see these numbers until closing.\n\nWhat do you think buyers should be shown first when comparing metros?"
+  "caption": "Transplants budget for month one. Month 14 is what breaks them.\n\nMonth Fourteen: Your first Texas tax bill often reflects the old owner's value, or a bare lot if the house was new.\nMiles Lie: Twelve miles in Austin at 8am is a different life than twelve miles at 10am.\nThe Summer Tax: June through September, outdoor life happens before nine and after eight.\nRatings Are A Snapshot: Texas districts redraw attendance boundaries as new rooftops go up.\nWhat You Get Back: No state income tax means your take home is bigger from the first paycheck.\n\nComment PLAN and I'll DM you a month by month first year cost plan for San Antonio, Austin, or DFW, including the tax reassessment timing and your full payment breakdown.\nSave this for later.",
+  "linkedinCaption": "Most of the surprises new Texas homeowners hit are not in the listing. They show up in month fourteen, when the county reassesses at what you actually paid, or in traffic, where twelve miles at 8am is nothing like twelve miles at 10am.\n\nI put together five things I wish more relocating buyers heard before they committed. Property tax timing. Drive times over distances. The summer utility reality and why orientation and shade matter more than square footage here. School boundaries that move as new rooftops go up. And the real offsets, including no state income tax and weekends that cost a fraction of what they did back home.\n\nFor those of you advising relocating clients, which of these catches people off guard most often?"
 }

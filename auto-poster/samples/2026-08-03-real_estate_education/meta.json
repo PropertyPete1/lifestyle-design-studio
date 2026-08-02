@@ -2,75 +2,76 @@
   "date": "2026-08-03",
   "pillar": "real_estate_education",
   "pillarLabel": "Real estate education",
-  "topic": "Texas option period mechanics",
-  "hook": "You bought 10 days to walk away. Most use four.",
+  "topic": "Texas option period: 10 paper days vs 6 real days",
+  "hook": "You paid for 10 option days. You got 6.",
   "keyword": "TOUR",
   "accent": "#E879A6",
   "scores": {
     "hook": 8,
     "loops": 8,
-    "cta": 9,
-    "worst_problem": "The slide 4 loop, \"Walking is rarely what you want,\" drifts off the slide's own stake (silent auto-acceptance) and offers a soft, abstract pull compared to the crisp countdown tension carrying the rest of the deck.",
-    "fix": "Rewrite slide 4's loop to point at the money on the table, e.g. \"The seller is watching that clock,\" so it hands directly into the 4:55 stall."
+    "cta": 8,
+    "worst_problem": "The hook already states the arithmetic (10 becomes 6), so slide 4's reveal lands as confirmation rather than payoff and the middle slides lose tension.",
+    "fix": "Either withhold the number in the hook (\"You paid for 10 option days. You will not get 10.\") or make slide 4 deliver something the hook didn't — a cost figure or the one day nobody counts."
   },
-  "attemptsUsed": 3,
+  "attemptsUsed": 2,
   "belowBar": false,
   "deck": {
-    "topic": "Texas option period mechanics",
-    "hook": "You bought 10 days to walk away. Most use four.",
+    "topic": "Texas option period: 10 paper days vs 6 real days",
+    "hook": "You paid for 10 option days. You got 6.",
     "map": [
-      "What the fee buys",
-      "Clock starts sooner",
-      "Six days vanish",
-      "Silence costs you",
-      "The 4:55 stall"
+      "Day one already gone",
+      "Inspector wait list",
+      "Bids take longer",
+      "Ten becomes six",
+      "The 5pm trap"
     ],
     "points": [
       {
-        "title": "What The Fee Buys",
+        "title": "The Clock Starts Quietly",
         "body": [
-          "The option fee is not a deposit on the house. It buys days.",
-          "Inside those days you can walk for any reason. Even a bad feeling in the driveway."
+          "Your option period starts the day after everyone signs.",
+          "Nobody calls to tell you it began."
         ],
-        "loop": "You will not get all of them."
+        "loop": "And you are not first in line."
       },
       {
-        "title": "The Clock Started Yesterday",
+        "title": "Good Inspectors Are Booked",
         "body": [
-          "Day one is the day after both sides sign. Weekends count. Holidays count.",
-          "It dies at 5pm on the last day, not midnight."
+          "The ones worth hiring are three days out.",
+          "Take whoever is free today and you get what you pay for."
         ],
-        "loop": "And that is before anyone shows up."
+        "loop": "The report is only half the job."
       },
       {
-        "title": "Where Six Days Go",
+        "title": "A Report Is Not A Number",
         "body": [
-          "A good inspector is booked three days out. The written report lands a day after that.",
-          "Ten days on paper. Four days to actually decide. That is the entire gap nobody warns you about."
+          "Sellers negotiate off real bids, not off scary sentences.",
+          "Getting a contractor out to quote it takes another day or two."
         ],
-        "loop": "Deciding is not the same as done."
+        "loop": "Now count what is actually left."
       },
       {
-        "title": "Silence Means You Bought It",
+        "title": "Ten Becomes Six",
         "body": [
-          "Terminating is an action. Written notice, delivered, before the deadline hour.",
-          "Nobody calls to remind you. The contract just quietly hardens around you."
+          "One day burns on signatures and getting your option fee delivered.",
+          "Three more sit waiting on the inspector.",
+          "Ten on paper. Six in real life."
         ],
-        "loop": "Walking is rarely what you want."
+        "loop": "Day six has a trap in it."
       },
       {
-        "title": "Repairs Are A Race",
+        "title": "5PM Is Not A Suggestion",
         "body": [
-          "Any price cut or repair promise has to be signed inside that same window. Not after it.",
-          "A seller who stalls until 4:55 knows exactly what they are doing."
+          "The deadline is a time, not a date.",
+          "Notice has to be delivered by then, not decided by then."
         ],
-        "loop": "This gets solved before you offer."
+        "loop": "You can win those days back."
       }
     ],
     "cta": {
-      "payoff": "my day by day option period timeline and the two lines to put in your offer so you never lose a day"
+      "payoff": "the day by day option period checklist I run with my buyers"
     }
   },
-  "caption": "You bought 10 days to walk away. Most use four.\n\nWhat The Fee Buys: The option fee is not a deposit on the house. It buys days.\nThe Clock Started Yesterday: Day one is the day after both sides sign. Weekends count. Holidays count.\nWhere Six Days Go: A good inspector is booked three days out. The written report lands a day after that.\nSilence Means You Bought It: Terminating is an action. Written notice, delivered, before the deadline hour.\nRepairs Are A Race: Any price cut or repair promise has to be signed inside that same window. Not after it.\n\nComment TOUR and I'll DM you my day by day option period timeline and the two lines to put in your offer so you never lose a day.\nSave this for later.",
-  "linkedinCaption": "The Texas option period is the most misunderstood part of a residential contract, and the confusion is usually about time, not money.\n\nThe fee does not go toward the house. It buys days. Day one is the day after execution. Weekends and holidays count. It ends at 5pm, not midnight.\n\nA ten day option period is rarely ten days of decision making. Inspectors book out. Reports take a day to write. What is left is often four days to read, price out repairs, and negotiate.\n\nTermination requires written notice delivered before the deadline. Silence is a purchase.\n\nFor the agents here: what length option period are you seeing hold up best in your market right now?"
+  "caption": "You paid for 10 option days. You got 6.\n\nThe Clock Starts Quietly: Your option period starts the day after everyone signs.\nGood Inspectors Are Booked: The ones worth hiring are three days out.\nA Report Is Not A Number: Sellers negotiate off real bids, not off scary sentences.\nTen Becomes Six: One day burns on signatures and getting your option fee delivered.\n5PM Is Not A Suggestion: The deadline is a time, not a date.\n\nComment TOUR and I'll DM you the day by day option period checklist I run with my buyers.\nSave this for later.",
+  "linkedinCaption": "A 10 day option period in Texas is rarely 10 usable days.\n\nThe clock starts the day after execution. No one calls to tell you it began. One day goes to signatures and delivering the option fee. Good inspectors are often booked three days out, and the ones available same day are usually available for a reason. Then the report lands, and a report is not a number. Sellers negotiate off contractor bids, which takes another day or two to arrange.\n\nTen on paper. Closer to six in practice. And the deadline is 5PM, a time and not a date. Notice must be delivered by then.\n\nFor the agents here: how early do you line up your inspector, and do you book before the contract is fully executed?"
 }
