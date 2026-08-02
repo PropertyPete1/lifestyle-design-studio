@@ -1,0 +1,40 @@
+name: Carousel Samples
+
+# Generates three complete sample carousels from different pillars for PR
+# review. Renders and commits the slides; publishes nothing to any account.
+#
+# Manual/branch-scoped like the capability probe — this never runs on main.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/carousel-samples.yml"
+      - "auto-poster/scripts/generate-samples.mjs"
+
+permissions:
+  contents: write
+
+jobs:
+  samples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Generate samples
+        working-directory: auto-poster
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/generate-samples.mjs
+      - name: Commit samples
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          git add auto-poster/samples
+          git diff --cached --quiet || git commit -m "samples: three rendered carousels for PR review"
+          git push origin HEAD:${{ github.ref_name }}
