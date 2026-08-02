@@ -189,7 +189,8 @@ const CLOSE_BLOCKS = {
 - Exactly this shape: "Comment {KEYWORD} and I'll DM you {payoff}."
 - Today's keyword and the asset it promises are given below. The asset is fixed. Do NOT invent a different one.
 - Your job is to phrase the payoff so it sounds worth typing for, and — this matters — to pick a TOPIC where that asset is the obvious next step. If the deck is about inspections and the asset is a payment breakdown, the ask lands flat. Choose the topic to fit the asset.
-- Then a separate line: "Save this for later."`,
+- The payoff is ONE noun phrase under 120 characters. It completes "I'll DM you ___". Do not write a second sentence listing what is inside it. "the new build inspection checklist" is right; that plus three clauses describing its contents is wrong and will be rejected.
+- Do NOT write the "Save this for later." line yourself. It is added automatically. Return only the payoff.`,
 
   question: `FINAL SLIDE — THE CLOSE (engagement question)
 - No keyword. No DM. No asset. This pillar earns comments, not leads.
@@ -197,13 +198,15 @@ const CLOSE_BLOCKS = {
 - It must follow from the deck. A question about something the carousel never raised reads as bolted on.
 - GOOD: "Bigger lot or shorter commute?" / "Hill Country or lake side?"
 - WORTHLESS: "What do you think?" / "Agree?" / anything answerable with just yes.
-- Then a separate line: "Save this for later."`,
+- Under 90 characters. One line.
+- Do NOT write the "Save this for later." line yourself. It is added automatically. Return only the question.`,
 
   share: `FINAL SLIDE — THE CLOSE (share prompt)
 - No keyword. No DM. No asset. This pillar spreads by being sent to one specific person.
 - One line in this shape: "Send this to someone who {specific situation}."
 - The situation must be sharp enough that a reader pictures an actual person. "Send this to someone who needs it" is worthless. "Send this to someone who has been saying next year for three years" works.
-- Then a separate line: "Follow for more."`,
+- Under 130 characters. One sentence.
+- Do NOT write the "Follow for more." line yourself. It is added automatically. Return only the send-this line.`,
 };
 
 const CTA_SHAPES = {
@@ -376,20 +379,67 @@ export function validateDeck(deck, closeType = "dm") {
     if (loopWords < 3 || loopWords > 8) failures.push(`point ${i + 1} loop is ${loopWords} words (want 3-6)`);
   }
   const cta = deck.cta || {};
+  const tooLong = (field) =>
+    typeof cta[field] === "string" && cta[field].length > CLOSE_MAX[field]
+      ? `cta.${field} is ${cta[field].length} chars (max ${CLOSE_MAX[field]}) — it will not fit the slide`
+      : null;
+
   if (closeType === "dm") {
     if (!cta.payoff) failures.push("dm close is missing cta.payoff");
+    else {
+      const long = tooLong("payoff");
+      if (long) failures.push(long);
+    }
   } else if (closeType === "question") {
     if (!cta.question) failures.push("question close is missing cta.question");
     else if (!cta.question.trim().endsWith("?")) failures.push("question close must end in a question mark");
+    else {
+      const long = tooLong("question");
+      if (long) failures.push(long);
+    }
     if (cta.payoff) failures.push("question close must not carry a DM payoff");
   } else if (closeType === "share") {
     if (!cta.shareLine) failures.push("share close is missing cta.shareLine");
     else if (!/^send this to /i.test(cta.shareLine.trim())) {
       failures.push('share close must start with "Send this to"');
+    } else {
+      const long = tooLong("shareLine");
+      if (long) failures.push(long);
     }
     if (cta.payoff) failures.push("share close must not carry a DM payoff");
   }
   return { valid: failures.length === 0, failures };
+}
+
+/** Footer lines the renderer supplies itself. */
+const FOOTER_LINES = ["Save this for later.", "Follow for more."];
+
+/** Longest each close field may be before it stops fitting the slide. */
+export const CLOSE_MAX = { payoff: 120, question: 90, shareLine: 130 };
+
+/**
+ * Tidy the close the model returned.
+ *
+ * The footer is structural — the renderer draws it — but the model sometimes
+ * appends it to the copy anyway, which paints it twice on the slide and twice
+ * in the caption. Stripping it is a fix, not a fault worth regenerating over,
+ * so this runs BEFORE validation. Length is left alone: copy that is genuinely
+ * too long is a real defect and should fail validation and regenerate.
+ */
+export function normaliseClose(deck, closeType) {
+  const cta = { ...(deck.cta || {}) };
+  const field = closeType === "question" ? "question" : closeType === "share" ? "shareLine" : "payoff";
+  let text = cta[field];
+  if (typeof text === "string") {
+    // Collapse to one line; a close is always a single line on the slide.
+    text = text.split(/[\r\n]+/).map((t) => t.trim()).filter(Boolean).join(" ");
+    for (const footer of FOOTER_LINES) {
+      const re = new RegExp(`\\s*${footer.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*$`, "i");
+      text = text.replace(re, "").trim();
+    }
+    cta[field] = text;
+  }
+  return { ...deck, cta };
 }
 
 /**
@@ -404,7 +454,8 @@ export function renderClose(deck, keyword, closeType) {
   if (closeType === "share") {
     return [cta.shareLine, "Follow for more."].filter(Boolean);
   }
-  return [`Comment ${keyword} and I'll DM you ${cta.payoff}.`, "Save this for later."];
+  const payoff = String(cta.payoff || "").replace(/[.!?]+$/, "");
+  return [`Comment ${keyword} and I'll DM you ${payoff}.`, "Save this for later."];
 }
 
 // ─── Generation with the critic gate ────────────────────────────────────────
@@ -506,6 +557,7 @@ export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_
       continue;
     }
 
+    deck = normaliseClose(deck, closeType);
     const structure = validateDeck(deck, closeType);
     if (!structure.valid) {
       console.warn(`[Carousel] attempt ${attempt + 1}: structure failures: ${structure.failures.join("; ")}`);

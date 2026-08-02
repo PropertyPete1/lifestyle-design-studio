@@ -841,3 +841,73 @@ test("deckToSvgs picks the close layout from the close type", async () => {
   assert.ok(sh[sh.length - 1].includes("Follow for more."));
   assert.ok(!sh[sh.length - 1].includes("Save this for later."));
 });
+
+// ─── Close normalisation ────────────────────────────────────────────────────
+
+test("a footer the model bakes into the close is stripped, not duplicated", async () => {
+  const { normaliseClose } = await import("../src/carousel-content.js");
+
+  // Exactly what a real run produced: the share line carried its own footer,
+  // so the slide painted "Follow for more." twice.
+  const share = normaliseClose(
+    shareDeck({ cta: { shareLine: "Send this to someone who keeps saying next year.\nFollow for more." } }),
+    "share"
+  );
+  assert.equal(share.cta.shareLine, "Send this to someone who keeps saying next year.");
+  assert.deepEqual(renderClose(share, null, "share"), [
+    "Send this to someone who keeps saying next year.",
+    "Follow for more.",
+  ]);
+
+  const q = normaliseClose(
+    questionDeck({ cta: { question: "Lot or commute?\nSave this for later." } }),
+    "question"
+  );
+  assert.equal(q.cta.question, "Lot or commute?");
+});
+
+test("normalisation collapses a multi-line close to one line", async () => {
+  const { normaliseClose } = await import("../src/carousel-content.js");
+  const d = normaliseClose(goodDeck({ cta: { payoff: "the payment\nbreakdown" } }), "dm");
+  assert.equal(d.cta.payoff, "the payment breakdown");
+});
+
+test("the DM close does not double up punctuation", () => {
+  const lines = renderClose(goodDeck({ cta: { payoff: "the full payment breakdown." } }), "MATH", "dm");
+  assert.ok(!lines[0].includes(".."), `double period in: ${lines[0]}`);
+  assert.ok(lines[0].endsWith("breakdown."));
+});
+
+test("close copy too long for the slide is rejected", async () => {
+  const { CLOSE_MAX } = await import("../src/carousel-content.js");
+
+  // The real failure: a payoff that ran to a paragraph and shrank to body text.
+  const longPayoff = "the new build inspection checklist I hand my buyers. Exactly what to look at before drywall, what to write down at the final walkthrough, and the items to chase before your warranty year quietly ends.";
+  assert.ok(longPayoff.length > CLOSE_MAX.payoff);
+  const r = validateDeck(goodDeck({ cta: { payoff: longPayoff } }), "dm");
+  assert.equal(r.valid, false);
+  assert.ok(r.failures.some((f) => /max 120/.test(f)));
+
+  assert.equal(validateDeck(questionDeck({ cta: { question: "A?".padStart(CLOSE_MAX.question + 5, "x") } }), "question").valid, false);
+  assert.equal(validateDeck(shareDeck({ cta: { shareLine: "Send this to " + "x".repeat(CLOSE_MAX.shareLine) } }), "share").valid, false);
+});
+
+test("an over-long close regenerates rather than shipping", async () => {
+  const long = "x".repeat(200);
+  const model = stubModel({
+    writer: [goodDeck({ cta: { payoff: long } }), goodDeck({ topic: "tightened" })],
+    critic: [PERFECT],
+  });
+  const r = await generateCarousel({ dateStr: "2026-08-03", modelCall: model });
+  assert.equal(r.topic, "tightened");
+  assert.equal(model.calls.writer, 2);
+});
+
+test("the writer is told not to write the footer itself", () => {
+  for (const [type, footer] of [["dm", "Save this for later."], ["question", "Save this for later."], ["share", "Follow for more."]]) {
+    assert.ok(
+      writerSystemFor(type).includes(`Do NOT write the "${footer}" line yourself`),
+      `${type} prompt must tell the model the footer is automatic`
+    );
+  }
+});
