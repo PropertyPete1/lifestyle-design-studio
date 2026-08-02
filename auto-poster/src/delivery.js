@@ -543,10 +543,10 @@ export async function deliverToOwner(accessToken, videoPath, city, caption, opti
  *
  * @param {string} accessToken
  * @param {Array<{path: string, mimeType: string}>} files  slides then PDF, in order
- * @param {object} meta  { caption, keyword, topic, city }
+ * @param {object} meta  { caption, keyword, closeType, topic, city }
  */
 export async function deliverCarouselToOwner(accessToken, files, meta) {
-  const { caption, keyword, topic, city = "CAROUSEL" } = meta;
+  const { caption, keyword, closeType = "dm", topic, city = "CAROUSEL" } = meta;
   console.log(`[Delivery] Delivering carousel "${topic}" (${files.length} files) to owner...`);
 
   const uploaded = [];
@@ -563,7 +563,7 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
   const ownerNote =
     `${caption}\n\n` +
     `— Carousel: ${uploaded.length} files in Ready to Post. Post slides in order.\n` +
-    `— Comment keyword: ${keyword}\n` +
+    (keyword ? `— Comment keyword: ${keyword}\n` : `— Close type: ${closeType} (no comment keyword)\n`) +
     `— Add trending audio natively when you post.\n` +
     slideLinks.map((l, i) => `  ${i + 1}. ${l}`).join("\n");
 

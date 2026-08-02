@@ -62,6 +62,7 @@ export function buildEntry(result, { accent, slideCount, distribution, delivered
     pillar: result.pillar,
     topic: result.topic,
     hook: result.hook,
+    closeType: result.closeType,
     keyword: result.keyword,
     accent,
     slideCount,

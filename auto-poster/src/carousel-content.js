@@ -44,8 +44,37 @@ export const PILLARS = {
   6: { key: "motivation_business", label: "Motivation and business", angle: "Building something, discipline, money habits, betting on yourself, the long game. Grounded in real estate and business, never generic hustle quotes." },
 };
 
-/** Comment keywords, rotated per post and logged so the DM automation can match. */
-export const KEYWORDS = ["TOUR", "PLAN", "LIST", "MATH"];
+/**
+ * How each pillar closes.
+ *
+ *   dm        comment a keyword, get a concrete asset in the DM
+ *   question  a specific either/or question that invites a comment
+ *   share     "send this to someone who…", plus a follow line
+ *
+ * The teaching pillars earn a lead-capture ask because they have something
+ * worth sending. Lifestyle and motivation do not, so asking for a DM there just
+ * spends goodwill on an asset that does not exist.
+ */
+export const CLOSE_BY_PILLAR = {
+  real_estate_education: "dm",
+  market_insight: "dm",
+  texas_lifestyle: "question",
+  motivation_business: "share",
+};
+
+/**
+ * Comment keywords and the asset each one promises. The keyword IS the payoff
+ * contract — the DM automation matches on it, so the promise has to be stable
+ * per keyword rather than reinvented each day.
+ */
+export const KEYWORD_PAYOFFS = {
+  MATH: "the full payment breakdown",
+  LIST: "the current new builds list",
+  CHECKLIST: "the new build inspection checklist",
+  REPORT: "this month's market numbers",
+};
+
+export const KEYWORDS = Object.keys(KEYWORD_PAYOFFS);
 
 /** Chicago-local YYYY-MM-DD. */
 export function todayInChicago(now = new Date()) {
@@ -66,19 +95,46 @@ export function pillarFor(dateStr) {
   return PILLARS[dayIndexFor(dateStr)];
 }
 
+/** Which of the three close types a date uses. */
+export function closeTypeFor(dateStr) {
+  return CLOSE_BY_PILLAR[pillarFor(dateStr).key];
+}
+
+/** Days since the Unix epoch for a YYYY-MM-DD string. */
+function dayNumberFor(dateStr) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
+}
+
 /**
- * Keyword for a date. Rotates on absolute day number rather than day-of-week,
- * so a given keyword doesn't get pinned to a single pillar forever.
+ * Keyword for a date, or null when the date's pillar does not use a DM close.
+ *
+ * Rotation counts DM days only, not calendar days. Rotating on the raw day
+ * number would mean the cycle advances on Tuesdays and Wednesdays too, when no
+ * keyword is used — so some keywords would surface far more often than others
+ * and the four assets would not get even airtime.
  */
 export function keywordFor(dateStr) {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const dayNumber = Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
-  return KEYWORDS[((dayNumber % KEYWORDS.length) + KEYWORDS.length) % KEYWORDS.length];
+  if (closeTypeFor(dateStr) !== "dm") return null;
+
+  // 1970-01-01 was a Thursday, so an epoch-aligned week runs Thu..Wed and the
+  // DM pillars (Sun, Mon, Thu) land at offsets 0, 3 and 4 within it.
+  const DM_OFFSETS = [0, 3, 4];
+  const dayNumber = dayNumberFor(dateStr);
+  const weeks = Math.floor(dayNumber / 7);
+  const offset = ((dayNumber % 7) + 7) % 7;
+  const dmIndex = weeks * DM_OFFSETS.length + DM_OFFSETS.filter((o) => o <= offset).length - 1;
+  return KEYWORDS[((dmIndex % KEYWORDS.length) + KEYWORDS.length) % KEYWORDS.length];
+}
+
+/** The asset a keyword promises. */
+export function payoffFor(keyword) {
+  return KEYWORD_PAYOFFS[keyword] || null;
 }
 
 // ─── Prompting ──────────────────────────────────────────────────────────────
 
-const WRITER_SYSTEM = `You write Instagram carousels for Peter Allen, who runs Lifestyle Design Realty in Texas.
+const WRITER_BASE = `You write Instagram carousels for Peter Allen, who runs Lifestyle Design Realty in Texas.
 
 The single metric that matters is SWIPE COMPLETION. A carousel that gets a swipe to the last slide beats a clever one that gets abandoned on slide 3. Every structural rule below exists to serve that.
 
@@ -100,13 +156,10 @@ SLIDES 3 TO 8 — THE POINTS
 - Body lines are plain spoken English. No jargon, no filler, no throat-clearing.
 - CRITICAL: each of these slides ENDS with an open loop of 3 to 6 words that teases the next slide. Examples of the shape: "...but that's not the expensive part." / "...and it gets worse." / "...most people stop here."
 - A loop WITHHOLDS. It must not be a headline for the next slide. "And the rate is not fixed." announces what is coming and is worthless. "That number can climb later." withholds and is what you want.
-- The LAST point slide's loop must ALSO withhold. Do not announce the CTA. "I keep a list for this." and "Here is the whole timeline." are failures — they hand off to the CTA instead of pulling the reader into it. Tease the value of the payoff without naming the mechanism.
+- The LAST point slide's loop must ALSO withhold. Do not announce the final slide. "I keep a list for this." and "Here is the whole timeline." are failures — they hand off instead of pulling the reader in. Tease the value without naming the mechanism.
 - The open loop is a separate final line, not folded into the body.
 
-FINAL SLIDE — THE CTA
-- Exactly this shape: "Comment {KEYWORD} and I'll DM you {payoff}."
-- The payoff must be concrete and specific — a thing they receive, not a vibe. "the exact payment breakdown" is good. "more info" is worthless.
-- Then a separate line: "Save this for later."
+{{CLOSE_BLOCK}}
 
 HARD RULES
 - Do NOT use em-dashes or en-dashes. Use short sentences and periods. Dashes read as AI.
@@ -123,9 +176,48 @@ Return ONLY valid JSON, no preamble and no code fences:
   "points": [
     {"title": "Bold Title", "body": ["line one", "line two"], "loop": "open loop text"}
   ],
-  "cta": {"payoff": "the thing they receive in the DM"}
+  "cta": {{CTA_SHAPE}}
 }
 Produce between 4 and 6 points.`;
+
+/**
+ * The final slide, per close type. Only the teaching pillars ask for a DM,
+ * because only they have an asset worth asking for.
+ */
+const CLOSE_BLOCKS = {
+  dm: `FINAL SLIDE — THE CLOSE (comment keyword, asset in the DM)
+- Exactly this shape: "Comment {KEYWORD} and I'll DM you {payoff}."
+- Today's keyword and the asset it promises are given below. The asset is fixed. Do NOT invent a different one.
+- Your job is to phrase the payoff so it sounds worth typing for, and — this matters — to pick a TOPIC where that asset is the obvious next step. If the deck is about inspections and the asset is a payment breakdown, the ask lands flat. Choose the topic to fit the asset.
+- Then a separate line: "Save this for later."`,
+
+  question: `FINAL SLIDE — THE CLOSE (engagement question)
+- No keyword. No DM. No asset. This pillar earns comments, not leads.
+- Ask ONE specific either/or question that a reader can answer in three words without thinking hard. Both options must be genuinely live — a question with an obvious right answer gets no comments.
+- It must follow from the deck. A question about something the carousel never raised reads as bolted on.
+- GOOD: "Bigger lot or shorter commute?" / "Hill Country or lake side?"
+- WORTHLESS: "What do you think?" / "Agree?" / anything answerable with just yes.
+- Then a separate line: "Save this for later."`,
+
+  share: `FINAL SLIDE — THE CLOSE (share prompt)
+- No keyword. No DM. No asset. This pillar spreads by being sent to one specific person.
+- One line in this shape: "Send this to someone who {specific situation}."
+- The situation must be sharp enough that a reader pictures an actual person. "Send this to someone who needs it" is worthless. "Send this to someone who has been saying next year for three years" works.
+- Then a separate line: "Follow for more."`,
+};
+
+const CTA_SHAPES = {
+  dm: `{"payoff": "the asset they receive, phrased to sound worth typing for"}`,
+  question: `{"question": "the either/or question, one short line"}`,
+  share: `{"shareLine": "Send this to someone who ..."}`,
+};
+
+/** Compose the writer's system prompt for a given close type. */
+export function writerSystemFor(closeType) {
+  return WRITER_BASE
+    .replace("{{CLOSE_BLOCK}}", CLOSE_BLOCKS[closeType])
+    .replace("{{CTA_SHAPE}}", CTA_SHAPES[closeType]);
+}
 
 const CRITIC_SYSTEM = `You are a harsh critic of Instagram carousels. You are not here to be encouraging, and you never inflate a score to be kind.
 
@@ -146,14 +238,37 @@ Score three things from 1 to 10:
 
 "loops" — the per-slide open loops on the point slides. Does EVERY point slide end in a genuine 3 to 6 word tease that creates a reason to swipe? One weak or missing loop caps this at 5. Loops that just restate the slide score 3.
 
-"cta" — the final slide. Is the payoff concrete and specific enough that someone would actually type the keyword to get it? Vague payoffs ("more info", "the details", "my guide") score 3 or below.
+"cta" — the final slide. This carousel uses ONE of three close types, named below. Score it against that close's own goal and ignore the other two — a share close is not a failed DM close.
 
-IMPORTANT: the comment keyword is drawn from a fixed four-word rotation the writer does not choose. Do NOT penalise the CTA for a keyword that has little to do with the topic — that is not the writer's decision. Score only the specificity and pull of the payoff itself.
+{{CTA_CRITERIA}}
+
+The close must also follow from the deck. A close that could be bolted onto any carousel on any topic caps at 5, whichever type it is.
 
 Apply the anchors above literally. Do not drift the bar upward across the three axes: each is scored on its own against the same scale.
 
 Return ONLY valid JSON, no preamble and no code fences:
 {"hook": 0, "loops": 0, "cta": 0, "worst_problem": "the single most damaging flaw, one sentence", "fix": "a specific instruction to the writer, one sentence"}`;
+
+/**
+ * What "good" means for the cta axis, per close type. Scoring all three against
+ * payoff concreteness would mark down every question and share close for not
+ * being something they were never meant to be.
+ */
+const CTA_CRITERIA = {
+  dm: `THIS CAROUSEL USES: the DM close ("Comment {KEYWORD} and I'll DM you {payoff}").
+Score PAYOFF CONCRETENESS. Would a reader actually stop and type the keyword to get this specific thing? A named, bounded artefact they can picture scores well. Vague payoffs ("more info", "the details", "my guide") score 3 or below. Also penalise a payoff that does not fit the deck's topic — the writer chooses the topic, so a mismatch is their doing.`,
+
+  question: `THIS CAROUSEL USES: the engagement-question close.
+Score ANSWERABILITY. Could a reader fire back an answer in three words without re-reading? Is it a real either/or where both sides are genuinely live, and does it follow from the deck? Questions with an obvious correct answer, or that need a paragraph to answer, score 4 or below. "What do you think?", "Agree?", and anything answerable with just yes score 2. Do NOT penalise this close for lacking a keyword or a downloadable asset — it is not supposed to have one.`,
+
+  share: `THIS CAROUSEL USES: the share close ("Send this to someone who ...").
+Score SEND-WORTHINESS. Reading the line, does a specific real person come to mind? The situation must be sharp and particular. "someone who needs to hear this" or "someone who is thinking about buying" are generic and score 3 or below. A line naming a recognisable behaviour or predicament scores well. Do NOT penalise this close for lacking a keyword or a downloadable asset — it is not supposed to have one.`,
+};
+
+/** Compose the critic's system prompt for a given close type. */
+export function criticSystemFor(closeType) {
+  return CRITIC_SYSTEM.replace("{{CTA_CRITERIA}}", CTA_CRITERIA[closeType]);
+}
 
 /** Strip code fences and preamble, then parse. Models sometimes wrap JSON. */
 function parseJson(raw) {
@@ -192,6 +307,10 @@ export function allSlideText(deck) {
   for (const p of deck.points || []) {
     parts.push(p.title, ...(p.body || []), p.loop);
   }
+  // Whichever close this deck uses, its copy is reader-visible and must be
+  // scanned by the guards like any other slide.
+  const cta = deck.cta || {};
+  parts.push(cta.payoff, cta.question, cta.shareLine);
   return parts.filter(Boolean);
 }
 
@@ -224,8 +343,12 @@ export function applyGuards(deck) {
     p.body = p.body.map(scrub);
     p.loop = scrub(p.loop);
   }
-  if (scrubbed.cta?.payoff) {
-    scrubbed.cta = { ...scrubbed.cta, payoff: scrub(scrubbed.cta.payoff) };
+  if (scrubbed.cta) {
+    const cta = { ...scrubbed.cta };
+    for (const field of ["payoff", "question", "shareLine"]) {
+      if (cta[field]) cta[field] = scrub(cta[field]);
+    }
+    scrubbed.cta = cta;
   }
 
   // Monthly-figure check runs on slide copy AFTER scrubbing, so a leak fix
@@ -236,7 +359,7 @@ export function applyGuards(deck) {
 }
 
 /** Structural validity — the render step assumes these hold. */
-export function validateDeck(deck) {
+export function validateDeck(deck, closeType = "dm") {
   const failures = [];
   if (!deck || typeof deck !== "object") return { valid: false, failures: ["not an object"] };
   if (!deck.hook || typeof deck.hook !== "string") failures.push("missing hook");
@@ -252,8 +375,36 @@ export function validateDeck(deck) {
     const loopWords = (p?.loop || "").trim().split(/\s+/).filter(Boolean).length;
     if (loopWords < 3 || loopWords > 8) failures.push(`point ${i + 1} loop is ${loopWords} words (want 3-6)`);
   }
-  if (!deck.cta?.payoff) failures.push("missing cta payoff");
+  const cta = deck.cta || {};
+  if (closeType === "dm") {
+    if (!cta.payoff) failures.push("dm close is missing cta.payoff");
+  } else if (closeType === "question") {
+    if (!cta.question) failures.push("question close is missing cta.question");
+    else if (!cta.question.trim().endsWith("?")) failures.push("question close must end in a question mark");
+    if (cta.payoff) failures.push("question close must not carry a DM payoff");
+  } else if (closeType === "share") {
+    if (!cta.shareLine) failures.push("share close is missing cta.shareLine");
+    else if (!/^send this to /i.test(cta.shareLine.trim())) {
+      failures.push('share close must start with "Send this to"');
+    }
+    if (cta.payoff) failures.push("share close must not carry a DM payoff");
+  }
   return { valid: failures.length === 0, failures };
+}
+
+/**
+ * The close as the reader sees it, as lines. Single source of truth so the
+ * critic, the caption and the rendered slide can never drift apart.
+ */
+export function renderClose(deck, keyword, closeType) {
+  const cta = deck.cta || {};
+  if (closeType === "question") {
+    return [cta.question, "Save this for later."].filter(Boolean);
+  }
+  if (closeType === "share") {
+    return [cta.shareLine, "Follow for more."].filter(Boolean);
+  }
+  return [`Comment ${keyword} and I'll DM you ${cta.payoff}.`, "Save this for later."];
 }
 
 // ─── Generation with the critic gate ────────────────────────────────────────
@@ -261,12 +412,14 @@ export function validateDeck(deck) {
 const PASS_MARK = 8;
 const MAX_RETRIES = 2;
 
-export async function scoreDeck(deck, keyword, modelCall = callModel) {
+export async function scoreDeck(deck, keyword, modelCall = callModel, closeType = "dm") {
   const rendered = JSON.stringify({
     hook: deck.hook,
     map: deck.map,
     points: deck.points,
-    cta: `Comment ${keyword} and I'll DM you ${deck.cta?.payoff}.`,
+    // Render the close as the reader sees it, so the critic scores the finished
+    // slide rather than a raw field.
+    cta: renderClose(deck, keyword, closeType).join(" "),
   }, null, 2);
   const clamp = (n) => Math.max(1, Math.min(10, Number(n) || 1));
 
@@ -277,7 +430,7 @@ export async function scoreDeck(deck, keyword, modelCall = callModel) {
   for (let attempt = 0; attempt < 2; attempt++) {
     const nudge = attempt === 0 ? "" : "\n\nReturn ONLY the JSON object. No prose.";
     try {
-      const raw = await modelCall(CRITIC_SYSTEM, `Score this carousel.\n\n${rendered}${nudge}`, 1000);
+      const raw = await modelCall(criticSystemFor(closeType), `Score this carousel.\n\n${rendered}${nudge}`, 1000);
       const s = parseJson(raw);
       return {
         hook: clamp(s.hook),
@@ -313,6 +466,7 @@ const scoreTotal = (s) => s.hook + s.loops + s.cta;
 export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_RETRIES, modelCall = callModel } = {}) {
   const date = dateStr || todayInChicago();
   const pillar = pillarFor(date);
+  const closeType = closeTypeFor(date);
   const keyword = keywordFor(date);
 
   // Last 14 topics and hooks become explicit "do not resemble" anti-examples.
@@ -320,11 +474,19 @@ export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_
     .map((e, i) => `${i + 1}. topic: ${e.topic} | hook: ${e.hook}`)
     .join("\n");
 
+  // Only the DM close gets a keyword; the other two would be confused by one.
+  const closeBrief = closeType === "dm"
+    ? `CLOSE: comment keyword, asset in the DM\nKEYWORD: ${keyword}\nASSET (fixed, do not change): ${payoffFor(keyword)}\n` +
+      `Pick a topic where that asset is the obvious next step.\n`
+    : closeType === "question"
+      ? `CLOSE: engagement question. No keyword, no DM, no asset.\n`
+      : `CLOSE: share prompt. No keyword, no DM, no asset.\n`;
+
   const basePrompt =
     `Write today's carousel.\n\n` +
     `PILLAR: ${pillar.label}\n` +
     `ANGLE: ${pillar.angle}\n` +
-    `CTA KEYWORD: ${keyword}\n\n` +
+    closeBrief + `\n` +
     (antiExamples
       ? `DO NOT RESEMBLE these recent posts. Pick a different topic and a structurally different hook:\n${antiExamples}\n\n`
       : "") +
@@ -336,7 +498,7 @@ export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     let deck;
     try {
-      const raw = await modelCall(WRITER_SYSTEM, basePrompt + feedback);
+      const raw = await modelCall(writerSystemFor(closeType), basePrompt + feedback);
       deck = parseJson(raw);
     } catch (err) {
       console.warn(`[Carousel] attempt ${attempt + 1}: unparseable output (${err.message})`);
@@ -344,7 +506,7 @@ export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_
       continue;
     }
 
-    const structure = validateDeck(deck);
+    const structure = validateDeck(deck, closeType);
     if (!structure.valid) {
       console.warn(`[Carousel] attempt ${attempt + 1}: structure failures: ${structure.failures.join("; ")}`);
       feedback = `\n\nYour previous attempt was structurally invalid: ${structure.failures.join("; ")}. Fix these exactly.`;
@@ -359,12 +521,12 @@ export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_
       continue;
     }
 
-    const scores = await scoreDeck(guarded.deck, keyword, modelCall);
+    const scores = await scoreDeck(guarded.deck, keyword, modelCall, closeType);
     console.log(`[Carousel] attempt ${attempt + 1} scores: hook=${scores.hook} loops=${scores.loops} cta=${scores.cta}${scoresPass(scores) ? " PASS" : " below bar"}`);
     attempts.push({ deck: guarded.deck, scores, leaksStripped: guarded.leaksStripped });
 
     if (scoresPass(scores)) {
-      return finish(attempts[attempts.length - 1], { date, pillar, keyword, attemptsUsed: attempt + 1, regenerated: attempt > 0 });
+      return finish(attempts[attempts.length - 1], { date, pillar, closeType, keyword, attemptsUsed: attempt + 1, regenerated: attempt > 0 });
     }
 
     feedback =
@@ -380,7 +542,7 @@ export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_
   // Best-of: nothing cleared the bar, so take the highest total.
   const best = attempts.reduce((a, b) => (scoreTotal(b.scores) > scoreTotal(a.scores) ? b : a));
   console.warn(`[Carousel] no draft cleared ${PASS_MARK}/10 — using best-of (total ${scoreTotal(best.scores)})`);
-  return finish(best, { date, pillar, keyword, attemptsUsed: attempts.length, regenerated: true, belowBar: true });
+  return finish(best, { date, pillar, closeType, keyword, attemptsUsed: attempts.length, regenerated: true, belowBar: true });
 }
 
 function finish(attempt, meta) {
@@ -388,6 +550,7 @@ function finish(attempt, meta) {
     date: meta.date,
     pillar: meta.pillar.key,
     pillarLabel: meta.pillar.label,
+    closeType: meta.closeType,
     keyword: meta.keyword,
     topic: attempt.deck.topic || meta.pillar.label,
     hook: attempt.deck.hook,
@@ -405,16 +568,15 @@ function finish(attempt, meta) {
 
 // ─── Captions ───────────────────────────────────────────────────────────────
 
-/** Instagram/TikTok/Facebook caption. Ends on the keyword CTA. */
+/** Instagram/TikTok/Facebook caption. Ends on whichever close the pillar uses. */
 export function buildSocialCaption(result) {
-  const { deck, keyword } = result;
+  const { deck, keyword, closeType = "dm" } = result;
   return [
     deck.hook,
     "",
     ...(deck.points || []).map((p) => `${p.title}: ${p.body[0]}`),
     "",
-    `Comment ${keyword} and I'll DM you ${deck.cta.payoff}.`,
-    "Save this for later.",
+    ...renderClose(deck, keyword, closeType),
   ].join("\n");
 }
 

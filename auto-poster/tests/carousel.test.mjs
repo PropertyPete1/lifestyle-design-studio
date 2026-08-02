@@ -11,14 +11,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  KEYWORDS, keywordFor, pillarFor, dayIndexFor,
-  validateDeck, applyGuards, scoresPass, generateCarousel,
-  buildSocialCaption, allSlideText,
+  KEYWORDS, KEYWORD_PAYOFFS, CLOSE_BY_PILLAR, keywordFor, payoffFor, closeTypeFor,
+  pillarFor, dayIndexFor, validateDeck, applyGuards, scoresPass, generateCarousel,
+  buildSocialCaption, allSlideText, renderClose, writerSystemFor, criticSystemFor,
 } from "../src/carousel-content.js";
 
 import {
   WIDTH, HEIGHT, wrapText, measure, accentFor, ACCENTS,
-  deckToSvgs, renderSvgs, buildPdf, isNonBlank,
+  deckToSvgs, renderSvgs, buildPdf, isNonBlank, questionCtaSvg, shareCtaSvg,
 } from "../src/carousel-render.js";
 
 import {
@@ -72,19 +72,75 @@ function stubModel(script) {
 
 // ─── Keyword rotation ───────────────────────────────────────────────────────
 
-test("keyword rotation cycles through all four keywords", () => {
-  const seen = new Set();
-  for (let i = 0; i < 4; i++) {
-    seen.add(keywordFor(`2026-08-${String(3 + i).padStart(2, "0")}`));
+/** Walk `days` consecutive dates from a start date. */
+function walkDates(start, days) {
+  const out = [];
+  let d = new Date(`${start}T00:00:00Z`);
+  for (let i = 0; i < days; i++) {
+    out.push(d.toISOString().slice(0, 10));
+    d = new Date(d.getTime() + 86_400_000);
   }
-  assert.equal(seen.size, 4, "four consecutive days must use four different keywords");
-  for (const k of seen) assert.ok(KEYWORDS.includes(k));
+  return out;
+}
+
+test("each pillar gets its specified close type", () => {
+  // 2026-08-02 is a Sunday.
+  assert.equal(closeTypeFor("2026-08-02"), "dm");        // Sun  market insight
+  assert.equal(closeTypeFor("2026-08-03"), "dm");        // Mon  education
+  assert.equal(closeTypeFor("2026-08-04"), "question");  // Tue  lifestyle
+  assert.equal(closeTypeFor("2026-08-05"), "share");     // Wed  motivation
+  assert.equal(closeTypeFor("2026-08-06"), "dm");        // Thu  education
+  assert.equal(closeTypeFor("2026-08-07"), "question");  // Fri  lifestyle
+  assert.equal(closeTypeFor("2026-08-08"), "share");     // Sat  motivation
+});
+
+test("close type is derived from the pillar, not hardcoded per weekday", () => {
+  for (const date of walkDates("2026-08-02", 28)) {
+    assert.equal(closeTypeFor(date), CLOSE_BY_PILLAR[pillarFor(date).key]);
+  }
+});
+
+test("only DM pillars carry a keyword", () => {
+  for (const date of walkDates("2026-08-02", 28)) {
+    const kw = keywordFor(date);
+    if (closeTypeFor(date) === "dm") {
+      assert.ok(KEYWORDS.includes(kw), `${date} should have a keyword`);
+    } else {
+      assert.equal(kw, null, `${date} is a ${closeTypeFor(date)} close and must have no keyword`);
+    }
+  }
+});
+
+test("keyword rotation cycles all four across DM days", () => {
+  const seq = walkDates("2026-08-02", 28).map(keywordFor).filter(Boolean);
+  assert.equal(new Set(seq).size, 4, "all four keywords must appear");
+  // Consecutive DM days advance by exactly one position — rotating on the raw
+  // day number would skip, because Tue/Wed/Fri/Sat use no keyword.
+  for (let i = 1; i < seq.length; i++) {
+    const prev = KEYWORDS.indexOf(seq[i - 1]);
+    assert.equal(seq[i], KEYWORDS[(prev + 1) % KEYWORDS.length], `break in rotation at index ${i}`);
+  }
 });
 
 test("keyword rotation is stable for a given date", () => {
   assert.equal(keywordFor("2026-08-03"), keywordFor("2026-08-03"));
-  // And repeats on a 4-day cycle.
-  assert.equal(keywordFor("2026-08-03"), keywordFor("2026-08-07"));
+});
+
+test("every keyword maps to a concrete payoff", () => {
+  assert.deepEqual(KEYWORDS, ["MATH", "LIST", "CHECKLIST", "REPORT"]);
+  for (const k of KEYWORDS) {
+    const payoff = payoffFor(k);
+    assert.ok(payoff && payoff.length > 8, `${k} needs a concrete payoff`);
+  }
+  assert.match(KEYWORD_PAYOFFS.MATH, /payment breakdown/i);
+  assert.match(KEYWORD_PAYOFFS.LIST, /new builds? list/i);
+  assert.match(KEYWORD_PAYOFFS.CHECKLIST, /inspection checklist/i);
+  assert.match(KEYWORD_PAYOFFS.REPORT, /market numbers/i);
+});
+
+test("payoffFor is null for anything not in the rotation", () => {
+  assert.equal(payoffFor("TOUR"), null);
+  assert.equal(payoffFor(null), null);
 });
 
 test("pillars map to the specified days", () => {
@@ -634,4 +690,154 @@ test("a very long hook stays inside the canvas", async () => {
   const [png] = await renderSvgs([svg]);
   const right = await inkRightEdge(png);
   assert.ok(right <= MAX_INK_X, `hook ink reaches x=${right}, past the ${MAX_INK_X} content edge`);
+});
+
+// ─── Pillar-matched closes ──────────────────────────────────────────────────
+
+function questionDeck(overrides = {}) {
+  const d = goodDeck();
+  return { ...d, topic: "cost of living", cta: { question: "Bigger lot or shorter commute?" }, ...overrides };
+}
+
+function shareDeck(overrides = {}) {
+  const d = goodDeck();
+  return { ...d, topic: "discipline", cta: { shareLine: "Send this to someone who has been saying next year for three years." }, ...overrides };
+}
+
+test("validateDeck enforces the right cta shape per close", () => {
+  assert.equal(validateDeck(goodDeck(), "dm").valid, true);
+  assert.equal(validateDeck(questionDeck(), "question").valid, true);
+  assert.equal(validateDeck(shareDeck(), "share").valid, true);
+
+  // A DM payoff handed to a non-DM pillar is the failure that matters: it would
+  // promise an asset on a day with no keyword to claim it.
+  const r1 = validateDeck(goodDeck(), "question");
+  assert.equal(r1.valid, false);
+  assert.ok(r1.failures.some((f) => /missing cta.question/.test(f)));
+
+  const r2 = validateDeck(questionDeck({ cta: { question: "Bigger lot or shorter commute?", payoff: "a thing" } }), "question");
+  assert.equal(r2.valid, false);
+  assert.ok(r2.failures.some((f) => /must not carry a DM payoff/.test(f)));
+});
+
+test("a question close must actually be a question", () => {
+  const r = validateDeck(questionDeck({ cta: { question: "Bigger lot or shorter commute" } }), "question");
+  assert.equal(r.valid, false);
+  assert.ok(r.failures.some((f) => /question mark/.test(f)));
+});
+
+test("a share close must use the send-this shape", () => {
+  const r = validateDeck(shareDeck({ cta: { shareLine: "Tell a friend about this." } }), "share");
+  assert.equal(r.valid, false);
+  assert.ok(r.failures.some((f) => /Send this to/.test(f)));
+});
+
+test("renderClose produces the reader-visible lines per close", () => {
+  assert.deepEqual(renderClose(goodDeck(), "MATH", "dm"), [
+    "Comment MATH and I'll DM you the exact payment breakdown for your price range.",
+    "Save this for later.",
+  ]);
+  assert.deepEqual(renderClose(questionDeck(), null, "question"), [
+    "Bigger lot or shorter commute?",
+    "Save this for later.",
+  ]);
+  assert.deepEqual(renderClose(shareDeck(), null, "share"), [
+    "Send this to someone who has been saying next year for three years.",
+    "Follow for more.",
+  ]);
+});
+
+test("captions end on the pillar's own close", () => {
+  const dm = buildSocialCaption({ deck: goodDeck(), keyword: "MATH", closeType: "dm" });
+  assert.ok(dm.includes("Comment MATH and I'll DM you"));
+  assert.ok(dm.trimEnd().endsWith("Save this for later."));
+
+  const q = buildSocialCaption({ deck: questionDeck(), keyword: null, closeType: "question" });
+  assert.ok(!/comment\s+\w+\s+and/i.test(q), "question close must not ask for a keyword");
+  assert.ok(!q.includes("DM you"));
+  assert.ok(q.includes("Bigger lot or shorter commute?"));
+
+  const sh = buildSocialCaption({ deck: shareDeck(), keyword: null, closeType: "share" });
+  assert.ok(sh.includes("Send this to someone who"));
+  assert.ok(sh.trimEnd().endsWith("Follow for more."));
+  assert.ok(!sh.includes("Save this for later."), "share close uses the follow line instead");
+});
+
+test("the writer prompt only mentions a keyword on DM days", () => {
+  assert.ok(writerSystemFor("dm").includes("Comment {KEYWORD}"));
+  for (const t of ["question", "share"]) {
+    const p = writerSystemFor(t);
+    assert.ok(!p.includes("Comment {KEYWORD}"), `${t} prompt must not describe the DM close`);
+    assert.ok(/No keyword\. No DM\./.test(p), `${t} prompt must rule out the DM close`);
+  }
+});
+
+test("the critic scores each close against its own goal", () => {
+  const dm = criticSystemFor("dm");
+  assert.ok(/PAYOFF CONCRETENESS/.test(dm));
+
+  const q = criticSystemFor("question");
+  assert.ok(/ANSWERABILITY/.test(q));
+  assert.ok(/Do NOT penalise this close for lacking a keyword/.test(q));
+  assert.ok(!/PAYOFF CONCRETENESS/.test(q), "question close must not be judged on payoff concreteness");
+
+  const sh = criticSystemFor("share");
+  assert.ok(/SEND-WORTHINESS/.test(sh));
+  assert.ok(/Do NOT penalise this close for lacking a keyword/.test(sh));
+  assert.ok(!/ANSWERABILITY/.test(sh));
+});
+
+test("generation drives close type from the date", async () => {
+  // Tuesday -> lifestyle -> question close.
+  const model = stubModel({ writer: [questionDeck()], critic: [PERFECT] });
+  const r = await generateCarousel({ dateStr: "2026-08-04", modelCall: model });
+  assert.equal(r.closeType, "question");
+  assert.equal(r.keyword, null);
+  assert.equal(r.deck.cta.question, "Bigger lot or shorter commute?");
+});
+
+test("a DM-shaped deck on a share day is rejected and regenerated", async () => {
+  // Wednesday -> motivation -> share close. First draft returns a DM payoff.
+  const model = stubModel({ writer: [goodDeck(), shareDeck()], critic: [PERFECT] });
+  const r = await generateCarousel({ dateStr: "2026-08-05", modelCall: model });
+  assert.equal(r.closeType, "share");
+  assert.equal(model.calls.writer, 2, "the DM-shaped draft must not be accepted on a share day");
+  assert.ok(r.deck.cta.shareLine.startsWith("Send this to"));
+});
+
+test("guards scan the close copy of every close type", () => {
+  // A gated builder name hidden in the close must still be stripped.
+  const q = applyGuards(questionDeck({ cta: { question: "Perry Homes or a resale?" } }));
+  assert.ok(!/Perry Homes/i.test(allSlideText(q.deck).join(" ")));
+
+  const sh = applyGuards(shareDeck({ cta: { shareLine: "Send this to someone who keeps calling Perry Homes." } }));
+  assert.ok(!/Perry Homes/i.test(allSlideText(sh.deck).join(" ")));
+});
+
+test("question and share closes render on-canvas", async () => {
+  const svgs = [
+    questionCtaSvg("Bigger lot or a shorter commute every single weekday?", ACCENTS[0]),
+    shareCtaSvg("Send this to someone who has been saying next year for three years straight.", ACCENTS[0]),
+  ];
+  const pngs = await renderSvgs(svgs);
+  const sharp = (await import("sharp")).default;
+  for (const [i, png] of pngs.entries()) {
+    const meta = await sharp(png).metadata();
+    assert.equal(meta.width, WIDTH);
+    assert.equal(meta.height, HEIGHT);
+    assert.equal(await isNonBlank(png), true);
+    assert.ok(await inkRightEdge(png) <= MAX_INK_X, `close slide ${i + 1} overflows`);
+  }
+});
+
+test("deckToSvgs picks the close layout from the close type", async () => {
+  const dm = deckToSvgs(goodDeck(), "MATH", ACCENTS[0], "dm");
+  const q = deckToSvgs(questionDeck(), null, ACCENTS[0], "question");
+  const sh = deckToSvgs(shareDeck(), null, ACCENTS[0], "share");
+
+  assert.ok(dm[dm.length - 1].includes("MATH"));
+  assert.ok(q[q.length - 1].includes("Save this for later."));
+  assert.ok(!q[q.length - 1].includes("DM you"));
+  assert.ok(sh[sh.length - 1].includes("Follow for more."));
+  assert.ok(!sh[sh.length - 1].includes("Save this for later."));
 });

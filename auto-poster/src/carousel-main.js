@@ -2,7 +2,7 @@
 /**
  * carousel-main.js — the daily carousel run.
  *
- *   1. Pick the pillar and keyword for today, read the log for anti-examples
+ *   1. Pick the pillar and its close type for today, read the log for anti-examples
  *   2. Write the deck, critic-gate it, regenerate anything under 8/10
  *   3. Render 1080x1350 slides and assemble the LinkedIn PDF
  *   4. Fan out to the proven paths, and deliver to the owner for main Instagram
@@ -43,7 +43,7 @@ export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DR
   console.log(`[Carousel] ${date} — ${recent.length} prior entries as anti-examples`);
 
   const result = await generateCarousel({ dateStr: date, recent });
-  console.log(`[Carousel] pillar=${result.pillar} topic="${result.topic}" keyword=${result.keyword}`);
+  console.log(`[Carousel] pillar=${result.pillar} close=${result.closeType} topic="${result.topic}"${result.keyword ? ` keyword=${result.keyword}` : ""}`);
   console.log(`[Carousel] hook: ${result.hook}`);
   console.log(`[Carousel] scores: hook=${result.scores.hook} loops=${result.scores.loops} cta=${result.scores.cta}${result.belowBar ? " (BELOW BAR — best-of)" : ""}`);
   if (result.leaksStripped?.length) {
@@ -51,7 +51,7 @@ export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DR
   }
 
   const accent = accentFor(date);
-  const slides = await renderDeck(result.deck, result.keyword, accent);
+  const slides = await renderDeck(result.deck, result.keyword, accent, result.closeType);
   console.log(`[Carousel] rendered ${slides.length} slides`);
 
   // A blank slide is worse than a failed run — it would publish as a black square.
@@ -70,7 +70,7 @@ export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DR
     writeFileSync(join(sampleOut, "carousel.pdf"), pdf);
     writeFileSync(join(sampleOut, "meta.json"), JSON.stringify({
       date, pillar: result.pillar, pillarLabel: result.pillarLabel, topic: result.topic,
-      hook: result.hook, keyword: result.keyword, accent, scores: result.scores,
+      hook: result.hook, keyword: result.keyword, closeType: result.closeType, accent, scores: result.scores,
       attemptsUsed: result.attemptsUsed, belowBar: result.belowBar,
       deck: result.deck, caption, linkedinCaption,
     }, null, 2) + "\n");
@@ -98,7 +98,7 @@ export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DR
 
     const token = await getAccessToken();
     const delivery = await deliverCarouselToOwner(token, files, {
-      caption, keyword: result.keyword, topic: result.topic, city: "CAROUSEL",
+      caption, keyword: result.keyword, closeType: result.closeType, topic: result.topic, city: "CAROUSEL",
     });
     delivered = delivery.delivered;
   } else {
@@ -111,7 +111,7 @@ export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DR
 
   if (!dryRun) {
     saveCarouselLog(appendEntry(log, entry));
-    console.log(`[Carousel] logged ${date} (keyword ${result.keyword})`);
+    console.log(`[Carousel] logged ${date} (${result.closeType} close${result.keyword ? `, keyword ${result.keyword}` : ""})`);
   }
 
   return { result, distribution, delivered, entry };

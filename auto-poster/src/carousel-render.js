@@ -318,14 +318,59 @@ export function ctaSvg(keyword, payoff, accent) {
 `);
 }
 
+/**
+ * Layout 5 — the statement close, shared by the question and share pillars.
+ *
+ * Both are one line of copy carrying the whole ask, so they get the hook's
+ * treatment — large serif, accent rule under the last line — rather than the
+ * keyword layout, which is built around a single short word as the anchor.
+ */
+export function statementCtaSvg(statement, footer, accent, eyebrow = "") {
+  const fit = fitText(statement, { start: 76, min: 46, maxWidth: CONTENT_W, maxLines: 5, factor: BOLD_SERIF });
+  const lineHeight = fit.size * 1.22;
+  const blockH = fit.lines.length * lineHeight;
+
+  const regionTop = eyebrow ? 300 : 240;
+  const regionBottom = HEIGHT - 300;
+  const startY = regionTop + Math.max(0, (regionBottom - regionTop - blockH) / 2) + fit.size * 0.78;
+
+  const body = fit.lines
+    .map((l, i) => textLine(MARGIN, startY + i * lineHeight, l, { size: fit.size, weight: "bold" }))
+    .join("\n  ");
+
+  const lastWidth = Math.min(measure(fit.lines[fit.lines.length - 1], fit.size, BOLD_SERIF), CONTENT_W);
+  const underlineY = startY + (fit.lines.length - 1) * lineHeight + fit.size * 0.30;
+
+  return frame(`
+  ${eyebrow ? textLine(MARGIN, 168, eyebrow, { size: 36, family: SANS, fill: MUTED }) : ""}
+  ${eyebrow ? rule(MARGIN, 196, 96, accent) : ""}
+  ${body}
+  ${rule(MARGIN, underlineY, lastWidth, accent)}
+  ${rule(MARGIN, HEIGHT - 214, 120, ACCENT_DIM)}
+  ${textLine(MARGIN, HEIGHT - 150, footer, { size: 42, family: SANS, fill: MUTED })}
+`);
+}
+
+export function questionCtaSvg(question, accent) {
+  return statementCtaSvg(question, "Save this for later.", accent, "Your call");
+}
+
+export function shareCtaSvg(shareLine, accent) {
+  return statementCtaSvg(shareLine, "Follow for more.", accent);
+}
+
 // ─── Deck assembly ──────────────────────────────────────────────────────────
 
 /** Build the SVG source for every slide in a deck, in order. */
-export function deckToSvgs(deck, keyword, accent) {
+export function deckToSvgs(deck, keyword, accent, closeType = "dm") {
   const svgs = [hookSvg(deck.hook, accent), mapSvg(deck.map, accent)];
   const total = deck.points.length;
   deck.points.forEach((p, i) => svgs.push(pointSvg(p, i + 1, total, accent)));
-  svgs.push(ctaSvg(keyword, deck.cta.payoff, accent));
+
+  if (closeType === "question") svgs.push(questionCtaSvg(deck.cta.question, accent));
+  else if (closeType === "share") svgs.push(shareCtaSvg(deck.cta.shareLine, accent));
+  else svgs.push(ctaSvg(keyword, deck.cta.payoff, accent));
+
   return svgs;
 }
 
@@ -338,8 +383,8 @@ export async function renderSvgs(svgs) {
   return out;
 }
 
-export async function renderDeck(deck, keyword, accent) {
-  return renderSvgs(deckToSvgs(deck, keyword, accent));
+export async function renderDeck(deck, keyword, accent, closeType = "dm") {
+  return renderSvgs(deckToSvgs(deck, keyword, accent, closeType));
 }
 
 /**
