@@ -11,6 +11,7 @@ on:
     paths:
       - ".github/workflows/carousel-samples.yml"
       - "auto-poster/scripts/generate-samples.mjs"
+      - "auto-poster/src/carousel-*.js"
 
 permissions:
   contents: write
