@@ -1,3 +1,76 @@
 {
-  "posts": []
+  "posts": [
+    {
+      "date": "2026-08-03",
+      "timestamp": "2026-08-03T16:15:48.821Z",
+      "pillar": "real_estate_education",
+      "topic": "New build inspections: the three windows buyers skip",
+      "hook": "I've seen 47 defects in a house nobody lived in.",
+      "closeType": "dm",
+      "keyword": "CHECKLIST",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "scores": {
+        "hook": 8,
+        "loops": 8,
+        "cta": 8,
+        "worst_problem": "The hook's most arresting detail (47 defects, nobody lived there) is spent verbatim as slide 3's payoff, so the deck's biggest reveal lands as a repeat rather than a punch.",
+        "fix": "Keep the 47-defect line on slide 3 and rewrite slide 1 with a different withheld detail from the same story (e.g. \"The worst house I ever inspected had never been slept in.\") so the reveal still pays off."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": false,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "network": "tiktok",
+          "ok": true
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "network": "linkedin",
+          "ok": true
+        },
+        {
+          "label": "propertypete01",
+          "network": "instagram",
+          "ok": true
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "network": "instagram",
+          "ok": true
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "network": "linkedin",
+          "ok": true
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "network": "instagram",
+          "ok": true
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "network": "facebook",
+          "ok": true
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "network": "linkedin",
+          "ok": true
+        }
+      ],
+      "deliveredToOwner": true
+    }
+  ]
 }
