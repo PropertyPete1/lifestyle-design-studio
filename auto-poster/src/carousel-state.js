@@ -72,8 +72,17 @@ export function buildEntry(result, { accent, slideCount, distribution, delivered
     belowBar: Boolean(result.belowBar),
     criticUnavailable: Boolean(result.criticUnavailable),
     leaksStripped: result.leaksStripped?.length || 0,
+    // postId and blogId are recorded so the run can be verified afterwards.
+    // Their absence is why 2026-08-03's TikTok failure went unnoticed: the log
+    // said ok:true and held nothing to check that claim against.
     distribution: (distribution || []).map((d) => ({
-      label: d.label, network: d.network, ok: Boolean(d.ok), skipped: d.skipped || undefined,
+      label: d.label,
+      blogId: d.blogId,
+      network: d.network,
+      ok: Boolean(d.ok),
+      postId: d.postId,
+      skipped: d.skipped || undefined,
+      error: d.error || undefined,
     })),
     deliveredToOwner: Boolean(delivered),
   };

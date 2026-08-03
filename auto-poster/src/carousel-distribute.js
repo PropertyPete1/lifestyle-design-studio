@@ -72,8 +72,12 @@ export async function getCarouselBrands() {
   return brands;
 }
 
-/** Upload one PNG to a brand's media library. Mirrors the video flow in metricool.js. */
-export async function uploadImageToBrand(blogId, buf) {
+/**
+ * Upload one image to a brand's media library. Mirrors the video flow in
+ * metricool.js. The content type matters: TikTok rejects PNG at publish time,
+ * so its slides are uploaded as JPEG.
+ */
+export async function uploadImageToBrand(blogId, buf, contentType = "image/png") {
   const sha256b64 = createHash("sha256").update(buf).digest("base64");
   const size = buf.length;
 
@@ -82,8 +86,8 @@ export async function uploadImageToBrand(blogId, buf) {
     headers: authHeaders(),
     body: JSON.stringify({
       resourceType: "planner",
-      contentType: "image/png",
-      fileExtension: "png",
+      contentType,
+      fileExtension: contentType === "image/jpeg" ? "jpg" : "png",
       parts: [{ size, startByte: 0, endByte: size, hash: sha256b64 }],
     }),
   });
@@ -94,7 +98,7 @@ export async function uploadImageToBrand(blogId, buf) {
   const put = await fetch(tx.presignedUrl, {
     method: "PUT",
     headers: {
-      "Content-Type": "image/png",
+      "Content-Type": contentType,
       "Content-Length": String(size),
       "x-amz-checksum-sha256": sha256b64,
     },
@@ -116,9 +120,9 @@ export async function uploadImageToBrand(blogId, buf) {
 }
 
 /** Upload a whole slide deck to one brand, in order. */
-export async function uploadSlides(blogId, pngBuffers) {
+export async function uploadSlides(blogId, buffers, contentType = "image/png") {
   const urls = [];
-  for (const buf of pngBuffers) urls.push(await uploadImageToBrand(blogId, buf));
+  for (const buf of buffers) urls.push(await uploadImageToBrand(blogId, buf, contentType));
   return urls;
 }
 
@@ -204,7 +208,7 @@ export function linkedinDocumentBody(mediaUrls, caption, publishAt, documentTitl
  * @param {boolean}  opts.dryRun
  * @returns {{ ok: boolean, results: Array }}
  */
-export async function distributeCarousel({ slides, caption, linkedinCaption, documentTitle, dryRun = false }) {
+export async function distributeCarousel({ slides, jpegSlides, caption, linkedinCaption, documentTitle, dryRun = false }) {
   const brands = await getCarouselBrands();
   const publishAt = chicagoDateTime();
   const results = [];
@@ -242,7 +246,7 @@ export async function distributeCarousel({ slides, caption, linkedinCaption, doc
       } else {
         console.error(`[Carousel] ✗ ${brand.label} ${network}: ${r.error}`);
       }
-      results.push({ label: brand.label, network, ...r });
+      results.push({ label: brand.label, blogId: brand.blogId, network, ...r });
     };
 
     // Main Instagram is never auto-published. That is the whole point of the
@@ -251,11 +255,20 @@ export async function distributeCarousel({ slides, caption, linkedinCaption, doc
       await post("instagram", instagramCarouselBody(mediaUrls, caption, publishAt));
     } else if (brand.isMain) {
       console.log(`[Carousel] ${brand.label}: skipping main Instagram — delivered to owner instead`);
-      results.push({ label: brand.label, network: "instagram", ok: true, skipped: "deliverToOwner" });
+      results.push({ label: brand.label, blogId: brand.blogId, network: "instagram", ok: true, skipped: "deliverToOwner" });
     }
 
     if (brand.networks.includes("tiktok")) {
-      await post("tiktok", tiktokCarouselBody(mediaUrls, caption, publishAt));
+      // TikTok rejects PNG at publish time, so its slides are uploaded again as
+      // JPEG under their own media URLs. Everything else keeps the lossless PNGs.
+      try {
+        const jpegUrls = await uploadSlides(brand.blogId, jpegSlides || slides, "image/jpeg");
+        console.log(`[Carousel] uploaded ${jpegUrls.length} JPEG slides to ${brand.label} for TikTok`);
+        await post("tiktok", tiktokCarouselBody(jpegUrls, caption, publishAt));
+      } catch (err) {
+        console.error(`[Carousel] ✗ ${brand.label} tiktok: JPEG upload failed — ${err.message}`);
+        results.push({ label: brand.label, network: "tiktok", ok: false, error: err.message });
+      }
     }
     if (brand.networks.includes("facebook")) {
       await post("facebook", facebookCarouselBody(mediaUrls, caption, publishAt));

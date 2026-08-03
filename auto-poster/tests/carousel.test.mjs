@@ -911,3 +911,205 @@ test("the writer is told not to write the footer itself", () => {
     );
   }
 });
+
+// ─── Post-publish verification ──────────────────────────────────────────────
+
+import {
+  verdictFor, isTerminal, summariseProviders, verifyDistribution,
+  applyVerification, verifyAfterSettling, recheckPending,
+} from "../src/carousel-verify.js";
+
+/** The exact provider block Metricool recorded for the 2026-08-03 TikTok post. */
+const TIKTOK_ERROR_PROVIDER = {
+  network: "tiktok",
+  status: "ERROR",
+  detailedStatus: "The content format of the Tiktok photo is incorrect. The 'image/png' type is not allowed, use 'image/jpeg' or 'image/webp' instead.",
+};
+
+const PUBLISHED_PROVIDER = {
+  network: "linkedin",
+  status: "PUBLISHED",
+  detailedStatus: "Published",
+  publicUrl: "https://linkedin.com/feed/update/urn:li:ugcPost:749",
+};
+
+test("verdictFor distinguishes published, failed and pending", () => {
+  assert.equal(verdictFor([PUBLISHED_PROVIDER]), "published");
+  assert.equal(verdictFor([TIKTOK_ERROR_PROVIDER]), "failed");
+  assert.equal(verdictFor([{ network: "tiktok", status: "PENDING" }]), "pending");
+  assert.equal(verdictFor([PUBLISHED_PROVIDER, TIKTOK_ERROR_PROVIDER]), "failed", "one failure fails the post");
+  assert.equal(verdictFor([]), "unknown");
+});
+
+test("isTerminal knows which states will not change", () => {
+  assert.equal(isTerminal("PUBLISHED"), true);
+  assert.equal(isTerminal("ERROR"), true);
+  assert.equal(isTerminal("PENDING"), false);
+});
+
+test("an ERROR provider is reported as failed, not accepted", async () => {
+  // The regression this whole change exists for: the scheduler returned 200 and
+  // the run logged ok:true, while Metricool had recorded ERROR.
+  const warnings = [];
+  const records = await verifyDistribution(
+    [{ label: "lifestyledesignrealtytexas", blogId: 1, network: "tiktok", postId: 357434895, ok: true }],
+    { verify: async () => ({ providers: [TIKTOK_ERROR_PROVIDER] }), warn: (m) => warnings.push(m) }
+  );
+
+  assert.equal(records.length, 1);
+  assert.equal(records[0].verdict, "failed");
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /did NOT publish/);
+  assert.match(warnings[0], /image\/png' type is not allowed/, "the provider's own reason must reach the warning");
+});
+
+test("verification skips entries with no postId to check", async () => {
+  let calls = 0;
+  const records = await verifyDistribution(
+    [
+      { label: "main", network: "instagram", ok: true, skipped: "deliverToOwner" },
+      { label: "main", network: "tiktok", ok: false, error: "upload failed" },
+      { label: "main", network: "linkedin", ok: true, postId: "unknown" },
+    ],
+    { verify: async () => { calls++; return { providers: [] }; }, warn: () => {} }
+  );
+  assert.equal(calls, 0, "nothing here has a real postId");
+  assert.equal(records.length, 0);
+});
+
+test("a verify call that throws is recorded, not swallowed", async () => {
+  const records = await verifyDistribution(
+    [{ label: "b", blogId: 1, network: "tiktok", postId: 123 }],
+    { verify: async () => { throw new Error("network down"); }, warn: () => {} }
+  );
+  assert.equal(records[0].verdict, "unknown");
+  assert.equal(records[0].error, "network down");
+});
+
+test("applyVerification records verified separately from ok", () => {
+  const entry = {
+    date: "2026-08-03",
+    distribution: [
+      { label: "main", network: "tiktok", ok: true, postId: 357434895 },
+      { label: "main", network: "linkedin", ok: true, postId: 357434900 },
+      { label: "main", network: "instagram", ok: true, skipped: "deliverToOwner" },
+    ],
+  };
+  const updated = applyVerification(entry, [
+    { postId: 357434895, verdict: "failed", providers: summariseProviders([TIKTOK_ERROR_PROVIDER]), checkedAt: "t" },
+    { postId: 357434900, verdict: "published", providers: summariseProviders([PUBLISHED_PROVIDER]), checkedAt: "t" },
+  ]);
+
+  const tiktok = updated.distribution.find((d) => d.network === "tiktok");
+  assert.equal(tiktok.ok, true, "ok still means accepted, and it was");
+  assert.equal(tiktok.verified, false, "but verified is the stronger claim and it is false");
+  assert.equal(tiktok.verdict, "failed");
+  assert.match(tiktok.failureReason, /image\/png/);
+
+  const linkedin = updated.distribution.find((d) => d.network === "linkedin");
+  assert.equal(linkedin.verified, true);
+  assert.ok(linkedin.publicUrl.startsWith("https://linkedin.com/"));
+
+  assert.equal(updated.verification.anyFailed, true);
+  assert.equal(updated.verification.pendingRecheck, false);
+});
+
+test("a still-pending post flags itself for the next run", () => {
+  const updated = applyVerification(
+    { distribution: [{ label: "b", network: "tiktok", ok: true, postId: 1 }] },
+    [{ postId: 1, verdict: "pending", providers: [{ network: "tiktok", status: "PENDING" }], checkedAt: "t" }]
+  );
+  assert.equal(updated.verification.pendingRecheck, true);
+  assert.equal(updated.distribution[0].verified, false);
+});
+
+test("applyVerification leaves untouched entries alone", () => {
+  const entry = { distribution: [{ label: "b", network: "instagram", ok: true, skipped: "deliverToOwner" }] };
+  const updated = applyVerification(entry, []);
+  assert.deepEqual(updated.distribution[0], entry.distribution[0]);
+});
+
+test("verifyAfterSettling waits before checking, and not at all when there is nothing to check", async () => {
+  let slept = 0;
+  const records = await verifyAfterSettling(
+    [{ label: "b", blogId: 1, network: "tiktok", postId: 5 }],
+    {
+      waitMs: 1234,
+      sleepFn: async (ms) => { slept = ms; },
+      verify: async () => ({ providers: [PUBLISHED_PROVIDER] }),
+      warn: () => {},
+    }
+  );
+  assert.equal(slept, 1234);
+  assert.equal(records[0].verdict, "published");
+
+  slept = 0;
+  const none = await verifyAfterSettling([{ label: "b", network: "ig", skipped: "deliverToOwner" }], {
+    sleepFn: async (ms) => { slept = ms; },
+  });
+  assert.equal(slept, 0, "must not burn the wait when nothing is verifiable");
+  assert.deepEqual(none, []);
+});
+
+test("the next run re-checks posts left pending", async () => {
+  const log = {
+    posts: [{
+      date: "2026-08-03",
+      distribution: [{ label: "b", blogId: 1, network: "tiktok", ok: true, postId: 77, verdict: "pending" }],
+      verification: { pendingRecheck: true },
+    }],
+  };
+  const { log: updated, rechecked } = await recheckPending(log, {
+    verify: async () => ({ providers: [TIKTOK_ERROR_PROVIDER] }),
+    warn: () => {},
+  });
+  assert.equal(rechecked, 1);
+  assert.equal(updated.posts[0].distribution[0].verdict, "failed");
+  assert.equal(updated.posts[0].verification.anyFailed, true);
+});
+
+test("re-check does nothing when everything already settled", async () => {
+  const log = {
+    posts: [{
+      date: "2026-08-03",
+      distribution: [{ label: "b", network: "tiktok", ok: true, postId: 77, verdict: "published" }],
+      verification: { pendingRecheck: false, anyFailed: false },
+    }],
+  };
+  let calls = 0;
+  const { rechecked } = await recheckPending(log, { verify: async () => { calls++; return { providers: [] }; } });
+  assert.equal(calls, 0);
+  assert.equal(rechecked, 0);
+});
+
+// ─── TikTok image format ────────────────────────────────────────────────────
+
+test("the log records postId so a run can be checked afterwards", () => {
+  const entry = buildEntry(
+    { date: "2026-08-03", pillar: "p", topic: "t", hook: "h", keyword: "MATH", scores: {}, leaksStripped: [] },
+    {
+      accent: "#C8AA6A", slideCount: 8, delivered: true,
+      distribution: [{ label: "main", blogId: 4807109, network: "tiktok", ok: true, postId: 357434895 }],
+    }
+  );
+  // Without this the failure was invisible: ok:true and nothing to verify against.
+  assert.equal(entry.distribution[0].postId, 357434895);
+  assert.equal(entry.distribution[0].blogId, 4807109);
+});
+
+test("TikTok slides are re-encoded as JPEG", async () => {
+  const sharp = (await import("sharp")).default;
+  const { toJpegSlides } = await import("../src/carousel-render.js");
+  const pngs = await renderSvgs(deckToSvgs(goodDeck(), "MATH", ACCENTS[0], "dm"));
+  const jpegs = await toJpegSlides(pngs.slice(0, 2));
+
+  assert.equal(jpegs.length, 2);
+  for (const j of jpegs) {
+    const meta = await sharp(j).metadata();
+    // TikTok rejects image/png outright; jpeg and webp are the allowed types.
+    assert.equal(meta.format, "jpeg");
+    assert.equal(meta.width, WIDTH);
+    assert.equal(meta.height, HEIGHT);
+    assert.equal(meta.chromaSubsampling, "4:4:4", "coloured 3px rules smear at 4:2:0");
+  }
+});
