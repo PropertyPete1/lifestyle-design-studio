@@ -1113,3 +1113,46 @@ test("TikTok slides are re-encoded as JPEG", async () => {
     assert.equal(meta.chromaSubsampling, "4:4:4", "coloured 3px rules smear at 4:2:0");
   }
 });
+
+test("AWAITING_CONFIRMATION is treated as pending, never as a failure", () => {
+  // Measured live: a TikTok photo post sat in this state for ~60s and then
+  // published. Treating it as failed would raise a false alarm every run.
+  assert.equal(verdictFor([{ network: "tiktok", status: "AWAITING_CONFIRMATION", detailedStatus: "Published:766989" }]), "pending");
+  assert.equal(isTerminal("AWAITING_CONFIRMATION"), false);
+});
+
+test("verification polls again while posts are still settling", async () => {
+  const sleeps = [];
+  let call = 0;
+  const records = await verifyAfterSettling(
+    [{ label: "b", blogId: 1, network: "tiktok", postId: 9 }],
+    {
+      waitMs: 100, pollIntervalMs: 50, maxPolls: 3,
+      sleepFn: async (ms) => { sleeps.push(ms); },
+      warn: () => {},
+      verify: async () => {
+        call++;
+        // PENDING, then AWAITING_CONFIRMATION, then PUBLISHED — the real sequence.
+        if (call === 1) return { providers: [{ network: "tiktok", status: "PENDING" }] };
+        if (call === 2) return { providers: [{ network: "tiktok", status: "AWAITING_CONFIRMATION" }] };
+        return { providers: [{ network: "tiktok", status: "PUBLISHED", publicUrl: "https://tiktok.com/x" }] };
+      },
+    }
+  );
+  assert.equal(records[0].verdict, "published", "must keep polling until it settles");
+  assert.deepEqual(sleeps, [100, 50, 50]);
+});
+
+test("polling gives up and leaves the post pending for the next run", async () => {
+  const records = await verifyAfterSettling(
+    [{ label: "b", blogId: 1, network: "tiktok", postId: 9 }],
+    {
+      waitMs: 1, pollIntervalMs: 1, maxPolls: 2,
+      sleepFn: async () => {},
+      warn: () => {},
+      verify: async () => ({ providers: [{ network: "tiktok", status: "PENDING" }] }),
+    }
+  );
+  assert.equal(records[0].verdict, "pending");
+  assert.equal(applyVerification({ distribution: [{ network: "tiktok", postId: 9 }] }, records).verification.pendingRecheck, true);
+});

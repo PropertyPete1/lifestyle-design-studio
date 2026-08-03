@@ -16,9 +16,14 @@
  *   - This round publishes PUBLIC_TO_EVERYONE because that is the setting the
  *     daily job uses and the one whose behaviour is in question. The post is
  *     visible for the couple of minutes between publishing and deletion.
- *   - It is deleted in a finally block whatever happens, and the script re-reads
- *     the id afterwards to confirm it is gone.
  *   - The token is never printed.
+ *
+ * KNOWN LIMITATION, learned the hard way on 2026-08-03: deleting the Metricool
+ * scheduler entry does NOT retract a post the network has already published.
+ * The cleanup below removes the scheduler record and reports verified_gone, but
+ * a TikTok post that reached PUBLISHED stays live on the account and has to be
+ * deleted in the TikTok app by hand. Anyone re-running this must expect to do
+ * that, or keep privacyOption on SELF_ONLY and accept a slower signal.
  */
 
 import sharp from "sharp";
@@ -85,6 +90,8 @@ function chicagoAt(offsetMs) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const created = [];
+/** ids that reached PUBLISHED — deleting the scheduler entry will not retract these. */
+const published = new Map();
 
 async function schedule(label, mediaUrls, publishAt) {
   const body = {
@@ -117,6 +124,7 @@ async function pollStatus(id, label, maxMs = 360_000) {
     const status = String(p?.status || "?").toUpperCase();
     if (["PUBLISHED", "ERROR", "FAILED", "REJECTED"].includes(status)) {
       console.log(`  [${label}] TERMINAL after ${Math.round((Date.now() - started) / 1000)}s`);
+      if (status === "PUBLISHED") published.set(id, p.publicUrl || "(no url reported)");
       return p;
     }
     console.log(`  [${label}] ${status}... (${Math.round((Date.now() - started) / 1000)}s)`);
@@ -174,8 +182,11 @@ async function main() {
       const del = await api(`/v2/scheduler/posts/${id}?${qs}`, { method: "DELETE" });
       const check = await api(`/v2/scheduler/posts/${id}?${qs}`);
       const gone = check.status === 404 || check.status === 400 || !check.json?.data;
-      console.log(`  [${label}] id=${id}: delete=${del.status} verified_gone=${gone}`);
-      if (!gone) console.log(`  ::warning::[${label}] post ${id} may still exist — check the TikTok account`);
+      console.log(`  [${label}] scheduler entry id=${id}: delete=${del.status} verified_gone=${gone}`);
+      if (!gone) console.log(`  ::warning::[${label}] scheduler entry ${id} may still exist`);
+      if (published.has(id)) {
+        console.log(`  ::warning::[${label}] post ${id} had already PUBLISHED — the live post is NOT removed by this delete and must be deleted in the TikTok app: ${published.get(id)}`);
+      }
     }
   }
 }

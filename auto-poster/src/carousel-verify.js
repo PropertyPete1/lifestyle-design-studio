@@ -12,6 +12,10 @@
  *
  * A provider that failed logs an Actions ::warning:: carrying the reason
  * Metricool recorded, so the cause is in the run summary rather than buried.
+ *
+ * Note on states: PENDING and AWAITING_CONFIRMATION are both intermediate.
+ * AWAITING_CONFIRMATION looks alarming but was measured resolving to PUBLISHED
+ * ~60s later, so it must not be treated as a failure.
  */
 
 import { verifyPostStatus } from "./metricool.js";
@@ -109,17 +113,48 @@ function defaultWarn(message) {
 }
 
 /**
- * Wait until the scheduled publish time has passed, plus a settling margin,
- * then verify. Capped so a run cannot hang on a stuck network.
+ * Wait for the scheduled posts to settle, then verify — polling, because
+ * publishing is not instant and not uniform.
+ *
+ * Timings come from a live measurement: a TikTok photo post scheduled 120s out
+ * sat at PENDING, moved to AWAITING_CONFIRMATION at ~143s, and only reached
+ * PUBLISHED at ~204s past its scheduled time. AWAITING_CONFIRMATION is an
+ * intermediate state, not a terminal one, so a single early check would record
+ * a healthy post as pending and defer it a whole day for no reason.
+ *
+ * Anything still unsettled when the attempts run out is left pending for the
+ * next run to sweep.
  */
-export async function verifyAfterSettling(entries, { waitMs = 240_000, sleepFn = sleep, ...opts } = {}) {
+export async function verifyAfterSettling(entries, {
+  waitMs = 180_000,
+  pollIntervalMs = 90_000,
+  maxPolls = 3,
+  sleepFn = sleep,
+  ...opts
+} = {}) {
   if (!entries?.some((e) => e.postId && e.postId !== "unknown" && !e.skipped)) {
     console.log("[Verify] nothing to verify");
     return [];
   }
+
   console.log(`[Verify] waiting ${Math.round(waitMs / 1000)}s for the scheduled posts to publish...`);
   await sleepFn(waitMs);
-  return verifyDistribution(entries, opts);
+
+  let records = await verifyDistribution(entries, opts);
+  for (let poll = 1; poll < maxPolls; poll++) {
+    const unsettled = records.filter((r) => r.verdict === "pending");
+    if (unsettled.length === 0) break;
+    console.log(`[Verify] ${unsettled.length} still unsettled — re-checking in ${Math.round(pollIntervalMs / 1000)}s`);
+    await sleepFn(pollIntervalMs);
+
+    const retried = await verifyDistribution(
+      entries.filter((e) => unsettled.some((u) => String(u.postId) === String(e.postId))),
+      opts
+    );
+    const byId = new Map(retried.map((r) => [String(r.postId), r]));
+    records = records.map((r) => byId.get(String(r.postId)) || r);
+  }
+  return records;
 }
 
 /**
