@@ -1,0 +1,32 @@
+name: Diagnose
+
+# Read-only investigation, branch-scoped. Never lands on main: no
+# workflow_dispatch, no write permissions, and the push trigger is limited to
+# the fix/** and feat/** branches this kind of work happens on.
+on:
+  push:
+    branches:
+      - 'fix/**'
+      - 'feat/**'
+    paths:
+      - "auto-poster/scripts/diagnose-tiktok.mjs"
+      - ".github/workflows/diagnose.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Diagnose the TikTok post
+        working-directory: auto-poster
+        env:
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+        run: node scripts/diagnose-tiktok.mjs
