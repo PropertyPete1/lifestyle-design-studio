@@ -1,73 +1,71 @@
 #!/usr/bin/env node
 /**
- * diagnose-tiktok.mjs — why did 2026-08-03's TikTok carousel never appear?
+ * diagnose-tiktok.mjs — how do TikTok posts actually resolve on this account?
  *
- * The run recorded ok:true because the scheduler accepted the post. Acceptance
- * is not publication. This asks Metricool what actually happened to it, and
- * dumps the stored object so the TikTok body can be compared against the
- * Instagram one from the same run, which did publish.
+ * The JPEG carousel test reached AWAITING_CONFIRMATION rather than PUBLISHED.
+ * The question that decides the fix: is that photo-specific, or does every
+ * TikTok post from this account go through it? The property reels have been
+ * publishing to TikTok for months, so they are the control.
  *
- * READ ONLY. Creates nothing, deletes nothing.
+ * READ ONLY.
  */
 
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;
 const USER_ID = process.env.METRICOOL_USER_ID;
 const BLOG_ID = process.env.METRICOOL_BLOG_ID;
+const redact = (s) => String(s ?? "").split(TOKEN).join("<TOKEN>").split(USER_ID).join("<USER>").split(String(BLOG_ID)).join("<BLOG>");
 
-const redact = (s) => String(s ?? "")
-  .split(TOKEN).join("<TOKEN>")
-  .split(USER_ID).join("<USER>")
-  .split(String(BLOG_ID)).join("<BLOG>");
-
-async function getPost(id, blogId = BLOG_ID) {
-  const res = await fetch(`${BASE}/v2/scheduler/posts/${id}?blogId=${blogId}&userId=${USER_ID}`, {
-    headers: { "Content-Type": "application/json", "X-Mc-Auth": TOKEN },
-  });
+async function api(path) {
+  const res = await fetch(`${BASE}${path}`, { headers: { "Content-Type": "application/json", "X-Mc-Auth": TOKEN } });
   const text = await res.text();
-  let json = null;
-  try { json = JSON.parse(text); } catch {}
-  return { status: res.status, json, text };
+  try { return { status: res.status, json: JSON.parse(text) }; } catch { return { status: res.status, text }; }
 }
 
-function summarise(label, data) {
-  if (!data) return console.log(`\n--- ${label}: NO DATA ---`);
-  console.log(`\n--- ${label} ---`);
-  console.log(`  providers:`);
-  for (const p of data.providers || []) {
-    console.log(`    network=${p.network} status=${p.status} detailedStatus=${JSON.stringify(p.detailedStatus)}`);
-    for (const k of Object.keys(p)) {
-      if (!["network", "status", "detailedStatus"].includes(k)) {
-        console.log(`      ${k}: ${redact(JSON.stringify(p[k])).slice(0, 300)}`);
-      }
-    }
-  }
-  console.log(`  media count: ${(data.media || []).length}`);
-  console.log(`  tiktokData:    ${redact(JSON.stringify(data.tiktokData))}`);
-  console.log(`  instagramData: ${redact(JSON.stringify(data.instagramData))}`);
-  console.log(`  publicationDate: ${redact(JSON.stringify(data.publicationDate))}`);
-  for (const k of ["status", "detailedStatus", "errors", "validationErrors", "autoPublish", "draft", "hasNotes"]) {
-    if (data[k] !== undefined) console.log(`  ${k}: ${redact(JSON.stringify(data[k])).slice(0, 400)}`);
-  }
-}
+const fmt = (d) => d.toISOString().slice(0, 19);
 
 async function main() {
-  // From the 2026-08-03 run log.
-  const TIKTOK_POST = 357434895;   // never appeared
-  const LINKEDIN_POST = 357434900; // same brand, same run, published fine
+  const from = fmt(new Date(Date.now() - 120 * 86400_000));
+  const to = fmt(new Date(Date.now() + 7 * 86400_000));
+  const res = await api(`/v2/scheduler/posts?blogId=${BLOG_ID}&userId=${USER_ID}&start=${from}&end=${to}`);
+  const posts = res.json?.data || [];
+  console.log(`Scanned ${posts.length} posts on the main brand over 120 days\n`);
 
-  console.log("=== TIKTOK POST (did not appear) ===");
-  const tt = await getPost(TIKTOK_POST);
-  console.log(`HTTP ${tt.status}`);
-  summarise(`tiktok ${TIKTOK_POST}`, tt.json?.data);
+  const tiktok = [];
+  for (const p of posts) {
+    for (const pr of p.providers || []) {
+      if (pr.network !== "tiktok") continue;
+      tiktok.push({
+        id: p.id,
+        date: p.publicationDate?.dateTime,
+        status: pr.status,
+        detail: pr.detailedStatus,
+        mediaCount: (p.media || []).length,
+        isPhoto: (p.media || []).some((m) => /\.(png|jpe?g|webp)(\?|$)/i.test(m)),
+        isVideo: (p.media || []).some((m) => /\.(mp4|mov)(\?|$)/i.test(m)),
+      });
+    }
+  }
 
-  console.log("\n\n=== CONTROL: LINKEDIN POST, SAME BRAND AND RUN (published) ===");
-  const li = await getPost(LINKEDIN_POST);
-  console.log(`HTTP ${li.status}`);
-  summarise(`linkedin ${LINKEDIN_POST}`, li.json?.data);
+  tiktok.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  console.log(`Found ${tiktok.length} TikTok posts:\n`);
+  console.log("date                 kind    media  status                  detail");
+  for (const t of tiktok) {
+    const kind = t.isVideo ? "VIDEO" : t.isPhoto ? "PHOTO" : "?";
+    console.log(
+      `${String(t.date).padEnd(20)} ${kind.padEnd(7)} ${String(t.mediaCount).padStart(3)}    ` +
+      `${String(t.status).padEnd(23)} ${redact(String(t.detail || "")).slice(0, 70)}`
+    );
+  }
 
-  console.log("\n\n=== FULL RAW TIKTOK OBJECT ===");
-  console.log(redact(JSON.stringify(tt.json?.data, null, 2)));
+  const tally = {};
+  for (const t of tiktok) {
+    const kind = t.isVideo ? "VIDEO" : "PHOTO";
+    tally[kind] = tally[kind] || {};
+    tally[kind][t.status] = (tally[kind][t.status] || 0) + 1;
+  }
+  console.log(`\n=== status by media kind ===`);
+  console.log(JSON.stringify(tally, null, 2));
 }
 
 main().catch((e) => { console.error(redact(e.stack || e.message)); process.exit(1); });
