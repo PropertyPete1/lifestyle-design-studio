@@ -2,18 +2,22 @@
 /**
  * verify-tiktok-fix.mjs — prove the PNG/JPEG diagnosis end to end.
  *
- * Publishes TWO TikTok posts under identical conditions, one with PNG slides
- * and one with JPEG, and reports what Metricool records for each. If the
- * diagnosis is right the PNG one errors with the format complaint and the JPEG
- * one publishes. Both are deleted afterwards, and the deletions are verified.
+ * Round 2. Round 1 proved PNG errors and JPEG clears the format gate, but ran
+ * SELF_ONLY, and the JPEG post stopped at AWAITING_CONFIRMATION. That state is
+ * not photo-specific (a video hit it once in 111), so the open question is
+ * whether SELF_ONLY caused it. This repeats the JPEG post with the production
+ * privacy setting, PUBLIC_TO_EVERYONE, to remove that variable.
+ *
+ * The post is deleted as soon as it reaches a terminal status.
  *
  * SAFETY:
  *   - TikTok is connected on the MAIN brand only; no satellite has it. So this
  *     necessarily runs against the main account.
- *   - Both posts use privacyOption SELF_ONLY, so they are visible to the account
- *     owner and to nobody else. Nothing public is created at any point.
- *   - Both are deleted in a finally block whatever happens, and the script
- *     re-reads each id afterwards to confirm it is gone.
+ *   - This round publishes PUBLIC_TO_EVERYONE because that is the setting the
+ *     daily job uses and the one whose behaviour is in question. The post is
+ *     visible for the couple of minutes between publishing and deletion.
+ *   - It is deleted in a finally block whatever happens, and the script re-reads
+ *     the id afterwards to confirm it is gone.
  *   - The token is never printed.
  */
 
@@ -91,8 +95,8 @@ async function schedule(label, mediaUrls, publishAt) {
     autoPublish: true,
     shortener: false,
     draft: false,
-    // SELF_ONLY: publishes to the account but is visible only to its owner.
-    tiktokData: { privacyOption: "SELF_ONLY", autoPublish: true, photoCoverIndex: 0 },
+    // Production setting — the one whose behaviour we need to observe.
+    tiktokData: { privacyOption: "PUBLIC_TO_EVERYONE", autoPublish: true, photoCoverIndex: 0 },
   };
   const res = await api(`/v2/scheduler/posts?${qs}`, { method: "POST", body: JSON.stringify(body) });
   const id = res.json?.data?.id || res.json?.id;
@@ -132,7 +136,7 @@ function report(label, provider) {
 async function main() {
   const results = {};
   try {
-    console.log("=== Rendering two identical slides, PNG and JPEG ===");
+    console.log("=== Rendering JPEG slides ===");
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350">
       <rect width="1080" height="1350" fill="#000000"/>
       <text x="96" y="640" font-family="Georgia, 'DejaVu Serif', serif" font-size="72" font-weight="bold" fill="#F6F5F1">Format test</text>
@@ -140,32 +144,28 @@ async function main() {
     </svg>`;
     const png = await sharp(Buffer.from(svg)).png().toBuffer();
     const jpeg = await sharp(png).jpeg({ quality: 95, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer();
-    console.log(`  png ${(png.length / 1024).toFixed(0)}KB, jpeg ${(jpeg.length / 1024).toFixed(0)}KB`);
+    console.log(`  jpeg ${(jpeg.length / 1024).toFixed(0)}KB`);
 
-    const pngUrls = [await uploadImage(png, "image/png"), await uploadImage(png, "image/png")];
     const jpegUrls = [await uploadImage(jpeg, "image/jpeg"), await uploadImage(jpeg, "image/jpeg")];
-    console.log("  uploaded both sets");
+    console.log("  uploaded JPEG set");
 
     const at = chicagoAt(120_000);
-    console.log(`\n=== Scheduling both for ${at} (SELF_ONLY) ===`);
-    const pngId = await schedule("PNG-control", pngUrls, at);
-    const jpegId = await schedule("JPEG-fix", jpegUrls, at);
+    console.log(`\n=== Scheduling JPEG photo post for ${at} (PUBLIC_TO_EVERYONE) ===`);
+    const jpegId = await schedule("JPEG-public", jpegUrls, at);
 
     console.log("\n=== Polling for terminal status ===");
-    const pngProvider = await pollStatus(pngId, "PNG-control");
-    const jpegProvider = await pollStatus(jpegId, "JPEG-fix");
+    const jpegProvider = await pollStatus(jpegId, "JPEG-public", 480_000);
 
     console.log("\n=== RESULT ===");
-    report("PNG-control", pngProvider);
-    report("JPEG-fix", jpegProvider);
-
-    results.png = String(pngProvider?.status || "").toUpperCase();
+    report("JPEG-public", jpegProvider);
     results.jpeg = String(jpegProvider?.status || "").toUpperCase();
 
-    const proved = results.png !== "PUBLISHED" && results.jpeg === "PUBLISHED";
-    console.log(`\nVERDICT: ${proved
-      ? "CONFIRMED — PNG is rejected, JPEG publishes. The fix is correct."
-      : `INCONCLUSIVE — png=${results.png} jpeg=${results.jpeg}`}`);
+    console.log(`\nVERDICT: ${
+      results.jpeg === "PUBLISHED"
+        ? "TikTok photo carousels DO publish with JPEG. Keep the photo path."
+        : results.jpeg === "AWAITING_CONFIRMATION"
+          ? "JPEG clears the format gate but still needs in-app confirmation, so photo posts cannot publish unattended. Switch TikTok to the slide video."
+          : `UNEXPECTED — ${results.jpeg}`}`);
   } catch (err) {
     console.error(`ERROR: ${redact(err.stack || err.message)}`);
   } finally {
