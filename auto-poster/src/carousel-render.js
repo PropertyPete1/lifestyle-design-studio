@@ -402,6 +402,25 @@ export async function buildPdf(pngBuffers, title = "Carousel") {
   return Buffer.from(await pdf.save());
 }
 
+/**
+ * Re-encode slides as JPEG for TikTok.
+ *
+ * TikTok rejects PNG outright: "The 'image/png' type is not allowed, use
+ * 'image/jpeg' or 'image/webp' instead." Every other network takes the PNGs, so
+ * only TikTok gets converted — these slides are large text on flat black, which
+ * is exactly where JPEG ringing shows, so the rest keep the lossless original.
+ *
+ * quality 95 with 4:4:4 chroma keeps the gold accent rules and glyph edges
+ * clean; the default 4:2:0 subsampling smears coloured 3px rules noticeably.
+ */
+export async function toJpegSlides(pngBuffers) {
+  const out = [];
+  for (const buf of pngBuffers) {
+    out.push(await sharp(buf).jpeg({ quality: 95, chromaSubsampling: "4:4:4", mozjpeg: true }).toBuffer());
+  }
+  return out;
+}
+
 /** True when a PNG has more than one distinct colour — i.e. it isn't blank. */
 export async function isNonBlank(pngBuffer) {
   const stats = await sharp(pngBuffer).stats();
