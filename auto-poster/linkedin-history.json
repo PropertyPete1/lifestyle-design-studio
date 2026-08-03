@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "leadership_culture",
-      "body": "One of my agents closed a deal yesterday where the appraisal came in fifteen thousand short. The buyer's lender was ready to walk. Most agents panic or blame the lender. She called me first. We spent an hour on the phone mapping out every option. Renegotiation. Appeal strategy. Repair requests. By the time we hung up she knew exactly what to do. She didn't have to figure it out alone.\n\nThat's what I mean by leadership. It's not motivational speeches. It's being the person agents call when things go sideways because they know you've already solved that problem three times before and you'll solve it with them.\n\nWhen was the last time your broker picked up the phone?",
-      "format": "story",
-      "ending": "question",
-      "date": "2026-07-27"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We're running overflow right now on buyer and lease leads. New construction in San Antonio and Austin, plus out-of-state relocations. They're real opportunities with real people actively looking or actively moving.\n\n1. These leads aren't ready to close today. They need vetting and nurturing. Most agents see that and walk away. If you're built for pipeline work and converting relationships over time, this is yours.\n\n2. We're not overselling the timeline. You're investing in these relationships now so they close later. That takes patience and a different skill set than agents chasing next month's commissions.\n\n3. This only works if you know how to stay in touch, answer questions, and be the expert when they're ready to move. Speed doesn't matter here. Consistency and follow-up do.\n\nIf this sounds like something you'd take on, send me a DM.",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "dm_cta",
       "date": "2026-07-25"
+    },
+    {
+      "topic": "team_wins",
+      "body": "Our team just closed back-to-back deals that looked impossible three weeks ago. Multiple offers fell through, financing issues, appraisal gaps. Every one of them. We solved them together. That's the momentum we've built here. When you're part of a team that doesn't quit, deals close.",
+      "format": "short_punchy",
+      "ending": "dm_cta",
+      "date": "2026-08-03"
     }
   ]
 }

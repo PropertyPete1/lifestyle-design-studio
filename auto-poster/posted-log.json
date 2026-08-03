@@ -2424,6 +2424,50 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1nQzmg1fVMvHHda5i1Z_wJYOFG2YbSo9R/view"
+    },
+    {
+      "driveFileId": "1od22Ox66HxLIVLX24TFx-CcTD7-TUzF9",
+      "fileName": "BE03F3D0-65D7-40B1-82BB-8B3A39E6B0A3.mp4",
+      "city": "san_antonio",
+      "caption": "this is what new construction is supposed to feel like\n\nnew construction like this moves fast. builder incentives are live right now.\n\n✨ everyday living hits\nopen floor plan that actually flows. natur",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-03T19:46:27.609Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "I am just so excited to show you this house.",
+      "content_hash": "fd3f1100c0ffffff:fffff7f3f0f0f200:0000ffcfcfcf089c:fffffebf173eb09f:070dff33332372ff",
+      "captions_burned": false,
+      "freshness": "size_sanity_failed",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1sZ6cVNw1tzoSfCjeIq25sd71toacVWfj/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "team_wins",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-03T14:48:01"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-03T15:18:01"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-03T15:48:01"
+        }
+      ],
+      "timestamp": "2026-08-03T19:46:33.269Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
