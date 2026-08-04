@@ -187,23 +187,32 @@ async function main() {
     return;
   }
 
-  // 2. Not the enum — a contract mismatch. Walk the ladder.
-  console.log("\nNot the city enum. The city side of the migration is done.");
-  console.log("This is a field-contract mismatch; converging on the shape it wants.\n");
+  // 2. The first attempt died at VALIDATION (missing slideImages) before the
+  // insert ran, so it could not tell us anything about the city column. Use the
+  // shape that passes validation, then vary city to reach the enum.
+  console.log("\nThe production shape fails validation before the insert runs, so it");
+  console.log("says nothing about the city column. Using a shape that validates, then");
+  console.log("varying city to find what the column accepts.\n");
 
-  let matched = null;
-  for (const [label, shape] of SHAPES) {
-    const res = await send(label, buildPayload("CAROUSEL", entry, shape));
-    if (res.ok) { matched = label; break; }
+  const validShape = SHAPES[0][1];
+  const cityCandidates = ["CAROUSEL", "carousel", "Carousel", null];
+  let accepted = null;
+
+  for (const city of cityCandidates) {
+    const res = await send(`city=${JSON.stringify(city)}`, buildPayload(city, entry, validShape));
+    if (res.ok) { accepted = city; break; }
   }
 
   console.log("\n=== RESULT ===");
-  if (matched) {
-    console.log(`The webhook accepts: ${matched}`);
-    console.log("FIX IS OURS: rename the carousel payload fields in delivery.js to match.");
+  if (accepted !== null || accepted === null && false) {
+    console.log(`The webhook accepts city=${JSON.stringify(accepted)}.`);
+    console.log("FIX IS OURS: send that value, plus rename slides -> slideImages, pdf -> pdfUrl.");
   } else {
-    console.log("None of the candidate shapes were accepted. See the errors above —");
-    console.log("Manus needs to confirm the exact field contract the webhook expects.");
+    console.log("The city column rejects every carousel-ish value tried.");
+    console.log("FIX IS MANUS'S: the city column was NOT altered. slideImages, pdfLink,");
+    console.log("keyword, closeType and type all exist and work — city is the last step.");
+    console.log("Either add a carousel value to the city enum, or make city nullable now");
+    console.log("that `type` carries the discriminator.");
   }
 }
 
