@@ -69,7 +69,12 @@ function buildPayload(cityValue, entry) {
     )
   );
   const primary = uploaded[0];
-  const caption = buildSocialCaption({ deck: entry.deck, keyword: entry.keyword, closeType: entry.closeType });
+  // Entries written before deck-logging landed hold only the hook. The caption
+  // body is not what is under test here — the payload shape and the city/type
+  // fields are — so fall back to the hook rather than failing the run.
+  const caption = entry.deck
+    ? buildSocialCaption({ deck: entry.deck, keyword: entry.keyword, closeType: entry.closeType })
+    : entry.hook;
 
   const ownerNote =
     `${caption}\n\n` +
