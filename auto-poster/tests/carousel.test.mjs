@@ -1280,3 +1280,108 @@ test("hook clarity scores are clamped into range", async () => {
   assert.equal((await scoreHookClarity("x", async () => JSON.stringify({ clarity: -4 }))).clarity, 1);
   assert.equal((await scoreHookClarity("x", async () => JSON.stringify({}))).clarity, 1);
 });
+
+// ─── Carousel dashboard delivery ────────────────────────────────────────────
+
+/**
+ * deliverCarouselToOwner talks to Drive and two notification channels, so these
+ * exercise the payload and channel-reporting logic through a stubbed module
+ * rather than the network.
+ */
+async function loadDeliveryWithStubs({ dashboardOk, emailOk }) {
+  const calls = { payloads: [], warnings: [] };
+  const realFetch = globalThis.fetch;
+  const realLog = console.log;
+  // notifyDashboard bails before fetching if these are unset, so the webhook
+  // would never be exercised at all.
+  const realEnv = { url: process.env.DASHBOARD_URL, secret: process.env.DASHBOARD_WEBHOOK_SECRET };
+  process.env.DASHBOARD_URL = "https://dashboard.test";
+  process.env.DASHBOARD_WEBHOOK_SECRET = "test-secret";
+
+  globalThis.fetch = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes("/api/delivery/webhook")) {
+      calls.payloads.push(JSON.parse(opts.body));
+      return dashboardOk
+        ? { ok: true, status: 200, text: async () => "ok", json: async () => ({}) }
+        : { ok: false, status: 500, text: async () => '{"cause":"Data truncated for column \'city\' at row 1"}' };
+    }
+    // Drive + Gmail: succeed blandly.
+    return {
+      ok: emailOk, status: emailOk ? 200 : 500,
+      headers: { get: () => "https://upload.example/x" },
+      text: async () => "ok",
+      json: async () => ({ id: "file1", files: [{ id: "folder1", name: "Ready to Post" }] }),
+    };
+  };
+  console.log = (...a) => { const m = a.join(" "); if (m.includes("::warning::")) calls.warnings.push(m); realLog(...a); };
+
+  return {
+    calls,
+    restore: () => {
+      globalThis.fetch = realFetch;
+      console.log = realLog;
+      if (realEnv.url === undefined) delete process.env.DASHBOARD_URL; else process.env.DASHBOARD_URL = realEnv.url;
+      if (realEnv.secret === undefined) delete process.env.DASHBOARD_WEBHOOK_SECRET; else process.env.DASHBOARD_WEBHOOK_SECRET = realEnv.secret;
+    },
+  };
+}
+
+test("the carousel payload carries a type discriminator the dashboard can key off", async () => {
+  const { writeFileSync, mkdtempSync } = await import("fs");
+  const { join } = await import("path");
+  const { tmpdir } = await import("os");
+  const { deliverCarouselToOwner } = await import("../src/delivery.js");
+
+  const dir = mkdtempSync(join(tmpdir(), "carousel-delivery-"));
+  const slide = join(dir, "slide-01.png");
+  const pdf = join(dir, "carousel.pdf");
+  writeFileSync(slide, "x");
+  writeFileSync(pdf, "y");
+
+  const { calls, restore } = await loadDeliveryWithStubs({ dashboardOk: true, emailOk: true });
+  try {
+    await deliverCarouselToOwner("token", [
+      { path: slide, mimeType: "image/png" },
+      { path: pdf, mimeType: "application/pdf" },
+    ], { caption: "c", keyword: "MATH", closeType: "dm", topic: "t", city: "CAROUSEL" });
+  } finally { restore(); }
+
+  assert.equal(calls.payloads.length, 1);
+  const payload = calls.payloads[0];
+  // A carousel is slides + a PDF, not a video — the dashboard needs to know that.
+  assert.equal(payload.type, "carousel");
+  assert.equal(payload.keyword, "MATH");
+  assert.equal(payload.closeType, "dm");
+  assert.ok(Array.isArray(payload.slides));
+  assert.ok(payload.pdf && payload.pdf.link, "the PDF must be addressable separately from the slides");
+});
+
+test("a dashboard-only failure is surfaced as a warning, not swallowed", async () => {
+  const { writeFileSync, mkdtempSync } = await import("fs");
+  const { join } = await import("path");
+  const { tmpdir } = await import("os");
+  const { deliverCarouselToOwner } = await import("../src/delivery.js");
+
+  const dir = mkdtempSync(join(tmpdir(), "carousel-delivery-warn-"));
+  const slide = join(dir, "slide-01.png");
+  writeFileSync(slide, "x");
+
+  const { calls, restore } = await loadDeliveryWithStubs({ dashboardOk: false, emailOk: true });
+  let result;
+  try {
+    result = await deliverCarouselToOwner("token", [{ path: slide, mimeType: "image/png" }], {
+      caption: "c", keyword: "MATH", closeType: "dm", topic: "t", city: "CAROUSEL",
+    });
+  } finally { restore(); }
+
+  // Before this, the email backup succeeding meant the run looked entirely
+  // healthy while the dashboard silently received nothing, every single day.
+  assert.equal(result.delivered, true);
+  assert.equal(result.dashboardOk, false);
+  assert.equal(result.emailOk, true);
+  assert.ok(
+    calls.warnings.some((w) => /dashboard webhook failed|will not appear in the dashboard/i.test(w)),
+    `expected a ::warning:: about the dashboard, got: ${JSON.stringify(calls.warnings)}`
+  );
+});

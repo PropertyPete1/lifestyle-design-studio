@@ -532,6 +532,27 @@ export async function deliverToOwner(accessToken, videoPath, city, caption, opti
 /**
  * Deliver a rendered carousel to the owner for native posting.
  *
+ * KNOWN BREAKAGE — the dashboard channel fails on every carousel run:
+ *
+ *   Data truncated for column 'city' at row 1     (params: CAROUSEL, 2026-08-03, ...)
+ *
+ * This is NOT a column-width problem. "CAROUSEL" is 8 characters and
+ * "san_antonio" — which the column stores happily — is 11. In MySQL strict mode
+ * that message is what an out-of-range ENUM value produces, so `deliveries.city`
+ * is an enum of the three cities and CAROUSEL is simply not one of them.
+ *
+ * The obvious workaround, sending an accepted city instead, is NOT safe. The
+ * webhook's statement is an upsert whose ON DUPLICATE KEY UPDATE list covers
+ * status, links, caption and timestamps but not city or date — the signature of
+ * a unique key on (city, date). Sending city="san_antonio" for today would
+ * therefore overwrite that day's real San Antonio delivery rather than add a
+ * row, losing a record silently. Not worth a dashboard tile.
+ *
+ * The real fix belongs in the dashboard (add CAROUSEL to the enum, or move to a
+ * `type` discriminator with city nullable). That repo is not reachable from
+ * here, so until it is, carousels reach the owner by email and the dashboard
+ * gap is reported loudly rather than papered over.
+ *
  * Same contract as deliverToOwner: main Instagram is never auto-published, so
  * the slides go to "Ready to Post" and the owner posts them natively — which is
  * also the only route to genuine trending audio, since the Metricool API has no
@@ -575,6 +596,17 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
     driveLink: primary.webViewLink,
     directDownloadLink: primary.directLink,
     deliveredAt: new Date().toISOString(),
+    // Forward-compatible fields for a dashboard that can tell a carousel from a
+    // video. Safe to send today: the carousel webhook already fails 100% of the
+    // time on the `city` enum, so nothing here can make it worse — and once the
+    // dashboard accepts carousels it has what it needs to render one.
+    type: "carousel",
+    slides: uploaded.slice(0, -1).map((u) => ({ fileName: u.fileName, link: u.webViewLink })),
+    pdf: uploaded.length > 1
+      ? { fileName: uploaded[uploaded.length - 1].fileName, link: uploaded[uploaded.length - 1].webViewLink }
+      : null,
+    keyword: keyword || null,
+    closeType,
   };
 
   const ch1 = await notifyDashboard(deliveryPayload);
@@ -606,9 +638,25 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
   if (ch2.ok) channels.push("email");
   console.log(`[Delivery] ✓ Carousel delivered via: ${channels.join(" + ")}`);
 
+  // One channel failing used to pass in silence because the other covered it.
+  // For carousels the dashboard channel fails EVERY run, and without this the
+  // only trace is a warn line buried in the log.
+  if (!ch1.ok) {
+    console.log(
+      `::warning::[Delivery] Carousel reached the owner by email only — the dashboard ` +
+      `webhook failed and this delivery will not appear in the dashboard. ` +
+      `Reason: ${ch1.lastError?.message?.slice(0, 300) || "unknown"}`
+    );
+  }
+  if (!ch2.ok) {
+    console.log(`::warning::[Delivery] Carousel email backup failed: ${ch2.lastError?.message?.slice(0, 300) || "unknown"}`);
+  }
+
   return {
     delivered: true,
     channels,
+    dashboardOk: Boolean(ch1.ok),
+    emailOk: Boolean(ch2.ok),
     files: uploaded.map((u) => ({ fileName: u.fileName, link: u.webViewLink })),
     driveLink: primary.webViewLink,
   };
