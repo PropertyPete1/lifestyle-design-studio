@@ -294,6 +294,43 @@ Score ANSWERABILITY. Could a reader fire back an answer in three words without r
 Score SEND-WORTHINESS. Reading the line, does a specific real person come to mind? The situation must be sharp and particular. "someone who needs to hear this" or "someone who is thinking about buying" are generic and score 3 or below. A line naming a recognisable behaviour or predicament scores well. Do NOT penalise this close for lacking a keyword or a downloadable asset — it is not supposed to have one.`,
 };
 
+/**
+ * Judge a single hook line on clarity alone.
+ *
+ * Feeding a hook to the full critic inside a stub deck does not work: the critic
+ * sees the missing slides and marks clarity down for the empty deck, which
+ * contaminates the score. This asks only about the line itself, so an archived
+ * hook can be judged on the same definition the full critic uses.
+ */
+const HOOK_CLARITY_SYSTEM = `You judge ONE line: the first slide of an Instagram carousel. Nothing else exists — do not comment on missing slides, and do not penalise the line for what is not shown to you.
+
+Score "clarity" 1 to 10: would a distracted viewer understand what this line is CLAIMING within 2 seconds, without rereading?
+
+A good hook is a CLEAR, COMPLETE CLAIM with ONE piece withheld. The reader understands exactly what is being asserted and knows precisely what question they want answered. The gap is the PAYOFF.
+
+A bad hook is ambiguous about what is even being claimed. The reader has to solve the sentence before they can care about it. The gap is the SUBJECT — a riddle, not a hook.
+
+CANONICAL FAILURE, clarity 3 or below:
+  "Transplants don't leave over the heat. Month nine does it."
+"Month nine does it" — does what? Who are transplants, and leave where? The claim cannot be recovered at a glance.
+
+CANONICAL PASS, clarity 8 or above:
+  "Most people who move to Texas don't quit over the summer heat. They quit in month nine."
+Subject named, claim complete, exactly one thing withheld.
+
+Scale: 8 means a competent professional would ship it. 6-7 workable with a nameable flaw. 4-5 the reader must work to parse it. 1-3 the claim is not recoverable at a glance.
+
+Return ONLY valid JSON: {"clarity": 0, "reason": "one sentence"}`;
+
+export async function scoreHookClarity(hook, modelCall = callModel) {
+  const raw = await modelCall(HOOK_CLARITY_SYSTEM, `Score this hook line.\n\n"${hook}"`, 400);
+  const s = parseJson(raw);
+  return {
+    clarity: Math.max(1, Math.min(10, Number(s.clarity) || 1)),
+    reason: String(s.reason || ""),
+  };
+}
+
 /** Compose the critic's system prompt for a given close type. */
 export function criticSystemFor(closeType) {
   return CRITIC_SYSTEM.replace("{{CTA_CRITERIA}}", CTA_CRITERIA[closeType]);

@@ -1258,3 +1258,25 @@ test("the log keeps the deck so a run can be re-scored later", () => {
   assert.equal(entry.deck.points.length, deck.points.length);
   assert.equal(entry.scores.clarity, 8);
 });
+
+test("a hook is judged alone, without penalty for slides it cannot see", async () => {
+  const { scoreHookClarity } = await import("../src/carousel-content.js");
+  let system = "";
+  const r = await scoreHookClarity("Some hook line.", async (sys) => {
+    system = sys;
+    return JSON.stringify({ clarity: 9, reason: "clear claim, one thing withheld" });
+  });
+  assert.equal(r.clarity, 9);
+  // The first back-test scored a perfectly clear hook at 2 because the stub deck
+  // around it was empty and the critic marked that down as unclear.
+  assert.match(system, /do not penalise the line for what is not shown to you/i);
+  assert.ok(system.includes("Transplants don't leave over the heat. Month nine does it."));
+  assert.ok(system.includes("Most people who move to Texas don't quit over the summer heat. They quit in month nine."));
+});
+
+test("hook clarity scores are clamped into range", async () => {
+  const { scoreHookClarity } = await import("../src/carousel-content.js");
+  assert.equal((await scoreHookClarity("x", async () => JSON.stringify({ clarity: 99 }))).clarity, 10);
+  assert.equal((await scoreHookClarity("x", async () => JSON.stringify({ clarity: -4 }))).clarity, 1);
+  assert.equal((await scoreHookClarity("x", async () => JSON.stringify({}))).clarity, 1);
+});
