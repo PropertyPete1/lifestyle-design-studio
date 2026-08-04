@@ -55,6 +55,43 @@ async function withRetry(label, fn, maxRetries = MAX_RETRIES) {
 }
 
 /**
+ * Drive's public thumbnail endpoint for a file.
+ *
+ * Verified serving image/png to an unauthenticated request for carousel slides.
+ * A /file/d/<id>/view link does NOT — that is an HTML viewer page.
+ */
+export function driveThumbnailUrl(fileId, width = 800) {
+  return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${width}`;
+}
+
+/**
+ * Grant link-view access to one Drive file.
+ *
+ * Only ever called on files this flow just uploaded — finished social content
+ * that is about to be posted publicly anyway. Nothing else in Drive is touched.
+ *
+ * The response is checked. It previously was not, so a failure here would have
+ * been silent and the first symptom would have been thumbnails mysteriously
+ * not rendering somewhere downstream.
+ */
+async function grantLinkViewAccess(accessToken, fileId, label = "") {
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ role: "reader", type: "anyone" }),
+  });
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    console.log(
+      `::warning::[Delivery] could not grant link-view access to ${label || fileId} ` +
+      `(${res.status}) — dashboard thumbnails will not load for it. ${err.slice(0, 200)}`
+    );
+    return false;
+  }
+  return true;
+}
+
+/**
  * Get or create the "Ready to Post" folder in Google Drive root.
  */
 async function getOrCreateFolder(accessToken) {
@@ -180,15 +217,9 @@ async function uploadToReadyFolder(accessToken, videoPath, city, mimeType = "vid
   const file = uploadResult.result;
   const fileId = file.id;
 
-  // Make file accessible via link
-  await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ role: "reader", type: "anyone" }),
-  });
+  // Readable by anyone with the link: required for the dashboard to render a
+  // thumbnail, and these are public social assets by design.
+  await grantLinkViewAccess(accessToken, fileId, fileName);
 
   const webViewLink = `https://drive.google.com/file/d/${fileId}/view`;
   const directLink = `https://drive.google.com/uc?export=download&id=${fileId}`;
@@ -579,18 +610,37 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
   const slideLinks = uploaded.map((u) => u.webViewLink);
   const primary = uploaded[0];
 
-  // The caption carries the posting instructions the owner needs, since the
-  // dashboard record is built for a single video and has no slide-list field.
-  const ownerNote =
-    `${caption}\n\n` +
-    `— Carousel: ${uploaded.length} files in Ready to Post. Post slides in order.\n` +
-    (keyword ? `— Comment keyword: ${keyword}\n` : `— Close type: ${closeType} (no comment keyword)\n`) +
-    `— Add trending audio natively when you post.\n` +
+  // Two audiences, two strings.
+  //
+  // `caption` feeds the dashboard's Copy Caption button, so it must be ONLY what
+  // gets pasted into Instagram. It used to carry the posting instructions and a
+  // numbered list of raw Drive URLs, which meant one tap of Copy Caption pasted
+  // internal notes and file links into a public post.
+  //
+  // The instructions belong with the email, which is a message to Peter rather
+  // than a clipboard. The slide URL list is dropped from both: the dashboard
+  // renders slideImages and pdfLink natively now, so it only duplicated the card.
+  const socialCaption = caption;
+
+  const postingInstructions = [
+    `Carousel: ${uploaded.length} files in Ready to Post. Post the slides in order.`,
+    keyword ? `Comment keyword: ${keyword}` : `Close type: ${closeType} (no comment keyword)`,
+    `Add trending audio natively when you post.`,
+  ].join("\n");
+
+  const emailBody =
+    `${socialCaption}\n\n` +
+    `— — —\n${postingInstructions}\n\n` +
     slideLinks.map((l, i) => `  ${i + 1}. ${l}`).join("\n");
 
   const deliveryPayload = {
     city,
-    caption: ownerNote,
+    // Clean and paste-ready. Nothing else goes in here.
+    caption: socialCaption,
+    // Separate field so the card can show the instructions somewhere other than
+    // the caption box. The webhook tolerates fields it does not know, so this
+    // needs no schema change.
+    instructions: postingInstructions,
     driveFileId: primary.fileId,
     driveFileName: primary.fileName,
     driveLink: primary.webViewLink,
@@ -605,6 +655,12 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
     // carousel without `slideImages` (non-empty array), and the deliveries table
     // has columns slideImages / pdfLink / keyword / closeType.
     slideImages: uploaded.slice(0, -1).map((u) => u.webViewLink),
+    // slideImages holds Drive VIEWER pages (/file/d/<id>/view) — HTML, which
+    // renders nothing in an <img>. These are the thumbnail endpoint itself,
+    // verified serving image/png to an unauthenticated request, so the card has
+    // something directly displayable without parsing an id out of a viewer link.
+    slideThumbnails: uploaded.slice(0, -1).map((u) => driveThumbnailUrl(u.fileId)),
+    slideFileIds: uploaded.slice(0, -1).map((u) => u.fileId),
     // pdfLink is the canonical name; the webhook also accepts pdfUrl via a
     // fallback, but there is no reason to send both.
     pdfLink: uploaded.length > 1 ? uploaded[uploaded.length - 1].webViewLink : null,
@@ -616,7 +672,7 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
   const ch1 = await notifyDashboard(deliveryPayload);
   const ch2 = await sendEmailBackup(accessToken, {
     city,
-    caption: ownerNote,
+    caption: emailBody,
     driveLink: primary.webViewLink,
     fileName: primary.fileName,
   });
@@ -625,7 +681,7 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
     console.error("[Delivery] ⚠️ BOTH notification channels failed for the carousel!");
     await writeManifestFile(accessToken, {
       city,
-      caption: ownerNote,
+      caption: emailBody,
       driveLink: primary.webViewLink,
       fileName: primary.fileName,
       fileId: primary.fileId,
