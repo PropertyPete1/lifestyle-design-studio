@@ -116,7 +116,7 @@ export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DR
 
     const token = await getAccessToken();
     const delivery = await deliverCarouselToOwner(token, files, {
-      caption, keyword: result.keyword, closeType: result.closeType, topic: result.topic, city: "CAROUSEL",
+      caption, keyword: result.keyword, closeType: result.closeType, topic: result.topic, city: "carousel",
     });
     delivered = delivery.delivered;
   } else {

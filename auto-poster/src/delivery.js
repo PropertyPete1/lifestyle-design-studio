@@ -567,7 +567,7 @@ export async function deliverToOwner(accessToken, videoPath, city, caption, opti
  * @param {object} meta  { caption, keyword, closeType, topic, city }
  */
 export async function deliverCarouselToOwner(accessToken, files, meta) {
-  const { caption, keyword, closeType = "dm", topic, city = "CAROUSEL" } = meta;
+  const { caption, keyword, closeType = "dm", topic, city = "carousel" } = meta;
   console.log(`[Delivery] Delivering carousel "${topic}" (${files.length} files) to owner...`);
 
   const uploaded = [];
@@ -601,10 +601,14 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
     // time on the `city` enum, so nothing here can make it worse — and once the
     // dashboard accepts carousels it has what it needs to render one.
     type: "carousel",
+    // Field names verified against the live webhook on 2026-08-04: it rejects a
+    // carousel without `slideImages` (non-empty array), and the deliveries table
+    // has columns slideImages / pdfLink / keyword / closeType.
+    slideImages: uploaded.slice(0, -1).map((u) => u.webViewLink),
+    // pdfLink is the canonical name; the webhook also accepts pdfUrl via a
+    // fallback, but there is no reason to send both.
+    pdfLink: uploaded.length > 1 ? uploaded[uploaded.length - 1].webViewLink : null,
     slides: uploaded.slice(0, -1).map((u) => ({ fileName: u.fileName, link: u.webViewLink })),
-    pdf: uploaded.length > 1
-      ? { fileName: uploaded[uploaded.length - 1].fileName, link: uploaded[uploaded.length - 1].webViewLink }
-      : null,
     keyword: keyword || null,
     closeType,
   };

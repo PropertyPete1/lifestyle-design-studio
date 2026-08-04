@@ -1,0 +1,34 @@
+name: Verify Dashboard
+
+# Branch-scoped, read-only permissions, no workflow_dispatch — cannot run from
+# main and cannot push. Replays the carousel delivery webhook only; it publishes
+# nothing and uploads nothing.
+on:
+  push:
+    branches:
+      - 'fix/**'
+      - 'feat/**'
+    paths:
+      - "auto-poster/scripts/replay-carousel-webhook.mjs"
+      - ".github/workflows/verify-dashboard.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Replay the carousel delivery webhook
+        working-directory: auto-poster
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: node scripts/replay-carousel-webhook.mjs
