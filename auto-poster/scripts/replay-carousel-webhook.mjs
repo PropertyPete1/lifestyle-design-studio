@@ -133,7 +133,21 @@ async function send(label, payload) {
   });
   const body = await res.text();
   console.log(`   HTTP ${res.status} ${res.ok ? "OK" : "FAILED"}`);
-  console.log(`   response: ${body.slice(0, 1500)}`);
+
+  // The `cause` sits at the END of the driver's error JSON, after a very long
+  // echoed statement. Truncating the body hides the one line that names the
+  // actual fault, so pull it out first.
+  let cause = null;
+  try { cause = JSON.parse(body)?.cause || null; } catch {}
+  if (!cause) {
+    const m = body.match(/"cause"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (m) cause = m[1];
+  }
+  if (cause) {
+    console.log(`   CAUSE: ${cause}`);
+  } else {
+    console.log(`   response (${body.length} chars): ${body.slice(0, 400)}`);
+  }
 
   const enumError = /Data truncated for column 'city'/i.test(body);
   if (enumError) {
