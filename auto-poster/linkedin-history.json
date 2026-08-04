@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We're running overflow right now on buyer and lease leads. New construction in San Antonio and Austin, plus out-of-state relocations. They're real opportunities with real people actively looking or actively moving.\n\n1. These leads aren't ready to close today. They need vetting and nurturing. Most agents see that and walk away. If you're built for pipeline work and converting relationships over time, this is yours.\n\n2. We're not overselling the timeline. You're investing in these relationships now so they close later. That takes patience and a different skill set than agents chasing next month's commissions.\n\n3. This only works if you know how to stay in touch, answer questions, and be the expert when they're ready to move. Speed doesn't matter here. Consistency and follow-up do.\n\nIf this sounds like something you'd take on, send me a DM.",
-      "format": "list",
-      "ending": "dm_cta",
-      "date": "2026-07-28"
-    },
-    {
       "topic": "mindset_motivation",
       "body": "You know what separates agents who survive hard markets from the ones who don't. It's not luck or better leads. It's the decision to keep showing up when everyone else is waiting for things to get easier.\n\nI've watched agents grind through stretches where deals took longer, commissions were smaller, and the noise about the market got louder. The ones who made it through weren't smarter. They just didn't stop. They kept prospecting. They kept following up. They kept improving their craft because they knew the market would shift again and they'd be ready. The agents who quit during the slow months always seem surprised when things pick back up and they're not in position to capitalize. Consistency beats timing every single time. You're not betting on the market getting better. You're betting on yourself. And that bet always pays off if you're patient enough to see it through.",
       "format": "bold_statement",
@@ -48,6 +41,13 @@
       "format": "short_punchy",
       "ending": "dm_cta",
       "date": "2026-08-03"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We've got more buyer and lease leads than we can actually work right now. New construction in San Antonio and Austin. Out-of-state relocations. The leads are warm. People are actively looking or actively moving. But most of them aren't ready to close today. They need vetting. They need consistent follow-up. They need someone who understands pipeline work instead of chasing the quick commission. I know most agents see that and move on. They want deals closing next month, not relationships closing next quarter. If you're different. If you know how to stay in touch, answer questions, and be the expert when someone's actually ready to move. Then you've got real work here.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "story",
+      "ending": "dm_cta",
+      "date": "2026-08-04"
     }
   ]
 }

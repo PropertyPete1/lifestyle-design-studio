@@ -2492,6 +2492,50 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1Vr9NpKoUPhywBA9JMcReVn_0Ym2Dn53L/view"
+    },
+    {
+      "driveFileId": "1qW0ybjejP5kVlCFKanPEo9rqthUiw_q0",
+      "fileName": "D89A02F7-C173-4C12-B05D-1A436E7688C4.mp4",
+      "city": "san_antonio",
+      "caption": "wait until you see what $519,920 gets you in san antonio 😮‍💨\n\nnew construction like this moves fast. builder incentives are live right now.\n\n✨ everyday living hits\nopen floor plan with natural light",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-04T19:47:38.474Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Click payment math, that $4.99, fix rate prices $520,000 with",
+      "content_hash": "0100ffc100ffefff:0000ff800070ffff:ffffffcf87ca0000:fffe7bffb30000c0:fcfbc8dcdc7c7e7e",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1WwDNRjyC9mEtuKlTRMN-7xcTw2cLqBv3/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "lead_overflow",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-04T14:49:10"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-04T15:19:10"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-04T15:49:10"
+        }
+      ],
+      "timestamp": "2026-08-04T19:47:41.290Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
