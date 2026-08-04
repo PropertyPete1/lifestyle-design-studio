@@ -2468,6 +2468,30 @@
       ],
       "timestamp": "2026-08-03T19:46:33.269Z",
       "success": true
+    },
+    {
+      "driveFileId": "1qiFyz_VeybcyfjcSIO9BK6e84eVpR_90",
+      "fileName": "C8810C03-E81E-4D3B-A930-1C1F9FA53EE4.mp4",
+      "city": "san_antonio",
+      "caption": "wait until you see what's behind that front door 😮‍💨\n\nNew construction in San Antonio starting at just $590,000. This doesn't sit around long.\n\n✨ Open floor plans with natural light flooding through",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-04T16:52:12.761Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Quick payment math prices 590,000, during a half percent down",
+      "content_hash": "feff01000131ffff:ffffffef67e70000:ffffffffbf3e3800:fefef7ffc1000000:001dfcbfbf0f0c1c",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1Vr9NpKoUPhywBA9JMcReVn_0Ym2Dn53L/view"
     }
   ],
   "lastTemplateIndex": -1
