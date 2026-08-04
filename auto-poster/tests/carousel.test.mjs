@@ -1353,8 +1353,11 @@ test("the carousel payload carries a type discriminator the dashboard can key of
   assert.equal(payload.type, "carousel");
   assert.equal(payload.keyword, "MATH");
   assert.equal(payload.closeType, "dm");
-  assert.ok(Array.isArray(payload.slides));
-  assert.ok(payload.pdf && payload.pdf.link, "the PDF must be addressable separately from the slides");
+  // slideImages is the name the live webhook requires — it 400s without it.
+  assert.ok(Array.isArray(payload.slideImages), "the webhook requires slideImages");
+  assert.ok(payload.slideImages.length > 0, "slideImages must be non-empty");
+  assert.ok(payload.slideImages.every((s) => typeof s === "string"));
+  assert.ok(payload.pdfLink, "the PDF must be addressable separately from the slides");
 });
 
 test("a dashboard-only failure is surfaced as a warning, not swallowed", async () => {
