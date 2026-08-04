@@ -59,7 +59,7 @@ function driveFile(id, name) {
 }
 
 /** Rebuild the delivery payload exactly as deliverCarouselToOwner would. */
-function buildPayload(cityValue, entry) {
+function buildPayload(cityValue, entry, shape = {}) {
   const uploaded = DRIVE_FILE_IDS.map((id, i) =>
     driveFile(
       id,
@@ -96,8 +96,33 @@ function buildPayload(cityValue, entry) {
     pdf: { fileName: uploaded[uploaded.length - 1].fileName, link: uploaded[uploaded.length - 1].webViewLink },
     keyword: entry.keyword || null,
     closeType: entry.closeType,
+    ...shape(uploaded),
   };
 }
+
+const slidesOf = (u) => u.slice(0, -1);
+const pdfOf = (u) => u[u.length - 1];
+
+/**
+ * Candidate shapes for the fields the dashboard requires. Its 400s name the
+ * missing field precisely and write no row, so walking a short ladder is a
+ * cheap way to pin the contract without guessing blind.
+ */
+const SHAPES = [
+  ["slideImages as URL strings", (u) => ({
+    slideImages: slidesOf(u).map((s) => s.webViewLink),
+    pdfUrl: pdfOf(u).webViewLink,
+  })],
+  ["slideImages as objects", (u) => ({
+    slideImages: slidesOf(u).map((s) => ({ fileName: s.fileName, url: s.webViewLink, link: s.webViewLink })),
+    pdfUrl: pdfOf(u).webViewLink,
+    pdfLink: pdfOf(u).webViewLink,
+  })],
+  ["slideImages as direct-download URLs", (u) => ({
+    slideImages: slidesOf(u).map((s) => s.directLink),
+    pdfUrl: pdfOf(u).directLink,
+  })],
+];
 
 async function send(label, payload) {
   console.log(`\n── ${label}: city=${JSON.stringify(payload.city)} type=${JSON.stringify(payload.type)}`);
@@ -131,31 +156,40 @@ async function main() {
   console.log(`  files: ${DRIVE_FILE_IDS.length} (${DRIVE_FILE_IDS.length - 1} slides + 1 PDF)`);
 
   // 1. Production shape, unchanged.
-  const first = await send("production shape", buildPayload("CAROUSEL", entry));
+  const first = await send("production shape", buildPayload("CAROUSEL", entry, () => ({})));
 
   if (first.ok) {
-    console.log("\n=== RESULT: the webhook accepted the carousel payload as production sends it. ===");
-    console.log("Nothing further needed on the poster side.");
+    console.log("\n=== RESULT: accepted exactly as production sends it. Nothing to change. ===");
     return;
   }
 
-  // 2. Only if the first created nothing — is it the value, or the case?
   if (first.enumError) {
-    console.log("\nThe production value was rejected and no row was written, so a second");
-    console.log("attempt cannot duplicate. Retrying lowercase to isolate case from absence.");
-    const second = await send("lowercase probe", buildPayload("carousel", entry));
-
+    console.log("\nStill the city enum. Retrying lowercase to isolate case from absence.");
+    const second = await send("lowercase probe", buildPayload("carousel", entry, () => ({})));
     console.log("\n=== RESULT ===");
-    if (second.ok) {
-      console.log("The enum accepts lowercase 'carousel' but not 'CAROUSEL'.");
-      console.log("FIX IS OURS: send lowercase from delivery.js / carousel-main.js. One line.");
-    } else {
-      console.log("Neither 'CAROUSEL' nor 'carousel' is accepted by the city column.");
-      console.log("FIX IS MANUS'S: the city column still needs the carousel value added");
-      console.log("(or city made nullable now that `type` carries the discriminator).");
-    }
+    console.log(second.ok
+      ? "Enum accepts lowercase 'carousel'. FIX IS OURS: send lowercase. One line."
+      : "Neither case accepted. FIX IS MANUS'S: city still needs the carousel value.");
+    return;
+  }
+
+  // 2. Not the enum — a contract mismatch. Walk the ladder.
+  console.log("\nNot the city enum. The city side of the migration is done.");
+  console.log("This is a field-contract mismatch; converging on the shape it wants.\n");
+
+  let matched = null;
+  for (const [label, shape] of SHAPES) {
+    const res = await send(label, buildPayload("CAROUSEL", entry, shape));
+    if (res.ok) { matched = label; break; }
+  }
+
+  console.log("\n=== RESULT ===");
+  if (matched) {
+    console.log(`The webhook accepts: ${matched}`);
+    console.log("FIX IS OURS: rename the carousel payload fields in delivery.js to match.");
   } else {
-    console.log("\n=== RESULT: rejected, but NOT by the city enum. See the response above. ===");
+    console.log("None of the candidate shapes were accepted. See the errors above —");
+    console.log("Manus needs to confirm the exact field contract the webhook expects.");
   }
 }
 
