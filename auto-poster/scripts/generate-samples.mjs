@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 /**
- * generate-samples.mjs — three complete sample carousels for PR review.
+ * generate-samples.mjs — complete sample carousels for PR review.
  *
  * Runs the real content engine and the real renderer, including the critic
  * gate, so what lands in the PR is exactly what the daily job would produce.
  * Distribution is never reached: runCarousel in SAMPLE_OUT mode writes to disk
  * and returns before any Metricool or Drive call.
  *
- * Dates are picked to hit three different pillars AND all three close types,
- * so the DM, engagement-question and share closes can each be judged.
+ * Dates are picked to cover different pillars and close types.
  *
  * Run on demand — needs ANTHROPIC_API_KEY. Output lands in auto-poster/samples/,
  * which is gitignored: attach the slides to a PR or a comment rather than
@@ -28,9 +27,9 @@ import { fileURLToPath } from "url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "samples");
 
-// Mon education -> DM close, Tue lifestyle -> question close,
-// Wed motivation -> share close.
-const DATES = ["2026-08-03", "2026-08-04", "2026-08-05"];
+// Tue lifestyle -> question close, and Thu education -> DM close. Tuesday is
+// deliberately included: it is the pillar that produced the riddle hook.
+const DATES = ["2026-08-04", "2026-08-06"];
 
 async function main() {
   if (existsSync(OUT)) rmSync(OUT, { recursive: true, force: true });
@@ -88,7 +87,7 @@ async function main() {
 
   console.log("\n=== SAMPLE SUMMARY ===");
   for (const s of index) {
-    console.log(`${s.date}  ${s.pillar.padEnd(24)} ${String(s.closeType).padEnd(9)} hook=${s.scores.hook} loops=${s.scores.loops} cta=${s.scores.cta}  attempts=${s.attemptsUsed}${s.belowBar ? "  BELOW BAR" : ""}`);
+    console.log(`${s.date}  ${s.pillar.padEnd(24)} ${String(s.closeType).padEnd(9)} clarity=${s.scores.clarity} hook=${s.scores.hook} loops=${s.scores.loops} cta=${s.scores.cta}  attempts=${s.attemptsUsed}${s.belowBar ? "  BELOW BAR" : ""}`);
     console.log(`  ${s.keyword ? `keyword=${s.keyword}  ` : ""}slides=${s.slides}  "${s.hook}"`);
   }
 }
