@@ -71,6 +71,132 @@
         }
       ],
       "deliveredToOwner": true
+    },
+    {
+      "date": "2026-08-04",
+      "timestamp": "2026-08-04T16:08:11.264Z",
+      "pillar": "texas_lifestyle",
+      "topic": "Why transplants quit Texas (month nine)",
+      "hook": "Transplants don't leave over the heat. Month nine does it.",
+      "closeType": "question",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "scores": {
+        "hook": 8,
+        "loops": 7,
+        "cta": 8,
+        "worst_problem": "The final point slide's loop, \"Most buyers get this backwards,\" promises a reveal that the deck never delivers — it swipes into the CTA question instead of an answer, leaving one loop dangling.",
+        "fix": "Rewrite slide 6's loop so it hands off to the closing question rather than teasing new information — e.g. \"One trade-off decides it\" — and sharpen slide 2's vague \"Then the counting starts\" into something that names what gets counted."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 357957650,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-04T16:11:11.890Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7670209053838036237"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 357957657,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-04T16:11:12.014Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7490438703434313729"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 357957695,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-04T16:11:12.139Z",
+          "publicUrl": "https://www.instagram.com/p/Dbn9c1-jTiF/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 357957741,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-04T16:11:12.264Z",
+          "publicUrl": "https://www.instagram.com/p/Dbn9cpODfwk/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 357957750,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-04T16:11:12.388Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7490438699210412044"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 357957788,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-04T16:11:12.506Z",
+          "publicUrl": "https://www.instagram.com/p/Dbn9cQ5jZZ9/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 357957789,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-04T16:11:12.627Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122111198619400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 357957792,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-04T16:11:12.753Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7490438702104514562"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-04T16:11:12.754Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
