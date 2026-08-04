@@ -567,7 +567,7 @@ export async function deliverToOwner(accessToken, videoPath, city, caption, opti
  * @param {object} meta  { caption, keyword, closeType, topic, city }
  */
 export async function deliverCarouselToOwner(accessToken, files, meta) {
-  const { caption, keyword, closeType = "dm", topic, city = "CAROUSEL" } = meta;
+  const { caption, keyword, closeType = "dm", topic, city = "carousel" } = meta;
   console.log(`[Delivery] Delivering carousel "${topic}" (${files.length} files) to owner...`);
 
   const uploaded = [];
@@ -605,12 +605,9 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
     // carousel without `slideImages` (non-empty array), and the deliveries table
     // has columns slideImages / pdfLink / keyword / closeType.
     slideImages: uploaded.slice(0, -1).map((u) => u.webViewLink),
-    // The DB column is pdfLink; pdfUrl is sent alongside because the webhook's
-    // own field name for it could not be confirmed — every insert that got far
-    // enough to prove it was rejected first by the city column. Harmless to send
-    // both; drop the loser once a carousel row actually lands.
+    // pdfLink is the canonical name; the webhook also accepts pdfUrl via a
+    // fallback, but there is no reason to send both.
     pdfLink: uploaded.length > 1 ? uploaded[uploaded.length - 1].webViewLink : null,
-    pdfUrl: uploaded.length > 1 ? uploaded[uploaded.length - 1].webViewLink : null,
     slides: uploaded.slice(0, -1).map((u) => ({ fileName: u.fileName, link: u.webViewLink })),
     keyword: keyword || null,
     closeType,

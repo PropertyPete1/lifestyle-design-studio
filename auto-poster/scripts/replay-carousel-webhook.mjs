@@ -8,14 +8,9 @@
  * is uploaded to Drive, no email goes out. It replays the exact payload shape
  * production sends, with today's real Drive links and caption.
  *
- * The open question: Manus's report did not mention altering the `city` column,
- * and the poster still sends city:"CAROUSEL". If the enum still rejects it, the
- * full error is printed verbatim so the remaining migration step is unambiguous.
- *
- * Escalation, only if the production shape fails: retry once with a lowercase
- * "carousel" to distinguish "the value is missing from the enum" from "the enum
- * has it but in a different case". The second attempt only runs when the first
- * created no row, so it cannot leave two carousel rows behind.
+ * Sends exactly what production sends — one request, no variants. Earlier runs
+ * needed a ladder to find the contract; that is settled now, so anything other
+ * than the production payload would be testing something we do not ship.
  */
 
 import { readFileSync } from "fs";
@@ -59,7 +54,7 @@ function driveFile(id, name) {
 }
 
 /** Rebuild the delivery payload exactly as deliverCarouselToOwner would. */
-function buildPayload(cityValue, entry, shape = {}) {
+function buildPayload(cityValue, entry) {
   const uploaded = DRIVE_FILE_IDS.map((id, i) =>
     driveFile(
       id,
@@ -92,37 +87,15 @@ function buildPayload(cityValue, entry, shape = {}) {
     directDownloadLink: primary.directLink,
     deliveredAt: new Date().toISOString(),
     type: "carousel",
+    slideImages: uploaded.slice(0, -1).map((u) => u.webViewLink),
+    pdfLink: uploaded[uploaded.length - 1].webViewLink,
     slides: uploaded.slice(0, -1).map((u) => ({ fileName: u.fileName, link: u.webViewLink })),
-    pdf: { fileName: uploaded[uploaded.length - 1].fileName, link: uploaded[uploaded.length - 1].webViewLink },
     keyword: entry.keyword || null,
     closeType: entry.closeType,
-    ...shape(uploaded),
   };
 }
 
-const slidesOf = (u) => u.slice(0, -1);
-const pdfOf = (u) => u[u.length - 1];
 
-/**
- * Candidate shapes for the fields the dashboard requires. Its 400s name the
- * missing field precisely and write no row, so walking a short ladder is a
- * cheap way to pin the contract without guessing blind.
- */
-const SHAPES = [
-  ["slideImages as URL strings", (u) => ({
-    slideImages: slidesOf(u).map((s) => s.webViewLink),
-    pdfUrl: pdfOf(u).webViewLink,
-  })],
-  ["slideImages as objects", (u) => ({
-    slideImages: slidesOf(u).map((s) => ({ fileName: s.fileName, url: s.webViewLink, link: s.webViewLink })),
-    pdfUrl: pdfOf(u).webViewLink,
-    pdfLink: pdfOf(u).webViewLink,
-  })],
-  ["slideImages as direct-download URLs", (u) => ({
-    slideImages: slidesOf(u).map((s) => s.directLink),
-    pdfUrl: pdfOf(u).directLink,
-  })],
-];
 
 async function send(label, payload) {
   console.log(`\n── ${label}: city=${JSON.stringify(payload.city)} type=${JSON.stringify(payload.type)}`);
@@ -169,50 +142,19 @@ async function main() {
   console.log(`  hook: ${entry.hook}`);
   console.log(`  files: ${DRIVE_FILE_IDS.length} (${DRIVE_FILE_IDS.length - 1} slides + 1 PDF)`);
 
-  // 1. Production shape, unchanged.
-  const first = await send("production shape", buildPayload("CAROUSEL", entry, () => ({})));
+  const payload = buildPayload("carousel", entry);
+  console.log(`  slideImages: ${payload.slideImages.length} urls`);
+  console.log(`  pdfLink: ${payload.pdfLink.slice(0, 60)}...`);
 
-  if (first.ok) {
-    console.log("\n=== RESULT: accepted exactly as production sends it. Nothing to change. ===");
-    return;
-  }
-
-  if (first.enumError) {
-    console.log("\nStill the city enum. Retrying lowercase to isolate case from absence.");
-    const second = await send("lowercase probe", buildPayload("carousel", entry, () => ({})));
-    console.log("\n=== RESULT ===");
-    console.log(second.ok
-      ? "Enum accepts lowercase 'carousel'. FIX IS OURS: send lowercase. One line."
-      : "Neither case accepted. FIX IS MANUS'S: city still needs the carousel value.");
-    return;
-  }
-
-  // 2. The first attempt died at VALIDATION (missing slideImages) before the
-  // insert ran, so it could not tell us anything about the city column. Use the
-  // shape that passes validation, then vary city to reach the enum.
-  console.log("\nThe production shape fails validation before the insert runs, so it");
-  console.log("says nothing about the city column. Using a shape that validates, then");
-  console.log("varying city to find what the column accepts.\n");
-
-  const validShape = SHAPES[0][1];
-  const cityCandidates = ["CAROUSEL", "carousel", "Carousel", null];
-  let accepted = null;
-
-  for (const city of cityCandidates) {
-    const res = await send(`city=${JSON.stringify(city)}`, buildPayload(city, entry, validShape));
-    if (res.ok) { accepted = city; break; }
-  }
+  const res = await send("production payload", payload);
 
   console.log("\n=== RESULT ===");
-  if (accepted !== null || accepted === null && false) {
-    console.log(`The webhook accepts city=${JSON.stringify(accepted)}.`);
-    console.log("FIX IS OURS: send that value, plus rename slides -> slideImages, pdf -> pdfUrl.");
+  if (res.ok) {
+    console.log("The carousel delivery was ACCEPTED and written.");
+    console.log("Wire side confirmed: enum, field contract and unique key all agree.");
   } else {
-    console.log("The city column rejects every carousel-ish value tried.");
-    console.log("FIX IS MANUS'S: the city column was NOT altered. slideImages, pdfLink,");
-    console.log("keyword, closeType and type all exist and work — city is the last step.");
-    console.log("Either add a carousel value to the city enum, or make city nullable now");
-    console.log("that `type` carries the discriminator.");
+    console.log("Still rejected. See CAUSE above.");
+    process.exitCode = 1;
   }
 }
 
