@@ -142,7 +142,10 @@ SLIDE 1 — THE HOOK
 - A curiosity gap, never a summary. If a reader can guess the payoff from slide 1, the carousel is dead.
 - Use one of: an unfinished sentence, a contrarian claim, or a specific odd number.
 - It must be impossible to know the answer without swiping.
-- Max 12 words. Short is stronger.
+- NAME THE SUBJECT. The first slide must say who or what it is about, in plain words. "Transplants don't leave over the heat. Month nine does it." fails: the reader cannot tell who is leaving, leaving where, or what month nine has to do with it. "Most people who move to Texas don't quit over the summer heat. They quit in month nine." works: same insight, but the subject is named and the claim is complete.
+- WITHHOLD THE PAYOFF, NEVER THE SUBJECT. The gap that earns a swipe is a missing ANSWER, not a missing topic. If the reader has to work out what you are even talking about, that is a riddle, and riddles get scrolled past.
+- Complete sentences, not compressed fragments. A hook the reader has to decode has already lost.
+- Max 16 words, and prefer shorter — but never buy brevity with comprehension.
 - BANNED: "Here's why", "Let's talk about", "A thread", "Everything you need to know", "The ultimate guide", any phrasing that announces a topic instead of opening a gap.
 - PAY IT OFF. If the hook names a specific number, person, or outcome, a later slide must explicitly deliver that exact thing. A hook that promises "$27,000" and never mentions it again is a bait and switch, and it is the single most common way these fail.
 
@@ -162,6 +165,9 @@ SLIDES 3 TO 8 — THE POINTS
 {{CLOSE_BLOCK}}
 
 HARD RULES
+- PLAIN ENGLISH THROUGHOUT. Write for a distracted person on a phone. Aim for roughly an 8th-grade reading level: common words, concrete nouns, one idea per sentence.
+- Every slide must pass this test: could a stranger glancing at it for two seconds say what it is claiming? If not, rewrite it, however good it sounds.
+- CLEVERNESS NEVER BEATS COMPREHENSION. Inversions, compression and wordplay are allowed only when the plain meaning survives them intact. When the two conflict, clarity wins every time.
 - Do NOT use em-dashes or en-dashes. Use short sentences and periods. Dashes read as AI.
 - Never state a monthly payment figure on any slide. You may PROMISE a payment breakdown in the DM on the CTA slide, but never put a number on it.
 - Never name a specific neighbourhood, subdivision, community, or homebuilder.
@@ -235,9 +241,29 @@ Use this scale. It is calibrated, not relative — score against these anchors, 
 
 An 8 is a pass, not a prize. If you cannot name a concrete flaw, do not score below 8.
 
-Score three things from 1 to 10:
+Score four things from 1 to 10:
 
-"hook" — slide 1. Does it open a real curiosity gap? Could a reader guess the payoff without swiping? If it summarises or announces a topic instead of withholding something, it scores 3 or below. Generic openers score 2.
+"clarity" — comprehension, scored across the WHOLE deck: slide 1 and every slide after it. The question is: would a distracted viewer understand what this slide is CLAIMING within 2 seconds, without rereading?
+
+THIS IS THE AXIS MOST OFTEN GOT WRONG, so read the distinction carefully.
+
+A good hook is a CLEAR, COMPLETE CLAIM with ONE piece withheld. The reader understands exactly what is being asserted and knows precisely what question they want answered. The gap is the PAYOFF.
+
+A bad hook is ambiguous about what is even being claimed. The reader has to solve the sentence before they can care about it. The gap is the SUBJECT — and that is not a curiosity gap, it is a riddle. Riddles do not get swipes; they get scrolled past.
+
+CANONICAL FAILURE — score clarity 3 or below for anything like this:
+  "Transplants don't leave over the heat. Month nine does it."
+Why it fails: "Month nine does it" — does what? Leave? Cause them to leave? Month nine of what? Who are "transplants", and leave WHERE? The reader cannot tell what is being claimed at all. It is compressed to the point of being a puzzle. Cleverness has eaten the meaning.
+
+CANONICAL PASS — this is the same idea, repaired, and scores 8 or above:
+  "Most people who move to Texas don't quit over the summer heat. They quit in month nine."
+Why it works: the subject is named (people who move to Texas), the claim is complete and instantly legible (they quit, and not because of heat), and exactly one thing is withheld (what actually happens in month nine). The reader knows what they want to know.
+
+Both sentences carry the same insight. Only one can be understood at a glance.
+
+Score the LOWEST-clarity slide in the deck, not the average — one incomprehensible slide breaks the swipe. Cleverness, compression, or inversion that costs comprehension caps this axis at 4, however elegant it reads.
+
+"hook" — slide 1. Does it open a real curiosity gap? Could a reader guess the payoff without swiping? If it summarises or announces a topic instead of withholding something, it scores 3 or below. Generic openers score 2. Score the PULL here; comprehension is scored separately under clarity, so do not double-count a legibility problem in both.
 
 "loops" — the per-slide open loops on the point slides. Does EVERY point slide end in a genuine 3 to 6 word tease that creates a reason to swipe? One weak or missing loop caps this at 5. Loops that just restate the slide score 3.
 
@@ -247,10 +273,10 @@ Score three things from 1 to 10:
 
 The close must also follow from the deck. A close that could be bolted onto any carousel on any topic caps at 5, whichever type it is.
 
-Apply the anchors above literally. Do not drift the bar upward across the three axes: each is scored on its own against the same scale.
+Apply the anchors above literally. Do not drift the bar upward across the four axes: each is scored on its own against the same scale.
 
 Return ONLY valid JSON, no preamble and no code fences:
-{"hook": 0, "loops": 0, "cta": 0, "worst_problem": "the single most damaging flaw, one sentence", "fix": "a specific instruction to the writer, one sentence"}`;
+{"clarity": 0, "hook": 0, "loops": 0, "cta": 0, "worst_problem": "the single most damaging flaw, one sentence", "fix": "a specific instruction to the writer, one sentence"}`;
 
 /**
  * What "good" means for the cta axis, per close type. Scoring all three against
@@ -267,6 +293,43 @@ Score ANSWERABILITY. Could a reader fire back an answer in three words without r
   share: `THIS CAROUSEL USES: the share close ("Send this to someone who ...").
 Score SEND-WORTHINESS. Reading the line, does a specific real person come to mind? The situation must be sharp and particular. "someone who needs to hear this" or "someone who is thinking about buying" are generic and score 3 or below. A line naming a recognisable behaviour or predicament scores well. Do NOT penalise this close for lacking a keyword or a downloadable asset — it is not supposed to have one.`,
 };
+
+/**
+ * Judge a single hook line on clarity alone.
+ *
+ * Feeding a hook to the full critic inside a stub deck does not work: the critic
+ * sees the missing slides and marks clarity down for the empty deck, which
+ * contaminates the score. This asks only about the line itself, so an archived
+ * hook can be judged on the same definition the full critic uses.
+ */
+const HOOK_CLARITY_SYSTEM = `You judge ONE line: the first slide of an Instagram carousel. Nothing else exists — do not comment on missing slides, and do not penalise the line for what is not shown to you.
+
+Score "clarity" 1 to 10: would a distracted viewer understand what this line is CLAIMING within 2 seconds, without rereading?
+
+A good hook is a CLEAR, COMPLETE CLAIM with ONE piece withheld. The reader understands exactly what is being asserted and knows precisely what question they want answered. The gap is the PAYOFF.
+
+A bad hook is ambiguous about what is even being claimed. The reader has to solve the sentence before they can care about it. The gap is the SUBJECT — a riddle, not a hook.
+
+CANONICAL FAILURE, clarity 3 or below:
+  "Transplants don't leave over the heat. Month nine does it."
+"Month nine does it" — does what? Who are transplants, and leave where? The claim cannot be recovered at a glance.
+
+CANONICAL PASS, clarity 8 or above:
+  "Most people who move to Texas don't quit over the summer heat. They quit in month nine."
+Subject named, claim complete, exactly one thing withheld.
+
+Scale: 8 means a competent professional would ship it. 6-7 workable with a nameable flaw. 4-5 the reader must work to parse it. 1-3 the claim is not recoverable at a glance.
+
+Return ONLY valid JSON: {"clarity": 0, "reason": "one sentence"}`;
+
+export async function scoreHookClarity(hook, modelCall = callModel) {
+  const raw = await modelCall(HOOK_CLARITY_SYSTEM, `Score this hook line.\n\n"${hook}"`, 400);
+  const s = parseJson(raw);
+  return {
+    clarity: Math.max(1, Math.min(10, Number(s.clarity) || 1)),
+    reason: String(s.reason || ""),
+  };
+}
 
 /** Compose the critic's system prompt for a given close type. */
 export function criticSystemFor(closeType) {
@@ -484,6 +547,7 @@ export async function scoreDeck(deck, keyword, modelCall = callModel, closeType 
       const raw = await modelCall(criticSystemFor(closeType), `Score this carousel.\n\n${rendered}${nudge}`, 1000);
       const s = parseJson(raw);
       return {
+        clarity: clamp(s.clarity),
         hook: clamp(s.hook),
         loops: clamp(s.loops),
         cta: clamp(s.cta),
@@ -496,14 +560,14 @@ export async function scoreDeck(deck, keyword, modelCall = callModel, closeType 
   }
 
   console.warn("[Carousel] critic unavailable — deck will be treated as unscored");
-  return { hook: 0, loops: 0, cta: 0, worst_problem: "critic unavailable", fix: "", unscored: true };
+  return { clarity: 0, hook: 0, loops: 0, cta: 0, worst_problem: "critic unavailable", fix: "", unscored: true };
 }
 
 export function scoresPass(scores, mark = PASS_MARK) {
-  return scores.hook >= mark && scores.loops >= mark && scores.cta >= mark;
+  return scores.clarity >= mark && scores.hook >= mark && scores.loops >= mark && scores.cta >= mark;
 }
 
-const scoreTotal = (s) => s.hook + s.loops + s.cta;
+const scoreTotal = (s) => s.clarity + s.hook + s.loops + s.cta;
 
 /**
  * Generate one carousel for a date.
@@ -574,7 +638,7 @@ export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_
     }
 
     const scores = await scoreDeck(guarded.deck, keyword, modelCall, closeType);
-    console.log(`[Carousel] attempt ${attempt + 1} scores: hook=${scores.hook} loops=${scores.loops} cta=${scores.cta}${scoresPass(scores) ? " PASS" : " below bar"}`);
+    console.log(`[Carousel] attempt ${attempt + 1} scores: clarity=${scores.clarity} hook=${scores.hook} loops=${scores.loops} cta=${scores.cta}${scoresPass(scores) ? " PASS" : " below bar"}`);
     attempts.push({ deck: guarded.deck, scores, leaksStripped: guarded.leaksStripped });
 
     if (scoresPass(scores)) {
@@ -582,7 +646,10 @@ export async function generateCarousel({ dateStr, recent = [], maxRetries = MAX_
     }
 
     feedback =
-      `\n\nYour previous attempt scored hook=${scores.hook}, loops=${scores.loops}, cta=${scores.cta} out of 10. ` +
+      `\n\nYour previous attempt scored clarity=${scores.clarity}, hook=${scores.hook}, loops=${scores.loops}, cta=${scores.cta} out of 10. ` +
+      (scores.clarity < PASS_MARK
+        ? `CLARITY IS THE FAILING AXIS. A reader could not tell what a slide was claiming at a glance. Say who or what it is about in plain words and make the claim complete; withhold the answer, not the subject. `
+        : "") +
       `Everything must reach 8.\nWorst problem: ${scores.worst_problem}\nFix: ${scores.fix}\n` +
       `Rewrite completely. Do not lightly edit the previous version.`;
   }

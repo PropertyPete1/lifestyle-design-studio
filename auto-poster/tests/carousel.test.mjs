@@ -47,8 +47,8 @@ function goodDeck(overrides = {}) {
   };
 }
 
-const PERFECT = { hook: 9, loops: 9, cta: 9, worst_problem: "", fix: "" };
-const WEAK = { hook: 4, loops: 5, cta: 3, worst_problem: "hook summarises", fix: "open a gap" };
+const PERFECT = { clarity: 9, hook: 9, loops: 9, cta: 9, worst_problem: "", fix: "" };
+const WEAK = { clarity: 5, hook: 4, loops: 5, cta: 3, worst_problem: "hook summarises", fix: "open a gap" };
 
 /**
  * Build a stub model call that returns scripted responses in order.
@@ -178,9 +178,11 @@ test("validateDeck rejects a missing open loop", () => {
 // ─── Critic gate ────────────────────────────────────────────────────────────
 
 test("scoresPass requires every axis to clear 8", () => {
-  assert.equal(scoresPass({ hook: 8, loops: 8, cta: 8 }), true);
-  assert.equal(scoresPass({ hook: 10, loops: 10, cta: 7 }), false);
-  assert.equal(scoresPass({ hook: 7, loops: 10, cta: 10 }), false);
+  assert.equal(scoresPass({ clarity: 8, hook: 8, loops: 8, cta: 8 }), true);
+  assert.equal(scoresPass({ clarity: 10, hook: 10, loops: 10, cta: 7 }), false);
+  assert.equal(scoresPass({ clarity: 10, hook: 7, loops: 10, cta: 10 }), false);
+  // A deck can be pulling, well-looped and sharply closed and still be a riddle.
+  assert.equal(scoresPass({ clarity: 7, hook: 10, loops: 10, cta: 10 }), false);
 });
 
 test("a passing first draft is used without regenerating", async () => {
@@ -221,9 +223,9 @@ test("exhausting retries falls back to the best-scoring draft", async () => {
   const model = stubModel({
     writer: [goodDeck({ topic: "a" }), goodDeck({ topic: "b" }), goodDeck({ topic: "c" })],
     critic: [
-      { ...WEAK, hook: 4, loops: 4, cta: 4 },
-      { ...WEAK, hook: 7, loops: 7, cta: 7 },  // best total, still under the bar
-      { ...WEAK, hook: 5, loops: 5, cta: 5 },
+      { ...WEAK, clarity: 4, hook: 4, loops: 4, cta: 4 },
+      { ...WEAK, clarity: 7, hook: 7, loops: 7, cta: 7 },  // best total, still under the bar
+      { ...WEAK, clarity: 5, hook: 5, loops: 5, cta: 5 },
     ],
   });
   const r = await generateCarousel({ dateStr: "2026-08-03", modelCall: model });
@@ -1155,4 +1157,126 @@ test("polling gives up and leaves the post pending for the next run", async () =
   );
   assert.equal(records[0].verdict, "pending");
   assert.equal(applyVerification({ distribution: [{ network: "tiktok", postId: 9 }] }, records).verification.pendingRecheck, true);
+});
+
+// ─── Clarity axis ───────────────────────────────────────────────────────────
+
+test("a low clarity score alone blocks the gate", () => {
+  // The 2026-08-04 hook scored 8/7/8 on the old three axes and shipped. It was
+  // a riddle. Clarity is the axis that catches that.
+  assert.equal(scoresPass({ clarity: 3, hook: 8, loops: 8, cta: 8 }), false);
+  assert.equal(scoresPass({ clarity: 8, hook: 8, loops: 8, cta: 8 }), true);
+});
+
+test("a clarity failure regenerates and tells the writer why", async () => {
+  const prompts = [];
+  const model = async (system, userPrompt) => {
+    if (system.includes("harsh critic")) {
+      return JSON.stringify(prompts.length === 1
+        ? { ...WEAK, clarity: 3, hook: 8, loops: 8, cta: 8, worst_problem: "the hook is a riddle", fix: "name the subject" }
+        : PERFECT);
+    }
+    prompts.push(userPrompt);
+    return JSON.stringify(goodDeck());
+  };
+  await generateCarousel({ dateStr: "2026-08-03", modelCall: model });
+
+  assert.ok(prompts.length >= 2, "a clarity failure must regenerate");
+  assert.match(prompts[1], /CLARITY IS THE FAILING AXIS/);
+  assert.match(prompts[1], /withhold the answer, not the subject/i);
+  assert.match(prompts[1], /clarity=3/);
+});
+
+test("clarity counts toward best-of when nothing clears the bar", async () => {
+  const model = stubModel({
+    writer: [goodDeck({ topic: "a" }), goodDeck({ topic: "b" }), goodDeck({ topic: "c" })],
+    critic: [
+      { ...WEAK, clarity: 2, hook: 9, loops: 9, cta: 9 },  // 29, but unreadable
+      { ...WEAK, clarity: 7, hook: 7, loops: 7, cta: 7 },  // 28, comprehensible
+      { ...WEAK, clarity: 1, hook: 9, loops: 9, cta: 9 },  // 28
+    ],
+  });
+  const r = await generateCarousel({ dateStr: "2026-08-03", modelCall: model });
+  assert.equal(r.belowBar, true);
+  assert.equal(r.scores.clarity, 2, "best-of is still by total; clarity is part of that total");
+  assert.equal(r.topic, "a");
+});
+
+test("an unscored critic reports clarity 0 so it cannot pass by omission", async () => {
+  const { scoreDeck } = await import("../src/carousel-content.js");
+  const scores = await scoreDeck(goodDeck(), "MATH", async () => "not json", "dm");
+  assert.equal(scores.clarity, 0);
+  assert.equal(scoresPass(scores), false);
+});
+
+test("the critic prompt carries the canonical riddle and its repair", () => {
+  for (const closeType of ["dm", "question", "share"]) {
+    const p = criticSystemFor(closeType);
+    assert.match(p, /"clarity"/, `${closeType} prompt must define the clarity axis`);
+    assert.ok(
+      p.includes("Transplants don't leave over the heat. Month nine does it."),
+      "the failing hook must appear verbatim as the canonical failure"
+    );
+    assert.ok(
+      p.includes("Most people who move to Texas don't quit over the summer heat. They quit in month nine."),
+      "the repaired hook must appear verbatim as the canonical pass"
+    );
+    assert.match(p, /within 2 seconds/);
+    assert.match(p, /Score the LOWEST-clarity slide/, "clarity covers every slide, not just the hook");
+  }
+});
+
+test("the critic returns clarity in its JSON shape", () => {
+  assert.match(criticSystemFor("dm"), /\{"clarity": 0, "hook": 0, "loops": 0, "cta": 0/);
+});
+
+test("the writer is told to name the subject and withhold only the payoff", () => {
+  for (const closeType of ["dm", "question", "share"]) {
+    const p = writerSystemFor(closeType);
+    assert.match(p, /NAME THE SUBJECT/);
+    assert.match(p, /WITHHOLD THE PAYOFF, NEVER THE SUBJECT/);
+    assert.match(p, /Complete sentences, not compressed fragments/);
+    assert.match(p, /8th-grade reading level/);
+    assert.match(p, /CLEVERNESS NEVER BEATS COMPREHENSION/);
+  }
+});
+
+test("the writer prompt shows the riddle and its repair side by side", () => {
+  const p = writerSystemFor("dm");
+  assert.ok(p.includes("Transplants don't leave over the heat. Month nine does it."));
+  assert.ok(p.includes("Most people who move to Texas don't quit over the summer heat. They quit in month nine."));
+});
+
+test("the log keeps the deck so a run can be re-scored later", () => {
+  const deck = goodDeck();
+  const entry = buildEntry(
+    { date: "2026-08-04", pillar: "p", topic: "t", hook: deck.hook, keyword: "MATH", deck, scores: { clarity: 8, hook: 8, loops: 8, cta: 8 }, leaksStripped: [] },
+    { accent: "#C8AA6A", slideCount: 8, delivered: true, distribution: [] }
+  );
+  // Past entries stored only the hook, so the clarity axis could not be
+  // back-tested against them slide by slide.
+  assert.equal(entry.deck.points.length, deck.points.length);
+  assert.equal(entry.scores.clarity, 8);
+});
+
+test("a hook is judged alone, without penalty for slides it cannot see", async () => {
+  const { scoreHookClarity } = await import("../src/carousel-content.js");
+  let system = "";
+  const r = await scoreHookClarity("Some hook line.", async (sys) => {
+    system = sys;
+    return JSON.stringify({ clarity: 9, reason: "clear claim, one thing withheld" });
+  });
+  assert.equal(r.clarity, 9);
+  // The first back-test scored a perfectly clear hook at 2 because the stub deck
+  // around it was empty and the critic marked that down as unclear.
+  assert.match(system, /do not penalise the line for what is not shown to you/i);
+  assert.ok(system.includes("Transplants don't leave over the heat. Month nine does it."));
+  assert.ok(system.includes("Most people who move to Texas don't quit over the summer heat. They quit in month nine."));
+});
+
+test("hook clarity scores are clamped into range", async () => {
+  const { scoreHookClarity } = await import("../src/carousel-content.js");
+  assert.equal((await scoreHookClarity("x", async () => JSON.stringify({ clarity: 99 }))).clarity, 10);
+  assert.equal((await scoreHookClarity("x", async () => JSON.stringify({ clarity: -4 }))).clarity, 1);
+  assert.equal((await scoreHookClarity("x", async () => JSON.stringify({}))).clarity, 1);
 });

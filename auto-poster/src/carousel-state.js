@@ -66,6 +66,10 @@ export function buildEntry(result, { accent, slideCount, distribution, delivered
     keyword: result.keyword,
     accent,
     slideCount,
+    // The rendered copy, kept so a deck can be re-scored later against a
+    // changed critic. Without it the log holds only the hook, which is why the
+    // clarity axis could not be back-tested against past runs.
+    deck: result.deck,
     scores: result.scores,
     attemptsUsed: result.attemptsUsed,
     regenerated: result.regenerated,

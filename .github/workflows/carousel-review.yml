@@ -1,0 +1,43 @@
+name: Carousel Review
+
+# Branch-scoped review tooling: re-scores past decks against the current critic
+# and generates fresh samples. No workflow_dispatch and no write permissions, so
+# it cannot run from main and cannot push anything.
+on:
+  push:
+    branches:
+      - 'fix/**'
+      - 'feat/**'
+    paths:
+      - "auto-poster/scripts/rescore-logged.mjs"
+      - ".github/workflows/carousel-review.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Re-score logged decks against the new critic
+        working-directory: auto-poster
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/rescore-logged.mjs
+      - name: Generate fresh samples
+        working-directory: auto-poster
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/generate-samples.mjs
+      - name: Upload samples
+        uses: actions/upload-artifact@v4
+        with:
+          name: carousel-samples
+          path: auto-poster/samples/

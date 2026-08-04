@@ -60,7 +60,7 @@ export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DR
   const result = await generateCarousel({ dateStr: date, recent });
   console.log(`[Carousel] pillar=${result.pillar} close=${result.closeType} topic="${result.topic}"${result.keyword ? ` keyword=${result.keyword}` : ""}`);
   console.log(`[Carousel] hook: ${result.hook}`);
-  console.log(`[Carousel] scores: hook=${result.scores.hook} loops=${result.scores.loops} cta=${result.scores.cta}${result.belowBar ? " (BELOW BAR — best-of)" : ""}`);
+  console.log(`[Carousel] scores: clarity=${result.scores.clarity} hook=${result.scores.hook} loops=${result.scores.loops} cta=${result.scores.cta}${result.belowBar ? " (BELOW BAR — best-of)" : ""}`);
   if (result.leaksStripped?.length) {
     console.log(`[Carousel] leak scanner stripped ${result.leaksStripped.length} term(s)`);
   }
