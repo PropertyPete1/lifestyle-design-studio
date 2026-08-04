@@ -1388,3 +1388,125 @@ test("a dashboard-only failure is surfaced as a warning, not swallowed", async (
     `expected a ::warning:: about the dashboard, got: ${JSON.stringify(calls.warnings)}`
   );
 });
+
+// ─── Caption hygiene and thumbnails ─────────────────────────────────────────
+
+/** Run a carousel delivery against stubs and return the webhook payload + email. */
+async function captureDelivery() {
+  const { writeFileSync, mkdtempSync } = await import("fs");
+  const { join } = await import("path");
+  const { tmpdir } = await import("os");
+  const { deliverCarouselToOwner } = await import("../src/delivery.js");
+
+  const dir = mkdtempSync(join(tmpdir(), "carousel-caption-"));
+  const files = [];
+  for (const n of ["slide-01.png", "slide-02.png"]) {
+    const p = join(dir, n);
+    writeFileSync(p, "x");
+    files.push({ path: p, mimeType: "image/png" });
+  }
+  const pdfPath = join(dir, "carousel.pdf");
+  writeFileSync(pdfPath, "y");
+  files.push({ path: pdfPath, mimeType: "application/pdf" });
+
+  const seen = { payload: null, email: null, permissionCalls: [] };
+  const realFetch = globalThis.fetch;
+  const realEnv = { url: process.env.DASHBOARD_URL, secret: process.env.DASHBOARD_WEBHOOK_SECRET };
+  process.env.DASHBOARD_URL = "https://dashboard.test";
+  process.env.DASHBOARD_WEBHOOK_SECRET = "s";
+
+  globalThis.fetch = async (url, opts = {}) => {
+    const u = String(url);
+    if (u.includes("/api/delivery/webhook")) {
+      seen.payload = JSON.parse(opts.body);
+      return { ok: true, status: 200, text: async () => "ok", json: async () => ({}) };
+    }
+    if (u.includes("/permissions")) {
+      seen.permissionCalls.push({ url: u, body: JSON.parse(opts.body) });
+      return { ok: true, status: 200, text: async () => "{}", json: async () => ({}) };
+    }
+    if (u.includes("gmail") || u.includes("messages/send")) {
+      seen.email = opts.body ? String(opts.body) : null;
+      return { ok: true, status: 200, text: async () => "ok", json: async () => ({ id: "m1" }) };
+    }
+    return {
+      ok: true, status: 200,
+      headers: { get: () => "https://upload.example/x" },
+      text: async () => "ok",
+      json: async () => ({ id: "file1", files: [{ id: "folder1", name: "Ready to Post" }] }),
+    };
+  };
+
+  try {
+    await deliverCarouselToOwner("token", files, {
+      caption: "Summer isn't the Texas season that costs you money. Spring is.\n\nSave this for later.",
+      keyword: "MATH", closeType: "dm", topic: "t", city: "carousel",
+    });
+  } finally {
+    globalThis.fetch = realFetch;
+    if (realEnv.url === undefined) delete process.env.DASHBOARD_URL; else process.env.DASHBOARD_URL = realEnv.url;
+    if (realEnv.secret === undefined) delete process.env.DASHBOARD_WEBHOOK_SECRET; else process.env.DASHBOARD_WEBHOOK_SECRET = realEnv.secret;
+  }
+  return seen;
+}
+
+test("the dashboard caption is paste-ready — no URLs, no instructions", async () => {
+  const { payload } = await captureDelivery();
+
+  // This is the whole point: Copy Caption must not paste internal notes or
+  // Drive links into a public Instagram post.
+  assert.ok(!/https?:\/\//.test(payload.caption), `caption contains a URL: ${payload.caption}`);
+  assert.ok(!/drive\.google\.com/.test(payload.caption));
+  assert.ok(!/Ready to Post/i.test(payload.caption));
+  assert.ok(!/post the slides in order/i.test(payload.caption));
+  assert.ok(!/trending audio/i.test(payload.caption));
+  assert.ok(!/^\s*\d+\.\s/m.test(payload.caption), "caption must not contain a numbered file list");
+
+  // And it is still the real caption.
+  assert.match(payload.caption, /Spring is\./);
+  assert.match(payload.caption, /Save this for later\./);
+});
+
+test("posting instructions travel separately, not in the caption", async () => {
+  const { payload } = await captureDelivery();
+  assert.ok(payload.instructions, "instructions must be their own field");
+  assert.match(payload.instructions, /Post the slides in order/i);
+  assert.match(payload.instructions, /trending audio/i);
+  assert.match(payload.instructions, /Comment keyword: MATH/);
+  assert.ok(!payload.instructions.includes(payload.caption), "instructions should not re-embed the caption");
+});
+
+test("the email still carries the instructions the owner needs", async () => {
+  const { email } = await captureDelivery();
+  assert.ok(email, "an email should have been sent");
+  const decoded = email.includes("raw") ? Buffer.from(JSON.parse(email).raw, "base64url").toString("utf8") : email;
+  assert.match(decoded, /Post the slides in order/i);
+  assert.match(decoded, /trending audio/i);
+  assert.match(decoded, /Spring is\./, "the caption should still be in the email too");
+});
+
+test("slides carry directly renderable thumbnail URLs, not just viewer pages", async () => {
+  const { payload } = await captureDelivery();
+  const { driveThumbnailUrl } = await import("../src/delivery.js");
+
+  // A /file/d/<id>/view link is an HTML page and renders nothing in an <img>.
+  assert.ok(payload.slideImages.every((u) => u.includes("/file/d/")), "slideImages stays as viewer links");
+  assert.ok(Array.isArray(payload.slideThumbnails));
+  assert.equal(payload.slideThumbnails.length, payload.slideImages.length);
+  assert.ok(payload.slideThumbnails.every((u) => u.startsWith("https://drive.google.com/thumbnail?id=")));
+  assert.ok(Array.isArray(payload.slideFileIds));
+  assert.equal(payload.slideFileIds.length, payload.slideImages.length);
+
+  assert.equal(driveThumbnailUrl("abc", 400), "https://drive.google.com/thumbnail?id=abc&sz=w400");
+});
+
+test("every uploaded carousel file is granted anyone/reader, and nothing else is", async () => {
+  const { permissionCalls } = await captureDelivery();
+
+  assert.ok(permissionCalls.length > 0, "link-view access must be granted");
+  for (const call of permissionCalls) {
+    assert.deepEqual(call.body, { role: "reader", type: "anyone" });
+    // Scoped to Drive file ids this flow just created — never a broader scope.
+    assert.match(call.url, /\/drive\/v3\/files\/[^/]+\/permissions$/);
+  }
+});

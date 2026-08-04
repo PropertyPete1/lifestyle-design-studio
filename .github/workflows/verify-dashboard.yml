@@ -10,6 +10,7 @@ on:
       - 'feat/**'
     paths:
       - "auto-poster/scripts/replay-carousel-webhook.mjs"
+      - "auto-poster/scripts/check-drive-permissions.mjs"
       - ".github/workflows/verify-dashboard.yml"
 
 permissions:
@@ -26,6 +27,13 @@ jobs:
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
+      - name: Check Drive permissions on the carousel slides
+        working-directory: auto-poster
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+        run: node scripts/check-drive-permissions.mjs
       - name: Replay the carousel delivery webhook
         working-directory: auto-poster
         env:

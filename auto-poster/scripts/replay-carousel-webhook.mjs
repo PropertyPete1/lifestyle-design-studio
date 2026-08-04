@@ -71,16 +71,16 @@ function buildPayload(cityValue, entry) {
     ? buildSocialCaption({ deck: entry.deck, keyword: entry.keyword, closeType: entry.closeType })
     : entry.hook;
 
-  const ownerNote =
-    `${caption}\n\n` +
-    `— Carousel: ${uploaded.length} files in Ready to Post. Post slides in order.\n` +
-    (entry.keyword ? `— Comment keyword: ${entry.keyword}\n` : `— Close type: ${entry.closeType} (no comment keyword)\n`) +
-    `— Add trending audio natively when you post.\n` +
-    uploaded.map((u, i) => `  ${i + 1}. ${u.webViewLink}`).join("\n");
+  const postingInstructions = [
+    `Carousel: ${uploaded.length} files in Ready to Post. Post the slides in order.`,
+    entry.keyword ? `Comment keyword: ${entry.keyword}` : `Close type: ${entry.closeType} (no comment keyword)`,
+    `Add trending audio natively when you post.`,
+  ].join("\n");
 
   return {
     city: cityValue,
-    caption: ownerNote,
+    caption,
+    instructions: postingInstructions,
     driveFileId: primary.fileId,
     driveFileName: primary.fileName,
     driveLink: primary.webViewLink,
@@ -88,8 +88,9 @@ function buildPayload(cityValue, entry) {
     deliveredAt: new Date().toISOString(),
     type: "carousel",
     slideImages: uploaded.slice(0, -1).map((u) => u.webViewLink),
+    slideThumbnails: uploaded.slice(0, -1).map((u) => `https://drive.google.com/thumbnail?id=${u.fileId}&sz=w800`),
+    slideFileIds: uploaded.slice(0, -1).map((u) => u.fileId),
     pdfLink: uploaded[uploaded.length - 1].webViewLink,
-    slides: uploaded.slice(0, -1).map((u) => ({ fileName: u.fileName, link: u.webViewLink })),
     keyword: entry.keyword || null,
     closeType: entry.closeType,
   };
@@ -145,6 +146,10 @@ async function main() {
   const payload = buildPayload("carousel", entry);
   console.log(`  slideImages: ${payload.slideImages.length} urls`);
   console.log(`  pdfLink: ${payload.pdfLink.slice(0, 60)}...`);
+  console.log(`\n  CAPTION SENT (must be paste-ready, no URLs or instructions):`);
+  console.log(payload.caption.split("\n").map((l) => `    | ${l}`).join("\n"));
+  const dirty = /https?:\/\/|Ready to Post|trending audio|^\s*\d+\.\s/m.test(payload.caption);
+  console.log(`  caption clean: ${dirty ? "NO — still polluted" : "YES"}`);
 
   const first = await send("production payload", payload);
 
