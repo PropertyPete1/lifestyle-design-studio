@@ -146,14 +146,35 @@ async function main() {
   console.log(`  slideImages: ${payload.slideImages.length} urls`);
   console.log(`  pdfLink: ${payload.pdfLink.slice(0, 60)}...`);
 
-  const res = await send("production payload", payload);
+  const first = await send("production payload", payload);
+
+  if (!first.ok) {
+    console.log("\n=== RESULT ===\nStill rejected. See CAUSE above.");
+    process.exitCode = 1;
+    return;
+  }
+
+  // Send it again. The unique key is (type, city, date), so a second identical
+  // delivery must UPDATE the same row, not insert a second one. If the ids
+  // differ the key is not doing its job and every re-run would duplicate.
+  const second = await send("same delivery again (idempotency)", payload);
+
+  const idOf = (r) => { try { return JSON.parse(r.body)?.deliveryId ?? null; } catch { return null; } };
+  const id1 = idOf(first);
+  const id2 = idOf(second);
 
   console.log("\n=== RESULT ===");
-  if (res.ok) {
-    console.log("The carousel delivery was ACCEPTED and written.");
-    console.log("Wire side confirmed: enum, field contract and unique key all agree.");
+  console.log(`first  deliveryId: ${id1}`);
+  console.log(`second deliveryId: ${id2}`);
+
+  if (!second.ok) {
+    console.log("The repeat was rejected — the row exists but re-runs will fail.");
+    process.exitCode = 1;
+  } else if (id1 !== null && id1 === id2) {
+    console.log("UPSERT CONFIRMED — same row updated. The (type, city, date) key works.");
   } else {
-    console.log("Still rejected. See CAUSE above.");
+    console.log("::warning::the repeat created a DIFFERENT row — the unique key is not");
+    console.log("catching carousels, so every re-run will duplicate the delivery.");
     process.exitCode = 1;
   }
 }
