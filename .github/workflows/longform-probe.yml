@@ -1,12 +1,25 @@
 name: Long-form Probe (Phase 0)
 
 # Phase 0 capability probes for the weekly long-form YouTube engine.
-# workflow_dispatch ONLY — no schedule, nothing here runs on its own.
+#
+# No schedule — nothing here runs on its own. workflow_dispatch is the intended
+# trigger, but GitHub only exposes that once the file is on the default branch,
+# so while this lives on the feature branch the probes are driven by markers in
+# the commit message:
+#
+#   [probe-youtube]   round-trip the Metricool youtubeData fields
+#   [probe-heygen]    hit the HeyGen API (renders only with [probe-generate])
+#   [probe-assembly]  build and time a full long-form assembly (slow, ~hours)
 #
 # Nothing in this workflow publishes. The Metricool probe creates drafts and
 # deletes them in a finally block; the HeyGen probe only spends credits when
-# heygen_generate is set; no YouTube upload happens at this phase.
+# asked; no YouTube upload happens at this phase.
 on:
+  push:
+    branches: [feat/youtube-longform]
+    paths:
+      - 'longform/**'
+      - '.github/workflows/longform-probe.yml'
   workflow_dispatch:
     inputs:
       probe:
@@ -41,7 +54,9 @@ permissions:
 
 jobs:
   assembly:
-    if: github.event.inputs.probe == 'assembly' || github.event.inputs.probe == 'all'
+    if: >-
+      github.event.inputs.probe == 'assembly' || github.event.inputs.probe == 'all'
+      || contains(github.event.head_commit.message, '[probe-assembly]')
     runs-on: ubuntu-latest
     timeout-minutes: 300
     steps:
@@ -68,7 +83,9 @@ jobs:
         run: node probe-assembly.mjs
 
   youtube-path:
-    if: github.event.inputs.probe == 'youtube-path' || github.event.inputs.probe == 'all'
+    if: >-
+      github.event.inputs.probe == 'youtube-path' || github.event.inputs.probe == 'all'
+      || contains(github.event.head_commit.message, '[probe-youtube]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -89,7 +106,9 @@ jobs:
         run: node probe-youtube-path.mjs
 
   heygen:
-    if: github.event.inputs.probe == 'heygen' || github.event.inputs.probe == 'all'
+    if: >-
+      github.event.inputs.probe == 'heygen' || github.event.inputs.probe == 'all'
+      || contains(github.event.head_commit.message, '[probe-heygen]')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -102,6 +121,18 @@ jobs:
         env:
           HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
           HEYGEN_AVATAR_ID: ${{ secrets.HEYGEN_AVATAR_ID }}
-          HEYGEN_PROBE_GENERATE: ${{ github.event.inputs.heygen_generate == 'true' && '1' || '0' }}
+          HEYGEN_PROBE_GENERATE: ${{ (github.event.inputs.heygen_generate == 'true' || contains(github.event.head_commit.message, '[probe-generate]')) && '1' || '0' }}
           HEYGEN_PROBE_AUDIO_URL: ${{ secrets.HEYGEN_PROBE_AUDIO_URL }}
-        run: node probe-heygen.mjs
+        # Exit 78 means "blocked on a missing key", which is a finding, not a
+        # failure. Surface it as a warning so a red X always means the probe
+        # itself broke.
+        run: |
+          set +e
+          node probe-heygen.mjs
+          code=$?
+          set -e
+          if [ "$code" = "78" ]; then
+            echo "::warning::HeyGen probe BLOCKED — HEYGEN_API_KEY is not set on this repo"
+            exit 0
+          fi
+          exit $code
