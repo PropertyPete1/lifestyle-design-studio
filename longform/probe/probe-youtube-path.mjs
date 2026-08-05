@@ -35,6 +35,8 @@
  *   - no token is ever printed; redact() scrubs them from all output.
  */
 
+import { createHash } from "crypto";
+
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;
 const USER_ID = process.env.METRICOOL_USER_ID;
@@ -320,6 +322,45 @@ async function findExistingMediaUrl() {
   return null;
 }
 
+// ─── A4: how big a file will Metricool take? ────────────────────────────────
+
+/**
+ * The assembly probe puts a 12-minute 1080p render at ~320MB, and 4K well past
+ * a gigabyte. src/metricool.js caps uploads at 95MB with the note "Metricool
+ * limit is 100MB" — a number calibrated on 30-second Reels. If that ceiling is
+ * real for long-form, the whole Metricool path collapses: squeezing 12 minutes
+ * into 95MB is about 1 Mbps, which looks like it.
+ *
+ * The upload transaction declares the size up front, before any bytes move, so
+ * we can ask the API where the wall is for the cost of a few rejected requests.
+ * No bytes are uploaded and no transaction is completed, so nothing lands in the
+ * media library.
+ */
+async function probeUploadCeiling(brand) {
+  console.log("\n=== A4: MEDIA SIZE CEILING ===");
+  const sizes = [50, 95, 100, 150, 200, 320, 500, 1024, 2048];
+  const fakeHash = createHash("sha256").update("probe").digest("base64");
+
+  for (const mbSize of sizes) {
+    const size = mbSize * 1024 * 1024;
+    const res = await api(`/v2/media/s3/upload-transactions?${authParams(brand.blogId)}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        resourceType: "planner",
+        contentType: "video/mp4",
+        fileExtension: "mp4",
+        parts: [{ size, startByte: 0, endByte: size, hash: fakeHash }],
+      }),
+    });
+    const gotUrl = Boolean(res.json?.data?.presignedUrl);
+    const detail = res.ok ? "" : ` — ${redact(JSON.stringify(res.json || res.text)).slice(0, 200)}`;
+    console.log(`  ${String(mbSize).padStart(5)} MB: ${res.status}${gotUrl ? " presigned URL issued" : " NO url"}${detail}`);
+    // Deliberately never PATCH the transaction — an uncompleted transaction
+    // never becomes a media library entry.
+  }
+  console.log("  (no bytes uploaded, no transaction completed — nothing was added to the library)");
+}
+
 // ─── B: YouTube Data API v3 reachability ────────────────────────────────────
 
 async function probeYoutubeDataApi() {
@@ -398,6 +439,7 @@ async function main() {
     const brand = brands.find(b => b.blogId === Number(DEFAULT_BLOG)) || brands[0];
     await probeShortControl(brand, mediaUrl);
     await probeFieldByField(brand, mediaUrl);
+    await probeUploadCeiling(brand);
   }
 
   await probeYoutubeDataApi();
