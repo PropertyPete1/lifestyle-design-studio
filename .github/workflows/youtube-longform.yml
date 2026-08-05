@@ -1,0 +1,137 @@
+name: YouTube Long-form
+
+# The weekly long-form cycle. It waits on a human twice — once to pick the
+# topic, once to release the finished video — so it is built as a Monday job
+# that asks, plus a polling job that advances whatever is ready.
+#
+# NOTHING HERE PUBLISHES. The brief and the recording kit are notifications;
+# the publish step lands in a later PR behind an explicit approval.
+#
+# Both jobs share one concurrency group because both write yt-approvals.json,
+# and a brief racing the pipeline over that file is the one way this design
+# could lose a decision.
+on:
+  schedule:
+    # Monday brief: 9:00 AM CT = 14:00 UTC, with a :30 backup like every other
+    # job here. The brief job is idempotent — an unanswered brief blocks a
+    # second one — so the backup cron cannot double-send.
+    - cron: '0 14 * * 1'
+    - cron: '30 14 * * 1'
+    # Pipeline poll: 10:00 AM and 4:00 PM CT. Peter answers on his own time, so
+    # this is about picking his answer up within hours rather than on a fixed
+    # day. Most runs do nothing and exit clean.
+    - cron: '0 15 * * *'
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run'
+        required: true
+        default: 'pipeline'
+        type: choice
+        options:
+          - pipeline
+          - brief
+      dry_run:
+        description: 'Dry run (generate and print, send nothing)'
+        required: false
+        default: false
+        type: boolean
+      force:
+        description: 'Brief only: send even if one is already unanswered'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  brief:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'brief')
+      || github.event.schedule == '0 14 * * 1'
+      || github.event.schedule == '30 14 * * 1'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: youtube-longform-approvals
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Write the weekly brief
+        id: run
+        working-directory: auto-poster
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          FORCE: ${{ github.event.inputs.force || 'false' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: |
+          if node src/yt-brief-main.js; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Commit approvals
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs YTBRIEF "${{ steps.run.outputs.success }}"
+
+  pipeline:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'pipeline')
+      || github.event.schedule == '0 15 * * *'
+      || github.event.schedule == '0 21 * * *'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: youtube-longform-approvals
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Advance the pipeline
+        id: run
+        working-directory: auto-poster
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: |
+          if node src/yt-pipeline-main.js; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Commit approvals
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs YTPIPELINE "${{ steps.run.outputs.success }}"
