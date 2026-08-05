@@ -197,6 +197,198 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-05",
+      "timestamp": "2026-08-05T15:55:59.578Z",
+      "pillar": "motivation_business",
+      "topic": "19 months before the business paid me (delayed payoff, discipline)",
+      "hook": "My real estate business paid me nothing for 19 months. I almost quit in month seven.",
+      "closeType": "share",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "19 months before the business paid me (delayed payoff, discipline)",
+        "hook": "My real estate business paid me nothing for 19 months. I almost quit in month seven.",
+        "map": [
+          "Month seven, broke",
+          "The night shift",
+          "Paying myself last",
+          "Tracking the wrong number",
+          "The nine month delay",
+          "What month 19 looked like"
+        ],
+        "points": [
+          {
+            "title": "Month Seven, Broke",
+            "body": [
+              "Savings gone. I took a warehouse shift four nights a week.",
+              "I told nobody in the business."
+            ],
+            "loop": "That shift bought me something else."
+          },
+          {
+            "title": "The Shift Bought Time",
+            "body": [
+              "With rent covered, I could say no to bad clients.",
+              "A desperate agent chases everything and closes nothing."
+            ],
+            "loop": "The next rule was harder."
+          },
+          {
+            "title": "I Paid Myself Last",
+            "body": [
+              "I picked one fixed number for my life and lived on it.",
+              "Everything above that went straight back into the business."
+            ],
+            "loop": "But I stopped tracking income."
+          },
+          {
+            "title": "I Tracked Conversations",
+            "body": [
+              "Ten real conversations a day. Not posts. Not likes.",
+              "Closings follow conversations. They just do not follow fast."
+            ],
+            "loop": "The delay has a length."
+          },
+          {
+            "title": "About Nine Months",
+            "body": [
+              "The work you do today pays out roughly nine months later.",
+              "So a slow month is a report card on last spring."
+            ],
+            "loop": "Then month 19 happened."
+          },
+          {
+            "title": "Month 19",
+            "body": [
+              "Three closings in one month, all from calls I made in month ten.",
+              "Nothing changed in month 19. Everything changed nine months before it."
+            ],
+            "loop": "Nobody claps for month ten."
+          }
+        ],
+        "cta": {
+          "shareLine": "Send this to someone who is nine months into something and has not seen a dollar yet."
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 8,
+        "worst_problem": "Two of the six loops — \"The next rule was harder\" and \"Then month 19 happened\" — are filler transitions rather than teases; the latter re-announces information the hook already gave away.",
+        "fix": "Rewrite the weak loops to withhold a specific new thing, e.g. replace \"The next rule was harder\" with \"Then I cut my own pay\" and \"Then month 19 happened\" with \"Three closings, one month, zero new work.\""
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 358441627,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-05T15:59:00.206Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7670577027270921486"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 358441631,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-05T15:59:00.327Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7490798029445382146"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 358441681,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-05T16:00:31.628Z",
+          "publicUrl": "https://www.instagram.com/p/Dbqg8jdiL5w/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 358441714,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-05T15:59:00.552Z",
+          "publicUrl": "https://www.instagram.com/p/Dbqg202Dh8r/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 358441715,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-05T15:59:00.671Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7490798029579669504"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 358441766,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-05T15:59:00.784Z",
+          "publicUrl": "https://www.instagram.com/p/Dbqg79tiDtJ/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 358441768,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-05T15:59:00.895Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122111485173400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 358441770,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-05T15:59:01.025Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7490798028170117120"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-05T16:00:31.628Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
