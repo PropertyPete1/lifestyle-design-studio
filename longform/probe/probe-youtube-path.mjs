@@ -166,46 +166,70 @@ async function probeExistingYoutubeShape() {
 // ─── A3: round-trip every field long-form needs ─────────────────────────────
 
 /**
- * Candidate spellings for each capability we need. Metricool's API is
- * undocumented on these, so we write every plausible name at once and let the
- * read-back tell us which ones are real.
+ * Metricool validates youtubeData strictly and names the offending field in the
+ * 400. That turns the validator into the documentation: send a deliberately
+ * bogus value and it replies with the list of values it WILL take.
  */
-const CANDIDATES = {
-  longFormType: ["type"],
-  title: ["title"],
-  description: ["description", "text"],
-  tags: ["tags", "keywords"],
-  thumbnail: ["thumbnail", "thumbnailUrl", "customThumbnail", "thumbnailImage", "cover", "coverUrl"],
-  madeForKids: ["madeForKids", "notForKids", "selfDeclaredMadeForKids", "audience", "forKids", "kidsContent"],
-  aiDisclosure: [
-    "containsSyntheticMedia", "syntheticMedia", "alteredContent", "aiDisclosure",
-    "aiGenerated", "disclosureAiContent", "alteredOrSyntheticContent", "isAiGenerated",
-  ],
-  category: ["category", "categoryId"],
-  privacy: ["privacy", "privacyStatus"],
-};
+async function enumerateValidValues(brand, mediaUrl, field, bogus = "__probe__") {
+  const res = await api(`/v2/scheduler/posts?${authParams(brand.blogId)}`, {
+    method: "POST",
+    body: JSON.stringify({
+      text: "Phase 0 capability probe - rejected on purpose.",
+      publicationDate: { dateTime: futureDateTime(), timezone: "America/Chicago" },
+      providers: [{ network: "youtube" }],
+      media: mediaUrl ? [mediaUrl] : [],
+      draft: true,
+      autoPublish: false,
+      youtubeData: { type: "video", title: "probe", [field]: bogus },
+    }),
+  });
+  // A 200 here means the bogus value was ACCEPTED — the field is unvalidated.
+  const id = res.json?.data?.id || res.json?.id;
+  if (id) created.push({ id, blogId: brand.blogId, label: `enumerate-${field}` });
+  const detail = res.json?.detail?.[`youtubeData.${field}`] || res.json?.detail || null;
+  console.log(`  ${field}: ${res.status}${detail ? ` -> ${redact(JSON.stringify(detail)).slice(0, 400)}` : " (bogus value ACCEPTED — field is not validated)"}`);
+  return { status: res.status, detail };
+}
 
-async function probeLongFormRoundTrip(brand, mediaUrl) {
-  console.log("\n=== A3: ROUND-TRIP LONG-FORM FIELDS THROUGH A DRAFT ===");
+/**
+ * One candidate field at a time. Strict validation means a field that comes back
+ * 400 "unknown" definitively does not exist, and a field that returns 200 but is
+ * absent on read-back is silently dropped — which at publish time is the same as
+ * not existing, only harder to notice.
+ */
+const FIELD_CANDIDATES = [
+  ["description", "Probe description.\n\n00:00 Intro\n01:30 Section one"],
+  ["tags", ["probe", "moving to san antonio"]],
+  ["keywords", ["probe"]],
+  ["thumbnail", "https://static.metricool.com/probe-thumb.jpg"],
+  ["thumbnailUrl", "https://static.metricool.com/probe-thumb.jpg"],
+  ["customThumbnail", "https://static.metricool.com/probe-thumb.jpg"],
+  ["cover", "https://static.metricool.com/probe-thumb.jpg"],
+  ["madeForKids", false],
+  ["selfDeclaredMadeForKids", false],
+  ["containsSyntheticMedia", true],
+  ["syntheticMedia", true],
+  ["alteredContent", true],
+  ["aiDisclosure", true],
+  ["isAiGenerated", true],
+  ["aiGenerated", true],
+  ["disclosureAiContent", true],
+  ["playlistId", "PLprobe"],
+  ["publishAt", futureDateTime(20)],
+];
+
+async function probeFieldByField(brand, mediaUrl) {
+  console.log("\n=== A3: LONG-FORM FIELDS, ONE AT A TIME ===");
   console.log(`  brand: ${brand.label} (blogId=${brand.blogId})`);
   console.log(`  media: ${mediaUrl ? redact(mediaUrl).slice(0, 80) : "(none available)"}`);
 
-  const youtubeData = {
-    // The central question: does anything other than "short" get accepted?
-    type: "video",
-    title: "Phase 0 probe - draft, never published",
-    description: "Probe description.\n\n00:00 Intro\n01:30 Section one\n\nChapters live here.",
-    tags: ["probe", "moving to san antonio", "austin vs san antonio"],
-    privacy: "private",
-    category: "22",
-    categoryId: "22",
-  };
-  // Every candidate spelling for the fields the docs do not cover.
-  for (const name of CANDIDATES.thumbnail) youtubeData[name] = "https://example.invalid/probe-thumb-1280x720.jpg";
-  for (const name of CANDIDATES.madeForKids) youtubeData[name] = name === "audience" ? "NOT_MADE_FOR_KIDS" : false;
-  for (const name of CANDIDATES.aiDisclosure) youtubeData[name] = true;
+  console.log("\n  --- A3a: make the validator list what it accepts ---");
+  for (const field of ["type", "privacy", "category"]) {
+    await enumerateValidValues(brand, mediaUrl, field);
+  }
 
-  const body = {
+  console.log("\n  --- A3b: is a non-Short accepted at all? ---");
+  const baseline = {
     text: "Phase 0 capability probe - draft, never published.",
     publicationDate: { dateTime: futureDateTime(), timezone: "America/Chicago" },
     providers: [{ network: "youtube" }],
@@ -213,39 +237,53 @@ async function probeLongFormRoundTrip(brand, mediaUrl) {
     draft: true,
     autoPublish: false,
     shortener: false,
-    youtubeData,
+    youtubeData: {
+      type: "video",
+      title: "Phase 0 probe - draft, never published",
+      privacy: "private",
+      category: "HOWTO_STYLE",
+    },
   };
+  const base = await createDraft(brand.blogId, baseline, "longform-baseline");
+  console.log(`  baseline type:"video" -> ${base.status}`);
+  if (!base.ok) {
+    console.log(`    ${redact(base.text).slice(0, 500)}`);
+    console.log("  >>> Metricool will not accept a non-Short YouTube post. Pipe A is out.");
+    return { longFormAccepted: false };
+  }
+  const baseBack = await api(`/v2/scheduler/posts/${base.id}?${authParams(brand.blogId)}`);
+  const baseEcho = baseBack.json?.data?.youtubeData || {};
+  console.log(`  read-back: ${redact(JSON.stringify(baseEcho))}`);
+  console.log(`  >>> type written "video", read back ${JSON.stringify(baseEcho.type)}`);
 
-  const res = await createDraft(brand.blogId, body, "youtube-longform-roundtrip");
-  console.log(`  create: ${res.status}`);
-  if (!res.ok) {
-    console.log(`  body: ${redact(res.text).slice(0, 600)}`);
-    return { accepted: false, status: res.status, error: redact(res.text).slice(0, 600) };
+  console.log("\n  --- A3c: each field long-form needs, tested alone ---");
+  const results = {};
+  for (const [field, value] of FIELD_CANDIDATES) {
+    const body = JSON.parse(JSON.stringify(baseline));
+    body.youtubeData[field] = value;
+    const res = await api(`/v2/scheduler/posts?${authParams(brand.blogId)}`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    const id = res.json?.data?.id || res.json?.id;
+    if (id) created.push({ id, blogId: brand.blogId, label: `field-${field}` });
+
+    let verdict;
+    if (!res.ok) {
+      const detail = res.json?.detail;
+      verdict = `REJECTED ${res.status}${detail ? ` — ${redact(JSON.stringify(detail)).slice(0, 200)}` : ""}`;
+    } else {
+      const back = await api(`/v2/scheduler/posts/${id}?${authParams(brand.blogId)}`);
+      const echo = back.json?.data?.youtubeData || {};
+      verdict = echo[field] !== undefined
+        ? `KEPT as ${JSON.stringify(echo[field]).slice(0, 120)}`
+        : "accepted but DROPPED on read-back";
+    }
+    results[field] = verdict;
+    console.log(`  ${field.padEnd(26)} ${verdict}`);
   }
 
-  const back = await api(`/v2/scheduler/posts/${res.id}?${authParams(brand.blogId)}`);
-  const data = back.json?.data || {};
-  const echoed = data.youtubeData || {};
-  console.log(`  read-back youtubeData: ${redact(JSON.stringify(echoed)).slice(0, 800)}`);
-
-  const survived = {};
-  for (const [capability, names] of Object.entries(CANDIDATES)) {
-    const kept = names.filter(n => echoed[n] !== undefined && echoed[n] !== null);
-    survived[capability] = kept;
-    const verdict = kept.length
-      ? `SURVIVED as ${kept.map(n => `${n}=${JSON.stringify(echoed[n])}`).join(", ")}`
-      : "DROPPED";
-    console.log(`  ${capability.padEnd(14)} ${verdict}`);
-  }
-
-  // The type field decides whether this is even a long-form pipe.
-  const typeBack = echoed.type;
-  console.log(`\n  >>> youtubeData.type written "video", read back ${JSON.stringify(typeBack)}`);
-  if (String(typeBack).toLowerCase() === "short") {
-    console.log("  >>> Metricool coerced long-form to SHORT — pipe A cannot carry a 10-15 min video.");
-  }
-
-  return { accepted: true, echoed, survived, typeBack };
+  return { longFormAccepted: true, baselineEcho: baseEcho, results };
 }
 
 /** Also try the short form, as a control: proves the round-trip method itself works. */
@@ -359,7 +397,7 @@ async function main() {
     const mediaUrl = await findExistingMediaUrl();
     const brand = brands.find(b => b.blogId === Number(DEFAULT_BLOG)) || brands[0];
     await probeShortControl(brand, mediaUrl);
-    await probeLongFormRoundTrip(brand, mediaUrl);
+    await probeFieldByField(brand, mediaUrl);
   }
 
   await probeYoutubeDataApi();
