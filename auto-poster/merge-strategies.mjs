@@ -143,6 +143,106 @@ export function mergeSkipList(local, remote, log = console.log) {
   return merged;
 }
 
+/**
+ * yt-approvals.json: union by requestId, merged field-group by field-group.
+ *
+ * This is the only managed file with TWO independent writers. The poster
+ * appends the request and, later, the acted marker; the dashboard appends
+ * Peter's decision and commits it separately. Neither sees the other's commit
+ * before making its own, so both sides routinely push a version of the same
+ * record that is missing the other side's fields.
+ *
+ * A plain "local wins" or "first wins" union loses one of them every time, so
+ * each record is merged in three independent groups:
+ *
+ *   identity  kind, requestedAt, payload, videoId
+ *   decision  decision, notes, decidedAt        <- only the dashboard writes these
+ *   acted     actedAt, actedAction, actedResult <- only the poster writes these
+ *
+ * Within a group, a side that HAS the group beats a side that does not, and if
+ * both have it the earlier timestamp wins. That makes the merge deterministic
+ * regardless of which runner gets there first, and gives the approval channel
+ * the two properties it depends on:
+ *
+ *   - a recorded decision can never be erased or flipped by a poster push,
+ *   - an acted marker can never be erased by a dashboard push, which is what
+ *     stops a re-merge from resurrecting an already-published request and
+ *     publishing it a second time.
+ */
+export function mergeYtApprovals(local, remote, log = console.log) {
+  const all = [...(remote?.requests || []), ...(local?.requests || [])];
+  const byId = new Map();
+
+  for (const entry of all) {
+    if (!entry || typeof entry !== "object") continue;
+    const id = entry.requestId;
+    if (typeof id !== "string" || !id) continue;
+    const existing = byId.get(id);
+    byId.set(id, existing ? mergeApprovalRecord(existing, entry) : { ...entry });
+  }
+
+  const merged = [...byId.values()].sort((a, b) =>
+    String(a.requestedAt || "").localeCompare(String(b.requestedAt || ""))
+  );
+  const kept = merged.slice(-MAX_APPROVALS);
+  const decided = kept.filter((r) => typeof r.decision === "string" && r.decision).length;
+  const acted = kept.filter((r) => r.actedAt).length;
+  log(`[Merge] yt-approvals: ${kept.length} requests (${decided} decided, ${acted} acted)`);
+  return { ...remote, ...local, requests: kept };
+}
+
+/** Keep in step with MAX_ENTRIES in src/yt-approvals.js. */
+const MAX_APPROVALS = 400;
+
+/**
+ * Which side owns a field group: a present value beats an absent one, and when
+ * both are present the earlier timestamp wins so the result does not depend on
+ * which runner happened to push first.
+ */
+function groupWinner(aVal, bVal, aStamp, bStamp) {
+  const aHas = aVal !== undefined && aVal !== null;
+  const bHas = bVal !== undefined && bVal !== null;
+  if (aHas && !bHas) return "a";
+  if (bHas && !aHas) return "b";
+  if (!aHas && !bHas) return "neither";
+  const a = String(aStamp || "");
+  const b = String(bStamp || "");
+  if (a && b) return a <= b ? "a" : "b";
+  return a ? "a" : "b";
+}
+
+function mergeApprovalRecord(x, y) {
+  const out = { requestId: x.requestId };
+
+  // identity — whichever side carries it; earlier requestedAt breaks the tie.
+  const idFrom = groupWinner(x.kind, y.kind, x.requestedAt, y.requestedAt) === "b" ? y : x;
+  out.kind = idFrom.kind ?? x.kind ?? y.kind;
+  out.requestedAt = idFrom.requestedAt ?? x.requestedAt ?? y.requestedAt;
+  out.payload = idFrom.payload !== undefined ? idFrom.payload : (x.payload ?? y.payload ?? null);
+  const videoId = idFrom.videoId ?? x.videoId ?? y.videoId;
+  if (videoId !== undefined) out.videoId = videoId;
+
+  // decision — the dashboard's half. Never dropped, never flipped.
+  const dec = groupWinner(x.decision, y.decision, x.decidedAt, y.decidedAt);
+  if (dec !== "neither") {
+    const d = dec === "a" ? x : y;
+    out.decision = d.decision;
+    out.notes = d.notes ?? null;
+    out.decidedAt = d.decidedAt ?? null;
+  }
+
+  // acted — the poster's latch. Never dropped, or an approved video publishes twice.
+  const act = groupWinner(x.actedAt, y.actedAt, x.actedAt, y.actedAt);
+  if (act !== "neither") {
+    const a = act === "a" ? x : y;
+    out.actedAt = a.actedAt;
+    out.actedAction = a.actedAction ?? null;
+    out.actedResult = a.actedResult ?? null;
+  }
+
+  return out;
+}
+
 /** Dispatch table used by merge-log-push.mjs. */
 export const MERGE_STRATEGIES = {
   "posted-log.json": (l, r, log) => mergePostedLog(l, r || { posts: [] }, log),
@@ -153,6 +253,7 @@ export const MERGE_STRATEGIES = {
   "trial-variants.json": (l, r, log) => mergeTrialVariants(l, r || { variants: [] }, log),
   "skip-list.json": (l, r, log) => mergeSkipList(l, r || [], log),
   "carousel-log.json": (l, r, log) => mergeCarouselLog(l, r || { posts: [] }, log),
+  "yt-approvals.json": (l, r, log) => mergeYtApprovals(l, r || { requests: [] }, log),
 };
 
 export const MERGE_FILES = Object.keys(MERGE_STRATEGIES);

@@ -1,0 +1,99 @@
+name: Long-form Probe (Phase 0)
+
+# Phase 0 capability probes for the weekly long-form YouTube engine.
+#
+# No schedule — nothing here runs on its own. workflow_dispatch is the intended
+# trigger, but GitHub only exposes that once the file is on the default branch,
+# so while this lives on the feature branch the probes are driven by markers in
+# the commit message:
+#
+#   [probe-youtube]   round-trip the Metricool youtubeData fields
+#   [probe-assembly]  build and time a full long-form assembly (slow, ~hours)
+#
+# Nothing in this workflow publishes. The Metricool probe creates drafts and
+# deletes them in a finally block; no YouTube upload happens at this phase.
+on:
+  push:
+    branches: [feat/youtube-longform]
+    paths:
+      - 'longform/**'
+      - '.github/workflows/longform-probe.yml'
+  workflow_dispatch:
+    inputs:
+      probe:
+        description: 'Which probe to run'
+        required: true
+        default: 'assembly'
+        type: choice
+        options:
+          - assembly
+          - youtube-path
+          - all
+      resolutions:
+        description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
+        required: false
+        default: '1080p'
+        type: string
+      target_minutes:
+        description: 'Assembly probe: target video length in minutes'
+        required: false
+        default: '12'
+        type: string
+
+# Read-only against the repo. These probes report; they never commit.
+permissions:
+  contents: read
+
+jobs:
+  assembly:
+    if: >-
+      github.event.inputs.probe == 'assembly' || github.event.inputs.probe == 'all'
+      || contains(github.event.head_commit.message, '[probe-assembly]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Free disk headroom
+        run: |
+          # A 4K long-form assembly needs room for intermediates. The hosted
+          # image ships ~30GB of toolchains we do not use here.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+          df -h /
+      - name: Run assembly probe
+        working-directory: longform/probe
+        env:
+          PROBE_RESOLUTIONS: ${{ github.event.inputs.resolutions || (contains(github.event.head_commit.message, '[probe-4k]') && '1080p,4k') || '1080p' }}
+          PROBE_TARGET_MINUTES: ${{ github.event.inputs.target_minutes || '12' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+        run: node probe-assembly.mjs
+
+  youtube-path:
+    if: >-
+      github.event.inputs.probe == 'youtube-path' || github.event.inputs.probe == 'all'
+      || contains(github.event.head_commit.message, '[probe-youtube]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run YouTube path probe
+        working-directory: longform/probe
+        env:
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+        run: node probe-youtube-path.mjs
+

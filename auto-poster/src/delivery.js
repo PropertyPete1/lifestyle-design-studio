@@ -304,6 +304,46 @@ async function notifyTrialDashboard(trialData) {
  * Fallback strategy: Use Gmail API if scope allows, otherwise use the
  * Manus notification API from the dashboard as the email relay.
  */
+/**
+ * Send one plain-text email to the owner over the Gmail API.
+ *
+ * Split out of sendEmailBackup so the approval channel can send a message that
+ * is not shaped like a reel delivery. Only the Gmail half is shared — the
+ * dashboard email-relay fallback below it takes a fixed delivery payload that
+ * the dashboard defines, so it stays where it is.
+ */
+async function sendOwnerEmailViaGmail(accessToken, { subject, body }) {
+  const rawEmail = [
+    `To: ${OWNER_EMAIL}`,
+    `Subject: ${subject}`,
+    `Content-Type: text/plain; charset=UTF-8`,
+    ``,
+    body,
+  ].join("\r\n");
+
+  const encodedEmail = Buffer.from(rawEmail).toString("base64url");
+
+  return withRetry("Email (Gmail API)", async () => {
+    const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ raw: encodedEmail }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      // 403 = insufficient scope, 401 = token issue
+      throw new Error(`Gmail API ${res.status}: ${err}`);
+    }
+
+    console.log("[Delivery] ✓ Email sent via Gmail API");
+    return true;
+  });
+}
+
 async function sendEmailBackup(accessToken, { city, caption, driveLink, fileName }) {
   // Try Gmail API first (requires gmail.send scope on the token)
   const subject = `Ready to Post: ${city.toUpperCase()} reel - ${new Date().toLocaleDateString("en-US", { timeZone: "America/Chicago" })}`;
@@ -325,37 +365,7 @@ async function sendEmailBackup(accessToken, { city, caption, driveLink, fileName
     `— Lifestyle Design Studio Auto-Poster`,
   ].join("\n");
 
-  // Build RFC 2822 email
-  const rawEmail = [
-    `To: ${OWNER_EMAIL}`,
-    `Subject: ${subject}`,
-    `Content-Type: text/plain; charset=UTF-8`,
-    ``,
-    body,
-  ].join("\r\n");
-
-  const encodedEmail = Buffer.from(rawEmail).toString("base64url");
-
-  const gmailResult = await withRetry("Email (Gmail API)", async () => {
-    const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ raw: encodedEmail }),
-    });
-
-    if (!res.ok) {
-      const err = await res.text();
-      // 403 = insufficient scope, 401 = token issue
-      throw new Error(`Gmail API ${res.status}: ${err}`);
-    }
-
-    console.log("[Delivery] ✓ Channel 2 (Email) — backup email sent via Gmail API");
-    return true;
-  });
-
+  const gmailResult = await sendOwnerEmailViaGmail(accessToken, { subject, body });
   if (gmailResult.ok) return gmailResult;
 
   // Fallback: try dashboard's notification endpoint (it can send push/email)
@@ -720,4 +730,80 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
     files: uploaded.map((u) => ({ fileName: u.fileName, link: u.webViewLink })),
     driveLink: primary.webViewLink,
   };
+}
+
+// ─── APPROVAL CHANNEL ────────────────────────────────────────────────────────
+
+/**
+ * Ask Peter for a decision, over both channels.
+ *
+ * The dashboard is the channel of record: it is what renders the request and
+ * what writes the decision back into yt-approvals.json. Email is the backup
+ * that makes sure he KNOWS there is something waiting, since the pipeline stops
+ * dead until he answers.
+ *
+ * Both channels failing is fatal on purpose. A delivery that reaches nobody
+ * wastes one post; an approval request that reaches nobody stalls the whole
+ * weekly cycle silently — the Friday job would keep exiting "no decision yet"
+ * forever and look perfectly healthy while doing it. Going red here is the only
+ * way that surfaces.
+ *
+ * @param {object} req
+ * @param {string} req.requestId   the id the decision will be keyed to
+ * @param {"topic_pick"|"video_review"} req.kind
+ * @param {object} req.payload     whatever the dashboard needs to render the card
+ * @param {string} req.emailSubject
+ * @param {string} req.emailBody
+ * @param {string} [req.accessToken] Google token; omit to skip the email channel
+ */
+export async function sendApprovalRequest({ requestId, kind, payload, emailSubject, emailBody, accessToken = null }) {
+  const dashboardUrl = process.env.DASHBOARD_URL;
+  const dashboardSecret = process.env.DASHBOARD_WEBHOOK_SECRET;
+
+  let ch1 = { ok: false, lastError: new Error("Dashboard env vars not configured") };
+  if (dashboardUrl && dashboardSecret) {
+    ch1 = await withRetry("Approval webhook", async () => {
+      const res = await fetch(`${dashboardUrl}/api/delivery/webhook`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Webhook-Secret": dashboardSecret,
+        },
+        body: JSON.stringify({
+          type: "approval",
+          requestId,
+          kind,
+          payload,
+          requestedAt: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`Dashboard returned ${res.status}: ${err}`);
+      }
+      console.log(`[Approvals] ✓ dashboard notified — ${kind} ${requestId}`);
+      return true;
+    });
+  } else {
+    console.warn("[Approvals] DASHBOARD_URL or DASHBOARD_WEBHOOK_SECRET not set — dashboard channel unavailable");
+  }
+
+  let ch2 = { ok: false, lastError: new Error("No Google token supplied") };
+  if (accessToken) {
+    ch2 = await sendOwnerEmailViaGmail(accessToken, { subject: emailSubject, body: emailBody });
+  }
+
+  if (!ch1.ok && !ch2.ok) {
+    throw new Error(
+      `Approval request ${requestId} (${kind}) reached NEITHER channel. ` +
+      `Dashboard: ${ch1.lastError?.message}. Email: ${ch2.lastError?.message}. ` +
+      `The pipeline will stall until Peter can answer, so this exits red rather than waiting silently.`
+    );
+  }
+
+  const channels = [];
+  if (ch1.ok) channels.push("dashboard");
+  if (ch2.ok) channels.push("email");
+  console.log(`[Approvals] ${kind} ${requestId} sent via: ${channels.join(" + ")}`);
+  return { ok: true, channels, requestId, kind };
 }

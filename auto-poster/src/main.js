@@ -829,8 +829,20 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     if (voResult.skipped) {
       voiceoverReason = voResult.reason || "speech_confirmed";
     }
+    // Store the WHOLE transcript, not the first ten words.
+    //
+    // The 10-word cap was fine when this field was only an audit fingerprint.
+    // It is now also the voice-reference corpus for the long-form script writer
+    // (src/yt-voice.js): entries where voiceover === false are Whisper capturing
+    // Peter's own narration, which is the best available sample of how he
+    // actually talks. Truncated to ten words they are fragments, and every one
+    // of the 32 on record is unusable as a writing sample.
+    //
+    // Nothing reads this field positionally — buildAvoidBlock already slices to
+    // 160 chars for display — so lifting the cap is safe, and the entries
+    // written from here on are the ones that make the voice reference work.
     const voiceoverTranscript = voResult.detection?.transcript
-      ? voResult.detection.transcript.split(/\s+/).slice(0, 10).join(" ")
+      ? String(voResult.detection.transcript).trim() || null
       : null;
 
     // Burned-in captions: only when voiceover was added (not skipped)

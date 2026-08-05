@@ -13,6 +13,7 @@ import {
   mergeBlocklist,
   mergeTrialVariants,
   mergePerformanceWeights,
+  mergeYtApprovals,
 } from "../merge-strategies.mjs";
 
 const quiet = () => {};
@@ -127,5 +128,136 @@ describe("mergePerformanceWeights", () => {
       quiet
     );
     assert.equal(merged.hook.score, 9);
+  });
+});
+
+describe("mergeYtApprovals — two writers, neither sees the other", () => {
+  const REQ = {
+    requestId: "video_review-2026-08-14-aaaa1111",
+    kind: "video_review",
+    requestedAt: "2026-08-14T18:00:00.000Z",
+    payload: { title: "Moving to San Antonio" },
+    videoId: "vid-1",
+  };
+
+  test("the poster's request and the dashboard's decision both survive", () => {
+    // The poster pushed the request. The dashboard, working from an older
+    // checkout, pushes only the decision fields for the same id.
+    const local = { requests: [{ ...REQ }] };
+    const remote = {
+      requests: [{
+        requestId: REQ.requestId,
+        decision: "approve",
+        notes: null,
+        decidedAt: "2026-08-14T19:30:00.000Z",
+      }],
+    };
+    const merged = mergeYtApprovals(local, remote, quiet);
+    assert.equal(merged.requests.length, 1);
+    const r = merged.requests[0];
+    assert.equal(r.kind, "video_review", "identity fields lost");
+    assert.equal(r.payload.title, "Moving to San Antonio", "payload lost");
+    assert.equal(r.decision, "approve", "decision lost");
+    assert.equal(r.decidedAt, "2026-08-14T19:30:00.000Z");
+  });
+
+  test("THE RACE THAT MATTERS: an acted marker is never erased by a dashboard push", () => {
+    // The poster published and stamped the record. The dashboard then pushes
+    // its own copy, which has the decision but has never heard of actedAt.
+    // If the merge drops actedAt, the next scheduled run sees an unacted
+    // approval and publishes the same video a second time.
+    const posterLocal = {
+      requests: [{
+        ...REQ,
+        decision: "approve",
+        decidedAt: "2026-08-14T19:30:00.000Z",
+        actedAt: "2026-08-15T14:00:00.000Z",
+        actedAction: "published",
+        actedResult: { youtubeId: "abc123" },
+      }],
+    };
+    const dashboardRemote = {
+      requests: [{
+        requestId: REQ.requestId,
+        decision: "approve",
+        notes: null,
+        decidedAt: "2026-08-14T19:30:00.000Z",
+      }],
+    };
+    const merged = mergeYtApprovals(posterLocal, dashboardRemote, quiet);
+    assert.equal(merged.requests[0].actedAt, "2026-08-15T14:00:00.000Z");
+    assert.equal(merged.requests[0].actedResult.youtubeId, "abc123");
+  });
+
+  test("and it survives with the arguments the other way round", () => {
+    const acted = {
+      requests: [{ ...REQ, decision: "approve", decidedAt: "2026-08-14T19:30:00.000Z", actedAt: "2026-08-15T14:00:00.000Z" }],
+    };
+    const plain = { requests: [{ requestId: REQ.requestId, decision: "approve", decidedAt: "2026-08-14T19:30:00.000Z" }] };
+    assert.equal(mergeYtApprovals(plain, acted, quiet).requests[0].actedAt, "2026-08-15T14:00:00.000Z");
+    assert.equal(mergeYtApprovals(acted, plain, quiet).requests[0].actedAt, "2026-08-15T14:00:00.000Z");
+  });
+
+  test("a decision is never flipped by a poster push that predates it", () => {
+    const posterLocal = { requests: [{ ...REQ }] }; // no decision at all
+    const dashboardRemote = {
+      requests: [{ requestId: REQ.requestId, decision: "revise", notes: "hook is soft", decidedAt: "2026-08-14T19:30:00.000Z" }],
+    };
+    const merged = mergeYtApprovals(posterLocal, dashboardRemote, quiet);
+    assert.equal(merged.requests[0].decision, "revise");
+    assert.equal(merged.requests[0].notes, "hook is soft");
+  });
+
+  test("when both sides carry a decision, the earlier one wins — deterministically", () => {
+    const early = { requestId: "r", decision: "revise", decidedAt: "2026-08-14T19:00:00.000Z" };
+    const late = { requestId: "r", decision: "approve", decidedAt: "2026-08-14T20:00:00.000Z" };
+    assert.equal(mergeYtApprovals({ requests: [early] }, { requests: [late] }, quiet).requests[0].decision, "revise");
+    assert.equal(mergeYtApprovals({ requests: [late] }, { requests: [early] }, quiet).requests[0].decision, "revise");
+  });
+
+  test("distinct requests are all kept", () => {
+    const local = { requests: [{ ...REQ, requestId: "a" }] };
+    const remote = { requests: [{ ...REQ, requestId: "b" }, { ...REQ, requestId: "c" }] };
+    assert.equal(mergeYtApprovals(local, remote, quiet).requests.length, 3);
+  });
+
+  test("tolerates a null/empty remote (first ever run)", () => {
+    const merged = mergeYtApprovals({ requests: [{ ...REQ }] }, { requests: [] }, quiet);
+    assert.equal(merged.requests.length, 1);
+  });
+
+  test("drops garbage entries instead of throwing", () => {
+    const local = { requests: [null, "nope", {}, { requestId: "" }, { ...REQ }] };
+    const merged = mergeYtApprovals(local, { requests: [] }, quiet);
+    assert.equal(merged.requests.length, 1);
+  });
+
+  test("does not mutate either side", () => {
+    const local = { requests: [{ ...REQ }] };
+    const remote = { requests: [{ requestId: REQ.requestId, decision: "approve", decidedAt: "2026-08-14T19:30:00.000Z" }] };
+    mergeYtApprovals(local, remote, quiet);
+    assert.equal(local.requests[0].decision, undefined);
+    assert.equal(remote.requests[0].kind, undefined);
+  });
+
+  test("survives a three-way pileup without losing anyone's half", () => {
+    const a = { requests: [{ ...REQ }] };
+    const b = { requests: [{ requestId: REQ.requestId, decision: "approve", decidedAt: "2026-08-14T19:30:00.000Z" }] };
+    const c = { requests: [{ requestId: REQ.requestId, actedAt: "2026-08-15T14:00:00.000Z", actedAction: "published" }] };
+    const merged = mergeYtApprovals(c, mergeYtApprovals(b, a, quiet), quiet);
+    const r = merged.requests[0];
+    assert.equal(r.kind, "video_review");
+    assert.equal(r.decision, "approve");
+    assert.equal(r.actedAt, "2026-08-15T14:00:00.000Z");
+  });
+
+  test("caps history without dropping the newest", () => {
+    const many = Array.from({ length: 450 }, (_, i) => ({
+      requestId: `r-${String(i).padStart(4, "0")}`,
+      kind: "topic_pick",
+      requestedAt: `2026-01-01T00:${String(i % 60).padStart(2, "0")}:${String(i % 60).padStart(2, "0")}.${String(i).padStart(3, "0")}Z`,
+    }));
+    const merged = mergeYtApprovals({ requests: many }, { requests: [] }, quiet);
+    assert.equal(merged.requests.length, 400);
   });
 });
