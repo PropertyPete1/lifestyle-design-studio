@@ -75,7 +75,7 @@ jobs:
       - name: Run assembly probe
         working-directory: longform/probe
         env:
-          PROBE_RESOLUTIONS: ${{ github.event.inputs.resolutions || '1080p' }}
+          PROBE_RESOLUTIONS: ${{ github.event.inputs.resolutions || (contains(github.event.head_commit.message, '[probe-4k]') && '1080p,4k') || '1080p' }}
           PROBE_TARGET_MINUTES: ${{ github.event.inputs.target_minutes || '12' }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
