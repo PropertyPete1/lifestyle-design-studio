@@ -2560,6 +2560,26 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1oXbqey_w400tAj7Jf8NvcfyPCZRu83m7/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "why_agents_leave",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-05T14:51:06"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-05T15:21:06"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-05T15:51:06"
+        }
+      ],
+      "timestamp": "2026-08-05T19:49:37.577Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
