@@ -2580,6 +2580,26 @@
       ],
       "timestamp": "2026-08-05T19:49:37.577Z",
       "success": true
+    },
+    {
+      "type": "linkedin",
+      "topic": "why_agents_leave",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-05T15:36:11"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-05T16:06:11"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-05T16:36:11"
+        }
+      ],
+      "timestamp": "2026-08-05T20:34:43.132Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
