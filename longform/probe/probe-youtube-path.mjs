@@ -359,6 +359,35 @@ async function probeUploadCeiling(brand) {
     // never becomes a media library entry.
   }
   console.log("  (no bytes uploaded, no transaction completed — nothing was added to the library)");
+
+  // The rejection says "PART size exceeds maximum", and the transaction body
+  // models `parts` as an array with startByte/endByte. That is the shape of a
+  // multipart upload, so 100MB may be the chunk ceiling rather than the file
+  // ceiling — which decides whether a 320MB long-form render can go through
+  // Metricool at all.
+  console.log("\n  --- A4b: is 100MB the PART ceiling or the FILE ceiling? ---");
+  for (const [totalMb, chunks] of [[320, 4], [320, 8], [1024, 12]]) {
+    const total = totalMb * 1024 * 1024;
+    const chunk = Math.ceil(total / chunks);
+    const parts = [];
+    for (let i = 0; i < chunks; i++) {
+      const start = i * chunk;
+      const end = Math.min(start + chunk, total);
+      parts.push({ size: end - start, startByte: start, endByte: end, hash: fakeHash });
+    }
+    const res = await api(`/v2/media/s3/upload-transactions?${authParams(brand.blogId)}`, {
+      method: "PUT",
+      body: JSON.stringify({ resourceType: "planner", contentType: "video/mp4", fileExtension: "mp4", parts }),
+    });
+    const d = res.json?.data || {};
+    const urls = d.presignedUrls || d.parts || (d.presignedUrl ? [d.presignedUrl] : []);
+    const count = Array.isArray(urls) ? urls.length : (urls ? 1 : 0);
+    console.log(
+      `  ${totalMb}MB in ${chunks} x ${(chunk / 1024 / 1024).toFixed(0)}MB: ${res.status}` +
+      (res.ok ? ` — ${count} presigned URL(s) issued` : ` — ${redact(JSON.stringify(res.json || res.text)).slice(0, 220)}`)
+    );
+    if (res.ok) console.log(`      response keys: ${Object.keys(d).join(", ")}`);
+  }
 }
 
 // ─── B: YouTube Data API v3 reachability ────────────────────────────────────
