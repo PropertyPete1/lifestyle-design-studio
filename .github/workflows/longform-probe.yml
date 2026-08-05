@@ -1,0 +1,107 @@
+name: Long-form Probe (Phase 0)
+
+# Phase 0 capability probes for the weekly long-form YouTube engine.
+# workflow_dispatch ONLY — no schedule, nothing here runs on its own.
+#
+# Nothing in this workflow publishes. The Metricool probe creates drafts and
+# deletes them in a finally block; the HeyGen probe only spends credits when
+# heygen_generate is set; no YouTube upload happens at this phase.
+on:
+  workflow_dispatch:
+    inputs:
+      probe:
+        description: 'Which probe to run'
+        required: true
+        default: 'assembly'
+        type: choice
+        options:
+          - assembly
+          - youtube-path
+          - heygen
+          - all
+      resolutions:
+        description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
+        required: false
+        default: '1080p'
+        type: string
+      target_minutes:
+        description: 'Assembly probe: target video length in minutes'
+        required: false
+        default: '12'
+        type: string
+      heygen_generate:
+        description: 'HeyGen probe: actually render a ~12s segment (spends real credits, ~$0.20)'
+        required: false
+        default: false
+        type: boolean
+
+# Read-only against the repo. These probes report; they never commit.
+permissions:
+  contents: read
+
+jobs:
+  assembly:
+    if: github.event.inputs.probe == 'assembly' || github.event.inputs.probe == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Free disk headroom
+        run: |
+          # A 4K long-form assembly needs room for intermediates. The hosted
+          # image ships ~30GB of toolchains we do not use here.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+          df -h /
+      - name: Run assembly probe
+        working-directory: longform/probe
+        env:
+          PROBE_RESOLUTIONS: ${{ github.event.inputs.resolutions || '1080p' }}
+          PROBE_TARGET_MINUTES: ${{ github.event.inputs.target_minutes || '12' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+        run: node probe-assembly.mjs
+
+  youtube-path:
+    if: github.event.inputs.probe == 'youtube-path' || github.event.inputs.probe == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run YouTube path probe
+        working-directory: longform/probe
+        env:
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+        run: node probe-youtube-path.mjs
+
+  heygen:
+    if: github.event.inputs.probe == 'heygen' || github.event.inputs.probe == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run HeyGen probe
+        working-directory: longform/probe
+        env:
+          HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
+          HEYGEN_AVATAR_ID: ${{ secrets.HEYGEN_AVATAR_ID }}
+          HEYGEN_PROBE_GENERATE: ${{ github.event.inputs.heygen_generate == 'true' && '1' || '0' }}
+          HEYGEN_PROBE_AUDIO_URL: ${{ secrets.HEYGEN_PROBE_AUDIO_URL }}
+        run: node probe-heygen.mjs
