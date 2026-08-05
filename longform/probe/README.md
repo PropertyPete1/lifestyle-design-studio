@@ -11,7 +11,6 @@ probes are triggered by markers in the commit message instead:
 | marker | runs |
 | --- | --- |
 | `[probe-youtube]` | Metricool `youtubeData` field-by-field + Data API scope check |
-| `[probe-heygen]` | HeyGen auth, avatar, voices (renders only with `[probe-generate]`) |
 | `[probe-assembly]` | full 12-minute assembly, timed on the runner |
 | `[probe-4k]` | assembly probe runs 1080p **and** 4K instead of 1080p alone |
 
@@ -19,6 +18,11 @@ Once this merges to `main`, `workflow_dispatch` takes over and the markers stop
 mattering.
 
 ## Why they are shaped this way
+
+> **HeyGen was cut on 2026-08-05.** Peter records the on-camera segments himself,
+> which removes the avatar generation step, its recurring cost, and the probe
+> that measured it. The synthetic-media disclosure still applies — the B-roll
+> narration uses his ElevenLabs voice clone.
 
 **Ask the API, not the docs.** Metricool's help centre documents the web planner,
 not the REST API, and the two disagree. The carousel probes learned this the
@@ -46,5 +50,4 @@ input would not survive contact with the first real render.
   in a `finally` block, and the deletion is verified with a follow-up GET. A
   probe run that cannot clean up after itself exits non-zero.
 - No YouTube upload happens at this phase, with or without credentials.
-- HeyGen generation costs real money, so it is off unless explicitly asked for.
 - Tokens are scrubbed from all output by `redact()` before anything is printed.

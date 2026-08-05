@@ -8,12 +8,10 @@ name: Long-form Probe (Phase 0)
 # the commit message:
 #
 #   [probe-youtube]   round-trip the Metricool youtubeData fields
-#   [probe-heygen]    hit the HeyGen API (renders only with [probe-generate])
 #   [probe-assembly]  build and time a full long-form assembly (slow, ~hours)
 #
 # Nothing in this workflow publishes. The Metricool probe creates drafts and
-# deletes them in a finally block; the HeyGen probe only spends credits when
-# asked; no YouTube upload happens at this phase.
+# deletes them in a finally block; no YouTube upload happens at this phase.
 on:
   push:
     branches: [feat/youtube-longform]
@@ -30,7 +28,6 @@ on:
         options:
           - assembly
           - youtube-path
-          - heygen
           - all
       resolutions:
         description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
@@ -42,11 +39,6 @@ on:
         required: false
         default: '12'
         type: string
-      heygen_generate:
-        description: 'HeyGen probe: actually render a ~12s segment (spends real credits, ~$0.20)'
-        required: false
-        default: false
-        type: boolean
 
 # Read-only against the repo. These probes report; they never commit.
 permissions:
@@ -105,34 +97,3 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         run: node probe-youtube-path.mjs
 
-  heygen:
-    if: >-
-      github.event.inputs.probe == 'heygen' || github.event.inputs.probe == 'all'
-      || contains(github.event.head_commit.message, '[probe-heygen]')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Run HeyGen probe
-        working-directory: longform/probe
-        env:
-          HEYGEN_API_KEY: ${{ secrets.HEYGEN_API_KEY }}
-          HEYGEN_AVATAR_ID: ${{ secrets.HEYGEN_AVATAR_ID }}
-          HEYGEN_PROBE_GENERATE: ${{ (github.event.inputs.heygen_generate == 'true' || contains(github.event.head_commit.message, '[probe-generate]')) && '1' || '0' }}
-          HEYGEN_PROBE_AUDIO_URL: ${{ secrets.HEYGEN_PROBE_AUDIO_URL }}
-        # Exit 78 means "blocked on a missing key", which is a finding, not a
-        # failure. Surface it as a warning so a red X always means the probe
-        # itself broke.
-        run: |
-          set +e
-          node probe-heygen.mjs
-          code=$?
-          set -e
-          if [ "$code" = "78" ]; then
-            echo "::warning::HeyGen probe BLOCKED — HEYGEN_API_KEY is not set on this repo"
-            exit 0
-          fi
-          exit $code
