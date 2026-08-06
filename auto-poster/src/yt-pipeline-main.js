@@ -110,6 +110,27 @@ async function deliverKitForApprovedTopic(approvals, record) {
     (scriptResult.belowBar ? " [BELOW BAR — best-of]" : "")
   );
 
+  // DO NOT SEND A KIT FOR A SCRIPT THAT WAS NEVER JUDGED.
+  //
+  // The carousel degrades a critic outage to "ship the best of what we have",
+  // and that is right there: a daily post has to go out, and one weak carousel
+  // costs one post. Here the next thing that happens is Peter spending a
+  // recording session on it. An unscored script does not cost a post, it costs
+  // his Saturday — and he cannot tell from the kit that nothing vetted it.
+  //
+  // So this refuses and leaves the request UNACTED, which means the next
+  // scheduled run tries again. A critic outage is usually transient; waiting a
+  // few hours is free, and re-recording is not.
+  if (scriptResult.criticUnavailable || scriptResult.belowBar) {
+    const why = scriptResult.criticUnavailable
+      ? "the critic could not be reached, so nothing scored this script"
+      : `it scored below the bar (clarity=${scriptResult.scores.clarity} ` +
+        `retention=${scriptResult.scores.retention} authenticity=${scriptResult.scores.authenticity})`;
+    console.log(`[YTPipeline] NOT delivering a kit for ${record.requestId}: ${why}`);
+    console.log(`::warning::Script for "${topic.title}" held back — ${why}. Will retry on the next run.`);
+    return { advanced: false, reason: why };
+  }
+
   const kit = buildKit(scriptResult, { requestId: record.requestId });
   const emailBody = renderKitText(kit);
 

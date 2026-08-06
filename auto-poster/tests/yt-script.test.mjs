@@ -19,6 +19,7 @@ import {
   ON_CAMERA,
   VOICEOVER,
   PASS_MARK,
+  describeLastCall,
 } from "../src/yt-script.js";
 import {
   findBannedTells,
@@ -453,5 +454,40 @@ describe("scoreScript", () => {
     const s = await scoreScript(validScript(), model);
     assert.equal(s.unscored, true);
     assert.equal(scoresPass(s), false);
+  });
+});
+
+describe("an unscored script must not reach a recording kit", () => {
+  // The first live run delivered a kit for a script the critic never scored —
+  // three unparseable model responses in a row degraded to best-of with a total
+  // of 0, and the kit went out anyway. The carousel's "ship the best we have"
+  // degradation is right for a daily post; here the next thing that happens is
+  // Peter spending a recording session on it.
+  test("criticUnavailable and belowBar are both surfaced on the result", async () => {
+    const model = scriptedModel([JSON.stringify(validScript()), "the critic is down"]);
+    const result = await generateScript({ topic: TOPIC, maxRetries: 0, modelCall: model });
+    assert.equal(result.criticUnavailable, true);
+    assert.equal(result.belowBar, true, "an unscored script must also read as below the bar");
+  });
+
+  test("a below-bar-but-scored script is distinguishable from an unscored one", async () => {
+    const model = scriptedModel([JSON.stringify(validScript()), badScores]);
+    const result = await generateScript({ topic: TOPIC, maxRetries: 0, modelCall: model });
+    assert.equal(result.belowBar, true);
+    assert.equal(result.criticUnavailable, false, "this one WAS judged, it just failed");
+    assert.ok(result.scores.retention > 0);
+  });
+
+  test("a passing script is neither", async () => {
+    const model = scriptedModel([JSON.stringify(validScript()), goodScores]);
+    const result = await generateScript({ topic: TOPIC, modelCall: model });
+    assert.equal(result.belowBar, false);
+    assert.equal(result.criticUnavailable, false);
+  });
+});
+
+describe("model-call diagnostics", () => {
+  test("describeLastCall reports something before any call is made", () => {
+    assert.equal(typeof describeLastCall(), "string");
   });
 });
