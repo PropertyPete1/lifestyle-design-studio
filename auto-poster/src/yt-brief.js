@@ -415,7 +415,9 @@ export function briefPayload(brief, { requestId }) {
  * pipeline where a wrong answer silently makes the wrong video.
  *
  * Accepted, in order of confidence:
- *   1. `selection` on the record, if the dashboard grows the field later
+ *   1. `selection` on the record — CONFIRMED as going into the dashboard spec
+ *      (2026-08-05), so this is the real path and the two below are fallbacks
+ *      for a hand-edited decision or an older record
  *   2. a leading number in notes: "2", "2 - but lead with taxes", "#2", "option 2"
  *   3. exactly one candidate whose title appears in notes
  *
@@ -429,7 +431,7 @@ export function resolveTopicSelection(record, candidates) {
   const list = Array.isArray(candidates) ? candidates : [];
   if (list.length === 0) return { ok: false, reason: "the request carried no candidates" };
 
-  // 1. an explicit field, if the dashboard ever sends one
+  // 1. the explicit field the dashboard sends
   const explicit = record?.selection;
   if (explicit !== undefined && explicit !== null && String(explicit).trim()) {
     const byIndex = indexFromValue(String(explicit), list.length);

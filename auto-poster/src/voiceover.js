@@ -131,8 +131,12 @@ export function getVideoDuration(videoPath) {
 /**
  * Generate TTS audio using ElevenLabs API.
  * Returns the path to the generated MP3 file.
+ *
+ * Exported so the long-form assembler can narrate B-roll sections with the same
+ * cloned voice, the same settings and the same pacing post-process the reels
+ * use. Two voices across one channel would be an obvious tell.
  */
-async function generateTTS(script) {
+export async function generateTTS(script) {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) throw new Error("ELEVENLABS_API_KEY not set");
 
