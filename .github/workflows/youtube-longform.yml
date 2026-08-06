@@ -33,6 +33,7 @@ on:
           - pipeline
           - brief
           - dry-run
+          - send-test-approval
       dry_run:
         description: 'Dry run (generate and print, send nothing)'
         required: false
@@ -217,3 +218,45 @@ jobs:
           else
             node scripts/dry-run-build.mjs --synthetic
           fi
+
+  # One live topic_pick round-trip against the real dashboard, with candidates
+  # prefixed [TEST]. Proves the approval endpoint, the push, and the decision
+  # coming back with its selection field. Publishes nothing.
+  send-test-approval:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'send-test-approval'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: youtube-longform-approvals
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Send the test approval
+        id: send
+        working-directory: auto-poster
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: |
+          if node scripts/send-test-approval.mjs; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Commit the request
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs YTTEST "${{ steps.send.outputs.success }}"
