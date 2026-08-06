@@ -261,3 +261,51 @@ describe("mergeYtApprovals — two writers, neither sees the other", () => {
     assert.equal(merged.requests.length, 400);
   });
 });
+
+describe("mergeYtApprovals — the shapes the LIVE dashboard actually writes", () => {
+  const REQUEST = {
+    requestId: "topic_pick-2026-08-06-db587860",
+    kind: "topic_pick",
+    requestedAt: "2026-08-06T03:28:03.955Z",
+    payload: { candidates: [{ title: "one" }, { title: "two" }, { title: "three" }] },
+  };
+  // Exactly what the dashboard committed: a bare array, whole file replaced.
+  const DASHBOARD = [
+    { requestId: REQUEST.requestId, decision: "approve", decidedAt: "2026-08-06T03:40:18.246Z", selection: 2 },
+  ];
+
+  test("a bare-array remote does NOT wipe the poster's request records", () => {
+    // Before the fix, remote.requests was undefined, the merge kept only the
+    // poster's half, and Peter's decision was silently discarded.
+    const merged = mergeYtApprovals({ requests: [REQUEST] }, DASHBOARD, quiet);
+    assert.equal(merged.requests.length, 1);
+    assert.equal(merged.requests[0].kind, "topic_pick");
+    assert.equal(merged.requests[0].decision, "approve");
+  });
+
+  test("it works with the arguments the other way round too", () => {
+    const merged = mergeYtApprovals(DASHBOARD, { requests: [REQUEST] }, quiet);
+    assert.equal(merged.requests[0].decision, "approve");
+    assert.equal(merged.requests[0].payload.candidates.length, 3);
+  });
+
+  test("SELECTION SURVIVES — it is the field that says which video to make", () => {
+    // An earlier version copied decision/notes/decidedAt and dropped selection,
+    // so a recovered record resolved to "approved, but nothing says which one"
+    // and the pipeline stalled on a decision that was actually complete.
+    const merged = mergeYtApprovals({ requests: [REQUEST] }, DASHBOARD, quiet);
+    assert.equal(merged.requests[0].selection, 2);
+  });
+
+  test("the result is always the poster's object shape, never numeric keys", () => {
+    const merged = mergeYtApprovals(DASHBOARD, DASHBOARD, quiet);
+    assert.ok(Array.isArray(merged.requests));
+    assert.equal(merged["0"], undefined, "spreading a bare array would produce numeric keys");
+  });
+
+  test("the request payload survives a dashboard write", () => {
+    const merged = mergeYtApprovals({ requests: [REQUEST] }, DASHBOARD, quiet);
+    assert.equal(merged.requests[0].payload.candidates.length, 3);
+    assert.equal(merged.requests[0].requestedAt, REQUEST.requestedAt);
+  });
+});

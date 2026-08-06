@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   loadApprovals,
+  normaliseApprovals,
   saveApprovals,
   appendRequest,
   markActed,
@@ -277,5 +278,43 @@ describe("loadApprovals — an unreadable file must stall, never release", () =>
     const log = appendRequest({ requests: [] }, { requestId: "r1", kind: KIND_TOPIC_PICK, payload: { a: 1 } });
     saveApprovals(log, path);
     assert.equal(loadApprovals(path).requests[0].payload.a, 1);
+  });
+});
+
+describe("the dashboard writes a BARE ARRAY — found on the first live round-trip", () => {
+  // The deployed dashboard commits [{ requestId, decision, decidedAt, selection }],
+  // replacing the whole file. The request half — kind, requestedAt, and the
+  // payload holding the candidates — vanishes from HEAD.
+  const DASHBOARD_WRITE = [
+    {
+      requestId: "topic_pick-2026-08-06-db587860",
+      decision: "approve",
+      decidedAt: "2026-08-06T03:40:18.246Z",
+      selection: 2,
+    },
+  ];
+
+  test("normaliseApprovals accepts the bare array", () => {
+    const n = normaliseApprovals(DASHBOARD_WRITE);
+    assert.equal(n.requests.length, 1);
+    assert.equal(n.requests[0].selection, 2);
+  });
+
+  test("normaliseApprovals still accepts the poster's own shape", () => {
+    const n = normaliseApprovals({ requests: [req()] });
+    assert.equal(n.requests.length, 1);
+  });
+
+  test("anything else is rejected, so a corrupt file still stalls", () => {
+    assert.equal(normaliseApprovals({ nope: 1 }), null);
+    assert.equal(normaliseApprovals("string"), null);
+    assert.equal(normaliseApprovals(null), null);
+  });
+
+  test("a decision-only record cannot answer for a kind it does not name", () => {
+    // It has no `kind`, so on its own it is not a topic_pick decision. This is
+    // why the request half has to be merged back in rather than relied on alone.
+    const log = normaliseApprovals(DASHBOARD_WRITE);
+    assert.equal(decisionState(log, KIND_TOPIC_PICK).state, "none");
   });
 });

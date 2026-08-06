@@ -55,7 +55,42 @@ export const MAX_ENTRIES = 400;
 // ─── load / save ────────────────────────────────────────────────────────────
 
 /**
- * Read the approvals file. Anything unreadable degrades to empty.
+ * Normalise whatever is in the file into { requests: [...] }.
+ *
+ * TWO WRITERS, TWO SHAPES. The poster writes `{ requests: [...] }`. The
+ * deployed dashboard writes a BARE ARRAY of decision records:
+ *
+ *   [ { requestId, decision, decidedAt, selection } ]
+ *
+ * Discovered the hard way on the first live round-trip: the dashboard's commit
+ * replaced the whole file, the request record — kind, requestedAt, and the
+ * payload holding the candidates — vanished from HEAD, loadApprovals saw no
+ * requests array and degraded to empty, and decisionState reported "none".
+ * Peter's pick was invisible to the pipeline, and the next poster commit would
+ * have merged the decision away entirely.
+ *
+ * The defensive read did its job — it stalled rather than proceeding on a file
+ * it did not understand — but stalling on a decision Peter actually made is
+ * still a broken pipeline.
+ *
+ * So the poster accepts both shapes. The dashboard is what is deployed, and
+ * making the poster tolerant is both the smaller change and the more robust
+ * one: a bare array of decisions is a perfectly reasonable thing for it to
+ * write, and the field-group merge already knows how to fold decision-only
+ * records onto request records without losing either half.
+ */
+export function normaliseApprovals(parsed) {
+  if (Array.isArray(parsed)) {
+    return { requests: parsed.filter(isRecord) };
+  }
+  if (parsed && Array.isArray(parsed.requests)) {
+    return { ...parsed, requests: parsed.requests.filter(isRecord) };
+  }
+  return null;
+}
+
+/**
+ * Read the approvals file. Anything unrecognisable degrades to empty.
  *
  * Empty means "nothing is approved", so a corrupt file stalls the pipeline
  * rather than releasing it. That asymmetry is deliberate.
@@ -63,12 +98,12 @@ export const MAX_ENTRIES = 400;
 export function loadApprovals(path = YT_APPROVALS_PATH) {
   if (!existsSync(path)) return { requests: [] };
   try {
-    const parsed = JSON.parse(readFileSync(path, "utf-8"));
-    if (!parsed || !Array.isArray(parsed.requests)) {
-      console.warn("[Approvals] yt-approvals.json has no requests array — treating as empty");
+    const normalised = normaliseApprovals(JSON.parse(readFileSync(path, "utf-8")));
+    if (!normalised) {
+      console.warn("[Approvals] yt-approvals.json is neither {requests:[]} nor an array — treating as empty");
       return { requests: [] };
     }
-    return { ...parsed, requests: parsed.requests.filter(isRecord) };
+    return normalised;
   } catch (err) {
     console.warn(`[Approvals] yt-approvals.json unreadable (${err.message}) — treating as empty`);
     return { requests: [] };

@@ -156,7 +156,7 @@ export function mergeSkipList(local, remote, log = console.log) {
  * each record is merged in three independent groups:
  *
  *   identity  kind, requestedAt, payload, videoId
- *   decision  decision, notes, decidedAt        <- only the dashboard writes these
+ *   decision  decision, selection, notes, decidedAt  <- only the dashboard writes these
  *   acted     actedAt, actedAction, actedResult <- only the poster writes these
  *
  * Within a group, a side that HAS the group beats a side that does not, and if
@@ -170,7 +170,13 @@ export function mergeSkipList(local, remote, log = console.log) {
  *     publishing it a second time.
  */
 export function mergeYtApprovals(local, remote, log = console.log) {
-  const all = [...(remote?.requests || []), ...(local?.requests || [])];
+  // Either side can be a BARE ARRAY of decision records — that is what the
+  // deployed dashboard commits. Without this, a dashboard write makes
+  // `remote.requests` undefined, the merge keeps only the poster's half, and
+  // Peter's decision is silently discarded. Verified on the first live
+  // round-trip.
+  const asRequests = (side) => (Array.isArray(side) ? side : side?.requests || []);
+  const all = [...asRequests(remote), ...asRequests(local)];
   const byId = new Map();
 
   for (const entry of all) {
@@ -188,7 +194,11 @@ export function mergeYtApprovals(local, remote, log = console.log) {
   const decided = kept.filter((r) => typeof r.decision === "string" && r.decision).length;
   const acted = kept.filter((r) => r.actedAt).length;
   log(`[Merge] yt-approvals: ${kept.length} requests (${decided} decided, ${acted} acted)`);
-  return { ...remote, ...local, requests: kept };
+  // Always write back the poster's shape. Spreading a bare array here would
+  // produce an object with numeric keys.
+  const base = Array.isArray(remote) ? {} : remote || {};
+  const overlay = Array.isArray(local) ? {} : local || {};
+  return { ...base, ...overlay, requests: kept };
 }
 
 /** Keep in step with MAX_ENTRIES in src/yt-approvals.js. */
@@ -223,12 +233,20 @@ function mergeApprovalRecord(x, y) {
   if (videoId !== undefined) out.videoId = videoId;
 
   // decision — the dashboard's half. Never dropped, never flipped.
+  //
+  // `selection` travels with the decision and is NOT optional: it is the field
+  // that says WHICH of the three topics Peter picked. An earlier version of
+  // this merge copied decision/notes/decidedAt and silently dropped it, so a
+  // recovered record resolved to "approved, but nothing says which one" and the
+  // pipeline stalled on a decision that was actually complete. Found on the
+  // first live round-trip.
   const dec = groupWinner(x.decision, y.decision, x.decidedAt, y.decidedAt);
   if (dec !== "neither") {
     const d = dec === "a" ? x : y;
     out.decision = d.decision;
     out.notes = d.notes ?? null;
     out.decidedAt = d.decidedAt ?? null;
+    if (d.selection !== undefined && d.selection !== null) out.selection = d.selection;
   }
 
   // acted — the poster's latch. Never dropped, or an approved video publishes twice.
