@@ -65,7 +65,289 @@
       "decision": "approve",
       "notes": null,
       "decidedAt": "2026-08-06T03:40:18.246Z",
-      "selection": 2
+      "selection": 2,
+      "actedAt": "2026-08-06T03:55:10.739Z",
+      "actedAction": "kit_delivered",
+      "actedResult": {
+        "selectedIndex": 2,
+        "selectedTitle": "[TEST] Austin vs San Antonio: the honest cost comparison",
+        "market": "austin",
+        "folderPath": "YT Recordings/topic_pick-2026-08-06-db587860",
+        "takeCount": 12,
+        "scores": {
+          "clarity": 0,
+          "retention": 0,
+          "authenticity": 0,
+          "worst_problem": "critic unavailable",
+          "worst_boundary": "",
+          "fix": "",
+          "unscored": true
+        },
+        "belowBar": true,
+        "script": {
+          "title": "Austin vs San Antonio: The Honest Cost Comparison",
+          "hook": "Everybody tells you Austin is expensive and San Antonio is cheap. That's true. But it's not true in the way you think, and the gap is almost never where people point.",
+          "promise": "By the end of this you'll know exactly which line items actually change between these two cities, which ones barely move at all, and how to figure out what your real monthly cost would be in each one.",
+          "sections": [
+            {
+              "title": "The housing gap is real, but it's not the number you've been quoted",
+              "takes": [
+                {
+                  "id": "s1t1",
+                  "mode": "ON_CAMERA",
+                  "text": "Let's start with the thing everybody leads with. House prices. Yes, Austin costs more. That part is not a myth. But the way people describe the gap online is usually the sticker price, and the sticker price is the least useful number in this whole conversation.",
+                  "direction": "Straight to lens, calm and flat. You're correcting a rumour, not selling."
+                },
+                {
+                  "id": "s1t2",
+                  "mode": "VOICEOVER",
+                  "text": "Here's what actually happens. Same square footage, same age of build, same kind of suburban street. In Austin you're paying meaningfully more for it. Nobody argues with that. But the size of that gap swings wildly depending on how far out you're willing to go.",
+                  "direction": "Play over drone or driving B-roll of a suburban street."
+                },
+                {
+                  "id": "s1t3",
+                  "mode": "VOICEOVER",
+                  "text": "If you compare downtown Austin to downtown San Antonio, the gap looks enormous. If you compare the outer suburbs of Austin to the outer suburbs of San Antonio, it shrinks. Not to nothing. But it shrinks a lot more than people expect.",
+                  "direction": "B-roll of two different street types, cut on the word 'shrinks'."
+                },
+                {
+                  "id": "s1t4",
+                  "mode": "VOICEOVER",
+                  "text": "The corridor between the two cities is where this gets confusing for people. There's a stretch of I-35 where you genuinely can't tell from the house which metro you're standing in. Same builder styles, same lot sizes, same look. The pricing is different, but the house isn't.",
+                  "direction": "Highway or new build B-roll. Conversational, like you're pointing out the window."
+                },
+                {
+                  "id": "s1t5",
+                  "mode": "VOICEOVER",
+                  "text": "So the first honest thing I'd say is this. Don't compare the cities. Compare the commute you're actually willing to do, in both places, and then compare the houses inside that circle. That's the only apples to apples version of this question.",
+                  "direction": "Slow this one down. It's the thesis of the section."
+                },
+                {
+                  "id": "s1t6",
+                  "mode": "VOICEOVER",
+                  "text": "New construction complicates it further. Builders in both metros are competing hard for buyers, and what they're willing to do on your behalf changes the math in ways the listing price never shows. Two houses at the same price can land in completely different places once that's factored in.",
+                  "direction": "New build exteriors. Do not name anything. Keep it general."
+                },
+                {
+                  "id": "s1t7",
+                  "mode": "ON_CAMERA",
+                  "text": "So housing is a real gap. I'm not going to pretend it isn't. But it's a smaller gap than the headlines, and it depends almost entirely on where in each metro you're willing to live.",
+                  "direction": "Back to camera. Shorter energy, this is a beat break."
+                }
+              ],
+              "boundaryPull": "But here's the thing that surprises people. The housing gap can close on you, and the line item that closes it isn't the price at all. It's the one that shows up on a piece of paper in October."
+            },
+            {
+              "title": "Property taxes: the line nobody compares properly",
+              "takes": [
+                {
+                  "id": "s2t1",
+                  "mode": "ON_CAMERA",
+                  "text": "Texas has no state income tax. You've heard that. It's the number one thing people say when they're selling you on moving here. What they say a lot less often is how the state actually pays for things instead.",
+                  "direction": "Look right at the lens for the second sentence. Slight raised eyebrow energy."
+                },
+                {
+                  "id": "s2t2",
+                  "mode": "VOICEOVER",
+                  "text": "It's property tax. And in Texas it's not a rounding error on your budget. For a lot of people moving here from out of state, it's the single biggest surprise in the whole process. Bigger than the heat. Bigger than the drive times.",
+                  "direction": "Over neighbourhood B-roll. Steady, matter of fact."
+                },
+                {
+                  "id": "s2t3",
+                  "mode": "VOICEOVER",
+                  "text": "Here's the part that matters for Austin versus San Antonio. The tax rate is not one number for the metro. It's stacked. County, city, school district, and sometimes a special district on top of that. Two houses ten minutes apart can sit at genuinely different rates.",
+                  "direction": "Slow. This is new information for most viewers. Let it land."
+                },
+                {
+                  "id": "s2t4",
+                  "mode": "VOICEOVER",
+                  "text": "Which means you can buy the cheaper house and end up with the higher monthly cost. That's not a hypothetical. It happens all the time, and it happens most often to people who compared list prices in a spreadsheet and stopped there.",
+                  "direction": "Punchy. Short pause after 'higher monthly cost'."
+                },
+                {
+                  "id": "s2t5",
+                  "mode": "VOICEOVER",
+                  "text": "The special districts are the ones that catch people. Some newer neighbourhoods carry an extra assessment to pay for the roads and the water and the infrastructure that got built to put the neighbourhood there in the first place. It's disclosed. It's legal. It's just not on the listing photo.",
+                  "direction": "New development B-roll. Neutral tone. Not scary, just factual."
+                },
+                {
+                  "id": "s2t6",
+                  "mode": "VOICEOVER",
+                  "text": "There's also the homestead exemption, which knocks down your taxable value once the house is your primary residence. It helps. But a lot of people out of state don't know they have to file for it, and the first year in a brand new house is often the year you get hit hardest.",
+                  "direction": "Say 'you have to file for it' clearly. That's the useful bit."
+                },
+                {
+                  "id": "s2t7",
+                  "mode": "VOICEOVER",
+                  "text": "So when somebody tells you a house here is a hundred grand cheaper, the honest question back is: what's the tax rate on that address, and is there a district on top of it. Until you know that, you don't actually know which house costs more.",
+                  "direction": "This is the section's payoff. Deliberate pace."
+                },
+                {
+                  "id": "s2t8",
+                  "mode": "ON_CAMERA",
+                  "text": "This is the single biggest reason I don't like comparing these two cities by price. Price is one input. It's not the answer. And the tax line can move your monthly number more than fifty grand of purchase price will.",
+                  "direction": "To camera. Firm, not preachy."
+                }
+              ],
+              "boundaryPull": "And there's one more cost that never shows up on any of this, doesn't get taxed, doesn't get financed, and quietly eats more of your life than either of the first two."
+            },
+            {
+              "title": "The commute cost, and what your time is actually worth",
+              "takes": [
+                {
+                  "id": "s3t1",
+                  "mode": "ON_CAMERA",
+                  "text": "Nobody puts this on a spreadsheet, and it's the one that changes how people feel about where they live more than anything else. What it costs you to get where you're going.",
+                  "direction": "Relaxed, sitting or leaning. This is the human section."
+                },
+                {
+                  "id": "s3t2",
+                  "mode": "VOICEOVER",
+                  "text": "Austin traffic is worse. I'm not going to dance around it. The city grew faster than the roads did, and everybody who lives there knows exactly which stretches to avoid and exactly what time they turn ugly.",
+                  "direction": "Traffic or highway B-roll. Say it plainly, no drama."
+                },
+                {
+                  "id": "s3t3",
+                  "mode": "VOICEOVER",
+                  "text": "San Antonio is not traffic free. Anybody who tells you that hasn't sat on 281 at five o'clock. But it's a different flavour of bad. It's more predictable. You can plan around it. In Austin the variance is what kills you.",
+                  "direction": "Light humour on the 281 line. You've sat in it too."
+                },
+                {
+                  "id": "s3t4",
+                  "mode": "VOICEOVER",
+                  "text": "Here's why that matters financially. Every mile you drive is fuel, tires, insurance, and a car that ages faster. And if you buy further out to save on the house, you often hand a chunk of that saving straight back to the road.",
+                  "direction": "Over driving footage. Even, unhurried."
+                },
+                {
+                  "id": "s3t5",
+                  "mode": "VOICEOVER",
+                  "text": "Toll roads are a real factor around Austin too. Plenty of people use them daily and just accept it as a bill. That's a monthly cost that doesn't exist in most of the San Antonio commutes I see.",
+                  "direction": "Do not quote a toll amount. Keep it qualitative."
+                },
+                {
+                  "id": "s3t6",
+                  "mode": "VOICEOVER",
+                  "text": "And then there's the part you can't price. An hour each way is two hours a day. That's ten hours a week you don't get back. Some people genuinely don't mind it. Some people find out eighteen months in that they mind it a lot.",
+                  "direction": "Slow way down here. This line is the emotional centre of the video."
+                },
+                {
+                  "id": "s3t7",
+                  "mode": "VOICEOVER",
+                  "text": "The remote work question changes everything about this section. If you're in an office three days a week, commute is a huge input. If you're fully remote, it barely registers, and San Antonio's cost advantage suddenly gets a lot more attractive.",
+                  "direction": "Home office or residential B-roll. Practical tone."
+                },
+                {
+                  "id": "s3t8",
+                  "mode": "ON_CAMERA",
+                  "text": "So before you compare anything else, answer this. How many days a week are you actually driving somewhere. That one answer reshuffles the entire comparison.",
+                  "direction": "To camera, direct. Point lightly at the lens on 'you'."
+                }
+              ],
+              "boundaryPull": "Which sets up the last piece, because there's a whole category of everyday cost that people assume follows the housing gap. It mostly doesn't."
+            },
+            {
+              "title": "Everything else: the costs that barely move between the two",
+              "takes": [
+                {
+                  "id": "s4t1",
+                  "mode": "ON_CAMERA",
+                  "text": "People assume that because Austin housing is more expensive, everything in Austin is more expensive. That's only partly true, and the parts where it isn't true are bigger than you'd think.",
+                  "direction": "Conversational. This is the myth-busting beat."
+                },
+                {
+                  "id": "s4t2",
+                  "mode": "VOICEOVER",
+                  "text": "Your electric bill in a Texas summer is a real line item in both cities. Same heat, same air conditioning running from May to October. That one does not care which metro you picked.",
+                  "direction": "Exterior summer B-roll if you have it. Wry delivery."
+                },
+                {
+                  "id": "s4t3",
+                  "mode": "VOICEOVER",
+                  "text": "Car insurance, groceries, gas, your phone bill. These are close enough between the two that they're not a deciding factor. If someone's telling you San Antonio is dramatically cheaper across the board, they're padding the story.",
+                  "direction": "Neutral B-roll. Say the last sentence like you're letting them in on something."
+                },
+                {
+                  "id": "s4t4",
+                  "mode": "VOICEOVER",
+                  "text": "Where it does move is the stuff around the house. Eating out, going to a show, parking, a night out. Austin runs higher on that, noticeably. If your lifestyle is heavy on that, factor it in honestly, because it's not small.",
+                  "direction": "Restaurant or downtown B-roll if available, otherwise general city."
+                },
+                {
+                  "id": "s4t5",
+                  "mode": "VOICEOVER",
+                  "text": "Homeowners insurance is worth its own mention. Texas premiums are not cheap, hail is a real thing here, and your rate depends on the age of your roof and where you sit more than which city name is on the envelope.",
+                  "direction": "Roofline or exterior B-roll. Practical, no alarm."
+                },
+                {
+                  "id": "s4t6",
+                  "mode": "VOICEOVER",
+                  "text": "And if you're going to a neighbourhood with an HOA, that's another monthly line. It varies enormously. Some are almost nothing. Some cover amenities you'll genuinely use. Either way it belongs in your comparison and it usually gets left out.",
+                  "direction": "Community amenity B-roll. Even tone."
+                },
+                {
+                  "id": "s4t7",
+                  "mode": "ON_CAMERA",
+                  "text": "So the picture that comes out of all this isn't Austin expensive, San Antonio cheap. It's Austin costs more on housing and lifestyle, roughly the same on daily living, and the tax line can go either way depending on the exact address.",
+                  "direction": "To camera. This is the summary of the whole middle. Land it clean."
+                }
+              ],
+              "boundaryPull": "So which one wins. I've got an actual answer, and it's not the diplomatic one."
+            },
+            {
+              "title": "The verdict: who should pick which",
+              "takes": [
+                {
+                  "id": "s5t1",
+                  "mode": "ON_CAMERA",
+                  "text": "Alright, the honest verdict. I sell in both. I'm not going to steer you, but I'm also not going to give you the useless answer where they're both great and it depends on you.",
+                  "direction": "To camera, sit forward slightly. This is the payoff of the video."
+                },
+                {
+                  "id": "s5t2",
+                  "mode": "VOICEOVER",
+                  "text": "Pick Austin if your job or your industry lives there, if you're in an office multiple days a week, and if the money you'd save going south would get spent on flights and drives back up anyway. Proximity is worth paying for when you actually use it.",
+                  "direction": "Austin-side B-roll. Clear, decisive."
+                },
+                {
+                  "id": "s5t3",
+                  "mode": "VOICEOVER",
+                  "text": "Pick San Antonio if you're remote or hybrid, if you want more house for the money, or if you're buying with a family and square footage matters more than being fifteen minutes from a bar you'll go to twice a year.",
+                  "direction": "Family neighbourhood B-roll. Slight smile on the last line."
+                },
+                {
+                  "id": "s5t4",
+                  "mode": "VOICEOVER",
+                  "text": "And look at the corridor between them seriously. A lot of people who came here convinced it was one or the other ended up somewhere in the middle, closer to work than they expected, and paying less than they'd budgeted for either.",
+                  "direction": "Corridor or highway B-roll. Do not name any towns or communities."
+                },
+                {
+                  "id": "s5t5",
+                  "mode": "VOICEOVER",
+                  "text": "The mistake I see most is people deciding the city first and the numbers second. Do it the other way. Get the real monthly cost on two or three specific addresses, one in each metro, and then have an opinion.",
+                  "direction": "Steady, advisory. This is your professional take."
+                },
+                {
+                  "id": "s5t6",
+                  "mode": "ON_CAMERA",
+                  "text": "Because the truth is, the gap between these two cities is not one big gap. It's four or five small ones, and a couple of them can point in the opposite direction from what you assumed.",
+                  "direction": "To camera. Slow down on the last clause."
+                }
+              ],
+              "boundaryPull": "And the only way to know which direction yours points is to run your actual numbers, which is exactly what I want to do for you."
+            }
+          ],
+          "softCta": {
+            "mode": "ON_CAMERA",
+            "text": "Quick thing before the last part. If you're weighing these two cities right now, drop the city you're leaning toward in the comments. I read them, and it tells me what to cover next.",
+            "direction": "Casual. Say it like an aside, then get straight back into it."
+          },
+          "close": {
+            "mode": "ON_CAMERA",
+            "text": "Here's the part that actually helps you. I can't put a monthly payment on the internet, because yours depends on your credit, your down payment, the tax rate at that exact address, and whether there's a district on top of it. But I can run it for you. Text me at two one zero, five five five, zero one four seven, tell me a price range and which metro you're looking at, and I'll send you back a real breakdown for both cities so you can see the difference side by side. Or comment below and I'll get to you. That's it. Thanks for watching.",
+            "direction": "Straight to lens the whole way. Say the phone number slowly and put it on screen. Warm, no pressure at the end."
+          }
+        }
+      }
     }
   ]
 }
