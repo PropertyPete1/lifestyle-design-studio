@@ -11,17 +11,25 @@
  * finds no decision is not a failure and must not look like one, or the alerts
  * become noise and the real failures stop being read.
  *
- * Stages this handles today:
- *   topic_pick approved  ->  write the script, deliver the recording kit
- *   topic_pick rejected  ->  fold Peter's notes into a fresh brief
+ * Stages this handles:
+ *   topic_pick approved   ->  write the script, deliver the recording kit
+ *   topic_pick rejected   ->  fold Peter's notes into a fresh brief
+ *   kit delivered         ->  ingest recordings; assemble and upload PRIVATE
+ *                             once every on-camera take is present
+ *   video_review approved ->  record the approval (this does NOT publish)
+ *   video_review rejected ->  keep the notes for the rework
  *
- * The stages after that — assembly, packaging, publish — land in later PRs and
- * hook in at the same place, keyed off the same requestId.
+ * NOTHING HERE PUBLISHES. Approving a video records it and unlocks the Shorts
+ * cutdowns; Peter flips it to public himself in Studio, where he also sets the
+ * two things Metricool's API cannot reach. See yt-publish.js.
  */
 
 import { loadLog, getRecentlyPostedIdsAllCities } from "./state.js";
-import { getAccessToken, listCityVideos } from "./drive.js";
-import { generateScript } from "./yt-script.js";
+import { getAccessToken, listCityVideos, downloadVideo } from "./drive.js";
+import { join } from "path";
+import { tmpdir } from "os";
+import { mkdirSync, writeFileSync, readFileSync } from "fs";
+import { generateScript, allTakes } from "./yt-script.js";
 import { getVoiceSamples } from "./yt-voice.js";
 import { buildKit, renderKitText, kitPayload } from "./yt-recording-kit.js";
 import {
@@ -37,8 +45,27 @@ import {
   markActed,
   newRequestId,
   decisionState,
+  findRequest,
   KIND_TOPIC_PICK,
+  KIND_VIDEO_REVIEW,
 } from "./yt-approvals.js";
+import { ingestRecordings } from "./yt-ingest.js";
+import { planTimeline, buildChapters } from "./yt-timeline.js";
+import { generateNarration, renderTimeline } from "./yt-assemble.js";
+import { buildPackaging } from "./yt-packaging.js";
+import { uploadPrivate, requestReview } from "./yt-publish.js";
+import {
+  loadLog as loadVideoLog,
+  saveLog as saveVideoLog,
+  recordRender,
+  recordUpload,
+  recordReview,
+  findByRequest,
+  videoIdFor,
+  isUploaded,
+  recentBrollHashes,
+} from "./yt-log.js";
+import { RESOLUTION } from "./yt-config.js";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 
@@ -181,6 +208,206 @@ async function reBriefAfterRejection(approvals, record) {
   return { advanced: true };
 }
 
+/**
+ * The kit is out. Has Peter recorded, and if so can this be built?
+ *
+ * Every exit that is not "built it" is a clean one. Recordings arriving late is
+ * the NORMAL case — the job runs twice a day and he records when he records.
+ */
+async function buildFromRecordings(approvals, record) {
+  const result = record.actedResult || {};
+  const script = result.script;
+  if (!script) {
+    console.log(`[YTPipeline] ${record.requestId} has no script on record — nothing to build from`);
+    return;
+  }
+
+  const videoLog = loadVideoLog();
+  const existing = findByRequest(videoLog, record.requestId);
+  if (existing && isUploaded(existing)) {
+    console.log(`[YTPipeline] ${record.requestId} was already uploaded at ${existing.uploadedAt} — not building again`);
+    return;
+  }
+
+  const workDir = join(tmpdir(), `yt-build-${record.requestId}`);
+  mkdirSync(workDir, { recursive: true });
+
+  const takes = allTakes(script);
+  const ingest = await ingestRecordings({
+    requestId: record.requestId,
+    takes,
+    workDir,
+    keepFiles: true,
+  });
+
+  if (ingest.state === "no-folder" || ingest.state === "empty") {
+    console.log(`[YTPipeline] no recordings for ${record.requestId} yet — exiting cleanly, will check next run`);
+    return;
+  }
+
+  if (ingest.state === "incomplete") {
+    // Report what is missing rather than building a video with a hole in it.
+    const { describeMatchResult } = await import("./yt-take-match.js");
+    const report = describeMatchResult(ingest.result, { requestId: record.requestId });
+    console.log(`[YTPipeline] recordings incomplete for ${record.requestId}:\n${report}`);
+    console.log(`::warning::${ingest.result.missingTakes.length} take(s) still needed for "${result.selectedTitle}"`);
+    return;
+  }
+
+  console.log(`[YTPipeline] all ${ingest.result.matches.length} takes matched — building`);
+
+  // Recordings, keyed by takeId, for the planner.
+  const recordings = {};
+  for (const m of ingest.result.matches) {
+    const clip = ingest.clips.find((c) => c.id === m.clipId);
+    if (clip) recordings[m.takeId] = { path: clip.localPath || null, durationSeconds: clip.durationSeconds };
+  }
+
+  const brollPool = await brollFor(result.market);
+  const plan = planTimeline(script, recordings, brollPool, { usedRecently: recentBrollHashes(videoLog) });
+  if (plan.missingTakes.length > 0) {
+    console.log(`::warning::plan is missing ${plan.missingTakes.length} on-camera take(s) — not rendering`);
+    return;
+  }
+  if (plan.brollExhausted) {
+    console.log("::warning::the B-roll library ran short for this video — some clips are reused");
+  }
+
+  const resolveBrollPath = await downloadPlannedBroll(plan, brollPool, workDir);
+  await generateNarration(plan);
+  const chapters = buildChapters(plan, script);
+  const rendered = await renderTimeline(plan, { workDir, resolveBrollPath, resolution: RESOLUTION });
+
+  const packaging = await buildPackaging({
+    topic: { title: result.selectedTitle, query: result.query, market: result.market, intent: result.intent },
+    script,
+    chapters,
+  });
+
+  const videoId = videoIdFor(record.requestId);
+  let nextLog = recordRender(videoLog, {
+    videoId,
+    requestId: record.requestId,
+    title: packaging.title,
+    market: result.market,
+    intent: result.intent,
+    runtimeSeconds: rendered.seconds,
+    bytes: rendered.bytes,
+    resolution: RESOLUTION,
+    brollHashes: plan.segments.flatMap((s) => (s.broll || []).map((b) => b.contentHash).filter(Boolean)),
+    scriptScores: result.scores,
+    packagingScores: packaging.scores,
+  });
+  saveVideoLog(nextLog);
+
+  if (DRY_RUN) {
+    console.log(`[YTPipeline] DRY RUN — built ${rendered.outputPath}, not uploading`);
+    return;
+  }
+
+  const upload = await uploadPrivate(readFileSync(rendered.outputPath), packaging, {
+    blogId: process.env.METRICOOL_BLOG_ID,
+    userId: process.env.METRICOOL_USER_ID,
+    token: process.env.METRICOOL_API_TOKEN,
+    publishAt: chicagoNow(),
+  });
+
+  nextLog = recordUpload(nextLog, videoId, {
+    youtubeUrl: upload.mediaUrl,
+    metricoolPostId: upload.postId,
+    blogId: upload.blogId,
+  });
+  saveVideoLog(nextLog);
+
+  const reviewRequestId = newRequestId(KIND_VIDEO_REVIEW);
+  const accessToken = await getAccessToken().catch(() => null);
+  await requestReview({
+    requestId: reviewRequestId,
+    videoId,
+    packaging,
+    youtubeUrl: upload.mediaUrl,
+    driveLink: null,
+    stats: { runtimeMinutes: Math.round((rendered.seconds / 60) * 10) / 10, resolution: RESOLUTION },
+    accessToken,
+  });
+
+  saveApprovals(
+    appendRequest(approvals, {
+      requestId: reviewRequestId,
+      kind: KIND_VIDEO_REVIEW,
+      videoId,
+      payload: { videoId, title: packaging.title, requestId: record.requestId },
+    })
+  );
+  console.log(`[YTPipeline] uploaded PRIVATE and sent ${reviewRequestId} for review`);
+}
+
+/**
+ * The B-roll pool, with durations read from Drive metadata rather than from the
+ * files.
+ *
+ * The planner needs to know how long each clip is before it can allocate it,
+ * and downloading 138 clips to find out would cost gigabytes for information
+ * Drive already holds. Only the clips the plan actually uses get downloaded,
+ * afterwards.
+ */
+async function brollFor(market) {
+  try {
+    const videos = await listCityVideos(market || "san_antonio");
+    return videos.map((v) => ({
+      id: v.id,
+      name: v.name,
+      durationSeconds: Number(v.videoMediaMetadata?.durationMillis || 0) / 1000 || 0,
+      contentHash: null,
+      localPath: null,
+    }));
+  } catch (err) {
+    console.warn(`[YTPipeline] could not list B-roll: ${err.message}`);
+    return [];
+  }
+}
+
+/** Fetch just the clips the plan uses, and hand back a resolver for the renderer. */
+async function downloadPlannedBroll(plan, pool, dir) {
+  const wanted = new Set(plan.segments.flatMap((s) => (s.broll || []).map((b) => b.driveFileId)));
+  const paths = new Map();
+  for (const id of wanted) {
+    const clip = pool.find((c) => c.id === id);
+    if (!clip) continue;
+    const dest = join(dir, `broll-${id}.mp4`);
+    writeFileSync(dest, await downloadVideo(id, clip.name));
+    paths.set(id, dest);
+  }
+  console.log(`[YTPipeline] downloaded ${paths.size} B-roll clip(s) the plan needs`);
+  return (id) => paths.get(id) || null;
+}
+
+function chicagoNow() {
+  const chicago = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }));
+  const p = (n) => String(n).padStart(2, "0");
+  return `${chicago.getFullYear()}-${p(chicago.getMonth() + 1)}-${p(chicago.getDate())}T${p(chicago.getHours())}:${p(chicago.getMinutes())}:${p(chicago.getSeconds())}`;
+}
+
+/** Peter reviewed the finished video. Approving records it; it does NOT publish. */
+async function handleVideoReview(approvals, review) {
+  const videoLog = loadVideoLog();
+  const videoId = review.record.videoId || review.record.payload?.videoId;
+
+  if (review.state === "approved") {
+    console.log(`[YTPipeline] ${review.record.requestId} APPROVED — recording it. This does not publish anything.`);
+    saveVideoLog(recordReview(videoLog, videoId, { approved: true }));
+    saveApprovals(markActed(approvals, review.record.requestId, { action: "review_recorded", result: { videoId, approved: true } }));
+    console.log("[YTPipeline] Shorts cutdowns are now eligible; publishing remains Peter's to do in Studio.");
+    return;
+  }
+
+  const notes = review.notes || null;
+  console.log(`[YTPipeline] ${review.record.requestId} was NOT approved${notes ? ` — "${notes}"` : ""}`);
+  saveVideoLog(recordReview(videoLog, videoId, { approved: false, notes }));
+  saveApprovals(markActed(approvals, review.record.requestId, { action: "review_recorded", result: { videoId, approved: false, notes } }));
+  console.log("[YTPipeline] notes recorded for the rework — nothing was published");
+}
+
 async function main() {
   const approvals = loadApprovals();
   const topic = decisionState(approvals, KIND_TOPIC_PICK);
@@ -205,14 +432,28 @@ async function main() {
       await reBriefAfterRejection(approvals, topic.record);
       return;
 
-    case "already-acted":
-      // The kit is out. Recordings, assembly and review are the next PRs; until
-      // they land this is where the pipeline correctly stops.
-      console.log(
-        `[YTPipeline] ${topic.record.requestId} already advanced ` +
-        `(${topic.record.actedAction} at ${topic.record.actedAt}) — nothing further to do yet`
-      );
+    case "already-acted": {
+      // The kit is out. Everything downstream keys off the same requestId, so
+      // the review is checked first — if it has been answered, that is the
+      // newer news and building again would be wrong.
+      const review = decisionState(approvals, KIND_VIDEO_REVIEW);
+      if (review.state === "approved" || review.state === "rejected") {
+        await handleVideoReview(approvals, review);
+        return;
+      }
+      if (review.state === "waiting") {
+        console.log(
+          `[YTPipeline] ${review.record.requestId} is waiting on Peter's review — exiting cleanly`
+        );
+        return;
+      }
+      if (review.state === "already-acted") {
+        console.log(`[YTPipeline] ${review.record.requestId} review already recorded — nothing further`);
+        return;
+      }
+      await buildFromRecordings(approvals, topic.record);
       return;
+    }
 
     default:
       console.log(`[YTPipeline] unrecognised state "${topic.state}" — doing nothing`);
