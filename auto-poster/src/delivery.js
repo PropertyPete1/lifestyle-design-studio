@@ -756,6 +756,27 @@ export async function deliverCarouselToOwner(accessToken, files, meta) {
  * @param {string} req.emailBody
  * @param {string} [req.accessToken] Google token; omit to skip the email channel
  */
+/**
+ * The dashboard's approval endpoint.
+ *
+ * NOT /api/delivery/webhook — that one renders delivery cards. Approvals have
+ * their own endpoint, and pointing at the wrong one is a silent failure: the
+ * request is accepted or rejected by a handler that was never going to raise an
+ * approval card, so Peter gets no push, the pipeline waits forever, and every
+ * scheduled run reports a healthy "still waiting on Peter".
+ *
+ * A constant rather than an inline string so it is greppable and testable.
+ */
+export const APPROVAL_WEBHOOK_PATH = "/api/delivery/approval-webhook";
+
+/** Where deliveries go. Kept next to the above so the two cannot be confused. */
+export const DELIVERY_WEBHOOK_PATH = "/api/delivery/webhook";
+
+/** The payload the approval endpoint receives. Exported so tests can assert its shape. */
+export function approvalPayload({ requestId, kind, payload, requestedAt = new Date().toISOString() }) {
+  return { type: "approval", requestId, kind, payload, requestedAt };
+}
+
 export async function sendApprovalRequest({ requestId, kind, payload, emailSubject, emailBody, accessToken = null }) {
   const dashboardUrl = process.env.DASHBOARD_URL;
   const dashboardSecret = process.env.DASHBOARD_WEBHOOK_SECRET;
@@ -763,19 +784,13 @@ export async function sendApprovalRequest({ requestId, kind, payload, emailSubje
   let ch1 = { ok: false, lastError: new Error("Dashboard env vars not configured") };
   if (dashboardUrl && dashboardSecret) {
     ch1 = await withRetry("Approval webhook", async () => {
-      const res = await fetch(`${dashboardUrl}/api/delivery/webhook`, {
+      const res = await fetch(`${dashboardUrl}${APPROVAL_WEBHOOK_PATH}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Webhook-Secret": dashboardSecret,
         },
-        body: JSON.stringify({
-          type: "approval",
-          requestId,
-          kind,
-          payload,
-          requestedAt: new Date().toISOString(),
-        }),
+        body: JSON.stringify(approvalPayload({ requestId, kind, payload })),
       });
       if (!res.ok) {
         const err = await res.text();
