@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We've got more buyer and lease leads than we can handle right now. New construction in San Antonio and Austin, plus out-of-state relocations coming in every week. They're warm leads. Real people actively looking or actively moving. But here's the honest part. Most of them aren't ready to close today. They need vetting. They need nurturing. They need someone who knows how to build a pipeline instead of chase a quick commission. Most agents see that timeline and disappear. They want deals closing next month, not relationships closing next quarter. If you're the kind of agent who knows how to stay in touch, answer questions consistently, and be the expert when someone's actually ready to move, then you've got real work here. The conversion happens over time. The money follows after.\n\nIf this sounds like something you'd take on, send me a DM.",
-      "format": "story",
-      "ending": "dm_cta",
-      "date": "2026-07-31"
-    },
-    {
       "topic": "deal_story",
       "body": "Had a transaction this week that almost fell apart before closing.\n\n1. Buyer got cold feet three days before closing. Started asking questions they should have asked two months ago. The listing agent got defensive. I stepped in and just answered the questions. No attitude. No rush. Buyer calmed down and we moved forward.\n\n2. The lesson isn't about the buyer. It's about the agent. The listing agent was tired and frustrated. She wanted the deal done. But that energy gets read by everyone in the transaction. I've seen deals die for less.\n\n3. Your job doesn't end when you have a contract. It ends at closing. And sometimes it means being the calm voice in the room when everyone else is spent.\n\nThe agents who consistently close deals aren't the smartest or luckiest. They're just the ones who stay steady when the transaction gets uncomfortable.",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "question",
       "date": "2026-08-05"
+    },
+    {
+      "topic": "leadership_culture",
+      "body": "You want to know what separates a broker from a leader.\n\nA broker manages transactions. A leader invests in people. At Lifestyle Design Realty, we do both. But the second part is what matters. Our agents know we're in their corner when deals get complicated. We show up when they're stuck. We don't disappear when the transaction gets uncomfortable. We celebrate wins together and we solve problems together. That's the difference between working at a brokerage and being part of a team that actually has your back.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
+      "format": "bold_statement",
+      "ending": "dm_cta",
+      "date": "2026-08-06"
     }
   ]
 }

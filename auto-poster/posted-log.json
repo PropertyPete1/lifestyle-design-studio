@@ -2600,6 +2600,50 @@
       ],
       "timestamp": "2026-08-05T20:34:43.132Z",
       "success": true
+    },
+    {
+      "driveFileId": "11Si-OEfZXhzBGEcz37LxbMEUNfPmqYTt",
+      "fileName": "C6CA7ADB-11B3-48A4-9671-C1DBEC6DAB98.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe this is brand new construction in San Antonio?\n\nNew construction like this doesn't sit around long. Builders are offering incentives on move-in ready homes right now.\n\n✨ everyday liv",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-06T19:55:24.218Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "I want to see a historic home that was built in 1890s. Follow me. But you're next to mine.",
+      "content_hash": "ffffdf6f60c00000:7effffff773f0300:3f0703e7e3023fff:ffffffffbf103900:00187effffaf8c00",
+      "captions_burned": false,
+      "freshness": "error: spawnSync /bin/sh ETIMEDOUT",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1Bei8SDNsp4eiOOp5F1VQJ0GYafpLbfv1/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "leadership_culture",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-06T14:56:56"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-06T15:26:56"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-06T15:56:56"
+        }
+      ],
+      "timestamp": "2026-08-06T19:55:28.031Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
