@@ -54,7 +54,26 @@ if (!TOKEN || !USER_ID || !BLOG_ID) {
 
 /** Three parts, so ordering is actually exercised. Two could pass by luck. */
 const PART_COUNT = 3;
-const TARGET_MB = 12;
+
+/**
+ * S3's multipart rule: EVERY PART EXCEPT THE LAST MUST BE AT LEAST 5 MiB.
+ *
+ * Found the hard way. A 12MB file in three parts is 3.84MB each, all three
+ * parts uploaded fine and returned etags, and completion then failed with
+ * "Your proposed upload is smaller than the minimum allowed size" from S3
+ * itself. The parts being individually accepted says nothing — the minimum is
+ * only enforced when the upload is completed.
+ *
+ * So a valid part size is bounded on BOTH sides:
+ *   >= 5 MiB   (S3, except the final part)
+ *   <= 100 MB  (Metricool's own ceiling)
+ *
+ * 21MB in three parts gives 7MB each: comfortably inside both bounds, and
+ * still a throwaway.
+ */
+const MIN_PART_BYTES = 5 * 1024 * 1024;
+const MAX_PART_BYTES = 100 * 1024 * 1024;
+const TARGET_MB = 21;
 
 function redact(s) {
   const str = typeof s === "string" ? s : JSON.stringify(s);
@@ -95,7 +114,7 @@ function buildTestFile(dir) {
     // testsrc2 is cheap to generate and its content changes every frame, which
     // is what makes the three parts differ. An earlier version used a noise
     // filter for that and was too CPU-heavy to finish in reasonable time.
-    "-f", "lavfi", "-i", "testsrc2=s=1280x720:r=30:d=60",
+    "-f", "lavfi", "-i", "testsrc2=s=1280x720:r=30:d=120",
     "-vf",
     "drawtext=text='TEST FILE - DELETE ME':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2",
     "-c:v", "libx264", "-preset", "ultrafast", "-b:v", "5000k", "-pix_fmt", "yuv420p",
@@ -219,10 +238,20 @@ async function main() {
     if (total < 6 * 1024 * 1024) {
       throw new Error(`test file is only ${(total / 1024 / 1024).toFixed(1)}MB — too small to exercise multipart meaningfully`);
     }
-    const partMb = total / PART_COUNT / 1024 / 1024;
-    if (partMb > 100) {
-      throw new Error(`parts would be ${partMb.toFixed(1)}MB, over Metricool's 100MB ceiling — aborting before any upload`);
+    // Both bounds are checked before a single byte moves, because a part that
+    // is out of range uploads happily and only fails at completion — by which
+    // point an orphaned multipart upload is already sitting in S3.
+    const partBytes = Math.ceil(total / PART_COUNT);
+    if (partBytes > MAX_PART_BYTES) {
+      throw new Error(`parts would be ${(partBytes / 1024 / 1024).toFixed(1)}MB, over Metricool's 100MB ceiling — aborting before any upload`);
     }
+    if (PART_COUNT > 1 && partBytes < MIN_PART_BYTES) {
+      throw new Error(
+        `parts would be ${(partBytes / 1024 / 1024).toFixed(2)}MB, under S3's 5 MiB multipart minimum — ` +
+        `completion would fail after the bytes had already moved. Aborting before any upload.`
+      );
+    }
+    console.log(`  part size ${(partBytes / 1024 / 1024).toFixed(2)} MB (S3 min 5 MiB, Metricool max 100 MB) — OK`);
 
     // ── 2. the transaction ─────────────────────────────────────────────────
     console.log(`\n=== 2: OPEN A ${PART_COUNT}-PART TRANSACTION ===`);
