@@ -30,6 +30,7 @@ on:
           - youtube-path
           - upload-preflight
           - multipart
+          - media-delete
           - all
       resolutions:
         description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
@@ -40,6 +41,11 @@ on:
         description: 'Assembly probe: target video length in minutes'
         required: false
         default: '12'
+        type: string
+      media_url:
+        description: 'media-delete only: the static.metricool.com URL to remove'
+        required: false
+        default: ''
         type: string
 
 # Read-only against the repo. These probes report; they never commit.
@@ -118,6 +124,24 @@ jobs:
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
         run: node probe-multipart-upload.mjs
+
+  media-delete:
+    if: github.event.inputs.probe == 'media-delete'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Delete a media-library file, and verify it is gone
+        working-directory: longform/probe
+        env:
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          MEDIA_URL: ${{ github.event.inputs.media_url }}
+        run: node probe-media-delete.mjs "$MEDIA_URL"
 
   youtube-path:
     if: >-
