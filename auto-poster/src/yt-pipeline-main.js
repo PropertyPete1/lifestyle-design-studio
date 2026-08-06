@@ -29,9 +29,9 @@ import { getAccessToken, listCityVideos, downloadVideo } from "./drive.js";
 import { join } from "path";
 import { tmpdir } from "os";
 import { mkdirSync, writeFileSync, readFileSync } from "fs";
-import { generateScript, allTakes } from "./yt-script.js";
+import { generateScript } from "./yt-script.js";
 import { getVoiceSamples } from "./yt-voice.js";
-import { buildKit, renderKitText, kitPayload } from "./yt-recording-kit.js";
+import { buildKit, renderKitText, kitPayload, takesToRecord } from "./yt-recording-kit.js";
 import {
   resolveTopicSelection, generateBrief, proposeFootage,
   renderBriefText, briefPayload, priorTitles,
@@ -232,7 +232,9 @@ async function buildFromRecordings(approvals, record) {
   const workDir = join(tmpdir(), `yt-build-${record.requestId}`);
   mkdirSync(workDir, { recursive: true });
 
-  const takes = allTakes(script);
+  // Only the takes Peter was asked to record. Expecting the voiceover takes
+  // here would report them missing forever and the build would never run.
+  const takes = takesToRecord(script);
   const ingest = await ingestRecordings({
     requestId: record.requestId,
     takes,
