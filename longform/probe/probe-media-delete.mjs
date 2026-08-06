@@ -13,24 +13,33 @@
  * non-zero and says so, whatever any endpoint returned.
  *
  * Run:
- *   node probe-media-delete.mjs "https://static.metricool.com/video/.../file.mp4"
+ *   node probe-media-delete.mjs "202608/73d0050f67dc4a96.mp4"
  */
 
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;
 const USER_ID = process.env.METRICOOL_USER_ID;
 const BLOG_ID = process.env.METRICOOL_BLOG_ID;
-const TARGET = process.argv[2] || process.env.MEDIA_URL;
+/**
+ * The target is given as a PATH SUFFIX, not a full URL: "202608/abc123.mp4".
+ *
+ * The full URL embeds the Metricool user id, which is a secret and is redacted
+ * out of every log — so a full URL copied from a probe run has a placeholder
+ * where the id should be, and pasting it back in means guessing. The script
+ * builds the URL from the id it already holds instead.
+ */
+const SUFFIX = (process.argv[2] || process.env.MEDIA_PATH || "").trim().replace(/^\/+/, "");
 
 if (!TOKEN || !USER_ID || !BLOG_ID) {
   console.error("Missing METRICOOL_API_TOKEN / METRICOOL_USER_ID / METRICOOL_BLOG_ID");
   process.exit(1);
 }
-if (!TARGET || !/^https:\/\/static\.metricool\.com\//.test(TARGET)) {
-  console.error("Pass the static.metricool.com URL to delete as the first argument.");
-  console.error("Refusing to run without an explicit target.");
+if (!/^\d{6}\/[\w.-]+$/.test(SUFFIX)) {
+  console.error('Pass the media path suffix as the first argument, e.g. "202608/73d0050f67dc4a96.mp4".');
+  console.error("Refusing to run without an explicit, well-formed target.");
   process.exit(1);
 }
+const TARGET = `https://static.metricool.com/video/${USER_ID}/${SUFFIX}`;
 
 function redact(s) {
   const str = typeof s === "string" ? s : JSON.stringify(s);
@@ -49,10 +58,9 @@ async function api(path, opts = {}) {
   return { ok: res.ok, status: res.status, json, text };
 }
 
-/** static.metricool.com/video/<user>/<yyyymm>/<name> -> planner/<user>/<yyyymm>/<name> */
-function s3KeyFromUrl(url) {
-  const m = url.match(/static\.metricool\.com\/(?:video|image)\/(.+)$/);
-  return m ? `planner/${m[1]}` : null;
+/** The completion response showed the CDN path mirrors the S3 key under planner/. */
+function s3KeyFromUrl() {
+  return `planner/${USER_ID}/${SUFFIX}`;
 }
 
 async function stillServing() {
@@ -62,13 +70,21 @@ async function stillServing() {
 
 async function main() {
   console.log(`TARGET: ${redact(TARGET)}`);
-  const key = s3KeyFromUrl(TARGET);
+  const key = s3KeyFromUrl();
   console.log(`derived S3 key: ${redact(String(key))}`);
 
   const before = await stillServing();
   console.log(`serving before: ${before.ok} (${before.status})`);
   if (!before.ok) {
-    console.log("Already gone. Nothing to do.");
+    // "Not serving" is only good news if the file was ever there. A typo in the
+    // suffix produces exactly this, and reporting it as a successful cleanup
+    // would be the same class of unearned success the TikTok incident was.
+    console.error(
+      `\nThe URL is not serving (${before.status}) BEFORE any delete was attempted.\n` +
+      `That means either it is already gone, or the path is wrong. This cannot tell\n` +
+      `the two apart, so it is reporting neither as success.`
+    );
+    process.exitCode = 2;
     return;
   }
 
