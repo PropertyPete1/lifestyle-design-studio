@@ -32,6 +32,7 @@ on:
         options:
           - pipeline
           - brief
+          - dry-run
       dry_run:
         description: 'Dry run (generate and print, send nothing)'
         required: false
@@ -42,6 +43,19 @@ on:
         required: false
         default: false
         type: boolean
+      dry_run_mode:
+        description: 'Dry run: synthetic (no recordings needed) or recordings (a real folder)'
+        required: false
+        default: 'synthetic'
+        type: choice
+        options:
+          - synthetic
+          - recordings
+      dry_run_request_id:
+        description: 'Dry run in recordings mode: the requestId whose Drive folder to pull'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: write
@@ -151,3 +165,55 @@ jobs:
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
           node merge-log-push.mjs YTPIPELINE "${{ steps.run.outputs.success }}"
+
+  # THE GATE. Runs the whole build path — transcribe, match, plan, narrate,
+  # render, cut Shorts — and cannot upload anything: no Metricool token is
+  # passed to it, so the upload path has no credentials even if it were reached.
+  #
+  # Required before the first real Monday brief. The stages were built one at a
+  # time and every seam between them is untested until something runs them in
+  # order; two integration bugs were already found that way.
+  dry-run:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'dry-run'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg, espeak & whisper
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg espeak
+          pip install openai-whisper --quiet
+      - name: Free disk headroom
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+          df -h /
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Fetch real recordings
+        if: github.event.inputs.dry_run_mode == 'recordings'
+        working-directory: auto-poster
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          REQUEST_ID: ${{ github.event.inputs.dry_run_request_id }}
+        run: node scripts/fetch-recordings.mjs "$REQUEST_ID" /tmp/dryrun-recordings
+      - name: Run the dry run
+        working-directory: auto-poster
+        env:
+          # DELIBERATELY NO METRICOOL CREDENTIALS. The dry run cannot upload
+          # because it has nothing to upload with.
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          MODE: ${{ github.event.inputs.dry_run_mode }}
+        run: |
+          if [ "$MODE" = "recordings" ]; then
+            node scripts/dry-run-build.mjs --recordings /tmp/dryrun-recordings --broll /tmp/dryrun-broll
+          else
+            node scripts/dry-run-build.mjs --synthetic
+          fi
