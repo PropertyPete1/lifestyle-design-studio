@@ -28,6 +28,18 @@
 
 import sharp from "sharp";
 import { createHash } from "crypto";
+import { requireLiveAck } from "../live-guard.mjs";
+
+// TOUCHES LIVE: publishes a real post to the MAIN TikTok account with
+// privacyOption PUBLIC_TO_EVERYONE — it is visible to followers for the minutes
+// between publishing and cleanup. Deleting the Metricool scheduler entry does
+// NOT retract it; a post that reached PUBLISHED must be removed by hand in the
+// TikTok app. TikTok is connected on the main brand only, so there is no
+// satellite account to test against instead.
+requireLiveAck(
+  "Publishes a PUBLIC post to the MAIN TikTok account. Cleanup CANNOT retract it — " +
+    "you will have to delete the post by hand in the TikTok app."
+);
 
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;

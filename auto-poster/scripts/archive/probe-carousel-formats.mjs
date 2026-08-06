@@ -23,6 +23,17 @@
  *       field that will silently drop at post time too.
  */
 
+import { requireLiveAck } from "../live-guard.mjs";
+
+// TOUCHES LIVE: creates posts in the real Metricool scheduler. Every one is
+// draft:true + autoPublish:false and is deleted in a finally block with the
+// deletion verified by a follow-up GET — but they are real records on the real
+// brand while they exist, and a crash between create and delete leaves them.
+requireLiveAck(
+  "Creates draft posts in the live Metricool scheduler (deleted and verified on the way out, " +
+    "but left behind if this crashes mid-run)."
+);
+
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;
 const USER_ID = process.env.METRICOOL_USER_ID;

@@ -37,6 +37,10 @@ jobs:
       - name: Replay the carousel delivery webhook
         working-directory: auto-poster
         env:
+          # LIVE: sends a real delivery webhook to the dashboard. Publishes
+          # nothing to social and uploads nothing — but the dashboard record and
+          # the owner notification are real.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
         run: node scripts/replay-carousel-webhook.mjs

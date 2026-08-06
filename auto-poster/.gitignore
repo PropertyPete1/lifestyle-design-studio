@@ -5,3 +5,8 @@ node_modules/
 
 # Generated carousel review samples — regenerate on demand, never commit
 samples/
+
+# Generated preview output from scripts/archive/preview-linkedin-week*.mjs.
+# A committed copy used to sit at the repo root; it was a stale snapshot of a
+# script's output, not a source file.
+linkedin-week-preview.md

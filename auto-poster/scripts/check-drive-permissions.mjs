@@ -12,6 +12,10 @@
  * READ ONLY. Reports what Drive currently holds; changes nothing.
  */
 
+// These IDs are committed deliberately, and this repo is public. They are carousel
+// slides that uploadToReadyFolder explicitly shares as {type:'anyone', role:'reader'}
+// so the dashboard and the owner's email can render thumbnails — public by design,
+// not a leak. Flagged and cleared in the 2026-08-06 hygiene audit; no need to re-raise.
 const FILE_IDS = [
   "1vBT_qxTX0fbJjtudpqovbdJQMChoTSF4",
   "1UNCYAvZrRou_koGFHZvuwMrWAwx-oZHj",

@@ -36,6 +36,16 @@
  */
 
 import { createHash } from "crypto";
+import { requireLiveAck } from "../../auto-poster/scripts/live-guard.mjs";
+
+// TOUCHES LIVE: creates draft posts in the real Metricool scheduler to round-trip
+// the youtubeData fields. Every draft is deleted in a finally block and the
+// deletion verified — but a crash between create and delete leaves them on the
+// real brand. No YouTube upload happens here.
+requireLiveAck(
+  "Creates draft posts in the live Metricool scheduler (deleted and verified on the way out, " +
+    "but left behind if this crashes mid-run). Uploads nothing to YouTube."
+);
 
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;

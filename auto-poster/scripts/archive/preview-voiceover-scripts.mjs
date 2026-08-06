@@ -10,9 +10,9 @@
  *   node scripts/preview-voiceover-scripts.mjs --prompts  # print the assembled prompts only, no API call
  *   node scripts/preview-voiceover-scripts.mjs --city austin --duration 25
  */
-import { PERSONAS } from "../src/voiceover-style.js";
-import { generateVoiceoverScript } from "../src/caption.js";
-import { findMonthlyPaymentFigure } from "../src/caption-validator.js";
+import { PERSONAS } from "../../src/voiceover-style.js";
+import { generateVoiceoverScript } from "../../src/caption.js";
+import { findMonthlyPaymentFigure } from "../../src/caption-validator.js";
 
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {

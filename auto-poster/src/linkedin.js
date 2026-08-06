@@ -28,6 +28,24 @@ const __dirname = dirname(__filename);
 const BASE = "https://app.metricool.com/api";
 const HISTORY_PATH = join(__dirname, "..", "linkedin-history.json");
 
+/**
+ * The three Metricool brands the daily LinkedIn post fans out to.
+ *
+ * These are the same class of identifier as METRICOOL_BLOG_ID, which is a repo
+ * secret — so they are read from the environment the same way. The values below
+ * are the ones that have been in use since this pipeline shipped, kept as
+ * defaults so behaviour is unchanged when the vars are unset, and so a missing
+ * env var can never silently post to the wrong account.
+ *
+ * Two of these are individual people's LinkedIn profiles. Override per
+ * environment rather than editing this file.
+ */
+export const LINKEDIN_BLOG_IDS = {
+  peter: Number(process.env.LINKEDIN_BLOG_ID_PETER) || 4807109,
+  steven: Number(process.env.LINKEDIN_BLOG_ID_STEVEN) || 6493212,
+  lifestyle: Number(process.env.LINKEDIN_BLOG_ID_LIFESTYLE) || 6486275,
+};
+
 function authParams(blogId) {
   return `blogId=${blogId || process.env.METRICOOL_BLOG_ID}&userId=${process.env.METRICOOL_USER_ID}`;
 }
@@ -338,9 +356,9 @@ function computeStaggeredTimes() {
   const lifestyleTime = idealLifestyle > stevenPlus30 ? idealLifestyle : stevenPlus30;
 
   return [
-    { blogId: 4807109, label: "Peter", publishAt: toMetricoolDateTime(peterTime), time: peterTime },
-    { blogId: 6493212, label: "Steven", publishAt: toMetricoolDateTime(stevenTime), time: stevenTime },
-    { blogId: 6486275, label: "Lifestyle Design Realty", publishAt: toMetricoolDateTime(lifestyleTime), time: lifestyleTime },
+    { blogId: LINKEDIN_BLOG_IDS.peter, label: "Peter", publishAt: toMetricoolDateTime(peterTime), time: peterTime },
+    { blogId: LINKEDIN_BLOG_IDS.steven, label: "Steven", publishAt: toMetricoolDateTime(stevenTime), time: stevenTime },
+    { blogId: LINKEDIN_BLOG_IDS.lifestyle, label: "Lifestyle Design Realty", publishAt: toMetricoolDateTime(lifestyleTime), time: lifestyleTime },
   ];
 }
 

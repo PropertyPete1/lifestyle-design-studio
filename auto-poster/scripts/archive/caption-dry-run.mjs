@@ -15,7 +15,7 @@
  * Requires: ANTHROPIC_API_KEY env var
  */
 
-import { generateCaption, generateCaptionFromOriginal } from "../src/caption.js";
+import { generateCaption, generateCaptionFromOriginal } from "../../src/caption.js";
 
 // Terms that MUST NOT appear in any output
 const GATED_TERMS = [

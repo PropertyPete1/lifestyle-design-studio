@@ -16,6 +16,16 @@
  *   node probe-media-delete.mjs "202608/73d0050f67dc4a96.mp4"
  */
 
+import { requireLiveAck } from "../../auto-poster/scripts/live-guard.mjs";
+
+// TOUCHES LIVE: permanently DELETES a file from the Metricool media library.
+// It only ever touches the path suffix passed as an argument, and it re-fetches
+// afterwards to prove the bytes are actually gone rather than trusting the
+// endpoint's response. A deleted media file cannot be restored.
+requireLiveAck(
+  "Permanently deletes the named file from the live Metricool media library. Not reversible."
+);
+
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;
 const USER_ID = process.env.METRICOOL_USER_ID;

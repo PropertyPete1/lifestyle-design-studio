@@ -16,7 +16,7 @@
  */
 
 import sharp from "sharp";
-import { measure } from "../src/carousel-render.js";
+import { measure } from "../../src/carousel-render.js";
 
 const SERIF = "Georgia, 'DejaVu Serif', 'Liberation Serif', 'Times New Roman', serif";
 const SANS = "'Helvetica Neue', Helvetica, 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif";

@@ -17,7 +17,7 @@ import { execSync } from "child_process";
 import { existsSync, unlinkSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { computeContentHash, contentHashDistance, CONTENT_DUP_THRESHOLD } from "../src/content-hash.js";
+import { computeContentHash, contentHashDistance, CONTENT_DUP_THRESHOLD } from "../../src/content-hash.js";
 
 const files = process.argv.slice(2).filter((f) => existsSync(f));
 if (files.length < 2) {

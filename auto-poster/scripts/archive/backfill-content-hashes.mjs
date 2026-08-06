@@ -26,14 +26,23 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, unlinkS
 import { join, extname } from "path";
 import { tmpdir } from "os";
 import { execSync } from "child_process";
-import { computeContentHash } from "../src/content-hash.js";
+import { computeContentHash } from "../../src/content-hash.js";
+import { requireLiveAck } from "../live-guard.mjs";
+
+// TOUCHES LIVE: rewrites posted-log.json in place — the committed record the
+// duplicate guards read on every run. Pass --dry-run to compute and report
+// without writing.
+requireLiveAck(
+  "Rewrites posted-log.json in place — the committed post history the dedupe guards depend on. " +
+    "Use --dry-run to compute without writing."
+);
 
 const args = process.argv.slice(2);
 const flag = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 && args[i + 1] && !args[i + 1].startsWith("--") ? args[i + 1] : d; };
 const DRY = args.includes("--dry-run");
 const DAYS = Number(flag("days", "35"));
 const LOCAL_ROOT = flag("local-root", null);
-const LOG_PATH = new URL("../posted-log.json", import.meta.url).pathname;
+const LOG_PATH = new URL("../../posted-log.json", import.meta.url).pathname;
 
 // ─── Video resolution ────────────────────────────────────────────────────────
 
@@ -80,7 +89,7 @@ async function resolveVideo(entry) {
     return hit && existsSync(hit) ? { path: hit, temp: false } : null;
   }
   // Production path — pull it through the Drive API.
-  const { downloadVideo } = await import("../src/drive.js");
+  const { downloadVideo } = await import("../../src/drive.js");
   const tmp = join(tmpdir(), `backfill_${entry.driveFileId}${extname(entry.fileName || ".mp4")}`);
   try {
     const buf = await downloadVideo(entry.driveFileId, entry.fileName);

@@ -1,22 +1,27 @@
 /**
- * Local test: Generate a full week of LinkedIn posts using the built-in Forge API.
- * This uses the OpenAI-compatible endpoint with claude-haiku-4-5 model.
- * Run with: node test-linkedin-week-local.mjs
+ * Generate a full week of LinkedIn posts locally, using the built-in Forge API
+ * (OpenAI-compatible endpoint, claude-haiku-4-5).
+ *
+ * Run with: I_UNDERSTAND_THIS_TOUCHES_LIVE=yes node scripts/archive/preview-linkedin-week-local.mjs
+ *
+ * This script CLEARS linkedin-history.json so the week generates from a blank
+ * slate. That file is the live anti-repetition window the daily LinkedIn post
+ * reads from, so the clear happens inside main(), after the latch — never at
+ * import time. It used to run at module top level, which meant importing this
+ * file for any reason destroyed live state before a single line of main() ran.
  */
 
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { requireLiveAck } from "../live-guard.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const FORGE_URL = process.env.BUILT_IN_FORGE_API_URL;
 const FORGE_KEY = process.env.BUILT_IN_FORGE_API_KEY;
-const HISTORY_PATH = join(__dirname, "linkedin-history.json");
-
-// Clear history for clean test
-writeFileSync(HISTORY_PATH, JSON.stringify({ posts: [] }, null, 2) + "\n");
+const HISTORY_PATH = join(__dirname, "..", "..", "linkedin-history.json");
 
 // ─── Import the logic from linkedin.js (we'll replicate the key parts here for local testing) ───
 
@@ -230,9 +235,21 @@ const TEST_DATES = [
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 async function main() {
+  // TOUCHES LIVE: wipes linkedin-history.json, the anti-repetition window the
+  // live daily LinkedIn post reads from, and then fills it with 7 generated
+  // posts. Kept inside main() and behind the latch on purpose — importing this
+  // module must never destroy state.
+  requireLiveAck(
+    "ERASES linkedin-history.json and replaces it with 7 generated posts. That file is the " +
+      "anti-repetition window the live daily LinkedIn post reads from."
+  );
+
   console.log("═══════════════════════════════════════════════════════════════");
   console.log("  LINKEDIN DRY-RUN WEEK — 7 Posts for Approval");
   console.log("═══════════════════════════════════════════════════════════════\n");
+
+  // Clear history so the week generates from a blank slate.
+  writeFileSync(HISTORY_PATH, JSON.stringify({ posts: [] }, null, 2) + "\n");
 
   const allPosts = [];
 

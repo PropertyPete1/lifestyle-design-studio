@@ -10,6 +10,13 @@ on:
   pull_request:
     paths: ["auto-poster/**", ".github/workflows/test.yml"]
 
+# Stated explicitly rather than inherited. The repo default is currently
+# read-only, so this changes nothing today — but that default lives in repo
+# settings, outside this file, and flipping it would silently hand write access
+# to a workflow that runs unreviewed code from every pull request.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest

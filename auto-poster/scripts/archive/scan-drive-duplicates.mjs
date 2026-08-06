@@ -12,7 +12,7 @@
 import { readdirSync, statSync, existsSync, writeFileSync, readFileSync } from "fs";
 import { join, basename } from "path";
 import { execSync } from "child_process";
-import { computeContentHash, contentHashDistance, CONTENT_DUP_THRESHOLD } from "../src/content-hash.js";
+import { computeContentHash, contentHashDistance, CONTENT_DUP_THRESHOLD } from "../../src/content-hash.js";
 
 const folders = process.argv.slice(2).filter((f) => existsSync(f));
 if (!folders.length) {
