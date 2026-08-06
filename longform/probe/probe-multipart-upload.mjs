@@ -120,37 +120,29 @@ async function schedulerPostIds() {
   return new Set((res.json?.data || []).map((p) => String(p.id)));
 }
 
-/** Try the shapes a multipart completion could plausibly take. */
+/**
+ * Complete the multipart upload.
+ *
+ * The shape was established by letting the validator name what it wanted. The
+ * first attempt sent uploadId + parts and got back
+ * `{"multipart.key":"Key is required"}` — the S3 object key from the
+ * transaction is required alongside the parts, and partNumber/etag are
+ * lowercase (the capitalised variant was rejected field by field).
+ */
 async function completeTransaction(tx, uploadedParts) {
+  const parts = uploadedParts.map((p) => ({ partNumber: p.partNumber, etag: p.etag }));
   const candidates = [
     {
-      label: "multipart with etags",
-      body: {
-        multipart: {
-          uploadId: tx.uploadId,
-          fileUrl: tx.fileUrl,
-          parts: uploadedParts.map((p) => ({ partNumber: p.partNumber, etag: p.etag })),
-        },
-      },
+      label: "multipart: key + uploadId + parts",
+      body: { multipart: { key: tx.key, uploadId: tx.uploadId, parts } },
     },
     {
-      label: "multipart with ETag capitalised",
-      body: {
-        multipart: {
-          uploadId: tx.uploadId,
-          fileUrl: tx.fileUrl,
-          parts: uploadedParts.map((p) => ({ PartNumber: p.partNumber, ETag: p.etag })),
-        },
-      },
+      label: "multipart: key + uploadId + parts + fileUrl",
+      body: { multipart: { key: tx.key, uploadId: tx.uploadId, fileUrl: tx.fileUrl, parts } },
     },
-    { label: "simple fileUrl (the single-part shape)", body: { simple: { fileUrl: tx.fileUrl } } },
     {
-      label: "top-level uploadId + parts",
-      body: {
-        uploadId: tx.uploadId,
-        fileUrl: tx.fileUrl,
-        parts: uploadedParts.map((p) => ({ partNumber: p.partNumber, etag: p.etag })),
-      },
+      label: "multipart: key + uploadId + bucket + parts",
+      body: { multipart: { key: tx.key, uploadId: tx.uploadId, bucket: tx.bucket, parts } },
     },
   ];
 
@@ -162,9 +154,9 @@ async function completeTransaction(tx, uploadedParts) {
     console.log(`  complete via "${c.label}": ${res.status}`);
     if (res.ok) {
       console.log(`    ${redact(res.text).slice(0, 400)}`);
-      return { ok: true, shape: c.label, data: res.json?.data || res.json };
+      return { ok: true, shape: c.label, body: c.body, data: res.json?.data || res.json };
     }
-    console.log(`    ${redact(res.text).slice(0, 250)}`);
+    console.log(`    ${redact(res.text).slice(0, 300)}`);
   }
   return { ok: false };
 }
@@ -258,6 +250,8 @@ async function main() {
 
     const tx = txRes.json?.data || {};
     console.log(`  response keys: ${Object.keys(tx).join(", ")}`);
+    console.log(`  key=${redact(String(tx.key)).slice(0, 80)}`);
+    console.log(`  uploadId present: ${Boolean(tx.uploadId)}  bucket present: ${Boolean(tx.bucket)}  fileUrl present: ${Boolean(tx.fileUrl)}`);
     const urls = tx.parts || tx.presignedUrls || (tx.presignedUrl ? [tx.presignedUrl] : []);
     const urlList = (Array.isArray(urls) ? urls : []).map((u) => (typeof u === "string" ? u : u?.presignedUrl || u?.url));
     console.log(`  ${urlList.length} presigned URL(s) issued for ${PART_COUNT} part(s)`);
