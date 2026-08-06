@@ -76,22 +76,39 @@ async function api(path, opts = {}) {
 const sha256b64 = (buf) => createHash("sha256").update(buf).digest("base64");
 const sha256hex = (buf) => createHash("sha256").update(buf).digest("hex");
 
-/** A file nobody would mistake for content, at a size that needs real multipart. */
+/**
+ * A file nobody would mistake for content, at a size that needs real multipart.
+ *
+ * `-fs` is what makes the size predictable: it stops the encode once the output
+ * reaches the limit, producing a valid, playable mp4 at a known size. The first
+ * attempt at this used a quality target instead and produced 628MB from twenty
+ * seconds of noise — parts of 209MB each, which Metricool refused outright.
+ *
+ * testsrc2 changes every frame, which guarantees the three parts differ from
+ * each other so a mis-ordered stitch cannot accidentally byte-match the
+ * original.
+ */
 function buildTestFile(dir) {
   const path = join(dir, "multipart-probe-DELETE-ME.mp4");
-  // Noise encodes poorly on purpose — it gets us to ~12MB in a few seconds
-  // without a long render, and guarantees the three parts differ from each
-  // other so a mis-ordered stitch cannot accidentally byte-match.
   execFileSync("ffmpeg", [
     "-y",
-    "-f", "lavfi", "-i", `color=c=darkslategray:s=1280x720:r=30:d=20`,
-    "-f", "lavfi", "-i", "nullsrc=s=1280x720:r=30:d=20",
-    "-filter_complex",
-    "[0:v]drawtext=text='TEST FILE - DELETE ME':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2," +
-      "noise=alls=60:allf=t+u[v]",
-    "-map", "[v]", "-c:v", "libx264", "-preset", "ultrafast", "-qp", "10", "-pix_fmt", "yuv420p",
-    "-t", "20", path,
+    // testsrc2 is cheap to generate and its content changes every frame, which
+    // is what makes the three parts differ. An earlier version used a noise
+    // filter for that and was too CPU-heavy to finish in reasonable time.
+    "-f", "lavfi", "-i", "testsrc2=s=1280x720:r=30:d=60",
+    "-vf",
+    "drawtext=text='TEST FILE - DELETE ME':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=(h-text_h)/2",
+    "-c:v", "libx264", "-preset", "ultrafast", "-b:v", "5000k", "-pix_fmt", "yuv420p",
+    // Hard stop at the target size — the encode ends here, whatever the duration.
+    "-fs", `${TARGET_MB}M`,
+    path,
   ], { stdio: ["pipe", "pipe", "pipe"], timeout: 300_000 });
+
+  const size = statSync(path).size;
+  const mb = size / 1024 / 1024;
+  if (mb > TARGET_MB * 1.5) {
+    throw new Error(`test file came out ${mb.toFixed(1)}MB, expected about ${TARGET_MB}MB — refusing to upload it`);
+  }
   return path;
 }
 
@@ -204,8 +221,15 @@ async function main() {
     const buf = readFileSync(filePath);
     const total = buf.length;
     console.log(`  ${(total / 1024 / 1024).toFixed(2)} MB, sha256 ${sha256hex(buf).slice(0, 16)}...`);
+    // Three parts of a 12MB file are 4MB each: comfortably multipart, and far
+    // enough under the 100MB per-part ceiling that the ceiling is not what is
+    // being tested here.
     if (total < 6 * 1024 * 1024) {
       throw new Error(`test file is only ${(total / 1024 / 1024).toFixed(1)}MB — too small to exercise multipart meaningfully`);
+    }
+    const partMb = total / PART_COUNT / 1024 / 1024;
+    if (partMb > 100) {
+      throw new Error(`parts would be ${partMb.toFixed(1)}MB, over Metricool's 100MB ceiling — aborting before any upload`);
     }
 
     // ── 2. the transaction ─────────────────────────────────────────────────
