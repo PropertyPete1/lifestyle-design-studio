@@ -28,6 +28,7 @@ on:
         options:
           - assembly
           - youtube-path
+          - upload-preflight
           - all
       resolutions:
         description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
@@ -73,6 +74,25 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
         run: node probe-assembly.mjs
+
+  upload-preflight:
+    if: >-
+      github.event.inputs.probe == 'upload-preflight' || github.event.inputs.probe == 'all'
+      || contains(github.event.head_commit.message, '[probe-preflight]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Preflight — can a media upload reach a social account?
+        working-directory: longform/probe
+        env:
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+        run: node probe-upload-preflight.mjs
 
   youtube-path:
     if: >-
