@@ -60,7 +60,28 @@ function parseJson(raw) {
   return JSON.parse(t.slice(start, end + 1));
 }
 
-export async function callModel(system, userPrompt, maxTokens = 8000) {
+/**
+ * A 10-15 minute script is a lot of JSON — the first live run produced 38 takes.
+ * 8000 was not obviously enough, and running out mid-array produces exactly the
+ * "unparseable output" symptom that sent the first diagnosis in the wrong
+ * direction.
+ */
+const WRITER_MAX_TOKENS = 20000;
+
+/**
+ * The model call, with the diagnosis attached.
+ *
+ * The first live run failed three times with "unparseable output" and "no JSON
+ * object in model output". Those messages describe the SYMPTOM and hide the
+ * cause: they read like the model misbehaved, when the real candidates are a
+ * truncated response (stop_reason: max_tokens), a response with no text block
+ * at all, or genuinely malformed JSON. Those need different fixes, and the log
+ * could not tell them apart.
+ *
+ * So the stop reason and the shape of the response travel with the text, and
+ * the parse failure reports them.
+ */
+export async function callModel(system, userPrompt, maxTokens = WRITER_MAX_TOKENS) {
   const res = await getClient().messages.create({
     model: MODEL,
     max_tokens: maxTokens,
@@ -68,7 +89,28 @@ export async function callModel(system, userPrompt, maxTokens = 8000) {
     messages: [{ role: "user", content: userPrompt }],
   });
   const textBlock = (res.content || []).find((b) => b?.type === "text" && typeof b.text === "string");
-  return textBlock ? textBlock.text : "";
+  const text = textBlock ? textBlock.text : "";
+  lastCallDiagnostics = {
+    stopReason: res.stop_reason || "unknown",
+    blockTypes: (res.content || []).map((b) => b?.type).join(","),
+    textLength: text.length,
+    outputTokens: res.usage?.output_tokens ?? null,
+    maxTokens,
+  };
+  if (res.stop_reason === "max_tokens") {
+    console.warn(`[YTScript] response hit max_tokens (${maxTokens}) — it is truncated, not malformed`);
+  }
+  return text;
+}
+
+/** Populated by callModel, read by the parse-failure logging. */
+let lastCallDiagnostics = null;
+
+export function describeLastCall() {
+  if (!lastCallDiagnostics) return "no model call recorded";
+  const d = lastCallDiagnostics;
+  return `stop_reason=${d.stopReason} blocks=[${d.blockTypes}] text=${d.textLength} chars ` +
+    `output_tokens=${d.outputTokens}/${d.maxTokens}`;
 }
 
 // ─── the writer ─────────────────────────────────────────────────────────────
@@ -334,6 +376,7 @@ export async function scoreScript(script, modelCall = callModel) {
       };
     } catch (err) {
       console.warn(`[YTScript] critic attempt ${attempt + 1} unparseable: ${err.message}`);
+      console.warn(`[YTScript]   ${describeLastCall()}`);
     }
   }
 
@@ -392,7 +435,10 @@ export async function generateScript({
       script = parseJson(await modelCall(system, basePrompt + feedback));
     } catch (err) {
       console.warn(`[YTScript] attempt ${attempt + 1}: unparseable output (${err.message})`);
-      feedback = `\n\nYour previous output could not be parsed as JSON. Return ONLY the JSON object.`;
+      console.warn(`[YTScript]   ${describeLastCall()}`);
+      feedback =
+        `\n\nYour previous output could not be parsed as JSON: ${err.message}. ` +
+        `Return ONLY the JSON object. Escape every quote and newline inside string values.`;
       continue;
     }
 
