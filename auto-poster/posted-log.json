@@ -2644,6 +2644,26 @@
       ],
       "timestamp": "2026-08-06T19:55:28.031Z",
       "success": true
+    },
+    {
+      "type": "linkedin",
+      "topic": "leadership_culture",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-06T15:43:55"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-06T16:13:55"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-06T16:43:55"
+        }
+      ],
+      "timestamp": "2026-08-06T20:42:27.868Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
