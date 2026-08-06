@@ -29,6 +29,7 @@ on:
           - assembly
           - youtube-path
           - upload-preflight
+          - multipart
           - all
       resolutions:
         description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
@@ -93,6 +94,30 @@ jobs:
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
         run: node probe-upload-preflight.mjs
+
+  # Moves real bytes into the media library and removes them again. Creates no
+  # post and names no social account — see the preflight probe and the header of
+  # probe-multipart-upload.mjs for why that is verified rather than assumed.
+  multipart:
+    if: >-
+      github.event.inputs.probe == 'multipart'
+      || contains(github.event.head_commit.message, '[probe-multipart]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Multipart round-trip
+        working-directory: longform/probe
+        env:
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+        run: node probe-multipart-upload.mjs
 
   youtube-path:
     if: >-
