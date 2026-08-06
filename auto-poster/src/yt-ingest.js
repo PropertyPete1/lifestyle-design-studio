@@ -160,10 +160,14 @@ export function transcribeFile(path, { model = process.env.YT_WHISPER_MODEL || "
  *   "matched"    everything the script needs is present
  *   "incomplete" some takes are recorded, some are not
  *
+ * With `keepFiles`, the downloaded clips survive the call and each clip carries
+ * a `localPath` — the assembler needs the bytes, and downloading every clip
+ * twice (once to transcribe, once to cut) is the alternative.
+ *
  * The last two both carry the full match result, so the caller can report gaps
  * without re-deriving them.
  */
-export async function ingestRecordings({ requestId, takes, accessToken = null, workDir = null } = {}) {
+export async function ingestRecordings({ requestId, takes, accessToken = null, workDir = null, keepFiles = false } = {}) {
   if (!requestId) throw new Error("ingestRecordings requires a requestId");
   const token = accessToken || (await getAccessToken());
 
@@ -201,18 +205,24 @@ export async function ingestRecordings({ requestId, takes, accessToken = null, w
         continue;
       }
       const transcript = transcribeFile(localPath);
-      rmSync(localPath, { force: true });
-      if (!transcript) continue;
+      // The assembler needs these files. Deleting them here would mean
+      // downloading every clip twice — once to transcribe, once to cut.
+      if (!keepFiles) rmSync(localPath, { force: true });
+      if (!transcript) {
+        if (keepFiles) rmSync(localPath, { force: true });
+        continue;
+      }
       clips.push({
         id: file.id,
         name: file.name,
         transcript: transcript.transcript,
         recordedAt: file.createdTime || file.modifiedTime || null,
         durationSeconds: transcript.duration,
+        localPath: keepFiles ? localPath : null,
       });
     }
   } finally {
-    if (!workDir && existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+    if (!workDir && !keepFiles && existsSync(dir)) rmSync(dir, { recursive: true, force: true });
   }
 
   const result = matchTakesToClips(takes, clips);

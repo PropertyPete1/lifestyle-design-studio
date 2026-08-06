@@ -243,6 +243,91 @@ function mergeApprovalRecord(x, y) {
   return out;
 }
 
+/**
+ * youtube-log.json: union by videoId, merged field-group by field-group.
+ *
+ * Same two-writer problem as yt-approvals, and the same shape of answer. The
+ * poster writes the render and the upload; the dashboard writes Peter's review.
+ * Neither sees the other's commit first.
+ *
+ *   render    requestId, title, market, createdAt, brollHashes, scores
+ *   upload    uploadedAt, youtubeUrl, metricoolPostId, privacy
+ *   review    reviewedAt, approved, reviewNotes
+ *   shorts    shortsCutAt, shorts
+ *
+ * Two properties this has to guarantee:
+ *
+ *   - an `uploadedAt` is never erased, or the next scheduled run sees an
+ *     un-uploaded video and pushes another 320MB copy to YouTube.
+ *   - `approved: true` is never downgraded to false. A merge that loses an
+ *     approval is recoverable; one that INVENTS an approval is not, so the
+ *     merge is asymmetric on purpose: true wins over false, and false never
+ *     overwrites true.
+ */
+export function mergeYouTubeLog(local, remote, log = console.log) {
+  const all = [...(remote?.videos || []), ...(local?.videos || [])];
+  const byId = new Map();
+  for (const v of all) {
+    if (!v || typeof v !== "object") continue;
+    const id = v.videoId;
+    if (typeof id !== "string" || !id) continue;
+    const existing = byId.get(id);
+    byId.set(id, existing ? mergeVideoRecord(existing, v) : { ...v });
+  }
+  const merged = [...byId.values()].sort((a, b) =>
+    String(a.createdAt || "").localeCompare(String(b.createdAt || ""))
+  );
+  const kept = merged.slice(-MAX_VIDEOS);
+  const uploaded = kept.filter((v) => v.uploadedAt).length;
+  const approved = kept.filter((v) => v.approved === true).length;
+  log(`[Merge] youtube-log: ${kept.length} videos (${uploaded} uploaded, ${approved} approved)`);
+  return { ...remote, ...local, videos: kept };
+}
+
+/** Keep in step with MAX_ENTRIES in src/yt-log.js. */
+const MAX_VIDEOS = 200;
+
+function mergeVideoRecord(x, y) {
+  const out = { videoId: x.videoId };
+
+  // render — whichever side has it; earlier createdAt breaks the tie.
+  const renderFrom = groupWinner(x.createdAt, y.createdAt, x.createdAt, y.createdAt) === "b" ? y : x;
+  for (const f of ["requestId", "title", "market", "intent", "createdAt", "runtimeSeconds", "bytes", "resolution", "brollHashes", "scriptScores", "packagingScores"]) {
+    const v = renderFrom[f] ?? x[f] ?? y[f];
+    if (v !== undefined) out[f] = v;
+  }
+
+  // upload — never dropped, or the next run re-uploads 320MB.
+  const up = groupWinner(x.uploadedAt, y.uploadedAt, x.uploadedAt, y.uploadedAt);
+  if (up !== "neither") {
+    const u = up === "a" ? x : y;
+    out.uploadedAt = u.uploadedAt;
+    out.privacy = u.privacy ?? null;
+    out.youtubeUrl = u.youtubeUrl ?? null;
+    out.metricoolPostId = u.metricoolPostId ?? null;
+    out.blogId = u.blogId ?? null;
+  }
+
+  // review — asymmetric. An approval is never downgraded by a stale copy.
+  const rev = groupWinner(x.reviewedAt, y.reviewedAt, x.reviewedAt, y.reviewedAt);
+  if (rev !== "neither") {
+    const r = rev === "a" ? x : y;
+    out.reviewedAt = r.reviewedAt;
+    out.reviewNotes = r.reviewNotes ?? null;
+  }
+  out.approved = x.approved === true || y.approved === true;
+
+  // shorts — cut once.
+  const sh = groupWinner(x.shortsCutAt, y.shortsCutAt, x.shortsCutAt, y.shortsCutAt);
+  if (sh !== "neither") {
+    const s = sh === "a" ? x : y;
+    out.shortsCutAt = s.shortsCutAt;
+    out.shorts = s.shorts ?? [];
+  }
+
+  return out;
+}
+
 /** Dispatch table used by merge-log-push.mjs. */
 export const MERGE_STRATEGIES = {
   "posted-log.json": (l, r, log) => mergePostedLog(l, r || { posts: [] }, log),
@@ -254,6 +339,7 @@ export const MERGE_STRATEGIES = {
   "skip-list.json": (l, r, log) => mergeSkipList(l, r || [], log),
   "carousel-log.json": (l, r, log) => mergeCarouselLog(l, r || { posts: [] }, log),
   "yt-approvals.json": (l, r, log) => mergeYtApprovals(l, r || { requests: [] }, log),
+  "youtube-log.json": (l, r, log) => mergeYouTubeLog(l, r || { videos: [] }, log),
 };
 
 export const MERGE_FILES = Object.keys(MERGE_STRATEGIES);

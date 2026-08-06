@@ -97,6 +97,7 @@ jobs:
       || github.event.schedule == '0 15 * * *'
       || github.event.schedule == '0 21 * * *'
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     concurrency:
       group: youtube-longform-approvals
       cancel-in-progress: false
@@ -105,6 +106,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install ffmpeg & whisper
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install openai-whisper --quiet
+      - name: Free disk headroom
+        run: |
+          # A 12-minute render needs room for intermediates; the hosted image
+          # ships ~30GB of toolchains this job never touches.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+          df -h /
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
@@ -119,6 +130,11 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          YT_TEXT_NUMBER: ${{ secrets.YT_TEXT_NUMBER }}
+          YT_LINKS_URL: ${{ secrets.YT_LINKS_URL }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
         run: |
