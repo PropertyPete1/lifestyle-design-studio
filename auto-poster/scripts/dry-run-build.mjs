@@ -31,7 +31,8 @@ import { execFileSync } from "child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
-import { allTakes, ON_CAMERA, VOICEOVER } from "../src/yt-script.js";
+import { ON_CAMERA, VOICEOVER } from "../src/yt-script.js";
+import { takesToRecord } from "../src/yt-recording-kit.js";
 import { transcribeFile } from "../src/yt-ingest.js";
 import { matchTakesToClips, describeMatchResult } from "../src/yt-take-match.js";
 import { planTimeline, buildChapters } from "../src/yt-timeline.js";
@@ -123,7 +124,9 @@ function synthesiseBroll(dir, count = 8) {
   for (let i = 0; i < count; i++) {
     const p = join(dir, `broll-${i}.mp4`);
     execFileSync("ffmpeg", [
-      "-y", "-f", "lavfi", "-i", `testsrc2=s=1080x1920:r=30:d=20:decimals=${i % 3}`,
+      // testsrc2 has no `decimals` option — an earlier version passed one and
+      // ffmpeg refused the whole filtergraph. Vary the source instead.
+      "-y", "-f", "lavfi", "-i", i % 2 ? `testsrc2=s=1080x1920:r=30:d=20` : `smptebars=s=1080x1920:r=30:d=20`,
       "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-an", p,
     ], { stdio: ["pipe", "pipe", "pipe"], timeout: 300_000 });
     out.push({ id: `b${i}`, name: `broll-${i}.mp4`, durationSeconds: 20, contentHash: `h${i}`, localPath: p });
@@ -159,14 +162,15 @@ async function main() {
   console.log(`work dir: ${WORK}\n`);
 
   const script = SCRIPT_PATH ? JSON.parse(readFileSync(SCRIPT_PATH, "utf-8")) : defaultScript();
-  const takes = allTakes(script);
-  console.log(`script: "${script.title}" — ${takes.length} takes`);
+  // The same set the kit asks for and the ingest expects — see takesToRecord.
+  const takes = takesToRecord(script);
+  console.log(`script: "${script.title}" — ${takes.length} take(s) to record`);
 
   // ── recordings ────────────────────────────────────────────────────────────
   let recordingFiles = [];
   if (SYNTHETIC) {
     const done = stage("synthesise recordings");
-    recordingFiles = synthesiseRecordings(takes.filter((t) => t.mode === ON_CAMERA), join(WORK, "rec"));
+    recordingFiles = synthesiseRecordings(takes, join(WORK, "rec"));
     done(`(${recordingFiles.length} clips)`);
   } else {
     recordingFiles = readdirSync(RECORDINGS_DIR)

@@ -8,7 +8,7 @@
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { buildKit, renderKitText, kitPayload, estimateSeconds, recordingsFolderPath } from "../src/yt-recording-kit.js";
+import { buildKit, renderKitText, kitPayload, estimateSeconds, recordingsFolderPath, takesToRecord } from "../src/yt-recording-kit.js";
 import { ON_CAMERA, VOICEOVER } from "../src/yt-script.js";
 
 function takeText(words) {
@@ -168,5 +168,27 @@ describe("kitPayload", () => {
     assert.ok(payload.instructions.includes("Read one take"));
     assert.ok(payload.folderPath);
     assert.ok(payload.stats.takeCount > 0);
+  });
+});
+
+describe("takesToRecord — the kit and the ingest must agree", () => {
+  test("default mode asks for the on-camera takes only", () => {
+    const takes = takesToRecord(SCRIPT, "elevenlabs");
+    assert.ok(takes.every((t) => t.mode === ON_CAMERA));
+    assert.equal(takes.length, 4);
+  });
+
+  test('"peter" mode asks for the voiceover takes too', () => {
+    assert.equal(takesToRecord(SCRIPT, "peter").length, 6);
+  });
+
+  test("THE BUG THE DRY RUN CAUGHT: this is exactly what the kit lists", () => {
+    // When these two disagreed, the ingest expected the voiceover takes, found
+    // them missing on every run, and the build never proceeded past "incomplete".
+    for (const mode of ["elevenlabs", "peter"]) {
+      const kitIds = buildKit(SCRIPT, { requestId: "r", narrationMode: mode }).takes.map((t) => t.takeId).sort();
+      const ingestIds = takesToRecord(SCRIPT, mode).map((t) => t.id).sort();
+      assert.deepEqual(ingestIds, kitIds, `kit and ingest disagree in "${mode}" mode`);
+    }
   });
 });

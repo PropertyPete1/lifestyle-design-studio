@@ -41,14 +41,25 @@ export function recordingsFolderPath(requestId) {
  * between the modes as far as the kit is concerned — the takes themselves are
  * identical either way.
  */
+/**
+ * The takes Peter is actually asked to record.
+ *
+ * THE SINGLE DEFINITION, and it has to be, because two places depend on it: the
+ * kit tells him what to shoot, and the ingest decides what counts as missing.
+ * When they disagreed — the kit asking for on-camera takes while the ingest
+ * expected every take — the matcher reported the voiceover takes missing on
+ * every run and the build never proceeded. Caught by the dry-run gate.
+ */
+export function takesToRecord(script, narrationMode = NARRATION_MODE) {
+  return allTakes(script).filter((t) => t.mode === ON_CAMERA || narrationMode === "peter");
+}
+
 export function buildKit(scriptResult, { requestId, narrationMode = NARRATION_MODE } = {}) {
   if (!requestId) throw new Error("buildKit requires a requestId");
   const script = scriptResult?.script || scriptResult;
   if (!script?.title) throw new Error("buildKit requires a script with a title");
 
-  const all = allTakes(script);
-  const needsRecording = (t) => t.mode === ON_CAMERA || narrationMode === "peter";
-  const toRecord = all.filter(needsRecording);
+  const toRecord = takesToRecord(script, narrationMode);
 
   // Group by mode so one camera setup covers a whole block. Within a block,
   // running order — he is reading down a page.
