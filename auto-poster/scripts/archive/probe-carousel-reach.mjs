@@ -20,6 +20,15 @@
 
 import sharp from "sharp";
 import { createHash } from "crypto";
+import { requireLiveAck } from "../live-guard.mjs";
+
+// TOUCHES LIVE: uploads generated PNGs into the real Metricool MEDIA LIBRARY and
+// creates draft posts across TikTok, YouTube and Facebook on the real brands.
+// Drafts are deleted and verified gone; uploaded media may persist.
+requireLiveAck(
+  "Uploads images to the live Metricool media library and creates draft posts on real brands " +
+    "(TikTok, YouTube, Facebook). Uploaded media may be left orphaned in the library."
+);
 
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;

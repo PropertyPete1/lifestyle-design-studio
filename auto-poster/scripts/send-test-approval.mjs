@@ -21,7 +21,17 @@
  * committed.
  */
 
+import { requireLiveAck } from "./live-guard.mjs";
 import { sendApprovalRequest, APPROVAL_WEBHOOK_PATH } from "../src/delivery.js";
+
+// TOUCHES LIVE: posts to the real dashboard approval endpoint, which raises a
+// real approval card and pushes a notification to Peter's phone, and records the
+// request in yt-approvals.json. Candidates are prefixed [TEST] so the resulting
+// recording kit is obviously a drill — but the card and the push are real.
+requireLiveAck(
+  "Raises a real approval card on the live dashboard and pushes a notification to Peter, " +
+    "and writes the request into yt-approvals.json. Candidates are marked [TEST]."
+);
 import { getAccessToken } from "../src/drive.js";
 import { briefPayload, renderBriefText } from "../src/yt-brief.js";
 import {

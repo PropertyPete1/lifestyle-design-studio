@@ -53,7 +53,7 @@ on:
         default: false
         type: boolean
       force:
-        description: 'Force post (bypass guards for manual testing)'
+        description: 'Force post (bypass the content-duplicate guard for manual testing)'
         required: false
         default: false
         type: boolean

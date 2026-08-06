@@ -6,11 +6,25 @@
  * makes the concurrent-runner merge behaviour testable.
  */
 
+/** How much post history posted-log.json keeps. Matches state.js recordPost(). */
+export const POSTED_LOG_RETENTION_DAYS = 365;
+
 /**
- * posted-log.json: append local entries whose timestamp doesn't already exist remotely.
+ * posted-log.json: append local entries whose timestamp doesn't already exist remotely,
+ * then drop anything older than the retention window.
  *
  * Dedup key is `timestamp`. Entries are matched on timestamp alone because a single
  * logical post is written exactly once by recordPost() with a ms-precision ISO stamp.
+ *
+ * THE TRIM HAS TO HAPPEN HERE, not only in recordPost(). recordPost() prunes the
+ * local copy, but merge-log-push.mjs then does `git reset --hard origin/main` — which
+ * restores the full committed history — and this function re-seeds from that remote
+ * and only ever appends. So a prune applied locally is discarded on every run, and
+ * posted-log was the one managed file whose merge had no cap: every sibling strategy
+ * below ends in a .slice(). It grew without bound as a result.
+ *
+ * Entries whose timestamp is missing or unparseable are KEPT. A cap that cannot date
+ * an entry must not delete it — that trades unbounded growth for silent data loss.
  */
 export function mergePostedLog(local, remote, log = console.log) {
   const remotePosts = [...(remote?.posts || [])];
@@ -29,8 +43,18 @@ export function mergePostedLog(local, remote, log = console.log) {
     }
   }
 
-  const merged = { ...remote, ...local, posts: remotePosts };
-  log(`[Merge] posted-log: ${added} new entries appended (total: ${remotePosts.length})`);
+  const cutoff = Date.now() - POSTED_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const kept = remotePosts.filter((p) => {
+    const t = Date.parse(p?.timestamp);
+    return Number.isNaN(t) || t > cutoff;
+  });
+  const expired = remotePosts.length - kept.length;
+
+  const merged = { ...remote, ...local, posts: kept };
+  log(
+    `[Merge] posted-log: ${added} new entries appended, ${expired} expired past ` +
+      `${POSTED_LOG_RETENTION_DAYS}d (total: ${kept.length})`
+  );
   return merged;
 }
 

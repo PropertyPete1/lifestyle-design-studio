@@ -120,6 +120,10 @@ jobs:
       - name: Multipart round-trip
         working-directory: longform/probe
         env:
+          # LIVE: moves ~12MB into the Metricool media library. Publishes
+          # nothing, but cleanup is not guaranteed — the first run left an
+          # orphaned file behind.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
           METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
@@ -137,6 +141,9 @@ jobs:
       - name: Delete a media-library file, and verify it is gone
         working-directory: longform/probe
         env:
+          # LIVE: permanently deletes the named file from the Metricool media
+          # library. Not reversible.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
           METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
@@ -157,6 +164,9 @@ jobs:
       - name: Run YouTube path probe
         working-directory: longform/probe
         env:
+          # LIVE: creates draft posts in the Metricool scheduler to round-trip
+          # the youtubeData fields. Deleted and verified on the way out.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
           METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}

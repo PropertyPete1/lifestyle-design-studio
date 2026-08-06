@@ -5,7 +5,18 @@
  * Picks a week starting from next Monday to ensure we get a full Mon-Sun cycle.
  */
 
-import { generateLinkedinPost, saveToHistory } from "./src/linkedin.js";
+import { generateLinkedinPost, saveToHistory } from "../../src/linkedin.js";
+import { requireLiveAck } from "../live-guard.mjs";
+
+// TOUCHES LIVE: calls the real Claude API (billable) and writes 7 generated posts
+// into linkedin-history.json via saveToHistory. That file keeps only the last 7
+// entries, so a full run EVICTS the entire real history — which is the
+// anti-repetition window the live daily LinkedIn post reads from.
+requireLiveAck(
+  "Writes 7 generated posts into linkedin-history.json, which keeps only the last 7 — " +
+    "this evicts the real history the live LinkedIn pipeline uses to avoid repeating itself. " +
+    "Also bills the Claude API."
+);
 
 // Find the next Monday from today (or a specific test week)
 // We'll use 2026-07-28 (Monday) through 2026-08-03 (Sunday) as our test week

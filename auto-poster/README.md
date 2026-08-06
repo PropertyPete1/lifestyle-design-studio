@@ -1,107 +1,114 @@
-# Auto Poster
+# Auto Poster — operator detail
 
-Fully automated social media posting pipeline. Runs on GitHub Actions, triggered by Manus Heartbeat cron jobs that call GitHub's API directly.
+Per-pipeline reference: folder IDs, thresholds, rotation rules, troubleshooting.
+For what the system is and how the pieces fit together, start at the
+[root README](../README.md).
 
-## What It Does
+Everything here runs from `post.yml` and `youtube-longform.yml` on GitHub Actions
+cron. There is no external trigger — an earlier design had a Manus Heartbeat cron
+calling the GitHub API, and that is no longer how any of it fires.
 
-Every day, per city:
+## Daily reels — what a run does
 
-1. **Checks Instagram** (via Metricool) for posts in the last 30 days
-2. **Picks a video from Google Drive** that hasn't been posted recently (30-day rotation)
-3. **Duplicate check** — perceptual hash + AI vision confirmation prevents reposts
-4. **Detects speech** (Whisper) — if no talking, generates and adds a voiceover (ElevenLabs)
-5. **Quality check** — validates resolution, duration, file size, audio
-6. **Generates a fresh caption** using AI (Claude) with performance-weighted hook styles
-7. **Posts to all platforms** via Metricool: Instagram, TikTok, YouTube Shorts
-8. **Verifies** — waits 7 min, confirms PUBLISHED status; exits non-zero on failure
-9. **Logs the result** to `posted-log.json` (committed back to the repo)
+1. Read Instagram's last 30 days through Metricool
+2. Pick a Drive video for the city that is outside the 30-day rotation
+3. Duplicate check — perceptual hash, content hash, AI vision for the ambiguous band
+4. Detect speech (Whisper); if the clip is silent, generate an ElevenLabs voiceover
+5. Quality check — resolution, duration, file size, audio
+6. Write a fresh caption with Claude, weighted by `performance-weights.json`
+7. Publish through Metricool to Instagram, TikTok, YouTube Shorts
+8. Wait ~7 minutes and confirm `PUBLISHED`; exit non-zero if it did not
+9. Append to `posted-log.json` and push it back with `merge-log-push.mjs`
 
 ## Schedule
 
-| City | Time (CT) | Frequency |
-|------|-----------|-----------|
-| San Antonio | 2:00 PM | Daily |
-| Austin | 3:00 PM | Daily |
-| Dallas/DFW | 4:00 PM | Every other day |
+| City | Slots (CT) |
+| --- | --- |
+| San Antonio | 11:00 AM, 2:00 PM |
+| Austin | 12:00 PM, 3:00 PM |
+| Dallas / DFW | 4:00 PM |
 
-## Manual Trigger
+All three post **daily**. Each slot has a `:30` backup cron; the slot-aware
+idempotency guard makes a double fire safe.
 
-Go to **Actions > Daily Auto Post > Run workflow**:
-- Select city
-- **Force** — bypasses DFW every-other-day check
-- **Dry run** — full pipeline without actually posting
+Carousel runs at 9:00 AM CT. Trial variants at 8:15 AM and 6:45 PM CT.
 
-## Matching & Safety
+## Manual trigger
 
-| Distance | Behavior |
-|----------|----------|
-| 0-4 | Auto-block + auto-reuse caption |
-| 5-9 | AI vision confirmation required before caption reuse |
-| 10-17 | AI vision confirmation required before blocking |
+**Actions → Daily Auto Post → Run workflow.** Pick a city and a slot, plus:
+
+| Input | Effect |
+| --- | --- |
+| `dry_run` | Full pipeline, publishes nothing |
+| `force` | Bypasses the content-duplicate guard. (It does **not** bypass any cadence rule — there is no longer one to bypass.) |
+| `test_delivery_only` | Real Drive upload + email + dashboard, zero social posts |
+| `force_video_id` | Pin a specific Drive file, skipping rotation and filtering |
+
+## Matching & safety
+
+| Hash distance | Behaviour |
+| --- | --- |
+| 0–4 | Auto-block, auto-reuse caption |
+| 5–9 | AI vision confirmation before caption reuse |
+| 10–17 | AI vision confirmation before blocking |
 | 18+ | No match, safe to post |
 
-City keyword check prevents cross-city caption reuse.
+A city keyword check prevents cross-city caption reuse. A separate content hash
+catches the same footage re-encoded or re-uploaded — added after a San Antonio video
+reposted on 2026-07-31 under a different file name. The threshold was chosen
+empirically; see `scripts/archive/calibrate-content-hash.mjs`.
 
-## Key Data Files
+## Drive folders
 
-| File | Purpose |
-|------|---------|
-| `posted-log.json` | Record of every post (city, date, video, brands, verification) |
-| `video-matches.json` | Cache of Drive-to-IG hash matches (prevents re-posting) |
-| `performance-weights.json` | Hook style weights from weekly analytics |
+| City | Folder | ID |
+| --- | --- | --- |
+| San Antonio | San Antonio New | `1O5lL5rWjuzj3kg5kRMqY7E4CdcnDz4bY` |
+| Austin | Austin New | `1GgKKUJFzV39JQ3oTRoe7aTdZwqqMbba8` |
+| Dallas / DFW | DFW New | `1nNrGjhHeMG3B25Cj3o7T2cLRAJM-9RX2` |
 
-## Secrets Required
+To change these, edit `CITY_FOLDER_IDS` in `src/drive.js`.
 
-| Secret | Description |
-|--------|-------------|
-| `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
-| `GOOGLE_REFRESH_TOKEN` | Google Drive refresh token |
-| `METRICOOL_API_TOKEN` | Metricool API token |
-| `METRICOOL_BLOG_ID` | Metricool blog/brand ID |
-| `METRICOOL_USER_ID` | Metricool user ID |
-| `ELEVENLABS_API_KEY` | ElevenLabs API key for voiceovers |
-| `ANTHROPIC_API_KEY` | Anthropic API key for vision + captions |
+## Rotation
 
-## Drive Folder Structure
-
-| City | Folder |
-|------|--------|
-| San Antonio | San Antonio New (`1O5lL5rWjuzj3kg5kRMqY7E4CdcnDz4bY`) |
-| Austin | Austin New (`1GgKKUJFzV39JQ3oTRoe7aTdZwqqMbba8`) |
-| Dallas/DFW | DFW New (`1nNrGjhHeMG3B25Cj3o7T2cLRAJM-9RX2`) |
-
-To change folder IDs, edit `src/drive.js` > `CITY_FOLDER_IDS`.
-
-## How Rotation Works
-
-- Each city's Drive folder contains all available videos
-- `posted-log.json` tracks which videos were posted and when
+- Each city folder holds every available video for that city
+- `posted-log.json` records what was posted and when
 - A video becomes eligible again after 30 days
-- If a video fails to download, the system tries the next candidate (up to 3)
-- 20-hour idempotency guard prevents double-posting if cron fires twice
+- A failed download falls through to the next candidate, up to 3
+- A 20-hour idempotency guard prevents a double post if cron fires twice
 
-## Google Cloud App Status (CRITICAL)
+## Google Cloud app status
 
-Your Google OAuth app **must be in "Production" mode** (not "Testing"):
-- Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials/consent)
-- Publishing status should say **"In production"**
-- If "Testing", click "Publish App" — otherwise refresh token expires in 7 days
+The OAuth app **must be in Production**, not Testing —
+[console](https://console.cloud.google.com/apis/credentials/consent). A Testing app
+expires its refresh token after 7 days. Publishing status should read
+"In production".
+
+Rotating the token: `I_UNDERSTAND_THIS_TOUCHES_LIVE=yes node scripts/get-refresh-token.js`,
+run locally, then paste into `GOOGLE_REFRESH_TOKEN`. Replacing that secret
+invalidates the token every scheduled job is currently using.
 
 ## Costs
 
-- **Anthropic (Claude)**: ~$0.02/post (vision + captions)
-- **ElevenLabs**: ~$0.05/post (only when video needs voiceover)
-- **GitHub Actions**: Free (runs ~3-7 min per post, well within free tier)
-- **Total**: ~$5-8/month for all 3 cities
+| | |
+| --- | --- |
+| Anthropic (Claude) | ~$0.02 per post — vision + captions |
+| ElevenLabs | ~$0.05 per post, only when a clip needs a voiceover |
+| GitHub Actions | Free — 3–7 min per post, inside the free tier |
+| **Total** | **~$5–8/month** across all three cities |
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| "No Google Drive token" | Refresh token expired — re-run `scripts/get-refresh-token.js` |
-| "All videos posted in 30 days" | Add more videos to the Drive folder |
-| "Metricool upload failed" | Check API token is valid at app.metricool.com |
-| Double-posted | 20-hour guard should prevent; check `posted-log.json` |
-| DFW posting daily | Check FORCE isn't set; verify day-of-year logic |
-| Verification failed (red X) | Check GitHub notification email; post may have been rejected by platform |
+| Symptom | Fix |
+| --- | --- |
+| "No Google Drive token" | Refresh token expired — re-run `scripts/get-refresh-token.js` and check the app is in Production |
+| "All videos posted in 30 days" | Add more videos to that city's Drive folder |
+| "Metricool upload failed" | Check the token at app.metricool.com |
+| Double-posted | The 20-hour guard should prevent it; check `posted-log.json` |
+| Verification failed (red X) | Check the GitHub notification email — the platform may have rejected the post |
+| A carousel logged success but nothing appeared | The scheduler returning 200 means *accepted*, not published. That is why step 8 verifies; TikTok hit exactly this on 2026-08-03 |
+| A script refuses to start | It touches a live system. Read what it prints, then set `I_UNDERSTAND_THIS_TOUCHES_LIVE=yes` if you mean it |
+
+## Data files
+
+See the state table in the [root README](../README.md#where-state-lives) for what
+each file holds and how its growth is bounded.

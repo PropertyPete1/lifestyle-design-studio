@@ -19,6 +19,16 @@
 
 import sharp from "sharp";
 import { createHash } from "crypto";
+import { requireLiveAck } from "../live-guard.mjs";
+
+// TOUCHES LIVE: uploads generated PNGs into the real Metricool MEDIA LIBRARY and
+// creates draft posts referencing them. Drafts are deleted and verified gone;
+// the uploaded media is not always removable — an orphaned library file is
+// exactly what the multipart probe left behind once.
+requireLiveAck(
+  "Uploads images to the live Metricool media library and creates draft posts. " +
+    "Uploaded media may not be deletable and can be left orphaned in the library."
+);
 
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;

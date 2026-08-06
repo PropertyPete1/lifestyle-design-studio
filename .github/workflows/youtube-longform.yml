@@ -178,6 +178,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'dry-run'
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    # Narrower than the workflow default. This job commits nothing — it renders
+    # and throws the result away — so it has no reason to hold write access.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -241,6 +245,10 @@ jobs:
         id: send
         working-directory: auto-poster
         env:
+          # LIVE: raises a real approval card on the dashboard and pushes a
+          # notification to Peter. That is the whole point of this job, so the
+          # acknowledgement is declared here rather than latched out.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}

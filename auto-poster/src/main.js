@@ -53,7 +53,7 @@ process.on("uncaughtException", (err) => {
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 const CITY = process.env.CITY || "san_antonio";
-const FORCE = process.env.FORCE === "true"; // Manual override to bypass every-other-day check
+const FORCE = process.env.FORCE === "true"; // Manual override to bypass the content-duplicate guard
 const TEST_DELIVERY_ONLY = process.env.TEST_DELIVERY_ONLY === "true"; // Test delivery pipeline only — no social posts, no log entry
 const FORCE_VIDEO_ID = process.env.FORCE_VIDEO_ID || ""; // Pin a specific Drive file ID for testing
 const SLOT = process.env.SLOT || "pm"; // "am" or "pm" — passed from crons/workflow_dispatch. Dallas is always "pm".

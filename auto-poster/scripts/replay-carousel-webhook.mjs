@@ -17,6 +17,15 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { buildSocialCaption } from "../src/carousel-content.js";
+import { requireLiveAck } from "./live-guard.mjs";
+
+// TOUCHES LIVE: sends a real delivery webhook to the live dashboard, which
+// creates a delivery record and notifies the owner. Publishes nothing to any
+// social account and uploads nothing to Drive.
+requireLiveAck(
+  "Sends a real carousel delivery webhook to the live dashboard, creating a delivery record " +
+    "and notifying the owner. Publishes nothing to social."
+);
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DASHBOARD_URL = process.env.DASHBOARD_URL;

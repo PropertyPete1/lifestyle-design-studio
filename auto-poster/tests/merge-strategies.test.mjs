@@ -77,6 +77,61 @@ describe("mergePostedLog — no entry may be lost", () => {
   });
 });
 
+describe("mergePostedLog — the retention window is enforced HERE or nowhere", () => {
+  const daysAgo = (n) => new Date(Date.now() - n * 86400_000).toISOString();
+
+  test("drops a remote entry older than the retention window", () => {
+    // The exact shape that used to survive forever. recordPost() had already
+    // pruned this entry out of the local copy; the merge re-seeded it from
+    // origin/main and appended on top, so it was never removed again.
+    const remote = { posts: [{ timestamp: daysAgo(400), city: "san_antonio", fileName: "ancient.mp4" }] };
+    const local = { posts: [{ timestamp: daysAgo(0), city: "san_antonio", fileName: "today.mp4" }] };
+
+    const merged = mergePostedLog(local, remote, quiet);
+
+    assert.deepEqual(
+      merged.posts.map((p) => p.fileName),
+      ["today.mp4"],
+      "a 400-day-old entry must not survive the merge"
+    );
+  });
+
+  test("keeps an entry just inside the window", () => {
+    const remote = { posts: [{ timestamp: daysAgo(364), fileName: "just-inside.mp4" }] };
+    const merged = mergePostedLog({ posts: [] }, remote, quiet);
+    assert.equal(merged.posts.length, 1, "364 days old is still within 365");
+  });
+
+  test("trimming does not depend on the local side having anything to add", () => {
+    // A no-post run still merges. If the trim only ran on the append path, a
+    // quiet day would leave expired entries in place.
+    const remote = { posts: [{ timestamp: daysAgo(500), fileName: "ancient.mp4" }] };
+    const merged = mergePostedLog({ posts: [] }, remote, quiet);
+    assert.equal(merged.posts.length, 0);
+  });
+
+  test("KEEPS entries whose timestamp cannot be parsed — never silent data loss", () => {
+    // Dropping what we cannot date would trade unbounded growth for lost history.
+    const remote = { posts: [{ timestamp: "not-a-date", fileName: "undateable.mp4" }] };
+    const merged = mergePostedLog({ posts: [] }, remote, quiet);
+    assert.deepEqual(merged.posts.map((p) => p.fileName), ["undateable.mp4"]);
+  });
+
+  test("a year of daily posts stays bounded across repeated merges", () => {
+    // Simulates the real loop: every run re-seeds from the previous merged
+    // result, which is exactly how the old version accumulated.
+    let remote = { posts: [] };
+    for (let d = 500; d >= 0; d--) {
+      remote = mergePostedLog({ posts: [{ timestamp: daysAgo(d), fileName: `d${d}.mp4` }] }, remote, quiet);
+    }
+    assert.ok(remote.posts.length <= 366, `expected <=366 entries, got ${remote.posts.length}`);
+    assert.ok(
+      remote.posts.every((p) => Date.parse(p.timestamp) > Date.now() - 366 * 86400_000),
+      "nothing older than the window may remain"
+    );
+  });
+});
+
 describe("mergeBlocklist — once blocked, always blocked", () => {
   test("unions both sides", () => {
     const merged = mergeBlocklist(

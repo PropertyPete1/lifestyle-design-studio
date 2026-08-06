@@ -20,6 +20,16 @@
 import http from "http";
 import { URL } from "url";
 import { exec } from "child_process";
+import { requireLiveAck } from "./live-guard.mjs";
+
+// TOUCHES LIVE: runs a real Google OAuth consent flow and mints a live refresh
+// token with drive (read/write) + gmail.send scope, printed to the terminal.
+// Replacing GOOGLE_REFRESH_TOKEN in GitHub Secrets INVALIDATES the token every
+// scheduled job currently uses — do it deliberately, not while debugging.
+requireLiveAck(
+  "Mints a live Google refresh token (Drive read/write + Gmail send) and prints it. " +
+    "Replacing the repo secret with it invalidates the token all scheduled jobs run on."
+);
 
 // SECURITY: never hardcode credentials here. This file is committed to a PUBLIC repo.
 // Supply both values via environment variables when running the script:

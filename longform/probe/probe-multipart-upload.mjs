@@ -41,8 +41,16 @@ import { execFileSync } from "child_process";
 import { readFileSync, existsSync, mkdirSync, rmSync, statSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { requireLiveAck } from "../../auto-poster/scripts/live-guard.mjs";
 
-const BASE = "https://app.metricool.com/api";
+// TOUCHES LIVE: uploads ~12MB of real bytes into the Metricool MEDIA LIBRARY.
+// It names no social account and creates no post, so it cannot publish — but on
+// its first run no delete endpoint would accept the file and it was left
+// orphaned in the library. probe-media-delete.mjs exists because of that.
+requireLiveAck(
+  "Uploads ~12MB into the live Metricool media library. Publishes nothing, but cleanup is not " +
+    "guaranteed — the first run left an orphaned file that needed probe-media-delete.mjs to remove."
+);
 const TOKEN = process.env.METRICOOL_API_TOKEN;
 const USER_ID = process.env.METRICOOL_USER_ID;
 const BLOG_ID = process.env.METRICOOL_BLOG_ID;
