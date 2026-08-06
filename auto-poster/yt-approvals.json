@@ -1,67 +1,8 @@
-{
-  "requests": [
-    {
-      "requestId": "topic_pick-2026-08-06-db587860",
-      "kind": "topic_pick",
-      "requestedAt": "2026-08-06T03:28:03.955Z",
-      "payload": {
-        "requestId": "topic_pick-2026-08-06-db587860",
-        "kind": "topic_pick",
-        "generatedAt": "2026-08-06T03:28:01.971Z",
-        "candidates": [
-          {
-            "index": 1,
-            "title": "[TEST] Moving to San Antonio: what $300k actually gets you",
-            "intent": "relocation",
-            "market": "san_antonio",
-            "query": "moving to san antonio",
-            "hook": "This is a TEST card. Everyone quotes you the price; nobody quotes the number that decides it.",
-            "outline": [
-              "TEST — what $300k buys",
-              "TEST — where it buys it",
-              "TEST — the tax surprise",
-              "TEST — what I'd do"
-            ],
-            "why": "TEST CARD — sent to prove the approval round-trip works end to end. Not a real brief.",
-            "footage": "TEST — newer subdivisions, wide streets",
-            "proposedClips": []
-          },
-          {
-            "index": 2,
-            "title": "[TEST] Austin vs San Antonio: the honest cost comparison",
-            "intent": "comparison",
-            "market": "austin",
-            "query": "austin vs san antonio",
-            "hook": "This is a TEST card. The gap is not where people think it is.",
-            "outline": [
-              "TEST — housing",
-              "TEST — taxes",
-              "TEST — commute",
-              "TEST — the verdict"
-            ],
-            "why": "TEST CARD — sent to prove the approval round-trip works end to end. Not a real brief.",
-            "footage": "TEST — city skylines, suburbs",
-            "proposedClips": []
-          },
-          {
-            "index": 3,
-            "title": "[TEST] New construction under $300k in San Antonio",
-            "intent": "new_build",
-            "market": "san_antonio",
-            "query": "new construction under 300k san antonio",
-            "hook": "This is a TEST card. There is a catch, and it is not the finish quality.",
-            "outline": [
-              "TEST — what exists",
-              "TEST — where",
-              "TEST — the catch",
-              "TEST — worth it?"
-            ],
-            "why": "TEST CARD — sent to prove the approval round-trip works end to end. Not a real brief.",
-            "footage": "TEST — spec home walkthrough",
-            "proposedClips": []
-          }
-        ]
-      }
-    }
-  ]
-}
+[
+  {
+    "requestId": "topic_pick-2026-08-06-db587860",
+    "decision": "approve",
+    "decidedAt": "2026-08-06T03:40:18.246Z",
+    "selection": 2
+  }
+]
