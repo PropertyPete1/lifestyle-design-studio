@@ -49,10 +49,47 @@ async function api(path, opts = {}) {
   return { ok: res.ok, status: res.status, json, text };
 }
 
+/**
+ * The one mechanism that could defeat the structural argument.
+ *
+ * Metricool sells "autolists" / recycling / evergreen queues on some plans —
+ * features that publish from a pool on a schedule without a per-post call. If
+ * this brand had one configured AND it drew from the media library, an upload
+ * really could reach an account with no explicit post. That is the assumption
+ * worth attacking rather than restating.
+ */
+async function probeAutoPostingFeatures() {
+  console.log("\n=== 0: IS ANY AUTO-PUBLISHING QUEUE CONFIGURED? ===");
+  const candidates = [
+    "/v2/scheduler/autolists", "/v2/autolists", "/v2/scheduler/recurrent",
+    "/v2/scheduler/queues", "/v2/scheduler/recycle", "/v2/settings/autolists",
+    "/v2/scheduler/evergreen", "/v2/scheduler/rss", "/v2/scheduler/best-times",
+  ];
+  let anyConfigured = false;
+  for (const path of candidates) {
+    const res = await api(`${path}?${authParams()}`);
+    if (res.status === 404) { console.log(`  404  ${path}`); continue; }
+    console.log(`  ${String(res.status).padStart(3)}  ${path}  <-- EXISTS`);
+    if (res.ok) {
+      const items = res.json?.data || res.json || [];
+      const count = Array.isArray(items) ? items.length : (items && typeof items === "object" ? Object.keys(items).length : 0);
+      console.log(`        ${count} entr(y|ies): ${redact(res.text).slice(0, 250)}`);
+      if (Array.isArray(items) && items.length > 0) anyConfigured = true;
+    }
+  }
+  console.log(anyConfigured
+    ? "  >>> SOMETHING IS CONFIGURED — inspect the payloads above before uploading."
+    : "  >>> No populated auto-publishing queue found on this brand.");
+  return anyConfigured;
+}
+
 async function probeMediaEndpoints() {
   console.log("\n=== 1: WHAT DOES THE MEDIA LIBRARY EXPOSE? ===");
   const candidates = [
     "/v2/media",
+    `/v2/media?limit=20`,
+    "/v2/media/videos",
+    "/v2/media/images",
     "/v2/media/list",
     "/v2/media/files",
     "/v2/media/library",
@@ -141,6 +178,7 @@ function structuralArgument() {
 async function main() {
   console.log("PREFLIGHT — can a media-library upload reach a social account?");
   console.log("This script is READ ONLY. It uploads nothing and creates nothing.\n");
+  await probeAutoPostingFeatures();
   await probeMediaEndpoints();
   const baseline = await schedulerBaseline();
   await probeOrphanMedia(baseline);
