@@ -20,7 +20,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { stripDashes } from "./sanitize.js";
-import { scanAndStripLeaks } from "./caption.js";
+import { scanAndStripLeaks, buildGatedTerms } from "./caption.js";
 import { findMonthlyPaymentFigure } from "./caption-validator.js";
 import { findBannedTellsIn } from "./yt-voice.js";
 import { TOPIC_CANDIDATES } from "./yt-config.js";
@@ -51,7 +51,22 @@ export const SEARCH_INTENTS = [
   { key: "new_build", label: "new construction", example: "new construction under 300k san antonio" },
 ];
 
-const BRIEF_SYSTEM = `You plan YouTube videos for Peter, a residential realtor working San Antonio and Austin, Texas.
+/**
+ * The developments the brief must never name, read from the same knowledge base
+ * the reels pipeline gates on.
+ *
+ * Read live rather than hardcoded: the prompt's list and the guard that enforces
+ * it (scanAndStripLeaks, via applyGuards) then cannot drift apart. A name added
+ * to the KB is banned in the prompt on the next run without anyone remembering
+ * to update a second copy.
+ */
+export function gatedDevelopmentNames() {
+  return buildGatedTerms(null)
+    .filter((g) => g.type === "community_name")
+    .map((g) => g.term);
+}
+
+const buildBriefSystem = () => `You plan YouTube videos for Peter, a residential realtor working San Antonio and Austin, Texas.
 
 Your job is to propose video topics that people are ALREADY SEARCHING FOR. This channel does not build an audience by being interesting; it builds one by being the answer to a question someone typed at 11pm while deciding whether to move to Texas.
 
@@ -84,17 +99,44 @@ For each candidate give:
   "why"       — one sentence: why this viewer, this week, cares. Be concrete about who they are.
   "footage"   — what B-roll this needs, in plain words ("newer subdivisions, wide streets, a walkthrough of a spec home")
 
+NAME REAL PLACES. This is the difference between a brief someone can shoot and a
+brief that sounds like one.
+
+A viewer searching "best neighborhoods in north san antonio" wants to hear
+"Stone Oak", "Alamo Ranch", "Cibolo Canyons", "Shavano Park", "Hollywood Park",
+"Converse". They do not want "the established pockets inside the loop" or "the
+newer growth areas". A title that promises to compare neighborhoods and then
+never names one cannot keep its promise, and the writer downstream can only work
+with the specifics you give it — it will not invent place names you left out.
+
+So: name real, established, publicly-known neighborhoods, suburbs, master-planned
+areas, highways and school districts, and attach the specific claim — the tax
+rate, the school line, the commute, the price band — to a NAMED place. Most
+outline chapters should carry at least one. Only skip a name where the chapter is
+genuinely about the whole market.
+
+THE ONE EXCEPTION — these specific developments are off-limits, by name and in
+every spelling:
+${gatedDevelopmentNames().map((n) => `  - ${n}`).join("\n")}
+
+Those are active new-construction communities the daily posting pipeline gates
+deliberately; naming them here would leak what that pipeline protects. Everything
+else on the map is fair game. If a topic can only be told through one of those,
+pick a different topic.
+
 HARD BANS, which apply to every word you write:
 - No monthly payment figures. Ever. Talk about payments; never state one.
-- No builder names, no community names, no development names.
+- No builder names. A builder is a company; a neighborhood is a place. Name places, never companies.
+- None of the gated developments listed above.
 - No invented statistics, rates, inventory counts or deadlines. If you would have to make a number up, make the point without one.
 - No hype vocabulary. If a phrase would appear in a listing, it does not appear here.
+- Never invent a place. If you are not certain a neighborhood exists and is known by that name, leave it out — a confidently wrong place name is worse than a general one.
 
 Return ONLY valid JSON, no preamble and no code fences:
 {"candidates": [{"title": "...", "intent": "...", "market": "...", "query": "...", "hook": "...", "outline": "...", "why": "...", "footage": "..."}]}`;
 
 export function briefSystem() {
-  return BRIEF_SYSTEM;
+  return buildBriefSystem();
 }
 
 function parseJson(raw) {
