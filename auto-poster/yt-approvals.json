@@ -1,9 +1,250 @@
-[
-  {
-    "requestId": "topic_pick-2026-08-07-d5cddf9d",
-    "decision": "approve",
-    "decidedAt": "2026-08-07T17:47:33.055Z",
-    "selection": 1,
-    "notes": "Let’s target veterans"
-  }
-]
+{
+  "requests": [
+    {
+      "requestId": "topic_pick-2026-08-06-db587860",
+      "kind": "topic_pick",
+      "requestedAt": "2026-08-06T03:28:03.955Z",
+      "payload": {
+        "requestId": "topic_pick-2026-08-06-db587860",
+        "kind": "topic_pick",
+        "generatedAt": "2026-08-06T03:28:01.971Z",
+        "candidates": [
+          {
+            "index": 1,
+            "title": "[TEST] Moving to San Antonio: what $300k actually gets you",
+            "intent": "relocation",
+            "market": "san_antonio",
+            "query": "moving to san antonio",
+            "hook": "This is a TEST card. Everyone quotes you the price; nobody quotes the number that decides it.",
+            "outline": [
+              "TEST — what $300k buys",
+              "TEST — where it buys it",
+              "TEST — the tax surprise",
+              "TEST — what I'd do"
+            ],
+            "why": "TEST CARD — sent to prove the approval round-trip works end to end. Not a real brief.",
+            "footage": "TEST — newer subdivisions, wide streets",
+            "proposedClips": []
+          },
+          {
+            "index": 2,
+            "title": "[TEST] Austin vs San Antonio: the honest cost comparison",
+            "intent": "comparison",
+            "market": "austin",
+            "query": "austin vs san antonio",
+            "hook": "This is a TEST card. The gap is not where people think it is.",
+            "outline": [
+              "TEST — housing",
+              "TEST — taxes",
+              "TEST — commute",
+              "TEST — the verdict"
+            ],
+            "why": "TEST CARD — sent to prove the approval round-trip works end to end. Not a real brief.",
+            "footage": "TEST — city skylines, suburbs",
+            "proposedClips": []
+          },
+          {
+            "index": 3,
+            "title": "[TEST] New construction under $300k in San Antonio",
+            "intent": "new_build",
+            "market": "san_antonio",
+            "query": "new construction under 300k san antonio",
+            "hook": "This is a TEST card. There is a catch, and it is not the finish quality.",
+            "outline": [
+              "TEST — what exists",
+              "TEST — where",
+              "TEST — the catch",
+              "TEST — worth it?"
+            ],
+            "why": "TEST CARD — sent to prove the approval round-trip works end to end. Not a real brief.",
+            "footage": "TEST — spec home walkthrough",
+            "proposedClips": []
+          }
+        ]
+      },
+      "decision": "approve",
+      "notes": null,
+      "decidedAt": "2026-08-06T03:40:18.246Z",
+      "selection": 2,
+      "actedAt": "2026-08-07T17:31:14.190Z",
+      "actedAction": "closed_test_card",
+      "actedResult": {
+        "closed": true,
+        "reason": "TEST card retired as a kit source. Its purpose — proving the approval round-trip end to end — is complete (verified 2026-08-06). Every payload field was marked TEST, including the hook and all four outline sections, so it cannot produce a script worth recording. Closed by owner decision on 2026-08-07; superseded by the first real brief.",
+        "lastScores": {
+          "clarity": 7,
+          "retention": 5,
+          "authenticity": 5,
+          "bar": 8
+        },
+        "neverDelivered": true
+      }
+    },
+    {
+      "requestId": "topic_pick-2026-08-07-d5cddf9d",
+      "kind": "topic_pick",
+      "requestedAt": "2026-08-07T17:32:30.393Z",
+      "payload": {
+        "requestId": "topic_pick-2026-08-07-d5cddf9d",
+        "kind": "topic_pick",
+        "generatedAt": "2026-08-07T17:32:28.875Z",
+        "candidates": [
+          {
+            "index": 1,
+            "title": "Best neighborhoods in North San Antonio, honestly compared",
+            "intent": "neighborhood",
+            "market": "san_antonio",
+            "query": "best neighborhoods in north san antonio",
+            "hook": "Most people relocating here get pointed to the same three areas up north, and two of them come with a commute or a school-boundary surprise nobody mentions until you're under contract. Here's how the north side actually breaks down.",
+            "outline": [
+              "Where \"north side\" starts and stops on a map",
+              "The established inside-1604 pockets: older homes, bigger lots, mature trees",
+              "The newer growth areas past 1604: what you trade for a newer house",
+              "School district lines that cut through neighborhoods, not around them",
+              "Commute reality to the medical center, downtown, and the northeast employers",
+              "Who each area actually suits, and who regrets it"
+            ],
+            "why": "A family relocating for a job in the medical center or on the north side has a weekend house-hunting trip booked and needs to know which zip codes to spend it in.",
+            "footage": "drive-through footage of older tree-lined streets versus newer subdivisions, 1604 traffic at rush hour, a school pickup line, aerial of the northern edge of development meeting open land",
+            "proposedClips": [
+              {
+                "driveFileId": "1PCUXAl0Ic9HRiJgznGhkTHPtY0o0vbtF",
+                "fileName": "01F4C007-1610-4820-96C7-DA9F3B04C18E.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1BI68DxyeR8BtRJ8eBZqNcM3OdqeiwncD",
+                "fileName": "0A19605A-FFE2-4213-909B-21BC63F3CACA.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1OfV7aePdeAUCNW9WalLHA-G9t4J66k-C",
+                "fileName": "0ADF5F6D-2142-46B8-B7FF-92A47E26BBBA.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "19imODcsbuOvx8EufDTlXSw024peR1PIq",
+                "fileName": "11E5D83D-74AE-4335-BD92-7D5B99BC674C.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1KSUmrce9sOq90aUkKmMbq-1Sq9ZIa8wq",
+                "fileName": "13527 Henri Castro, 78253.mov",
+                "reused": false
+              },
+              {
+                "driveFileId": "12z20Q19sKmJ9W457ykytyv6Xj6lkjik8",
+                "fileName": "136D8B22-84C0-4972-96E7-C5CE6EABF123.mp4",
+                "reused": false
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "title": "The truth about property taxes in Austin before you move here",
+            "intent": "cost_of_living",
+            "market": "austin",
+            "query": "austin texas property taxes explained",
+            "hook": "Texas has no state income tax, and people moving to Austin assume that means they come out ahead. Then they see the tax line on an Austin property and realize the money didn't disappear, it just moved to a different bill.",
+            "outline": [
+              "Why your tax bill is stacked from several separate entities, not one",
+              "Homestead exemption: what it does, what it doesn't, and when to file",
+              "Why the tax on the house you buy may not match the tax the seller paid",
+              "MUD and PID districts in the outer suburbs and why two similar homes differ",
+              "How protests and appraisal caps actually work for a new owner",
+              "What to check before you make an offer"
+            ],
+            "why": "Someone relocating from a state with income tax is running their numbers this week and has just discovered the tax line item is larger than they budgeted for.",
+            "footage": "close-ups of a tax statement with numbers blurred, county appraisal district office exterior, suburban streets in outer Austin, a laptop showing a public tax lookup page",
+            "proposedClips": [
+              {
+                "driveFileId": "1diZqKeE1Jt2N9mZYIVceGY53Ugwtjtn6",
+                "fileName": "092F0A61-7A39-4218-B223-ED6EFE0D7F9E.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "10whBnOGjMOhsi0LydOVtngTAllEu7joZ",
+                "fileName": "3F5F725C-2517-4518-9C08-BA4035994102.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "11OS83lpOPriayoHZhlhZY6hjSYW5OvfS",
+                "fileName": "412C9531-D8A2-41BC-9667-0085609C4539.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1UdPT7zffkaTEK_4geMGSCbUwYSVN5WDr",
+                "fileName": "45A7E871-87DA-41D6-9924-2FDF9F25367E.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1GT6-3vuEE_PHyt3_UK3M-qhTu6fthFpZ",
+                "fileName": "4D50F343-D14D-47EB-A1BA-8DFD87AE3FDD.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "11lfUvvb6EN8D4EupsLuOfETdlYQ-JwCV",
+                "fileName": "55230395-251B-4699-9EA1-6FC5C6DD89BE.mp4",
+                "reused": false
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "title": "Moving to Austin: which suburb fits how you actually work",
+            "intent": "relocation",
+            "market": "austin",
+            "query": "moving to austin which suburb should i live in",
+            "hook": "The suburb people pick before they move is almost never the one they'd pick after six months of driving it. The deciding factor isn't the house, it's which direction you have to travel on a Tuesday morning.",
+            "outline": [
+              "North, south, east, west: what each direction of Austin is known for",
+              "If you go into an office: matching your suburb to where the employers are",
+              "If you're fully remote: what you gain by moving further out",
+              "Older established suburbs versus the new-growth edges",
+              "What changes when you cross a county or school district line",
+              "How to test-drive a suburb in one weekend visit"
+            ],
+            "why": "A remote or hybrid worker with a relocation date set is choosing between suburbs they've only seen on a map and doesn't yet know which drives will wear them down.",
+            "footage": "highway footage in each direction at rush hour, contrast between an older suburban main street and a newly built subdivision, downtown office towers, a home office setup",
+            "proposedClips": [
+              {
+                "driveFileId": "1diZqKeE1Jt2N9mZYIVceGY53Ugwtjtn6",
+                "fileName": "092F0A61-7A39-4218-B223-ED6EFE0D7F9E.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "10whBnOGjMOhsi0LydOVtngTAllEu7joZ",
+                "fileName": "3F5F725C-2517-4518-9C08-BA4035994102.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "11OS83lpOPriayoHZhlhZY6hjSYW5OvfS",
+                "fileName": "412C9531-D8A2-41BC-9667-0085609C4539.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1UdPT7zffkaTEK_4geMGSCbUwYSVN5WDr",
+                "fileName": "45A7E871-87DA-41D6-9924-2FDF9F25367E.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1GT6-3vuEE_PHyt3_UK3M-qhTu6fthFpZ",
+                "fileName": "4D50F343-D14D-47EB-A1BA-8DFD87AE3FDD.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "11lfUvvb6EN8D4EupsLuOfETdlYQ-JwCV",
+                "fileName": "55230395-251B-4699-9EA1-6FC5C6DD89BE.mp4",
+                "reused": false
+              }
+            ]
+          }
+        ]
+      },
+      "decision": "approve",
+      "notes": "Let’s target veterans",
+      "decidedAt": "2026-08-07T17:47:33.055Z",
+      "selection": 1
+    }
+  ]
+}
