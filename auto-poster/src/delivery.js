@@ -835,7 +835,38 @@ export const DELIVERY_WEBHOOK_PATH = "/api/delivery/webhook";
 
 /** The payload the approval endpoint receives. Exported so tests can assert its shape. */
 export function approvalPayload({ requestId, kind, payload, requestedAt = new Date().toISOString() }) {
-  return { type: "approval", requestId, kind, payload, requestedAt };
+  return { type: "approval", requestId, kind, stage: stageOf(payload), payload, requestedAt };
+}
+
+/**
+ * The routing field, lifted to the top of the envelope.
+ *
+ * FIVE DIFFERENT THINGS SHIP AS kind:"topic_pick" — the weekly brief, a reworked
+ * brief, the recording kit, a below-bar hold, and a run that produced no usable
+ * draft. Only `payload.stage` told them apart, and the two that render are the
+ * two that do not carry one. A dashboard routing on `kind` sees five copies of
+ * the same thing, which is why a delivered recording kit and two hold notices
+ * all arrived with nowhere to go.
+ *
+ * That shape was a deliberate choice on this side: reusing the request's id and
+ * marking a stage, rather than raising a new approval record that would read as
+ * an unanswered brief and block the next Monday brief. The state machine was
+ * right; handing the dashboard a distinction it had to dig for was not.
+ *
+ * So `stage` is now a flat field on the envelope. `payload.stage` stays exactly
+ * where it was — nothing that reads it needs changing, and the two can be
+ * migrated apart later if anyone wants to.
+ *
+ * NULL IS A VALUE HERE, not an absence. A payload with no stage is a request
+ * for a DECISION — a brief. Emitting the key as null on every envelope means a
+ * consumer can switch on one always-present field:
+ *
+ *     stage === null  ->  a decision is being asked for; render the card
+ *     stage !== null  ->  progress on a request already decided
+ */
+function stageOf(payload) {
+  const stage = payload && typeof payload === "object" ? payload.stage : null;
+  return typeof stage === "string" && stage ? stage : null;
 }
 
 export async function sendApprovalRequest({ requestId, kind, payload, emailSubject, emailBody, accessToken = null }) {
