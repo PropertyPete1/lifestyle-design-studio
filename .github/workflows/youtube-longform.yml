@@ -44,8 +44,9 @@ on:
           - dry-run
           - send-test-approval
           - reoutline
+          - resend-kit
       request_id:
-        description: 'reoutline only: the approved requestId whose outline to rewrite'
+        description: 'reoutline / resend-kit: the requestId to act on'
         required: false
         default: ''
         type: string
@@ -156,6 +157,11 @@ jobs:
         working-directory: auto-poster
         env:
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          # Peter records every take, on-camera AND voiceover. The timeline
+          # attaches his recording as narrationSource and generateNarration
+          # skips any segment that has one, so nothing synthetic reaches the
+          # render — which is what makes the disclosure unnecessary.
+          YT_NARRATION_MODE: peter
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -255,6 +261,39 @@ jobs:
   # Rewrite one approved request's outline under the current brief rules, without
   # making Peter pick a topic again. His decision, selection and notes are
   # preserved; only the selected candidate's outline changes. Publishes nothing.
+  # Rebuild and re-send a recording kit for a request whose kit already went out
+  # — after a narration-mode change, or when the first delivery had no card to
+  # open. Clears no acted marker and changes no decision. Publishes nothing.
+  resend-kit:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'resend-kit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: youtube-longform-approvals
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Rebuild and re-send the kit
+        working-directory: auto-poster
+        env:
+          # LIVE: sends a real recording kit to the dashboard and Peter's inbox.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          YT_NARRATION_MODE: peter
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+        run: node scripts/resend-kit.mjs "$REQUEST_ID"
+
   reoutline:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'reoutline'
     runs-on: ubuntu-latest
