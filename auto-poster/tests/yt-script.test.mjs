@@ -20,6 +20,7 @@ import {
   VOICEOVER,
   PASS_MARK,
   describeLastCall,
+  sampleAround,
 } from "../src/yt-script.js";
 import {
   findBannedTells,
@@ -489,5 +490,59 @@ describe("an unscored script must not reach a recording kit", () => {
 describe("model-call diagnostics", () => {
   test("describeLastCall reports something before any call is made", () => {
     assert.equal(typeof describeLastCall(), "string");
+  });
+});
+
+describe("sampleAround — a position is not a diagnosis", () => {
+  test("brackets the failure point so the bad character is visible", () => {
+    // The real shape: a double quote inside prose ends the string early.
+    const raw = '{"takes":[{"text":"people call it "the north side" here"}]}';
+    const pos = raw.indexOf('"the north side"') + 4;
+    const out = sampleAround(raw, `Expected ',' or ']' after array element in JSON at position ${pos}`, 30);
+    assert.match(out, />>>HERE<<</);
+    assert.ok(out.includes("north side"), "the offending text must be in the sample");
+  });
+
+  test("falls back to the head of the output when the message has no position", () => {
+    const out = sampleAround("abcdefghij", "no JSON object in model output", 3);
+    assert.equal(out, "abcdef");
+  });
+
+  test("returns null rather than throwing on empty input", () => {
+    assert.equal(sampleAround("", "position 5"), null);
+    assert.equal(sampleAround(null, "position 5"), null);
+  });
+
+  test("clamps at both ends near the boundaries", () => {
+    assert.doesNotThrow(() => sampleAround("short", "position 2", 999));
+  });
+});
+
+describe("generateScript — a total failure carries its evidence", () => {
+  const topic = { title: "T", hook: "h", outline: "a\nb\nc\nd" };
+
+  test("attaches every attempt's failure to the thrown error", async () => {
+    // Nothing parseable, ever. Three attempts, then it gives up.
+    const model = async () => "this is not json at all";
+    const err = await generateScript({ topic, modelCall: model }).then(
+      () => null,
+      (e) => e
+    );
+    assert.ok(err, "must throw when no draft survives");
+    assert.match(err.message, /no usable draft/);
+    assert.equal(err.attemptFailures.length, 3, "one record per attempt");
+    assert.ok(err.attemptFailures.every((f) => f.kind === "unparseable"));
+  });
+
+  test("records structure failures verbatim, with the section count", async () => {
+    // Parses fine, but has too few sections to be valid.
+    const thin = JSON.stringify({ title: "T", hook: "h", promise: "p", sections: [], softCta: {}, close: {} });
+    const err = await generateScript({ topic, modelCall: async () => thin }).then(
+      () => null,
+      (e) => e
+    );
+    assert.ok(err.attemptFailures.every((f) => f.kind === "structure"));
+    assert.ok(err.attemptFailures[0].failures.some((f) => /sections/.test(f)));
+    assert.equal(err.attemptFailures[0].sectionCount, 0);
   });
 });
