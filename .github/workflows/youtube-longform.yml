@@ -21,7 +21,19 @@ on:
     # this is about picking his answer up within hours rather than on a fixed
     # day. Most runs do nothing and exit clean.
     - cron: '0 15 * * *'
-    - cron: '0 21 * * *'
+    # SUSPENDED 2026-08-07 — RESTORE THIS LINE.
+    #
+    # topic_pick-2026-08-07-d5cddf9d is approved and unacted, so every poll
+    # rewrites the same script from the same outline, scores it below the bar
+    # (8/7/6 against a bar of 8), holds it, and — until the notify fix lands —
+    # says nothing to anyone. That is ~7 minutes of model budget per run to
+    # re-learn a result we already have.
+    #
+    # The outline has no named subdivisions for the writer to use, which is the
+    # blocker the critic identified. Restore this cron once that is addressed,
+    # or sooner if a manual `workflow_dispatch` run is wanted — dispatch is
+    # unaffected by this suspension.
+    # - cron: '0 21 * * *'
   workflow_dispatch:
     inputs:
       job:
