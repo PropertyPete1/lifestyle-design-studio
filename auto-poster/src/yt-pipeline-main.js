@@ -70,6 +70,59 @@ import { RESOLUTION } from "./yt-config.js";
 const DRY_RUN = process.env.DRY_RUN === "true";
 
 /**
+ * Where a held-back draft is written so it survives the run.
+ *
+ * RUNNER_TEMP on Actions, the OS temp dir locally. Deliberately NOT inside the
+ * repo: a draft that failed the bar is evidence for one investigation, not
+ * something to commit, and a path under the working tree is one `git add -A`
+ * away from being committed by the job that produced it.
+ */
+const DIAGNOSTICS_DIR = join(process.env.RUNNER_TEMP || tmpdir(), "yt-diagnostics");
+
+/**
+ * Persist a below-bar draft and everything the critic said about it.
+ *
+ * A held-back script is discarded — correctly, it must never be recorded — but
+ * that also threw away the only evidence of WHY it was held back. Diagnosing it
+ * afterwards meant re-running the writer and hoping to reproduce a
+ * nondeterministic failure, which is not diagnosis.
+ *
+ * Never throws: this is diagnostics. A disk problem here must not turn a
+ * correctly-held-back script into a failed pipeline run.
+ */
+function writeScriptDiagnostics(record, topic, scriptResult, why) {
+  try {
+    mkdirSync(DIAGNOSTICS_DIR, { recursive: true });
+    const path = join(DIAGNOSTICS_DIR, `${record.requestId}-${Date.now()}.json`);
+    writeFileSync(
+      path,
+      JSON.stringify(
+        {
+          requestId: record.requestId,
+          heldBackAt: new Date().toISOString(),
+          why,
+          topic: { title: topic.title, intent: topic.intent, market: topic.market, hook: topic.hook },
+          scores: scriptResult.scores,
+          attemptsUsed: scriptResult.attemptsUsed,
+          belowBar: scriptResult.belowBar,
+          criticUnavailable: scriptResult.criticUnavailable,
+          takeCount: scriptResult.takeCount,
+          onCameraCount: scriptResult.onCameraCount,
+          estimatedMinutes: scriptResult.estimatedMinutes,
+          // The best-of draft in full. This is the thing to read.
+          script: scriptResult.script,
+        },
+        null,
+        2
+      ) + "\n"
+    );
+    console.log(`[YTPipeline] draft + critic feedback written to ${path}`);
+  } catch (err) {
+    console.warn(`[YTPipeline] could not write diagnostics: ${err.message}`);
+  }
+}
+
+/**
  * Turn an approved topic into a script and a recording kit.
  *
  * Everything that can fail happens before markActed: the script is written, the
@@ -128,6 +181,7 @@ async function deliverKitForApprovedTopic(approvals, record) {
         `retention=${scriptResult.scores.retention} authenticity=${scriptResult.scores.authenticity})`;
     console.log(`[YTPipeline] NOT delivering a kit for ${record.requestId}: ${why}`);
     console.log(`::warning::Script for "${topic.title}" held back — ${why}. Will retry on the next run.`);
+    writeScriptDiagnostics(record, topic, scriptResult, why);
     return { advanced: false, reason: why };
   }
 

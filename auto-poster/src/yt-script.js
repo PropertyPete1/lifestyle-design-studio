@@ -498,6 +498,13 @@ export async function generateScript({
       `[YTScript] attempt ${attempt + 1} scores: clarity=${scores.clarity} retention=${scores.retention} ` +
       `authenticity=${scores.authenticity}${scoresPass(scores) ? " PASS" : " below bar"}`
     );
+    // The critic's prose is the only thing that says WHY a score is what it is.
+    // It was being fed straight back into the retry prompt and then dropped, so
+    // a below-bar run left three numbers and no way to tell a weak writer from
+    // weak source material. Logged whenever the critic has something to say.
+    if (scores.worst_problem) console.log(`[YTScript]   worst problem:  ${scores.worst_problem}`);
+    if (scores.worst_boundary) console.log(`[YTScript]   worst boundary: ${scores.worst_boundary}`);
+    if (scores.fix) console.log(`[YTScript]   fix:            ${scores.fix}`);
     attempts.push({ script: guarded.script, scores, leaksStripped: guarded.leaksStripped });
 
     if (scoresPass(scores)) {
