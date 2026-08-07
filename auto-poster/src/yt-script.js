@@ -294,6 +294,18 @@ MODE RULES:
 - ON_CAMERA is for the hook, the section transitions, the soft CTA and the close. It is roughly ${Math.round(ON_CAMERA_SHARE * 100)}% of the runtime — that is the budget, keep to it.
 - VOICEOVER is everything else, and it plays over B-roll of homes and neighbourhoods. Write VOICEOVER takes so they make sense without seeing Peter, and so they do not describe anything he does not have footage of.
 
+DEFINE EVERY LOCAL NOUN ON FIRST USE.
+Your viewer has never been here. That is the entire premise — they are deciding whether to move. So they know ZERO local nouns: not a street, not a highway, not a hospital, not a school district, not an employer, not a landmark. A name they cannot place is a name they have to solve before they can care, and clarity is scored on the LOWEST line in the script.
+
+Every local name gets one clause of definition the first time you say it, in the same breath. Not a glossary, not a digression — a clause:
+  "Floyd Curl, the street the hospitals sit on"
+  "1604, the outer loop"
+  "Comal ISD, the district that reaches down from New Braunfels"
+  "Randolph, the Air Force base on the northeast side"
+After the first mention you can use the bare name freely; they know it now.
+
+This is the other half of naming real places. An unexplained name is not more specific than a category — it is less useful, because the viewer cannot even tell what kind of thing it is.
+
 NAME THE PLACES THE OUTLINE NAMES.
 The outline gives you real neighborhoods, suburbs, highways and school districts. Use them, by name, and attach each specific claim — the commute, the school line, the tax note, the price band — to a NAMED place. A video that promises to compare neighborhoods and then says "the established pockets inside the loop" for eleven minutes has not kept its promise. Do not substitute a category for a name the outline handed you, and do not invent places the outline did not name.
 
@@ -339,6 +351,8 @@ Score three things from 1 to 10.
 "clarity" — comprehension, scored across the WHOLE script. Would a distracted viewer understand what is being CLAIMED, first time, without rewinding?
 
 A good line is a CLEAR, COMPLETE CLAIM with at most one piece withheld. The listener knows exactly what is being asserted and what question they want answered. A bad line is ambiguous about what is even being claimed — the listener has to solve the sentence before they can care about it. On the page a reader can go back a line. A listener cannot. Compression that costs comprehension caps this axis at 4, however elegant it reads.
+
+UNDEFINED LOCAL SHORTHAND IS THE MOST COMMON CLARITY FAILURE HERE, and the easiest to miss, because the writer knows the market and the viewer does not. This audience is defined as people who do not live here yet. A street, highway, hospital, school district, base, employer or landmark used without a clause explaining what it IS is an unsolvable line for them — "close to Floyd Curl" means nothing unless the script says "Floyd Curl, the street the hospitals sit on". Bare local names on first use cap this axis at 6, however natural they sound.
 
 Score the LOWEST-clarity take in the script, not the average.
 
@@ -511,6 +525,15 @@ export function applyGuards(script) {
  * "That" and "Now" are excluded because they open perfectly good standalone
  * sentences ("That school boundary catches people out"); only the plainly
  * anaphoric forms of "that" are matched.
+ *
+ * EVERY TAKE, NOT JUST THE ON-CAMERA ONES. This first shipped scoped to the
+ * takes Peter records, on the reasoning that the rule exists so he can shoot
+ * them in any order. That was wrong, and the next run proved it: the check
+ * passed while the critic scored authenticity 4 and named the same fault in
+ * VOICEOVER takes — "And if you are reporting to Randolph...", "Then there is
+ * Comal ISD". The rule is about the writing, not about who reads it aloud. A
+ * take that dangles off its predecessor is weak copy whether Peter records it
+ * or ElevenLabs does.
  */
 const CONNECTIVE_OPENER_PATTERNS = [
   /^(so|and|but|or|plus|also|then|anyway|besides|however|meanwhile|therefore|nor)\b/i,
@@ -523,18 +546,10 @@ function openerOf(text) {
   return String(text ?? "").trim().replace(/^["'“”‘’\-—–(\[]+\s*/, "");
 }
 
-/**
- * Every RECORDED take that opens with connective tissue.
- *
- * Mode-aware rather than hardcoded to ON_CAMERA: with YT_NARRATION_MODE=peter
- * he reads the voiceover too, and those takes have to stand alone for exactly
- * the same reason.
- */
-export function findConnectiveOpeners(script, { narrationMode = NARRATION_MODE } = {}) {
+/** Every take that opens with connective tissue, in any mode. */
+export function findConnectiveOpeners(script) {
   const found = [];
   for (const take of allTakes(script)) {
-    const isRecorded = take.mode === ON_CAMERA || narrationMode === "peter";
-    if (!isRecorded) continue;
     const opening = openerOf(take.text);
     if (!opening) continue;
     const hit = CONNECTIVE_OPENER_PATTERNS.find((re) => re.test(opening));
@@ -769,7 +784,9 @@ export async function generateScript({
           `Shorter sentences, contractions, fragments where they help.\n`
         : "") +
       (scores.clarity < PASS_MARK
-        ? `CLARITY IS FAILING. A listener cannot rewind. Make each claim complete and withhold the answer, not the subject.\n`
+        ? `CLARITY IS FAILING. A listener cannot rewind. Make each claim complete and withhold the answer, not the subject. ` +
+          `Check every local name first — a street, highway, hospital, district, base or landmark used without a clause ` +
+          `saying what it is ("Floyd Curl, the street the hospitals sit on") is unsolvable for someone who does not live here yet.\n`
         : "") +
       `Worst problem: ${scores.worst_problem}\nFix: ${scores.fix}\n` +
       `Rewrite completely. Do not lightly edit the previous version.`;

@@ -725,19 +725,24 @@ describe("findConnectiveOpeners — the authenticity killer, made mechanical", (
     assert.deepEqual(findConnectiveOpeners(clean), [], "bare That/Now/Sold/Anywhere must pass");
   });
 
-  test("ignores VOICEOVER takes in the default narration mode — Peter does not read them", () => {
+  test("CHECKS VOICEOVER TOO — the rule is about the writing, not who reads it", () => {
+    // This first shipped scoped to ON_CAMERA. The very next run passed the check
+    // and still scored authenticity 4, with the critic naming these three
+    // VOICEOVER takes verbatim. A take that dangles off its predecessor is weak
+    // copy whether Peter records it or ElevenLabs does.
     const hits = findConnectiveOpeners(
-      script([take("v1", "And also worth knowing: Comal ISD reaches down.", "VOICEOVER")])
+      script([
+        take("v1", "And if you are reporting to Randolph or Fort Sam, you drive two highways.", "VOICEOVER"),
+        take("v2", "So verify by address, not by subdivision name.", "VOICEOVER"),
+        take("v3", "Then there is Comal ISD reaching down into Timberwood Park.", "VOICEOVER"),
+      ])
     );
-    assert.deepEqual(hits, []);
+    assert.deepEqual(hits.map((h) => h.id), ["v1", "v2", "v3"]);
   });
 
-  test("checks VOICEOVER too when Peter records the narration himself", () => {
-    const hits = findConnectiveOpeners(
-      script([take("v1", "And also worth knowing: Comal ISD reaches down.", "VOICEOVER")]),
-      { narrationMode: "peter" }
-    );
-    assert.equal(hits.length, 1, "in peter mode every recorded take must stand alone");
+  test("applies in every narration mode, with no mode argument to get wrong", () => {
+    const one = script([take("v1", "And also worth knowing: Comal ISD reaches down.", "VOICEOVER")]);
+    assert.equal(findConnectiveOpeners(one).length, 1);
   });
 
   test("sees through leading quotes and dashes", () => {
