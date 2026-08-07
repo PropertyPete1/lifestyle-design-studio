@@ -159,6 +159,18 @@ jobs:
             echo "success=false" >> $GITHUB_OUTPUT
             exit 1
           fi
+      # A script held back for scoring below the bar is discarded, which also
+      # discarded the only evidence of why. The draft and the critic's reasoning
+      # land here instead. Nothing is written on a run that delivers a kit, so
+      # this step is usually a no-op — hence if-no-files-found: ignore.
+      - name: Upload held-back draft and critic feedback
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: script-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/yt-diagnostics/
+          if-no-files-found: ignore
+          retention-days: 30
       - name: Commit approvals
         if: always()
         working-directory: auto-poster
