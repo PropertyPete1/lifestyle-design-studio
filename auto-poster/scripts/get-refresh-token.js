@@ -11,7 +11,12 @@
  * 1. Open a browser to Google's OAuth consent page
  * 2. You authorize Drive + Gmail Send access
  * 3. It prints the refresh token
- * 4. You paste it into GitHub Secrets as GOOGLE_REFRESH_TOKEN
+ * 4. You paste it into GitHub Secrets — GOOGLE_REFRESH_TOKEN by default,
+ *    or YT_REFRESH_TOKEN when run with --youtube
+ *
+ * Two modes, two secrets:
+ *   node scripts/get-refresh-token.js             Drive + Gmail  -> GOOGLE_REFRESH_TOKEN
+ *   node scripts/get-refresh-token.js --youtube   thumbnails     -> YT_REFRESH_TOKEN
  *
  * NOTE: Your OAuth app is Internal, so no re-verification needed.
  * The old readonly token will stop working once you replace the secret.
@@ -22,13 +27,54 @@ import { URL } from "url";
 import { exec } from "child_process";
 import { requireLiveAck } from "./live-guard.mjs";
 
+/**
+ * Two tokens, two secrets, deliberately never combined.
+ *
+ * The default mints the Drive + Gmail token every scheduled job runs on.
+ * `--youtube` mints a SEPARATE token carrying only youtube.force-ssl, for
+ * thumbnails.set and nothing else.
+ *
+ * They are kept apart because the blast radius differs. Pasting a
+ * YouTube-scoped token into GOOGLE_REFRESH_TOKEN would silently break Drive and
+ * Gmail for every job in this repo, and the first symptom would be a posting
+ * run failing hours later. So the two modes name different secrets, print
+ * different banners, and the script says which one it just made.
+ */
+const TOKEN_SETS = {
+  default: {
+    label: "Drive + Gmail Send",
+    secret: "GOOGLE_REFRESH_TOKEN",
+    scopes: [
+      "https://www.googleapis.com/auth/drive",      // Full Drive access (read + write + delete)
+      "https://www.googleapis.com/auth/gmail.send", // Send email only (not read inbox)
+    ],
+    warning: "This replaces the token EVERY scheduled job uses. Do it deliberately.",
+  },
+  youtube: {
+    label: "YouTube (thumbnails only)",
+    secret: "YT_REFRESH_TOKEN",
+    // force-ssl is the narrowest scope that grants thumbnails.set. There is no
+    // thumbnail-only scope. It does grant more than we use — which is exactly
+    // why this token lives in its own secret and is read by one call site.
+    scopes: ["https://www.googleapis.com/auth/youtube.force-ssl"],
+    warning:
+      "Publishing stays with Metricool. This token is for thumbnails.set only —\n" +
+      "  it is NOT used to upload, publish, or change any video's privacy.",
+  },
+};
+
+const MODE = process.argv.includes("--youtube") ? "youtube" : "default";
+const TOKEN_SET = TOKEN_SETS[MODE];
+const SCOPES = TOKEN_SET.scopes.join(" ");
+
 // TOUCHES LIVE: runs a real Google OAuth consent flow and mints a live refresh
-// token with drive (read/write) + gmail.send scope, printed to the terminal.
-// Replacing GOOGLE_REFRESH_TOKEN in GitHub Secrets INVALIDATES the token every
-// scheduled job currently uses — do it deliberately, not while debugging.
+// token, printed to the terminal. Which token depends on the mode — see
+// TOKEN_SETS above. Replacing GOOGLE_REFRESH_TOKEN INVALIDATES the token every
+// scheduled job currently uses; YT_REFRESH_TOKEN is separate and affects only
+// the thumbnail call.
 requireLiveAck(
-  "Mints a live Google refresh token (Drive read/write + Gmail send) and prints it. " +
-    "Replacing the repo secret with it invalidates the token all scheduled jobs run on."
+  `Mints a live Google refresh token (${TOKEN_SET.label}) and prints it, for the ` +
+    `${TOKEN_SET.secret} secret. ${TOKEN_SET.warning}`
 );
 
 // SECURITY: never hardcode credentials here. This file is committed to a PUBLIC repo.
@@ -42,14 +88,12 @@ if (!CLIENT_ID || !CLIENT_SECRET) {
   process.exit(1);
 }
 const REDIRECT_URI = "http://localhost:3847/callback";
-const SCOPES = [
-  "https://www.googleapis.com/auth/drive",       // Full Drive access (read + write + delete)
-  "https://www.googleapis.com/auth/gmail.send",   // Send email only (not read inbox)
-].join(" ");
+
+
 
 async function main() {
   console.log("=".repeat(60));
-  console.log("Google OAuth Refresh Token Generator (Drive + Gmail Send)");
+  console.log(`Google OAuth Refresh Token Generator (${TOKEN_SET.label})`);
   console.log("=".repeat(60));
   console.log("");
 
@@ -139,11 +183,16 @@ async function main() {
   console.log("");
   console.log("Next steps:");
   console.log("1. Go to: https://github.com/PropertyPete1/lifestyle-design-studio/settings/secrets/actions");
-  console.log("2. Add a new secret: GOOGLE_REFRESH_TOKEN");
+  console.log(`2. Add a new secret: ${TOKEN_SET.secret}`);
   console.log("3. Paste the token above as the value");
   console.log("");
   console.log("IMPORTANT: Your OAuth app is Internal — no re-verification needed.");
-  console.log("The new token grants: drive (full) + gmail.send.");
+  console.log(`This token grants ONLY: ${TOKEN_SET.scopes.join(", ")}`);
+  if (MODE === "youtube") {
+    console.log("");
+    console.log("Do NOT paste this into GOOGLE_REFRESH_TOKEN — it has no Drive or Gmail");
+    console.log("access, and every scheduled job in this repo would start failing.");
+  }
 }
 
 main().catch(err => {
