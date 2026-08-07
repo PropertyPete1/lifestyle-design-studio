@@ -19,6 +19,8 @@ import {
   resolveTopicSelection,
   priorTitles,
   SEARCH_INTENTS,
+  briefSystem,
+  gatedDevelopmentNames,
 } from "../src/yt-brief.js";
 
 function candidate(overrides = {}) {
@@ -387,5 +389,81 @@ describe("generateBrief with rejection notes", () => {
     await generateBrief({ modelCall: model, wanted: 3, notes: "less Austin, more new build" });
     assert.ok(model.calls[0].prompt.includes("less Austin, more new build"));
     assert.ok(model.calls[0].prompt.includes("overrides anything above"));
+  });
+});
+
+describe("named places — the brief must give the writer specifics to work with", () => {
+  // 2026-08-07: a picked topic produced a script scoring 6/10 on authenticity
+  // because it never named a neighborhood — "inside 1604" vs "past 1604" for
+  // eleven minutes. The critic's fix was to name Stone Oak, Alamo Ranch and
+  // friends. The writer could not: the brief's prompt banned "community names"
+  // outright, so the outline it was given had none. The critic was asking for
+  // something the brief was forbidden to supply.
+  const system = briefSystem();
+
+  test("asks for real named places, not categories", () => {
+    assert.match(system, /NAME REAL PLACES/);
+    assert.match(system, /Stone Oak/, "the prompt shows the tier of specificity wanted");
+  });
+
+  test("no longer carries the blanket ban that caused the deadlock", () => {
+    assert.doesNotMatch(
+      system,
+      /No builder names, no community names, no development names/,
+      "the old blanket ban made the critic's demand unsatisfiable"
+    );
+  });
+
+  test("still bans builder names — a builder is a company, not a place", () => {
+    assert.match(system, /No builder names/);
+  });
+
+  test("lists every gated development by name, read live from the KB", () => {
+    const gated = gatedDevelopmentNames();
+    assert.ok(gated.length > 0, "the KB must yield something to gate");
+    for (const name of gated) {
+      assert.ok(system.includes(name), `prompt must name "${name}" as off-limits`);
+    }
+  });
+
+  test("the prompt's gated list cannot drift from the guard that enforces it", () => {
+    // Both sides read buildGatedTerms, so adding a community to the KB bans it
+    // in the prompt without anyone maintaining a second copy.
+    const gated = gatedDevelopmentNames();
+    const stripped = applyGuards([candidate({ outline: gated.join("\n") })]);
+    for (const name of gated) {
+      assert.ok(
+        !stripped.candidates[0].outline.includes(name),
+        `the guard must strip "${name}" that the prompt forbids`
+      );
+    }
+  });
+
+  test("warns against inventing a place, which is worse than a general one", () => {
+    assert.match(system, /Never invent a place/i);
+  });
+});
+
+describe("applyGuards — precise about which names are protected", () => {
+  const REAL_NEIGHBOURHOODS = [
+    "Stone Oak", "Alamo Ranch", "Shavano Park", "Hollywood Park", "Cibolo Canyons", "Converse",
+  ];
+
+  test("lets established public neighborhoods through untouched", () => {
+    const outline = REAL_NEIGHBOURHOODS.join("\n");
+    const out = applyGuards([candidate({ outline })]);
+    for (const name of REAL_NEIGHBOURHOODS) {
+      assert.ok(out.candidates[0].outline.includes(name), `"${name}" must survive — it is a public place`);
+    }
+    assert.equal(out.leaksStripped.length, 0, "nothing here is gated");
+  });
+
+  test("still strips a gated development sitting among legitimate names", () => {
+    const gated = gatedDevelopmentNames()[0];
+    const out = applyGuards([candidate({ outline: `Stone Oak\n${gated}\nAlamo Ranch` })]);
+    assert.ok(out.candidates[0].outline.includes("Stone Oak"), "the public name stays");
+    assert.ok(out.candidates[0].outline.includes("Alamo Ranch"), "the public name stays");
+    assert.ok(!out.candidates[0].outline.includes(gated), "the gated development goes");
+    assert.ok(out.leaksStripped.length > 0, "and the strip is reported, never silent");
   });
 });
