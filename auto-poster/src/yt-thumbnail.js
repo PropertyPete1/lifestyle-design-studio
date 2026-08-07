@@ -22,6 +22,8 @@
  */
 
 import sharp from "sharp";
+import { execSync } from "child_process";
+import { existsSync, readFileSync } from "fs";
 import { BRAND, measure, wrapText, BOLD_SERIF } from "./carousel-render.js";
 
 export const WIDTH = 1280;
@@ -230,4 +232,128 @@ export async function fitUnderLimit(pngBuffer, limit = MAX_THUMBNAIL_BYTES) {
  */
 export function framePngPath(workDir, index = 0) {
   return `${workDir}/thumb-frame-${index}.png`;
+}
+
+// ─── choosing the face ───────────────────────────────────────────────────────
+
+/**
+ * Pull candidate frames out of an on-camera take.
+ *
+ * Sampled across the middle of the clip rather than the whole of it: the first
+ * and last moments of a take are Peter starting and stopping — reaching for the
+ * phone, settling, looking away — and they are reliably the worst frames in it.
+ */
+export function sampleFrames(videoPath, seconds, workDir, { count = 5 } = {}) {
+  const out = [];
+  const from = seconds * 0.15;
+  const span = seconds * 0.7;
+  for (let i = 0; i < count; i++) {
+    const at = from + (span * (i + 0.5)) / count;
+    const path = `${workDir}/thumb-cand-${out.length}.png`;
+    try {
+      execSync(
+        `ffmpeg -y -ss ${at.toFixed(2)} -i "${videoPath}" -frames:v 1 -q:v 2 "${path}" 2>/dev/null`,
+        { timeout: 30000 }
+      );
+      if (existsSync(path)) out.push({ path, at: round2(at) });
+    } catch {
+      // A frame that will not extract is simply not a candidate.
+    }
+  }
+  return out;
+}
+
+const round2 = (n) => Math.round(n * 100) / 100;
+
+/**
+ * The prompt is deliberately about the THUMBNAIL job, not about photography.
+ *
+ * "Is this a good photo" gets you a well-composed frame of someone mid-blink.
+ * What a thumbnail needs is a face that is doing something — mouth open on a
+ * word, eyebrows up, mid-gesture — because at 120 pixels the expression is the
+ * only thing that survives.
+ */
+const FRAME_CRITIC = `You are choosing one frame to be a YouTube thumbnail.
+
+You will be shown several frames from the same person talking to camera. Score EACH one out of 10 on how well it would work as the face on a thumbnail.
+
+What scores high:
+  - the face is clearly visible, sharp, and large enough in frame
+  - the eyes are OPEN and pointed at the lens
+  - the expression is doing something — mid-word, eyebrows raised, a real reaction. Energy reads at small size; a neutral face does not.
+  - even light on the face, no heavy shadow across the eyes
+
+What scores low:
+  - eyes closed or half closed, mid-blink
+  - looking away, or head turned so far the eyes are lost
+  - motion blur, or the face soft
+  - a flat resting expression — the single most common failure. It looks fine full size and dead at 120 pixels.
+  - the face small in frame, or cut off
+
+Return ONLY valid JSON, no preamble and no code fences:
+{"scores": [{"index": 0, "score": 0, "why": "a few words"}]}`;
+
+/**
+ * Pick the most expressive frame, by asking a vision model.
+ *
+ * Falls back to the middle candidate on any failure. A thumbnail with a
+ * mediocre frame still ships; one that throws stops a finished video, and the
+ * frame is never worth that.
+ *
+ * @param {Array}    candidates  [{ path, at }] from sampleFrames
+ * @param {Function} visionCall  injectable, so the choice is testable offline
+ */
+export async function pickExpressiveFrame(candidates, { visionCall = defaultVisionCall } = {}) {
+  const usable = (candidates || []).filter((c) => c?.path && existsSync(c.path));
+  if (usable.length === 0) return { chosen: null, reason: "no candidate frames" };
+  if (usable.length === 1) return { chosen: usable[0], scores: null, reason: "only one candidate" };
+
+  try {
+    const scores = await visionCall(usable, FRAME_CRITIC);
+    const ranked = (scores || [])
+      .filter((s) => Number.isFinite(Number(s?.score)) && usable[s.index])
+      .map((s) => ({ ...usable[s.index], score: Number(s.score), why: String(s.why || "") }))
+      .sort((a, b) => b.score - a.score);
+
+    if (ranked.length === 0) throw new Error("no usable scores returned");
+    const chosen = ranked[0];
+    console.log(
+      `[Thumbnail] chose frame at ${chosen.at}s (scored ${chosen.score}/10${chosen.why ? ` — ${chosen.why}` : ""}) ` +
+        `from ${usable.length} candidates`
+    );
+    return { chosen, scores: ranked };
+  } catch (err) {
+    const middle = usable[Math.floor(usable.length / 2)];
+    console.warn(`[Thumbnail] frame scoring failed (${err.message}) — falling back to the middle frame`);
+    return { chosen: middle, scores: null, reason: `scoring failed: ${err.message}` };
+  }
+}
+
+async function defaultVisionCall(candidates, system) {
+  const { default: Anthropic } = await import("@anthropic-ai/sdk");
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const images = candidates.map((c) => ({
+    type: "image",
+    source: { type: "base64", media_type: "image/png", data: readFileSync(c.path).toString("base64") },
+  }));
+  const res = await anthropic.messages.create({
+    model: "claude-opus-5",
+    max_tokens: 2000,
+    system,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `Score these ${candidates.length} frames, indexed 0 to ${candidates.length - 1}.` },
+          ...images,
+        ],
+      },
+    ],
+  });
+  const block = (res.content || []).find((b) => b?.type === "text");
+  const text = block ? block.text : "";
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1) throw new Error("no JSON object in vision output");
+  return JSON.parse(text.slice(start, end + 1)).scores;
 }
