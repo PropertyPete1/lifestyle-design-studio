@@ -96,14 +96,7 @@
             "market": "san_antonio",
             "query": "best neighborhoods in north san antonio",
             "hook": "Most people relocating here get pointed to the same three areas up north, and two of them come with a commute or a school-boundary surprise nobody mentions until you're under contract. Here's how the north side actually breaks down.",
-            "outline": [
-              "Where \"north side\" starts and stops on a map",
-              "The established inside-1604 pockets: older homes, bigger lots, mature trees",
-              "The newer growth areas past 1604: what you trade for a newer house",
-              "School district lines that cut through neighborhoods, not around them",
-              "Commute reality to the medical center, downtown, and the northeast employers",
-              "Who each area actually suits, and who regrets it"
-            ],
+            "outline": "Where the north side actually starts: Loop 410 to 1604, and why Castle Hills, Shavano Park and Stone Oak feel like three different cities\nInside 1604 for a Medical Center job: Oak Hills, Churchill Estates and Deerfield. older homes, mature trees, and the shortest drive to Floyd Curl and Wurzbach\nPast 1604 on 281: Stone Oak, Encino Park and Timberwood Park. newer house, more square footage, and a US-281 commute you should drive before you sign\nNortheast for Randolph AFB, Fort Sam Houston and BAMC: Live Oak, Selma, Universal City, Schertz and Cibolo, and what Schertz-Cibolo-Universal City ISD vs Judson ISD actually changes\nThe school-boundary surprise: Northside ISD and North East ISD split Stone Oak addresses, and Comal ISD reaches down into Timberwood Park and Cibolo Canyons. verify by address, not by subdivision name\nVA buyers specifically: how the disabled veteran homestead exemption interacts with the MUD and PID assessments north of 1604, and which of these areas veterans tend to stay in versus resell out of",
             "why": "A family relocating for a job in the medical center or on the north side has a weekend house-hunting trip booked and needs to know which zip codes to spend it in.",
             "footage": "drive-through footage of older tree-lined streets versus newer subdivisions, 1604 traffic at rush hour, a school pickup line, aerial of the northern edge of development meeting open land",
             "proposedClips": [
@@ -239,7 +232,9 @@
               }
             ]
           }
-        ]
+        ],
+        "reoutlinedAt": "2026-08-07T19:31:22.590Z",
+        "reoutlineReason": "Outline regenerated under the named-places rule (#34). Peter's pick and notes preserved."
       },
       "decision": "approve",
       "notes": "Let’s target veterans",
