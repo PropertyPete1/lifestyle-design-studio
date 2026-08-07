@@ -31,11 +31,19 @@ const ACK_VAR = "I_UNDERSTAND_THIS_TOUCHES_LIVE";
 export function requireLiveAck(touches) {
   if (process.env[ACK_VAR] === "yes") return;
 
+  // The arguments are part of the command. get-refresh-token.js mints a
+  // DIFFERENT token depending on `--youtube`, so a suggested re-run that
+  // dropped the flag would hand back the wrong credential for the secret the
+  // message just named — and the mistake would only surface hours later, as
+  // scheduled jobs failing on a token with no Drive scope.
+  const args = process.argv.slice(2);
+  const command = [process.argv[1] ?? "<script>", ...args].join(" ");
+
   console.error(
     `\n  REFUSING TO RUN — this script touches a live system.\n\n` +
       `  ${touches}\n\n` +
       `  If that is what you want, run it again with:\n\n` +
-      `      ${ACK_VAR}=yes node ${process.argv[1] ?? "<script>"}\n`
+      `      ${ACK_VAR}=yes node ${command}\n`
   );
   process.exit(1);
 }
