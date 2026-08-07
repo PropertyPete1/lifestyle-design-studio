@@ -31,6 +31,7 @@ on:
           - upload-preflight
           - multipart
           - media-delete
+          - video-id
           - all
       resolutions:
         description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
@@ -149,6 +150,28 @@ jobs:
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           MEDIA_PATH: ${{ github.event.inputs.media_path }}
         run: node probe-media-delete.mjs "$MEDIA_PATH"
+
+  # Can we learn the YouTube video id of something Metricool posted, without
+  # calling the YouTube API? That decides whether thumbnails.set is buildable.
+  # READ ONLY — reads scheduler posts that already exist, creates nothing.
+  video-id:
+    if: >-
+      github.event.inputs.probe == 'video-id' || github.event.inputs.probe == 'all'
+      || contains(github.event.head_commit.message, '[probe-video-id]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Is a YouTube video id reachable from Metricool?
+        working-directory: longform/probe
+        env:
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+        run: node probe-youtube-video-id.mjs
 
   youtube-path:
     if: >-
