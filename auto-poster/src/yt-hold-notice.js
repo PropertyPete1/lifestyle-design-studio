@@ -137,3 +137,60 @@ export function heldBackSubject({ topicTitle, scriptResult }) {
   const s = scriptResult?.scores || {};
   return `Script held back (${s.clarity}/${s.retention}/${s.authenticity}) — ${title}`;
 }
+
+// ─── the other silence: no draft survived format validation at all ───────────
+
+/**
+ * When every attempt fails validation, generateScript throws and the run exits
+ * red before the below-bar notice is ever reached. All Peter gets is a GitHub
+ * "workflow failed" mail, which does not say that a script was attempted, let
+ * alone why it did not survive. Same silence, different door.
+ */
+export function noDraftPayload({ requestId, topicTitle, attemptFailures = [] }) {
+  return {
+    stage: "no_usable_draft",
+    requestId,
+    topicTitle: topicTitle || null,
+    attempts: attemptFailures.length,
+    failures: attemptFailures.map((f) => ({
+      attempt: f.attempt,
+      kind: f.kind,
+      detail: f.kind === "structure" ? (f.failures || []).join("; ") : f.message || null,
+    })),
+    retrying: true,
+  };
+}
+
+export function noDraftSubject({ topicTitle, attemptFailures = [] }) {
+  return `No usable script after ${attemptFailures.length} attempts — ${topicTitle || "your topic"}`;
+}
+
+export function renderNoDraftText({ topicTitle, attemptFailures = [], runUrl = null }) {
+  const lines = [];
+  lines.push(`NO USABLE SCRIPT — ${topicTitle || "your topic"}`);
+  lines.push("");
+  lines.push("Every attempt failed format validation before it could be scored, so");
+  lines.push("nothing was judged and no kit was sent. Nothing is needed from you —");
+  lines.push("the next scheduled poll tries again automatically.");
+  lines.push("");
+  lines.push("This is a writing-format problem on our side, not a problem with your");
+  lines.push("topic. The pick and your notes are untouched.");
+  lines.push("");
+
+  if (attemptFailures.length) {
+    lines.push("WHAT FAILED");
+    for (const f of attemptFailures) {
+      const detail =
+        f.kind === "structure" ? (f.failures || []).join("; ") : f.message || "unparseable output";
+      lines.push("", `  Attempt ${f.attempt} — ${f.kind}: ${detail}`);
+    }
+    lines.push("");
+  }
+
+  lines.push(
+    runUrl
+      ? `Full detail, including the raw output where it broke, is attached to that\nrun as a "script-diagnostics" artifact:\n${runUrl}`
+      : 'Full detail is attached to the GitHub Actions run as a "script-diagnostics" artifact.'
+  );
+  return lines.join("\n");
+}

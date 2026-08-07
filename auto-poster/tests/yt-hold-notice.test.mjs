@@ -4,6 +4,9 @@ import {
   heldBackPayload,
   renderHeldBackText,
   heldBackSubject,
+  noDraftPayload,
+  renderNoDraftText,
+  noDraftSubject,
 } from "../src/yt-hold-notice.js";
 
 /** The shape the real pipeline hands over — 2026-08-07's actual held-back run. */
@@ -136,5 +139,53 @@ describe("heldBackSubject — front-loads the verdict", () => {
 
   test("falls back to the topic when the script has no title", () => {
     assert.match(heldBackSubject({ topicTitle: TOPIC, scriptResult: { scores: {} } }), /North San Antonio/);
+  });
+});
+
+describe("no usable draft — the other silence", () => {
+  // 2026-08-07, third run: all three attempts failed FORMAT validation, so
+  // generateScript threw, the run exited red, and the below-bar notice was never
+  // reached. Peter got a GitHub "workflow failed" mail that does not say a
+  // script was attempted, let alone why it did not survive.
+  const FAILURES = [
+    { attempt: 1, kind: "unparseable", message: "Expected ',' or ']' after array element in JSON at position 15644" },
+    { attempt: 2, kind: "unparseable", message: "Expected ',' or ']' after array element in JSON at position 16412" },
+    { attempt: 3, kind: "structure", failures: ["9 sections, max 7", "section 9: missing title"] },
+  ];
+  const TOPIC = "Best neighborhoods in North San Antonio, honestly compared";
+
+  test("payload marks the stage and counts the attempts", () => {
+    const p = noDraftPayload({ requestId: "r1", topicTitle: TOPIC, attemptFailures: FAILURES });
+    assert.equal(p.stage, "no_usable_draft");
+    assert.equal(p.attempts, 3);
+    assert.equal(p.retrying, true);
+  });
+
+  test("payload carries each failure's detail, structure ones joined verbatim", () => {
+    const p = noDraftPayload({ requestId: "r1", topicTitle: TOPIC, attemptFailures: FAILURES });
+    assert.match(p.failures[0].detail, /position 15644/);
+    assert.equal(p.failures[2].detail, "9 sections, max 7; section 9: missing title");
+  });
+
+  test("the email says this is our problem, not his topic", () => {
+    const body = renderNoDraftText({ topicTitle: TOPIC, attemptFailures: FAILURES });
+    assert.match(body, /Nothing is needed from you/i);
+    assert.match(body, /not a problem with your\s*\n?\s*topic/i);
+    assert.match(body, /pick and your notes are untouched/i);
+  });
+
+  test("the email lists every attempt verbatim", () => {
+    const body = renderNoDraftText({ topicTitle: TOPIC, attemptFailures: FAILURES });
+    assert.match(body, /Attempt 1 — unparseable/);
+    assert.match(body, /Attempt 3 — structure: 9 sections, max 7/);
+  });
+
+  test("subject front-loads the attempt count", () => {
+    assert.match(noDraftSubject({ topicTitle: TOPIC, attemptFailures: FAILURES }), /No usable script after 3 attempts/);
+  });
+
+  test("survives an empty failure list rather than throwing", () => {
+    assert.doesNotThrow(() => renderNoDraftText({ topicTitle: TOPIC }));
+    assert.equal(noDraftPayload({ requestId: "r1" }).attempts, 0);
   });
 });

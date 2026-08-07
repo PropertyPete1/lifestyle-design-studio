@@ -31,6 +31,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { stripDashes } from "./sanitize.js";
 import { scanAndStripLeaks } from "./caption.js";
+import { gatedDevelopmentNames } from "./yt-brief.js";
 import { findMonthlyPaymentFigure } from "./caption-validator.js";
 import { findBannedTellsIn, buildVoiceBlock, buildBannedBlock } from "./yt-voice.js";
 import { TAKE_SECONDS_MIN, TAKE_SECONDS_MAX, ON_CAMERA_SHARE, TARGET_MINUTES_MIN, TARGET_MINUTES_MAX } from "./yt-config.js";
@@ -51,13 +52,39 @@ const MAX_RETRIES = 2;
 
 // ─── model plumbing (mirrors carousel-content.js so both behave the same) ────
 
+/** The last raw model output, kept so a parse failure can show what broke. */
+let lastRawOutput = "";
+
 function parseJson(raw) {
   let t = (raw || "").trim();
   t = t.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   const start = t.indexOf("{");
   const end = t.lastIndexOf("}");
-  if (start === -1 || end === -1) throw new Error("no JSON object in model output");
-  return JSON.parse(t.slice(start, end + 1));
+  if (start === -1 || end === -1) {
+    lastRawOutput = t;
+    throw new Error("no JSON object in model output");
+  }
+  const sliced = t.slice(start, end + 1);
+  lastRawOutput = sliced;
+  return JSON.parse(sliced);
+}
+
+/**
+ * The text either side of where JSON.parse gave up.
+ *
+ * A parse error names a position and nothing else, and a position in a 16,000
+ * character string is not a diagnosis. Three runs were spent inferring that the
+ * cause was an unescaped double quote — the character is unmistakable once you
+ * can see it, and invisible until then.
+ */
+export function sampleAround(raw, message, span = 400) {
+  if (typeof raw !== "string" || !raw) return null;
+  const m = /position (\d+)/.exec(String(message || ""));
+  if (!m) return raw.slice(0, span * 2);
+  const pos = Number(m[1]);
+  const from = Math.max(0, pos - span);
+  const to = Math.min(raw.length, pos + span);
+  return `...${raw.slice(from, pos)}>>>HERE<<<${raw.slice(pos, to)}...`;
 }
 
 /**
@@ -138,7 +165,7 @@ export function describeLastCall() {
 
 // ─── the writer ─────────────────────────────────────────────────────────────
 
-const WRITER_SYSTEM = `You write YouTube scripts for Peter, a residential realtor in San Antonio and Austin, Texas. He reads them aloud on camera and in voiceover. He is not a presenter — he is a guy who knows this market talking to someone who is thinking about moving here.
+const buildWriterSystem = () => `You write YouTube scripts for Peter, a residential realtor in San Antonio and Austin, Texas. He reads them aloud on camera and in voiceover. He is not a presenter — he is a guy who knows this market talking to someone who is thinking about moving here.
 
 WRITE FOR THE MOUTH, NOT THE PAGE. This is the rule everything else serves.
 - Contractions always. "you're", "here's", "that's", "it'd".
@@ -155,7 +182,8 @@ STRUCTURE, and every part of it earns its place:
 
 "promise" — one or two sentences. What they will know by the end that they do not know now. Concrete and bounded. "By the end you'll know what a 300k house here actually costs you every month" beats "we'll cover everything you need to know".
 
-"sections" — 4 to 7 of them, in the order a person actually asks these questions. Each has:
+"sections" — ONE PER OUTLINE CHAPTER, in the order the outline gives them. If the outline has six chapters, write six sections. Do not add a section the outline does not have, and do not split one chapter across two. Never more than 7 in total.
+Each has:
     "title"      — a chapter name, plain and searchable
     "takes"      — the spoken content, split into units of ${TAKE_SECONDS_MIN} to ${TAKE_SECONDS_MAX} seconds
     "boundaryPull" — one sentence at the END of the section giving a concrete reason to stay for the next one. Not "up next we'll talk about schools" — that is a table of contents. Something with a stake in it: "But the number that actually moves your payment isn't the price. It's the one nobody quotes you."
@@ -175,17 +203,26 @@ MODE RULES:
 - ON_CAMERA is for the hook, the section transitions, the soft CTA and the close. It is roughly ${Math.round(ON_CAMERA_SHARE * 100)}% of the runtime — that is the budget, keep to it.
 - VOICEOVER is everything else, and it plays over B-roll of homes and neighbourhoods. Write VOICEOVER takes so they make sense without seeing Peter, and so they do not describe anything he does not have footage of.
 
+NAME THE PLACES THE OUTLINE NAMES.
+The outline gives you real neighborhoods, suburbs, highways and school districts. Use them, by name, and attach each specific claim — the commute, the school line, the tax note, the price band — to a NAMED place. A video that promises to compare neighborhoods and then says "the established pockets inside the loop" for eleven minutes has not kept its promise. Do not substitute a category for a name the outline handed you, and do not invent places the outline did not name.
+
 HARD BANS:
 - Never state a monthly payment figure. Not "$2,400 a month", not "about twenty-four hundred a month", not any number attached to a monthly payment. The entire close is built on offering that number personally. Talk about payments constantly; never give the figure.
-- No builder names, no community names, no development names.
+- No builder names. A builder is a company; a neighborhood is a place. Name places, never companies.
+- These specific developments are off-limits by name, in every spelling:
+${gatedDevelopmentNames().map((n) => `    - ${n}`).join("\n")}
+  They are gated by the daily posting pipeline and naming them here would leak what it protects. Every other place on the map is fair game.
 - No invented incentives, deadlines, rates, or inventory claims.
 - No statistics you cannot source. If you would have to make up a number, make the point without one.
+
+JSON SAFETY — read this twice, it is the most common way this fails:
+NEVER put a double quote (") inside any text value. Not around a phrase, not around a place name, not around something someone says. If you need to quote, use single quotes: 'the north side', not "the north side". An unescaped double quote ends the string early and destroys the whole object, and the entire script is thrown away for one character. Apostrophes are fine. Newlines inside a value are not — keep every value on one line.
 
 Return ONLY valid JSON, no preamble and no code fences:
 {"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
 
 export function writerSystem({ voiceBlock = "", bannedBlock = buildBannedBlock() } = {}) {
-  return WRITER_SYSTEM + bannedBlock + voiceBlock;
+  return buildWriterSystem() + bannedBlock + voiceBlock;
 }
 
 // ─── the critic ─────────────────────────────────────────────────────────────
@@ -450,6 +487,11 @@ export async function generateScript({
     `\nReturn the JSON object described in your instructions.`;
 
   const attempts = [];
+  // Every attempt that never became a scorable draft, kept so a total failure can
+  // be diagnosed from the artifact instead of re-run and hoped to reproduce. The
+  // raw sample is what a parse error is actually about — the position alone says
+  // nothing about WHAT was malformed.
+  const attemptFailures = [];
   let feedback = "";
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -459,6 +501,16 @@ export async function generateScript({
     } catch (err) {
       console.warn(`[YTScript] attempt ${attempt + 1}: unparseable output (${err.message})`);
       console.warn(`[YTScript]   ${describeLastCall()}`);
+      attemptFailures.push({
+        attempt: attempt + 1,
+        kind: "unparseable",
+        message: err.message,
+        diagnostics: describeLastCall(),
+        // The 400 characters either side of where the parser gave up. An
+        // unescaped double quote is invisible in an error message and obvious
+        // here, which is the whole difference between fixing it and guessing.
+        rawAround: sampleAround(lastRawOutput, err.message),
+      });
       feedback =
         `\n\nYour previous output could not be parsed as JSON: ${err.message}. ` +
         `Return ONLY the JSON object. Escape every quote and newline inside string values.`;
@@ -468,6 +520,12 @@ export async function generateScript({
     const structure = validateScript(script);
     if (!structure.valid) {
       console.warn(`[YTScript] attempt ${attempt + 1}: structure failures: ${structure.failures.join("; ")}`);
+      attemptFailures.push({
+        attempt: attempt + 1,
+        kind: "structure",
+        failures: structure.failures,
+        sectionCount: (script.sections || []).length,
+      });
       feedback = `\n\nYour previous attempt was structurally invalid: ${structure.failures.join("; ")}. Fix these exactly.`;
       continue;
     }
@@ -508,7 +566,7 @@ export async function generateScript({
     attempts.push({ script: guarded.script, scores, leaksStripped: guarded.leaksStripped });
 
     if (scoresPass(scores)) {
-      return finish(attempts[attempts.length - 1], { attemptsUsed: attempt + 1, regenerated: attempt > 0 });
+      return finish(attempts[attempts.length - 1], { attemptsUsed: attempt + 1, regenerated: attempt > 0, attemptFailures });
     }
 
     feedback =
@@ -530,11 +588,17 @@ export async function generateScript({
       `Rewrite completely. Do not lightly edit the previous version.`;
   }
 
-  if (attempts.length === 0) throw new Error("Script generation produced no usable draft");
+  if (attempts.length === 0) {
+    const err = new Error("Script generation produced no usable draft");
+    // Carried on the error so the pipeline can persist it and tell Peter. A
+    // total generation failure used to reach him as nothing but a red run.
+    err.attemptFailures = attemptFailures;
+    throw err;
+  }
 
   const best = attempts.reduce((a, b) => (scoreTotal(b.scores) > scoreTotal(a.scores) ? b : a));
   console.warn(`[YTScript] no draft cleared ${PASS_MARK}/10 — using best-of (total ${scoreTotal(best.scores)})`);
-  return finish(best, { attemptsUsed: attempts.length, regenerated: true, belowBar: true });
+  return finish(best, { attemptsUsed: attempts.length, regenerated: true, belowBar: true, attemptFailures });
 }
 
 function finish(attempt, meta) {
@@ -553,6 +617,7 @@ function finish(attempt, meta) {
     attemptsUsed: meta.attemptsUsed,
     regenerated: Boolean(meta.regenerated),
     belowBar: Boolean(meta.belowBar),
+    attemptFailures: meta.attemptFailures || [],
     criticUnavailable: Boolean(attempt.scores.unscored),
   };
 }

@@ -38,7 +38,10 @@ import {
 } from "./yt-brief.js";
 import { ensureRecordingsFolder } from "./yt-ingest.js";
 import { sendApprovalRequest } from "./delivery.js";
-import { heldBackPayload, renderHeldBackText, heldBackSubject } from "./yt-hold-notice.js";
+import {
+  heldBackPayload, renderHeldBackText, heldBackSubject,
+  noDraftPayload, renderNoDraftText, noDraftSubject,
+} from "./yt-hold-notice.js";
 import {
   loadApprovals,
   saveApprovals,
@@ -110,8 +113,13 @@ function writeScriptDiagnostics(record, topic, scriptResult, why) {
           takeCount: scriptResult.takeCount,
           onCameraCount: scriptResult.onCameraCount,
           estimatedMinutes: scriptResult.estimatedMinutes,
-          // The best-of draft in full. This is the thing to read.
-          script: scriptResult.script,
+          // Every attempt that never became a scorable draft, with the raw
+          // output around the point a parse gave up. A position in a 16,000
+          // character string is not a diagnosis; the characters either side are.
+          attemptFailures: scriptResult.attemptFailures || [],
+          // The best-of draft in full. This is the thing to read. Null when no
+          // attempt survived validation.
+          script: scriptResult.script || null,
         },
         null,
         2
@@ -121,6 +129,28 @@ function writeScriptDiagnostics(record, topic, scriptResult, why) {
   } catch (err) {
     console.warn(`[YTPipeline] could not write diagnostics: ${err.message}`);
   }
+}
+
+/**
+ * Tell Peter no draft survived validation.
+ *
+ * Unlike the below-bar notice this is wrapped by its caller: the run is already
+ * failing and about to rethrow, so a notification problem must not replace the
+ * generation error that actually explains the run.
+ */
+async function notifyNoUsableDraft(record, topic, attemptFailures, err) {
+  const runUrl = process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
+    ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+    : null;
+  const args = { topicTitle: topic.title, attemptFailures, runUrl };
+  await sendApprovalRequest({
+    requestId: record.requestId,
+    kind: KIND_TOPIC_PICK,
+    payload: noDraftPayload({ requestId: record.requestId, topicTitle: topic.title, attemptFailures }),
+    emailSubject: noDraftSubject(args),
+    emailBody: renderNoDraftText(args),
+    accessToken: await getAccessToken().catch(() => null),
+  });
 }
 
 /**
@@ -152,11 +182,32 @@ async function deliverKitForApprovedTopic(approvals, record) {
     console.log("[YTPipeline] no usable voice samples yet — writing without a voice reference");
   }
 
-  const scriptResult = await generateScript({
-    topic: { title: topic.title, hook: topic.hook, outline: topic.outline },
-    notes: record.notes || null,
-    voiceSamples,
-  });
+  // A TOTAL GENERATION FAILURE MUST REACH PETER TOO.
+  //
+  // When every attempt fails format validation, generateScript throws and the
+  // run exits red — and the below-bar notice below is never reached, so all he
+  // gets is a GitHub "workflow failed" mail with no idea a script was even
+  // attempted. That is the same silence the hold notice exists to end, arriving
+  // through a different door.
+  //
+  // The failures are persisted and he is told, then the error is rethrown so the
+  // run still goes red and the request stays unacted for the next poll.
+  let scriptResult;
+  try {
+    scriptResult = await generateScript({
+      topic: { title: topic.title, hook: topic.hook, outline: topic.outline },
+      notes: record.notes || null,
+      voiceSamples,
+    });
+  } catch (err) {
+    const failures = err?.attemptFailures || [];
+    console.log(`[YTPipeline] script generation produced no usable draft after ${failures.length} attempts`);
+    writeScriptDiagnostics(record, topic, { title: null, scores: {}, attemptFailures: failures }, err.message);
+    await notifyNoUsableDraft(record, topic, failures, err).catch((e) => {
+      console.warn(`[YTPipeline] could not send the no-draft notice: ${e.message}`);
+    });
+    throw err;
+  }
 
   console.log(
     `[YTPipeline] script "${scriptResult.title}" — ${scriptResult.takeCount} takes ` +
