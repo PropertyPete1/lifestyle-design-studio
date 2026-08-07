@@ -364,3 +364,70 @@ describe("mergeYtApprovals — the shapes the LIVE dashboard actually writes", (
     assert.equal(merged.requests[0].requestedAt, REQUEST.requestedAt);
   });
 });
+
+describe("mergeYtApprovals — a deliberate outline rewrite survives", () => {
+  // A reoutline rewrites the payload of a record that already exists remotely.
+  // Both sides share a requestId AND a requestedAt, so the identity group's
+  // "earlier stamp wins" tie-break resolves to the remote — and the rewrite
+  // would push, merge, and silently come back unchanged. Caught before shipping
+  // scripts/reoutline-request.mjs; this is the test that would have caught it.
+  const base = {
+    requestId: "r1", kind: "topic_pick", requestedAt: "2026-08-07T17:32:30.393Z",
+    decision: "approve", selection: 1, notes: "Let's target veterans",
+  };
+  const oldPayload = { candidates: [{ index: 1, outline: "the established pockets inside 1604" }] };
+  const newPayload = {
+    candidates: [{ index: 1, outline: "Stone Oak, Hollywood Park, Shavano Park" }],
+    reoutlinedAt: "2026-08-07T20:00:00.000Z",
+  };
+
+  test("the rewritten payload wins over the copy it rewrote", () => {
+    const merged = mergeYtApprovals(
+      { requests: [{ ...base, payload: newPayload }] },
+      { requests: [{ ...base, payload: oldPayload }] },
+      quiet
+    );
+    assert.match(merged.requests[0].payload.candidates[0].outline, /Stone Oak/);
+  });
+
+  test("wins regardless of which side the merge sees first", () => {
+    const merged = mergeYtApprovals(
+      { requests: [{ ...base, payload: oldPayload }] },
+      { requests: [{ ...base, payload: newPayload }] },
+      quiet
+    );
+    assert.match(merged.requests[0].payload.candidates[0].outline, /Stone Oak/);
+  });
+
+  test("the later of two rewrites wins", () => {
+    const older = { candidates: [{ index: 1, outline: "first try" }], reoutlinedAt: "2026-08-07T19:00:00.000Z" };
+    const merged = mergeYtApprovals(
+      { requests: [{ ...base, payload: older }] },
+      { requests: [{ ...base, payload: newPayload }] },
+      quiet
+    );
+    assert.match(merged.requests[0].payload.candidates[0].outline, /Stone Oak/);
+  });
+
+  test("a rewrite never disturbs the decision, selection, notes or acted marker", () => {
+    const merged = mergeYtApprovals(
+      { requests: [{ ...base, payload: newPayload }] },
+      { requests: [{ ...base, payload: oldPayload, actedAt: "2026-08-07T18:00:00.000Z", actedAction: "kit_delivered" }] },
+      quiet
+    );
+    const r = merged.requests[0];
+    assert.equal(r.decision, "approve");
+    assert.equal(r.selection, 1);
+    assert.equal(r.notes, "Let's target veterans");
+    assert.equal(r.actedAt, "2026-08-07T18:00:00.000Z", "the acted latch is untouched");
+  });
+
+  test("records with no rewrite marker behave exactly as before", () => {
+    const merged = mergeYtApprovals(
+      { requests: [{ ...base, payload: { candidates: [{ index: 1, outline: "local" }] } }] },
+      { requests: [{ ...base, payload: { candidates: [{ index: 1, outline: "remote" }] } }] },
+      quiet
+    );
+    assert.equal(merged.requests[0].payload.candidates[0].outline, "remote", "unchanged tie-break");
+  });
+});
