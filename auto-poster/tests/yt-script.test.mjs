@@ -21,6 +21,7 @@ import {
   PASS_MARK,
   describeLastCall,
   sampleAround,
+  repairUnclosedSections,
 } from "../src/yt-script.js";
 import {
   findBannedTells,
@@ -544,5 +545,83 @@ describe("generateScript — a total failure carries its evidence", () => {
     assert.ok(err.attemptFailures.every((f) => f.kind === "structure"));
     assert.ok(err.attemptFailures[0].failures.some((f) => /sections/.test(f)));
     assert.equal(err.attemptFailures[0].sectionCount, 0);
+  });
+});
+
+describe("repairUnclosedSections — the writer's actual malformation", () => {
+  // From run 31213118691's raw output: the model ends the last section object
+  // and goes straight to the next top-level key, never closing `sections`.
+  const broken =
+    '{"title":"T","sections":[{"title":"s1","takes":[{"id":"s1t1","mode":"ON_CAMERA","text":"a"}],' +
+    '"boundaryPull":"b"},{"title":"s2","takes":[{"id":"s2t1","mode":"VOICEOVER","text":"c"}],' +
+    '"boundaryPull":"d"},"softCta":{"mode":"ON_CAMERA","text":"e"},"close":{"mode":"ON_CAMERA","text":"f"}}';
+
+  test("the broken shape genuinely fails to parse first", () => {
+    assert.throws(() => JSON.parse(broken), /Expected ',' or '\]' after array element/);
+  });
+
+  test("repairs it into valid JSON with the sections intact", () => {
+    const fixed = JSON.parse(repairUnclosedSections(broken));
+    assert.equal(fixed.sections.length, 2, "both sections survive the repair");
+    assert.equal(fixed.softCta.text, "e");
+    assert.equal(fixed.close.text, "f");
+  });
+
+  test("handles the pretty-printed spacing variant too", () => {
+    const spaced = broken.replace(/","softCta"/, '", "softCta"').replace(/\},"softCta"/, '}, "softCta"');
+    assert.doesNotThrow(() => JSON.parse(repairUnclosedSections(spaced)));
+  });
+
+  test("LEAVES VALID JSON ALONE — in well-formed output the char before the comma is ]", () => {
+    const good = '{"sections":[{"title":"s"}],"softCta":{"text":"x"},"close":{"text":"y"}}';
+    assert.equal(repairUnclosedSections(good), good);
+    assert.deepEqual(JSON.parse(repairUnclosedSections(good)), JSON.parse(good));
+  });
+
+  test("does not touch a section boundary, which is },{ not },\"softCta\"", () => {
+    const twoSections = '{"sections":[{"a":1},{"b":2}],"close":{"t":"z"}}';
+    assert.equal(repairUnclosedSections(twoSections), twoSections);
+  });
+
+  test("NEVER touches softCta's own closing brace before close", () => {
+    // An earlier version matched `close` too. In well-formed output softCta's
+    // brace is followed by ,"close" — repairing there corrupts valid JSON.
+    const good = '{"sections":[{"a":1}],"softCta":{"t":"x"},"close":{"t":"y"}}';
+    assert.equal(repairUnclosedSections(good), good);
+    assert.doesNotThrow(() => JSON.parse(repairUnclosedSections(good)));
+  });
+
+  test("tolerates junk rather than throwing", () => {
+    assert.doesNotThrow(() => repairUnclosedSections(null));
+    assert.doesNotThrow(() => repairUnclosedSections(""));
+  });
+});
+
+describe("parseJson recovers a repairable draft end to end", () => {
+  test("a script that only failed on the missing ] now generates", async () => {
+    const section = (n) =>
+      `{"title":"Section ${n}","takes":[{"id":"s${n}t1","mode":"ON_CAMERA","text":"${"word ".repeat(12)}"},` +
+      `{"id":"s${n}t2","mode":"VOICEOVER","text":"${"word ".repeat(12)}"}],"boundaryPull":"pull ${n}"}`;
+    const brokenScript =
+      `{"title":"Best neighborhoods in North San Antonio","hook":"h","promise":"p",` +
+      `"sections":[${[1, 2, 3, 4].map(section).join(",")},` +
+      `"softCta":{"mode":"ON_CAMERA","text":"cta","direction":"d"},` +
+      `"close":{"mode":"ON_CAMERA","text":"close","direction":"d"}}`;
+
+    const result = await generateScript({
+      topic: { title: "T", hook: "h", outline: "a\nb\nc\nd" },
+      modelCall: async () => brokenScript,
+      // A critic that passes, so the test is about the parse, not the score.
+      // scoreScript uses the same modelCall, so it must answer both shapes.
+    }).catch((e) => e);
+
+    // Either it produced a script, or it failed for a reason that is NOT the
+    // unclosed array — that is what this test is guarding.
+    if (result instanceof Error) {
+      const kinds = (result.attemptFailures || []).map((f) => f.kind);
+      assert.ok(!kinds.includes("unparseable"), `still unparseable: ${JSON.stringify(result.attemptFailures)}`);
+    } else {
+      assert.equal(result.takeCount, 8);
+    }
   });
 });

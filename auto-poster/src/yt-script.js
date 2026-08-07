@@ -66,7 +66,56 @@ function parseJson(raw) {
   }
   const sliced = t.slice(start, end + 1);
   lastRawOutput = sliced;
-  return JSON.parse(sliced);
+  try {
+    return JSON.parse(sliced);
+  } catch (err) {
+    const repaired = repairUnclosedSections(sliced);
+    if (repaired !== sliced) {
+      try {
+        const obj = JSON.parse(repaired);
+        console.warn("[YTScript] repaired an unclosed sections array — the model omitted the ]");
+        return obj;
+      } catch {
+        // The repair did not help. Report the ORIGINAL failure, not the
+        // repaired one, or the diagnosis chases an artefact of our own edit.
+      }
+    }
+    throw err;
+  }
+}
+
+/**
+ * Close the sections array the writer forgets to close.
+ *
+ * THE FAILURE, from the raw output of run 31213118691:
+ *
+ *   ..."boundaryPull":"...your numbers."}  ,"softCta":{"mode":"ON_CAMERA",...
+ *
+ * The model ends the last section object and goes straight to the next TOP-LEVEL
+ * key without closing `sections` with a `]`. The parser is still inside the
+ * array, sees an element end, expects `,` or `]`, and finds a string key — which
+ * is why every one of these failures carried the same message and landed at
+ * 15-18k characters, exactly where the sections array ends.
+ *
+ * It is worth stating that this was misdiagnosed twice from the error message
+ * alone — first as truncation, then as an unescaped quote. Both are plausible
+ * readings of "Expected ',' or ']' after array element", and both are wrong. The
+ * raw sample settled it in one look.
+ *
+ * The repair is narrow on purpose. In well-formed output the character before
+ * that comma is `]`, so this pattern cannot match valid JSON, and it only ever
+ * runs after a parse has already failed.
+ */
+export function repairUnclosedSections(text) {
+  // ONLY the softCta boundary, and ONLY the first occurrence.
+  //
+  // An earlier version also matched `close`, which is wrong and actively
+  // harmful: in a well-formed object softCta's OWN closing brace is followed by
+  // `,"close"`, so that pattern corrupts valid JSON rather than repairing it.
+  // softCta is the first top-level key after `sections`, and in well-formed
+  // output the character before its comma is `]` — so this cannot match
+  // anything that already parses.
+  return String(text ?? "").replace(/\}(\s*),(\s*)"softCta"\s*:/, '}]$1,$2"softCta":');
 }
 
 /**
@@ -215,8 +264,11 @@ ${gatedDevelopmentNames().map((n) => `    - ${n}`).join("\n")}
 - No invented incentives, deadlines, rates, or inventory claims.
 - No statistics you cannot source. If you would have to make up a number, make the point without one.
 
-JSON SAFETY — read this twice, it is the most common way this fails:
-NEVER put a double quote (") inside any text value. Not around a phrase, not around a place name, not around something someone says. If you need to quote, use single quotes: 'the north side', not "the north side". An unescaped double quote ends the string early and destroys the whole object, and the entire script is thrown away for one character. Apostrophes are fine. Newlines inside a value are not — keep every value on one line.
+JSON SAFETY — read this twice. Every one of these throws the whole script away.
+1. CLOSE THE SECTIONS ARRAY. After the last section's closing brace you must write "]" before "softCta". This is the single most common failure: the last section ends with } and the next character is a comma and then "softCta", with no ] between them. The shape is  ...}]  ,"softCta":  — never  ...}  ,"softCta": .
+2. NEVER put a double quote (") inside any text value. If you need to quote something, use single quotes: 'the north side'. Apostrophes are fine.
+3. No newlines inside a value. Keep every value on one line.
+Before you answer, check that every [ you opened has a matching ].
 
 Return ONLY valid JSON, no preamble and no code fences:
 {"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
