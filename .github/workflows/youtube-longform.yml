@@ -20,8 +20,17 @@ on:
     # Pipeline poll: 10:00 AM and 4:00 PM CT. Peter answers on his own time, so
     # this is about picking his answer up within hours rather than on a fixed
     # day. Most runs do nothing and exit clean.
+    #
+    # Each has a :30 backup, the same pattern post.yml uses on every slot.
+    # GitHub deprioritises scheduled runs under load and this workflow gets hit
+    # hard: measured delays of 55 minutes, 1h47, and once four hours. A poll
+    # that is merely late is indistinguishable from a poll that never fired, and
+    # the pipeline is idempotent — an acted request is skipped — so a second
+    # trigger costs nothing and removes the ambiguity.
     - cron: '0 15 * * *'
+    - cron: '30 15 * * *'
     - cron: '0 21 * * *'
+    - cron: '30 21 * * *'
   workflow_dispatch:
     inputs:
       job:
@@ -116,7 +125,9 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'pipeline')
       || github.event.schedule == '0 15 * * *'
+      || github.event.schedule == '30 15 * * *'
       || github.event.schedule == '0 21 * * *'
+      || github.event.schedule == '30 21 * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 180
     concurrency:

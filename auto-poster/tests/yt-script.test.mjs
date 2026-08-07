@@ -23,6 +23,7 @@ import {
   sampleAround,
   repairUnclosedSections,
   repairTitle,
+  findConnectiveOpeners,
   TITLE_MAX,
 } from "../src/yt-script.js";
 import {
@@ -683,5 +684,76 @@ describe("repairTitle — one character must not cost a generation attempt", () 
     const r = repairTitle("Some very long generic title about houses that just keeps going and going onward");
     assert.equal(r.repaired, true);
     assert.ok(r.title.length <= TITLE_MAX);
+  });
+});
+
+describe("findConnectiveOpeners — the authenticity killer, made mechanical", () => {
+  // The critic named this as the single worst problem on two separate runs and
+  // capped authenticity at 6 both times. Both real examples are covered below.
+  const take = (id, text, mode = "ON_CAMERA") => ({ id, mode, text });
+  const script = (takes) => ({ sections: [{ title: "s", takes }] });
+
+  test("catches both examples the critic actually flagged", () => {
+    const hits = findConnectiveOpeners(
+      script([
+        take("s1t1", "So before you go under contract out there, ask for the tax rate broken out."),
+        take("s1t2", "And re-check it even if you checked six months ago."),
+      ])
+    );
+    assert.deepEqual(hits.map((h) => h.id), ["s1t1", "s1t2"]);
+  });
+
+  test("catches anaphoric openers", () => {
+    const hits = findConnectiveOpeners(
+      script([
+        take("a", "Which brings me to the school districts."),
+        take("b", "That's why the district line matters more than the address."),
+        take("c", "That means your subdivision name tells you nothing."),
+      ])
+    );
+    assert.equal(hits.length, 3);
+  });
+
+  test("LEAVES A GOOD STANDALONE OPENER ALONE — a false positive costs an attempt", () => {
+    const clean = script([
+      take("a", "Before you go under contract past sixteen-oh-four, ask for the rate."),
+      take("b", "That school boundary catches people out every single year."),
+      take("c", "Now is the part everybody gets wrong about Stone Oak."),
+      take("d", "Sold homes in Stone Oak tell you something specific."),
+      take("e", "Anywhere north of 1604 you are looking at a different tax picture."),
+    ]);
+    assert.deepEqual(findConnectiveOpeners(clean), [], "bare That/Now/Sold/Anywhere must pass");
+  });
+
+  test("ignores VOICEOVER takes in the default narration mode — Peter does not read them", () => {
+    const hits = findConnectiveOpeners(
+      script([take("v1", "And also worth knowing: Comal ISD reaches down.", "VOICEOVER")])
+    );
+    assert.deepEqual(hits, []);
+  });
+
+  test("checks VOICEOVER too when Peter records the narration himself", () => {
+    const hits = findConnectiveOpeners(
+      script([take("v1", "And also worth knowing: Comal ISD reaches down.", "VOICEOVER")]),
+      { narrationMode: "peter" }
+    );
+    assert.equal(hits.length, 1, "in peter mode every recorded take must stand alone");
+  });
+
+  test("sees through leading quotes and dashes", () => {
+    const hits = findConnectiveOpeners(script([take("a", '"So here is the thing about Stone Oak."')]));
+    assert.equal(hits.length, 1);
+  });
+
+  test("reports the take id and the opener, so the writer gets specifics", () => {
+    const [hit] = findConnectiveOpeners(script([take("s3t2", "But the tax rate is the part that moves.")]));
+    assert.equal(hit.id, "s3t2");
+    assert.equal(hit.opener, "But");
+    assert.ok(hit.preview.startsWith("But the tax rate"));
+  });
+
+  test("tolerates missing text rather than throwing", () => {
+    assert.doesNotThrow(() => findConnectiveOpeners(script([take("a", null), take("b", "")])));
+    assert.doesNotThrow(() => findConnectiveOpeners({ sections: [] }));
   });
 });

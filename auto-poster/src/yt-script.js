@@ -34,7 +34,7 @@ import { scanAndStripLeaks } from "./caption.js";
 import { gatedDevelopmentNames } from "./yt-brief.js";
 import { findMonthlyPaymentFigure } from "./caption-validator.js";
 import { findBannedTellsIn, buildVoiceBlock, buildBannedBlock } from "./yt-voice.js";
-import { TAKE_SECONDS_MIN, TAKE_SECONDS_MAX, ON_CAMERA_SHARE, TARGET_MINUTES_MIN, TARGET_MINUTES_MAX } from "./yt-config.js";
+import { TAKE_SECONDS_MIN, TAKE_SECONDS_MAX, ON_CAMERA_SHARE, TARGET_MINUTES_MIN, TARGET_MINUTES_MAX, NARRATION_MODE } from "./yt-config.js";
 
 const MODEL = "claude-opus-5";
 
@@ -492,6 +492,64 @@ export function applyGuards(script) {
   };
 }
 
+/**
+ * Openers that only make sense if the previous take just played.
+ *
+ * The writer has been told since day one that every take must stand alone —
+ * Peter records them one at a time off his phone, in whatever order suits him,
+ * and the ingest matches them back by content. A take opening "So..." is a take
+ * that was written for a paragraph.
+ *
+ * It was left to the critic to notice, and the critic named it as the single
+ * worst problem on two separate runs, capping authenticity at 6. A rule that
+ * can be checked with a regex should never be an opinion: the critic gets three
+ * chances to spot it, a validator catches it every time and says exactly which
+ * takes to fix.
+ *
+ * DELIBERATELY CONSERVATIVE. A false positive here costs a whole generation
+ * attempt, which is the failure mode this repo just spent a day removing. Bare
+ * "That" and "Now" are excluded because they open perfectly good standalone
+ * sentences ("That school boundary catches people out"); only the plainly
+ * anaphoric forms of "that" are matched.
+ */
+const CONNECTIVE_OPENER_PATTERNS = [
+  /^(so|and|but|or|plus|also|then|anyway|besides|however|meanwhile|therefore|nor)\b/i,
+  /^which\b/i,
+  /^that(?:'s|’s| is| means| said| doesn'?t| does not| brings)\b/i,
+];
+
+/** The opening words of a take, stripped of quotes and stage punctuation. */
+function openerOf(text) {
+  return String(text ?? "").trim().replace(/^["'“”‘’\-—–(\[]+\s*/, "");
+}
+
+/**
+ * Every RECORDED take that opens with connective tissue.
+ *
+ * Mode-aware rather than hardcoded to ON_CAMERA: with YT_NARRATION_MODE=peter
+ * he reads the voiceover too, and those takes have to stand alone for exactly
+ * the same reason.
+ */
+export function findConnectiveOpeners(script, { narrationMode = NARRATION_MODE } = {}) {
+  const found = [];
+  for (const take of allTakes(script)) {
+    const isRecorded = take.mode === ON_CAMERA || narrationMode === "peter";
+    if (!isRecorded) continue;
+    const opening = openerOf(take.text);
+    if (!opening) continue;
+    const hit = CONNECTIVE_OPENER_PATTERNS.find((re) => re.test(opening));
+    if (hit) {
+      found.push({
+        id: take.id || null,
+        section: take.section || null,
+        opener: (opening.match(hit) || [""])[0],
+        preview: opening.slice(0, 60),
+      });
+    }
+  }
+  return found;
+}
+
 // ─── scoring ────────────────────────────────────────────────────────────────
 
 export async function scoreScript(script, modelCall = callModel) {
@@ -654,6 +712,29 @@ export async function generateScript({
       feedback =
         `\n\nYour previous attempt used banned phrasing: ${list}. ` +
         `These mark copy as machine-written. Rewrite the lines containing them from scratch — do not swap in a synonym.`;
+      continue;
+    }
+
+    // Standalone takes are a DETERMINISTIC gate, not a critic opinion.
+    //
+    // The critic named this as the single worst problem on two separate runs and
+    // capped authenticity at 6 for it. A rule a regex can check should never
+    // depend on the critic noticing: it gets three chances, this catches every
+    // one and hands back the exact take ids to fix.
+    const connective = findConnectiveOpeners(guarded.script);
+    if (connective.length > 0) {
+      const list = connective.map((c) => `${c.id || "?"} ("${c.opener}...")`).join(", ");
+      console.warn(`[YTScript] attempt ${attempt + 1}: takes opening with connective tissue: ${list} — regenerating`);
+      attemptFailures.push({
+        attempt: attempt + 1,
+        kind: "connective-openers",
+        takes: connective,
+      });
+      feedback =
+        `\n\nThese takes open with connective tissue that assumes the previous take just played: ` +
+        `${list}. Every take is recorded standalone, in any order, so each one must open cold. ` +
+        `Rewrite ONLY the first sentence of each of those takes so it stands on its own — ` +
+        `name the thing instead of referring back to it. Change nothing else.`;
       continue;
     }
 
