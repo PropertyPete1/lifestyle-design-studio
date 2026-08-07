@@ -312,10 +312,68 @@ async function notifyTrialDashboard(trialData) {
  * dashboard email-relay fallback below it takes a fixed delivery payload that
  * the dashboard defines, so it stays where it is.
  */
-async function sendOwnerEmailViaGmail(accessToken, { subject, body }) {
+/**
+ * Subject-line prefixes, so twenty automated emails a day are scannable.
+ *
+ * Peter's inbox takes clock-in and clock-out mails for six agents, health
+ * reports, lead alerts and delivery notices. A held-back script landed in that
+ * stream twice and was never seen, because nothing about it looked different
+ * from the rest. A prefix is the cheapest thing that makes a class filterable.
+ */
+export const MAIL_PREFIX = {
+  REELS: "[REELS]",
+  CAROUSEL: "[CAROUSEL]",
+  YT: "[YT PIPELINE]",
+};
+
+/**
+ * RFC 2047 encoded-word for a MIME header.
+ *
+ * A header is ASCII-only by RFC 5322. `Subject: ${subject}` wrote raw UTF-8
+ * bytes into one, so every em dash arrived as "Ã¢Â€Â”" — on the brief, on the
+ * delivery notices, on everything this system sends. A subject that looks like
+ * mojibake reads as spam, which is the exact opposite of what a notification
+ * needs to do.
+ *
+ * Pure-ASCII subjects are left untouched, so nothing that already worked
+ * changes. Anything else is base64 encoded-word, FOLDED: an encoded-word may
+ * not exceed 75 characters, so the bytes are chunked to fit — and chunked on
+ * UTF-8 character boundaries, because splitting a multi-byte sequence across
+ * two encoded-words produces a different flavour of the same mojibake.
+ */
+export function encodeSubject(subject) {
+  const s = String(subject ?? "");
+  if (!s) return "";
+  // Printable ASCII only — no encoding needed, and no reason to obscure it.
+  if (/^[\x20-\x7E]*$/.test(s)) return s;
+
+  // 75 char limit - "=?UTF-8?B?" (10) - "?=" (2) = 63 for base64, and base64
+  // length is a multiple of 4, so 60 chars => 45 bytes of input per word.
+  const MAX_BYTES = 45;
+  const words = [];
+  let chunk = [];
+  let size = 0;
+  for (const ch of s) {
+    const bytes = Buffer.byteLength(ch, "utf8");
+    if (size + bytes > MAX_BYTES) {
+      words.push(Buffer.from(chunk.join(""), "utf8").toString("base64"));
+      chunk = [];
+      size = 0;
+    }
+    chunk.push(ch);
+    size += bytes;
+  }
+  if (chunk.length) words.push(Buffer.from(chunk.join(""), "utf8").toString("base64"));
+
+  // Continuation lines are folded with CRLF + a space, per RFC 5322.
+  return words.map((w) => `=?UTF-8?B?${w}?=`).join("\r\n ");
+}
+
+async function sendOwnerEmailViaGmail(accessToken, { subject, body, prefix = null }) {
+  const labelled = prefix ? `${prefix} ${subject}` : subject;
   const rawEmail = [
     `To: ${OWNER_EMAIL}`,
-    `Subject: ${subject}`,
+    `Subject: ${encodeSubject(labelled)}`,
     `Content-Type: text/plain; charset=UTF-8`,
     ``,
     body,
@@ -346,6 +404,9 @@ async function sendOwnerEmailViaGmail(accessToken, { subject, body }) {
 
 async function sendEmailBackup(accessToken, { city, caption, driveLink, fileName }) {
   // Try Gmail API first (requires gmail.send scope on the token)
+  // "carousel" comes through this same path as a pseudo-city, so the class is
+  // read off it rather than plumbed through a second argument.
+  const prefix = String(city).toLowerCase() === "carousel" ? MAIL_PREFIX.CAROUSEL : MAIL_PREFIX.REELS;
   const subject = `Ready to Post: ${city.toUpperCase()} reel - ${new Date().toLocaleDateString("en-US", { timeZone: "America/Chicago" })}`;
   const body = [
     `Your ${city.replace("_", " ")} reel is ready to post natively on Instagram.`,
@@ -365,7 +426,7 @@ async function sendEmailBackup(accessToken, { city, caption, driveLink, fileName
     `— Lifestyle Design Studio Auto-Poster`,
   ].join("\n");
 
-  const gmailResult = await sendOwnerEmailViaGmail(accessToken, { subject, body });
+  const gmailResult = await sendOwnerEmailViaGmail(accessToken, { subject, body, prefix });
   if (gmailResult.ok) return gmailResult;
 
   // Fallback: try dashboard's notification endpoint (it can send push/email)
@@ -805,7 +866,13 @@ export async function sendApprovalRequest({ requestId, kind, payload, emailSubje
 
   let ch2 = { ok: false, lastError: new Error("No Google token supplied") };
   if (accessToken) {
-    ch2 = await sendOwnerEmailViaGmail(accessToken, { subject: emailSubject, body: emailBody });
+    // Every caller of sendApprovalRequest is the long-form pipeline, so the
+    // prefix is fixed here rather than asked of each one.
+    ch2 = await sendOwnerEmailViaGmail(accessToken, {
+      subject: emailSubject,
+      body: emailBody,
+      prefix: MAIL_PREFIX.YT,
+    });
   }
 
   if (!ch1.ok && !ch2.ok) {
