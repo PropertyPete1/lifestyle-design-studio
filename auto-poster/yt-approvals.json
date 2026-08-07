@@ -65,7 +65,20 @@
       "decision": "approve",
       "notes": null,
       "decidedAt": "2026-08-06T03:40:18.246Z",
-      "selection": 2
+      "selection": 2,
+      "actedAt": "2026-08-07T17:31:14.190Z",
+      "actedAction": "closed_test_card",
+      "actedResult": {
+        "closed": true,
+        "reason": "TEST card retired as a kit source. Its purpose — proving the approval round-trip end to end — is complete (verified 2026-08-06). Every payload field was marked TEST, including the hook and all four outline sections, so it cannot produce a script worth recording. Closed by owner decision on 2026-08-07; superseded by the first real brief.",
+        "lastScores": {
+          "clarity": 7,
+          "retention": 5,
+          "authenticity": 5,
+          "bar": 8
+        },
+        "neverDelivered": true
+      }
     }
   ]
 }
