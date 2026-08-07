@@ -351,7 +351,30 @@ function parseJson(raw) {
  * injectable parameter so the critic gate and the retry logic can be tested
  * against scripted responses instead of the live API.
  */
-export async function callModel(system, userPrompt, maxTokens = 4000) {
+/**
+ * Output budget for a model call.
+ *
+ * THINKING BLOCKS COME OUT OF THIS BUDGET. That is the whole reason this
+ * constant exists and is set so far above the size of the answer.
+ *
+ * The long-form critic was called with max_tokens: 1500 — generous for a JSON
+ * object of six short fields. The live run returned:
+ *
+ *   stop_reason=max_tokens blocks=[thinking] text=0 chars output_tokens=1500/1500
+ *   stop_reason=max_tokens blocks=[thinking,text] text=439 chars output_tokens=1500/1500
+ *
+ * The model spent the entire budget reasoning and had nothing left to answer
+ * with. The caller saw an empty or truncated string and reported "no JSON
+ * object in model output", which reads like the model misbehaved and sent the
+ * first diagnosis chasing the writer instead of the critic.
+ *
+ * So budgets are sized for THINKING PLUS THE ANSWER, not for the answer. This
+ * is an upper bound rather than a target, so raising it costs nothing when the
+ * model is brief.
+ */
+const MODEL_BUDGET = 8000;
+
+export async function callModel(system, userPrompt, maxTokens = MODEL_BUDGET) {
   const res = await getClient().messages.create({
     model: MODEL,
     max_tokens: maxTokens,
@@ -362,6 +385,16 @@ export async function callModel(system, userPrompt, maxTokens = 4000) {
   // with a non-text block, and indexing blindly yields undefined -> "" -> a
   // parse failure that looks like the model returned nothing.
   const textBlock = (res.content || []).find((b) => b?.type === "text" && typeof b.text === "string");
+  // Name the cause at the point it happens. Without this, running out of room
+  // surfaces downstream as "unparseable output", which reads like the model
+  // misbehaved and sends the diagnosis to the wrong place.
+  if (res.stop_reason === "max_tokens") {
+    console.warn(
+      `[Carousel] response hit max_tokens (${maxTokens}) — truncated, not malformed. ` +
+      `blocks=[${(res.content || []).map((b) => b?.type).join(",")}] ` +
+      `text=${textBlock ? textBlock.text.length : 0} chars`
+    );
+  }
   return textBlock ? textBlock.text : "";
 }
 
@@ -544,7 +577,7 @@ export async function scoreDeck(deck, keyword, modelCall = callModel, closeType 
   for (let attempt = 0; attempt < 2; attempt++) {
     const nudge = attempt === 0 ? "" : "\n\nReturn ONLY the JSON object. No prose.";
     try {
-      const raw = await modelCall(criticSystemFor(closeType), `Score this carousel.\n\n${rendered}${nudge}`, 1000);
+      const raw = await modelCall(criticSystemFor(closeType), `Score this carousel.\n\n${rendered}${nudge}`, MODEL_BUDGET);
       const s = parseJson(raw);
       return {
         clarity: clamp(s.clarity),

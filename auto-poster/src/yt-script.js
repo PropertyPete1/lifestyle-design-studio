@@ -66,6 +66,29 @@ function parseJson(raw) {
  * "unparseable output" symptom that sent the first diagnosis in the wrong
  * direction.
  */
+/**
+ * Output budget for a model call.
+ *
+ * THINKING BLOCKS COME OUT OF THIS BUDGET. That is the whole reason this
+ * constant exists and is set so far above the size of the answer.
+ *
+ * The long-form critic was called with max_tokens: 1500 — generous for a JSON
+ * object of six short fields. The live run returned:
+ *
+ *   stop_reason=max_tokens blocks=[thinking] text=0 chars output_tokens=1500/1500
+ *   stop_reason=max_tokens blocks=[thinking,text] text=439 chars output_tokens=1500/1500
+ *
+ * The model spent the entire budget reasoning and had nothing left to answer
+ * with. The caller saw an empty or truncated string and reported "no JSON
+ * object in model output", which reads like the model misbehaved and sent the
+ * first diagnosis chasing the writer instead of the critic.
+ *
+ * So budgets are sized for THINKING PLUS THE ANSWER, not for the answer. This
+ * is an upper bound rather than a target, so raising it costs nothing when the
+ * model is brief.
+ */
+const MODEL_BUDGET = 8000;
+
 const WRITER_MAX_TOKENS = 20000;
 
 /**
@@ -364,7 +387,7 @@ export async function scoreScript(script, modelCall = callModel) {
   for (let attempt = 0; attempt < 2; attempt++) {
     const nudge = attempt === 0 ? "" : "\n\nReturn ONLY the JSON object. No prose.";
     try {
-      const raw = await modelCall(criticSystem(), `Score this script.\n\n${rendered}${nudge}`, 1500);
+      const raw = await modelCall(criticSystem(), `Score this script.\n\n${rendered}${nudge}`, MODEL_BUDGET);
       const s = parseJson(raw);
       return {
         clarity: clamp(s.clarity),
