@@ -76,12 +76,13 @@ export function buildPostBody({ mediaUrl, packaging, publishAt, privacy = UPLOAD
  * Peter has to DO before the video is fit to publish, and two of them cannot be
  * automated on the current API surface.
  */
-export function reviewChecklist({ packaging, narrationMode = NARRATION_MODE }) {
+export function reviewChecklist({ packaging, narrationMode = NARRATION_MODE, syntheticNarration = null }) {
   const items = [];
-  if (disclosureRequired({ narrationMode })) {
+  if (disclosureRequired({ narrationMode, syntheticNarration })) {
     items.push(
       "Set 'Altered or synthetic content' to YES. " +
-      "The B-roll narration is your voice clone, which is what the policy covers. This is required on every video."
+      "At least one voiceover segment in THIS render was spoken by your voice clone rather than by you, " +
+      "and synthetic speech in a real person's voice is what the policy covers."
     );
   }
   items.push("Upload the thumbnail (attached / in the Drive folder). Metricool's API cannot set it.");
@@ -181,8 +182,12 @@ export async function requestReview({
   stats,
   accessToken = null,
   narrationMode = NARRATION_MODE,
+  // What the render actually contained. Null when the caller did not look —
+  // see disclosureRequired for why that falls back to the mode rather than
+  // assuming the safe-sounding answer.
+  syntheticNarration = null,
 }) {
-  const checklist = reviewChecklist({ packaging, narrationMode });
+  const checklist = reviewChecklist({ packaging, narrationMode, syntheticNarration });
   return sendApprovalRequest({
     requestId,
     kind: "video_review",
@@ -198,7 +203,7 @@ export async function requestReview({
       privacy: PRIVACY,
       checklist,
       missingCta: packaging.missingCta || [],
-      disclosureRequired: disclosureRequired({ narrationMode }),
+      disclosureRequired: disclosureRequired({ narrationMode, syntheticNarration }),
       stats,
     },
     emailSubject: `Review: ${packaging.title}`,

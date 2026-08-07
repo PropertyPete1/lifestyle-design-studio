@@ -381,6 +381,22 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
  * middle of it. Uses the same TTS call, voice settings and pacing post-process
  * as the reels — two voices across one channel would be an obvious tell.
  */
+/**
+ * Did this render actually use a synthetic voice?
+ *
+ * `generatedNarrationPath` is set by generateNarration and ONLY by
+ * generateNarration, which skips any segment that already carries a
+ * narrationSource. So its presence anywhere in the plan is proof the clone
+ * spoke, and its absence everywhere is proof it did not — regardless of what
+ * narrationMode predicted.
+ *
+ * Call it AFTER generateNarration. Before that the answer is always false and
+ * means nothing.
+ */
+export function syntheticNarrationUsed(plan) {
+  return (plan?.segments || []).some((seg) => Boolean(seg?.generatedNarrationPath));
+}
+
 export async function generateNarration(plan) {
   let generated = 0;
   for (const seg of plan.segments || []) {

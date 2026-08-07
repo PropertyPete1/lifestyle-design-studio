@@ -75,8 +75,29 @@ export const RECORDINGS_ROOT = process.env.YT_RECORDINGS_ROOT || "YT Recordings"
  * Peter narrates everything himself AND no other synthetic media is present.
  * Defaults to required on anything unrecognised.
  */
-export function disclosureRequired({ narrationMode = NARRATION_MODE, syntheticMedia = [] } = {}) {
+export function disclosureRequired({
+  narrationMode = NARRATION_MODE,
+  syntheticMedia = [],
+  syntheticNarration = null,
+} = {}) {
   if (syntheticMedia.length > 0) return true;
+
+  // EVIDENCE BEATS CONFIGURATION.
+  //
+  // narrationMode is a PREDICTION about what a render will contain. It is set
+  // before anything is recorded, and it is wrong the moment reality differs —
+  // if Peter misses one voiceover take in "peter" mode, the clone quietly fills
+  // that segment in and the video contains synthetic speech in a real person's
+  // voice while the config still says it does not. That is the exact case the
+  // policy covers, and a disclosure decided from a flag would have been dropped
+  // on a video that needed it.
+  //
+  // So when the render is known, the render decides. `syntheticNarration` is
+  // three-valued on purpose: true and false are observations, null means nobody
+  // looked yet and the mode is the best guess available.
+  if (syntheticNarration === true) return true;
+  if (syntheticNarration === false) return false;
+
   if (narrationMode === "peter") return false;
   return true;
 }

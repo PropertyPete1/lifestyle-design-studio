@@ -55,7 +55,7 @@ import {
 } from "./yt-approvals.js";
 import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
-import { generateNarration, renderTimeline } from "./yt-assemble.js";
+import { generateNarration, renderTimeline, syntheticNarrationUsed } from "./yt-assemble.js";
 import { buildPackaging } from "./yt-packaging.js";
 import { uploadPrivate, requestReview } from "./yt-publish.js";
 import {
@@ -431,6 +431,14 @@ async function buildFromRecordings(approvals, record) {
 
   const resolveBrollPath = await downloadPlannedBroll(plan, brollPool, workDir);
   await generateNarration(plan);
+  // Read AFTER narration, so this is what the render contains rather than what
+  // the mode predicted. A missed voiceover take falls back to the clone, and
+  // the disclosure has to follow the video, not the config.
+  const syntheticNarration = syntheticNarrationUsed(plan);
+  console.log(
+    `[YTPipeline] synthetic narration in this render: ${syntheticNarration}` +
+      ` — disclosure ${syntheticNarration ? "REQUIRED" : "not required"}`
+  );
   const chapters = buildChapters(plan, script);
   const rendered = await renderTimeline(plan, { workDir, resolveBrollPath, resolution: RESOLUTION });
 
@@ -485,6 +493,7 @@ async function buildFromRecordings(approvals, record) {
     driveLink: null,
     stats: { runtimeMinutes: Math.round((rendered.seconds / 60) * 10) / 10, resolution: RESOLUTION },
     accessToken,
+    syntheticNarration,
   });
 
   saveApprovals(
