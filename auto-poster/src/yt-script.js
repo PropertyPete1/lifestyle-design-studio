@@ -118,6 +118,48 @@ export function repairUnclosedSections(text) {
   return String(text ?? "").replace(/\}(\s*),(\s*)"softCta"\s*:/, '}]$1,$2"softCta":');
 }
 
+/** YouTube truncates past this, and the search phrase has to survive inside it. */
+export const TITLE_MAX = 70;
+
+/** What makes a title findable. Same test the brief validates candidates with. */
+const CITY_PATTERN = /san antonio|austin|texas|sa\b|atx/i;
+
+/**
+ * Trim an over-length title instead of throwing the script away.
+ *
+ * A 71-character title burned two whole generation attempts — the script behind
+ * it was fine, and one character sent it back to the model. That is the most
+ * expensive possible response to the cheapest possible problem.
+ *
+ * So it is a repair, not a failure. Trim at a word boundary, never mid-word, and
+ * tidy the dangling punctuation that leaves behind.
+ *
+ * IT REFUSES RATHER THAN MUTILATE. The title IS the product — it is the search
+ * query the video ranks for — so if trimming would take the city out of it, the
+ * result is unfindable and a silent trim would be worse than a regeneration.
+ * In that case this hands back the original and lets validation fail honestly.
+ */
+export function repairTitle(title, max = TITLE_MAX) {
+  const original = String(title ?? "").trim();
+  if (!original || original.length <= max) return { title: original, repaired: false };
+
+  const cut = original.slice(0, max + 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  if (lastSpace < 1) {
+    return { title: original, repaired: false, reason: "no word boundary inside the limit" };
+  }
+
+  const trimmed = cut.slice(0, lastSpace).replace(/[\s,:;.\-–—(]+$/, "").trim();
+  if (!trimmed) {
+    return { title: original, repaired: false, reason: "trimming left nothing" };
+  }
+  // Only guard the city if the original had one to lose.
+  if (CITY_PATTERN.test(original) && !CITY_PATTERN.test(trimmed)) {
+    return { title: original, repaired: false, reason: "trimming would drop the city, making it unsearchable" };
+  }
+  return { title: trimmed, repaired: true, from: original.length, to: trimmed.length };
+}
+
 /**
  * The text either side of where JSON.parse gave up.
  *
@@ -567,6 +609,18 @@ export async function generateScript({
         `\n\nYour previous output could not be parsed as JSON: ${err.message}. ` +
         `Return ONLY the JSON object. Escape every quote and newline inside string values.`;
       continue;
+    }
+
+    // Trim an over-length title before validating. This is a repair, not a
+    // regeneration: a 71-character title burned two whole attempts on a script
+    // that was otherwise fine. repairTitle refuses if trimming would cost the
+    // city, in which case validation fails below exactly as it used to.
+    const titleFix = repairTitle(script.title);
+    if (titleFix.repaired) {
+      console.log(`[YTScript] trimmed the title to fit: ${titleFix.from} -> ${titleFix.to} chars`);
+      script.title = titleFix.title;
+    } else if (titleFix.reason) {
+      console.warn(`[YTScript] title is over length and could not be trimmed: ${titleFix.reason}`);
     }
 
     const structure = validateScript(script);

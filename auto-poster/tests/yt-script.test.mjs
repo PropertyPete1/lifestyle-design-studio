@@ -22,6 +22,8 @@ import {
   describeLastCall,
   sampleAround,
   repairUnclosedSections,
+  repairTitle,
+  TITLE_MAX,
 } from "../src/yt-script.js";
 import {
   findBannedTells,
@@ -623,5 +625,63 @@ describe("parseJson recovers a repairable draft end to end", () => {
     } else {
       assert.equal(result.takeCount, 8);
     }
+  });
+});
+
+describe("repairTitle — one character must not cost a generation attempt", () => {
+  test("trims the real 71-char case at a word boundary", () => {
+    // Burned two whole attempts across two runs on scripts that were otherwise fine.
+    const long = "Best Neighborhoods in North San Antonio for Veterans and VA Buyers Guide";
+    const r = repairTitle(long);
+    assert.equal(r.repaired, true);
+    assert.ok(r.title.length <= TITLE_MAX);
+    assert.ok(!r.title.endsWith(" "), "no trailing space");
+    assert.ok(long.startsWith(r.title), "trimmed, never rewritten");
+  });
+
+  test("never cuts mid-word", () => {
+    const r = repairTitle("Moving to San Antonio and everything you need to know about relocating here");
+    assert.equal(r.repaired, true);
+    assert.ok(!/\w$/.test(r.title) || " ".concat(r.title, " ").includes(` ${r.title.split(" ").pop()} `));
+    assert.ok(r.title.split(" ").every((w) => w.length > 0));
+  });
+
+  test("leaves a title already inside the limit completely alone", () => {
+    const ok = "Moving to San Antonio: what $300k actually gets you";
+    const r = repairTitle(ok);
+    assert.equal(r.repaired, false);
+    assert.equal(r.title, ok);
+  });
+
+  test("REFUSES when trimming would drop the city — unfindable beats short", () => {
+    const cityAtEnd = "A guide to relocating and buying a home somewhere pleasant with good weather in Austin";
+    const r = repairTitle(cityAtEnd);
+    assert.equal(r.repaired, false, "must not silently make the title unsearchable");
+    assert.equal(r.title, cityAtEnd, "hands back the original so validation fails honestly");
+    assert.match(r.reason, /city/i);
+  });
+
+  test("refuses when there is no word boundary to cut at", () => {
+    const r = repairTitle("Austin" + "x".repeat(80));
+    assert.equal(r.repaired, false);
+    assert.match(r.reason, /word boundary/);
+  });
+
+  test("strips dangling punctuation the cut leaves behind", () => {
+    const r = repairTitle(`Best neighborhoods in San Antonio, ${"compared ".repeat(8)}`.trim());
+    assert.equal(r.repaired, true);
+    assert.ok(!/[\s,:;.\-–—(]$/.test(r.title), `got trailing punctuation: ${JSON.stringify(r.title)}`);
+  });
+
+  test("tolerates junk rather than throwing", () => {
+    assert.equal(repairTitle(null).repaired, false);
+    assert.equal(repairTitle("").repaired, false);
+    assert.equal(repairTitle(undefined).title, "");
+  });
+
+  test("a title with no city at all is still trimmed — nothing to protect", () => {
+    const r = repairTitle("Some very long generic title about houses that just keeps going and going onward");
+    assert.equal(r.repaired, true);
+    assert.ok(r.title.length <= TITLE_MAX);
   });
 });
