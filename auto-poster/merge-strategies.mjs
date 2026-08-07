@@ -256,6 +256,24 @@ function mergeApprovalRecord(x, y) {
   const videoId = idFrom.videoId ?? x.videoId ?? y.videoId;
   if (videoId !== undefined) out.videoId = videoId;
 
+  // A DELIBERATE OUTLINE REWRITE MUST NOT LOSE TO THE COPY IT REWROTE.
+  //
+  // The identity group above breaks ties on requestedAt — but a rewrite and its
+  // original are the SAME record with the same stamp, so the tie resolves to
+  // whichever side the merge happened to see first, and that is the remote. A
+  // reoutline would push, merge, and silently come back unchanged.
+  //
+  // `payload.reoutlinedAt` marks a payload that was rewritten on purpose. A side
+  // carrying one beats a side that does not, and the later rewrite wins over an
+  // earlier one. Nothing else about the record moves: the decision, selection,
+  // notes and acted marker all keep their own groups below.
+  const xRewrite = x.payload?.reoutlinedAt;
+  const yRewrite = y.payload?.reoutlinedAt;
+  if (xRewrite || yRewrite) {
+    const winner = !yRewrite ? x : !xRewrite ? y : String(xRewrite) >= String(yRewrite) ? x : y;
+    out.payload = winner.payload;
+  }
+
   // decision — the dashboard's half. Never dropped, never flipped.
   //
   // `selection` travels with the decision and is NOT optional: it is the field

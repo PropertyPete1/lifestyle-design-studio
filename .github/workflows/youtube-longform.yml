@@ -34,6 +34,12 @@ on:
           - brief
           - dry-run
           - send-test-approval
+          - reoutline
+      request_id:
+        description: 'reoutline only: the approved requestId whose outline to rewrite'
+        required: false
+        default: ''
+        type: string
       dry_run:
         description: 'Dry run (generate and print, send nothing)'
         required: false
@@ -234,6 +240,49 @@ jobs:
           else
             node scripts/dry-run-build.mjs --synthetic
           fi
+
+  # Rewrite one approved request's outline under the current brief rules, without
+  # making Peter pick a topic again. His decision, selection and notes are
+  # preserved; only the selected candidate's outline changes. Publishes nothing.
+  reoutline:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'reoutline'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: youtube-longform-approvals
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Rewrite the outline
+        id: run
+        working-directory: auto-poster
+        env:
+          # LIVE: rewrites the stored outline on a real approval record and bills
+          # the Anthropic API. The decision itself is never touched.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+        run: |
+          if node scripts/reoutline-request.mjs "$REQUEST_ID"; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Commit approvals
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs YTREOUTLINE "${{ steps.run.outputs.success }}"
 
   # One live topic_pick round-trip against the real dashboard, with candidates
   # prefixed [TEST]. Proves the approval endpoint, the push, and the decision
