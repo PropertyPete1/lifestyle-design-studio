@@ -38,6 +38,7 @@ import {
 } from "./yt-brief.js";
 import { ensureRecordingsFolder } from "./yt-ingest.js";
 import { sendApprovalRequest } from "./delivery.js";
+import { heldBackPayload, renderHeldBackText, heldBackSubject } from "./yt-hold-notice.js";
 import {
   loadApprovals,
   saveApprovals,
@@ -182,6 +183,33 @@ async function deliverKitForApprovedTopic(approvals, record) {
     console.log(`[YTPipeline] NOT delivering a kit for ${record.requestId}: ${why}`);
     console.log(`::warning::Script for "${topic.title}" held back — ${why}. Will retry on the next run.`);
     writeScriptDiagnostics(record, topic, scriptResult, why);
+
+    // TELL PETER. A hold used to end here, with a warning in an Actions log
+    // nobody watches — he picked a topic, waited, and had no way to tell a held
+    // script apart from a job that never ran. Silence is not an outcome.
+    //
+    // Sent on the request's EXISTING id, like the recording kit, so no new
+    // approval record is created: one of those would read as an unanswered
+    // brief and block the next Monday brief from going out.
+    //
+    // Not wrapped in a try/catch on purpose. sendApprovalRequest throws only
+    // when the notice reached NEITHER channel, and a hold nobody was told about
+    // is the exact failure this exists to prevent — so it goes red and GitHub
+    // mails him instead. The request stays unacted either way, so the next poll
+    // still retries.
+    const runUrl = process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
+      ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+      : null;
+    const noticeArgs = { topicTitle: topic.title, scriptResult, why, runUrl };
+    await sendApprovalRequest({
+      requestId: record.requestId,
+      kind: KIND_TOPIC_PICK,
+      payload: heldBackPayload({ requestId: record.requestId, topicTitle: topic.title, scriptResult, why }),
+      emailSubject: heldBackSubject(noticeArgs),
+      emailBody: renderHeldBackText(noticeArgs),
+      accessToken: await getAccessToken().catch(() => null),
+    });
+
     return { advanced: false, reason: why };
   }
 
