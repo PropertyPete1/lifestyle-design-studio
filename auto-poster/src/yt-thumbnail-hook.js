@@ -170,12 +170,14 @@ THE RULES, all of them load-bearing:
 - No numbers unless the number IS the hook.
 - Plain words. If it sounds like a headline in a newspaper you are writing it wrong; it should sound like the thing a friend says right before they tell you the catch.
 
+WRITE THREE CANDIDATES, genuinely different from each other — not three drafts of one idea. Different angle each: one about a mistake, one about money, one about a surprise or a warning. They compete; the scorer picks.
+
 Return ONLY valid JSON, no preamble and no code fences:
-{"hook": "THREE OR FOUR WORDS"}`;
+{"candidates": ["THREE OR FOUR WORDS", "A DIFFERENT ANGLE", "A THIRD ANGLE"]}`;
 
 const CRITIC_SYSTEM = `You judge the text on a YouTube thumbnail. You are harsh, and you never inflate a score to be kind.
 
-You score two axes out of 10. Both must reach 8.
+You score three axes out of 10. All three must reach 8.
 
 "curiosity" — does this open a loop the viewer cannot close on their own?
   10  a specific cost or mistake the viewer now needs resolved. "YOUR EXEMPTION MISSES THIS"
@@ -191,16 +193,28 @@ You score two axes out of 10. Both must reach 8.
    2  needs to be read twice, or leans on punctuation that disappears at that size
    1  unreadable small
 
+"emotional_trigger" — is there a consequence in it? What gets CLICKED is not what is interesting but what is threatening or surprising: a mistake being made, money being lost, a warning, a thing everyone else got wrong.
+  10  the viewer feels implicated — a mistake THEY might be making, money THEY are losing. "YOUR EXEMPTION MISSES THIS"
+   8  a clear cost or warning, slightly impersonal
+   5  interesting but consequence-free. It informs; nothing is at stake
+   2  merely describes the topic, however cleanly — a label cannot trigger anything
+   1  neutral to the point of wallpaper
+
+A line can be non-redundant, legible, and still emotionally inert. That line does not get clicked, and this axis is where it fails.
+
 Score the WORST case, not the average. A line that is brilliant and unreadable is unreadable.
 
 Return ONLY valid JSON, no preamble and no code fences:
-{"curiosity": 0, "legibility": 0, "worst_problem": "one sentence", "fix": "a specific instruction, one sentence"}`;
+{"curiosity": 0, "legibility": 0, "emotional_trigger": 0, "worst_problem": "one sentence", "fix": "a specific instruction, one sentence"}`;
 
 export const writerSystem = () => WRITER_SYSTEM;
 export const criticSystem = () => CRITIC_SYSTEM;
 
+/** The axes a thumbnail line must clear. */
+export const HOOK_AXES = ["curiosity", "legibility", "emotional_trigger"];
+
 export function scoresPass(scores, mark = PASS_MARK) {
-  return scores.curiosity >= mark && scores.legibility >= mark;
+  return Boolean(scores) && HOOK_AXES.every((a) => (scores[a] ?? 0) >= mark);
 }
 
 export async function scoreHook(hook, { title, modelCall = callModel } = {}) {
@@ -216,6 +230,7 @@ export async function scoreHook(hook, { title, modelCall = callModel } = {}) {
       return {
         curiosity: clamp(s.curiosity),
         legibility: clamp(s.legibility),
+        emotional_trigger: clamp(s.emotional_trigger),
         worst_problem: String(s.worst_problem || ""),
         fix: String(s.fix || ""),
       };
@@ -225,7 +240,7 @@ export async function scoreHook(hook, { title, modelCall = callModel } = {}) {
   }
   // Degrade to unscored rather than throwing. The caller falls back to deriving
   // the text from the title, which is worse but always works.
-  return { curiosity: 0, legibility: 0, worst_problem: "critic unavailable", fix: "", unscored: true };
+  return { curiosity: 0, legibility: 0, emotional_trigger: 0, worst_problem: "critic unavailable", fix: "", unscored: true };
 }
 
 /**
@@ -261,56 +276,83 @@ export async function generateThumbnailHook({
   const attempts = [];
   let feedback = "";
 
+  // Ranking: weakest axis first, then the sum. A line with 10/10/6 loses to
+  // 8/8/8 — the weak axis is what the viewer actually experiences.
+  const minAxis = (sc) => Math.min(...HOOK_AXES.map((a) => sc[a] ?? 0));
+  const sumAxes = (sc) => HOOK_AXES.reduce((n, a) => n + (sc[a] ?? 0), 0);
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    let hook;
+    let candidates;
     try {
       const raw = await modelCall(WRITER_SYSTEM, `${context}\n\nWrite the thumbnail text.${feedback}`);
-      hook = stripDashes(String(parseJson(raw).hook || "")).trim().toUpperCase();
+      const parsed = parseJson(raw);
+      // The prompt asks for three candidates; a model that answers with the old
+      // single-hook shape still gets its one line considered rather than a
+      // parse failure.
+      const list = Array.isArray(parsed.candidates) ? parsed.candidates : [parsed.hook];
+      candidates = [...new Set(list.map((c) => stripDashes(String(c || "")).trim().toUpperCase()).filter(Boolean))];
     } catch (err) {
       console.warn(`[ThumbHook] attempt ${attempt + 1}: unparseable output (${err.message})`);
       feedback = `\n\nYour previous output could not be parsed as JSON: ${err.message}. Return ONLY the JSON object.`;
       continue;
     }
 
-    // Mechanical gates first. Cheap, deterministic, and they catch the failure
-    // the critic is worst at noticing.
-    const structure = validateHook(hook, title);
-    if (!structure.valid) {
-      console.warn(`[ThumbHook] attempt ${attempt + 1}: "${hook}" — ${structure.failures.join("; ")}`);
+    // Mechanical gates first, per candidate. Cheap, deterministic, and they
+    // catch the failure the critic is worst at noticing.
+    const survivors = [];
+    for (const hook of candidates) {
+      const structure = validateHook(hook, title);
+      if (!structure.valid) {
+        console.warn(`[ThumbHook] attempt ${attempt + 1}: "${hook}" — ${structure.failures.join("; ")}`);
+        continue;
+      }
+      survivors.push({ hook, redundancy: structure.redundancy });
+    }
+    if (survivors.length === 0) {
       feedback =
-        `\n\nYour previous attempt "${hook}" was rejected: ${structure.failures.join("; ")}. ` +
-        `Fix exactly that. Do not restate the title.`;
+        `\n\nEvery candidate was rejected structurally (word count, long words, or restating the title). ` +
+        `Write three NEW lines. Do not restate the title.`;
       continue;
     }
 
-    const scores = await scoreHook(hook, { title, modelCall });
-    console.log(
-      `[ThumbHook] attempt ${attempt + 1}: "${hook}" — ` +
-        `curiosity=${scores.curiosity} legibility=${scores.legibility}` +
-        `${scoresPass(scores) ? " PASS" : " below bar"}`
-    );
-    if (scores.worst_problem) console.log(`[ThumbHook]   worst problem: ${scores.worst_problem}`);
-    if (scores.fix) console.log(`[ThumbHook]   fix:           ${scores.fix}`);
+    // Score every survivor — the whole point of candidates is that the scorer
+    // picks, not that the first acceptable line wins.
+    const scored = [];
+    for (const s of survivors) {
+      const scores = await scoreHook(s.hook, { title, modelCall });
+      console.log(
+        `[ThumbHook] attempt ${attempt + 1}: "${s.hook}" — ` +
+          `curiosity=${scores.curiosity} legibility=${scores.legibility} emotion=${scores.emotional_trigger}` +
+          `${scoresPass(scores) ? " PASS" : " below bar"}`
+      );
+      const entry = { hook: s.hook, scores, redundancy: s.redundancy };
+      scored.push(entry);
+      attempts.push(entry);
+    }
 
-    attempts.push({ hook, scores, redundancy: structure.redundancy });
-
-    if (scoresPass(scores)) {
+    const passing = scored.filter((x) => scoresPass(x.scores));
+    if (passing.length > 0) {
+      const best = passing.reduce((a, b) =>
+        minAxis(b.scores) > minAxis(a.scores) || (minAxis(b.scores) === minAxis(a.scores) && sumAxes(b.scores) > sumAxes(a.scores)) ? b : a
+      );
       return {
-        hook,
-        scores,
-        redundancy: structure.redundancy,
+        hook: best.hook,
+        scores: best.scores,
+        redundancy: best.redundancy,
+        candidatesConsidered: attempts.length,
         belowBar: false,
-        criticUnavailable: Boolean(scores.unscored),
+        criticUnavailable: Boolean(best.scores.unscored),
         attemptsUsed: attempt + 1,
       };
     }
 
+    const nearest = scored.reduce((a, b) => (sumAxes(b.scores) > sumAxes(a.scores) ? b : a));
     feedback =
-      `\n\nYour previous attempt "${hook}" scored curiosity=${scores.curiosity}, ` +
-      `legibility=${scores.legibility} out of 10. Both must reach ${PASS_MARK}.\n` +
-      (scores.worst_problem ? `Worst problem: ${scores.worst_problem}\n` : "") +
-      (scores.fix ? `Fix: ${scores.fix}\n` : "") +
-      `Write a different line. Do not lightly edit the previous one.`;
+      `\n\nYour best candidate "${nearest.hook}" scored curiosity=${nearest.scores.curiosity}, ` +
+      `legibility=${nearest.scores.legibility}, emotional_trigger=${nearest.scores.emotional_trigger} out of 10. All must reach ${PASS_MARK}.\n` +
+      (nearest.scores.worst_problem ? `Worst problem: ${nearest.scores.worst_problem}\n` : "") +
+      (nearest.scores.fix ? `Fix: ${nearest.scores.fix}\n` : "") +
+      `Write three different lines. Do not lightly edit the previous ones.`;
   }
 
   if (attempts.length === 0) {
@@ -324,14 +366,16 @@ export async function generateThumbnailHook({
     };
   }
 
-  const best = attempts.reduce((a, b) =>
-    b.scores.curiosity + b.scores.legibility > a.scores.curiosity + a.scores.legibility ? b : a
-  );
+  const best = attempts.reduce((a, b) => {
+    const [ma, mb] = [minAxis(a.scores), minAxis(b.scores)];
+    return mb > ma || (mb === ma && sumAxes(b.scores) > sumAxes(a.scores)) ? b : a;
+  });
   console.warn(`[ThumbHook] nothing cleared ${PASS_MARK}/10 — using best-of: "${best.hook}"`);
   return {
     hook: best.hook,
     scores: best.scores,
     redundancy: best.redundancy,
+    candidatesConsidered: attempts.length,
     belowBar: true,
     criticUnavailable: Boolean(best.scores.unscored),
     attemptsUsed: attempts.length,

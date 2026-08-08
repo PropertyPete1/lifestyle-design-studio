@@ -58,6 +58,8 @@ import { planTimeline, buildChapters } from "./yt-timeline.js";
 import { generateNarration, renderTimeline, syntheticNarrationUsed } from "./yt-assemble.js";
 import { applyGeneratedVisuals } from "./yt-visual-broll.js";
 import { generateOpeningOverlay, planOpening } from "./yt-opening.js";
+import { generateThumbnailHook } from "./yt-thumbnail-hook.js";
+import { renderThumbnail, fitUnderLimit } from "./yt-thumbnail.js";
 import { buildPackaging } from "./yt-packaging.js";
 import { uploadPrivate, requestReview } from "./yt-publish.js";
 import {
@@ -511,6 +513,37 @@ async function buildFromRecordings(approvals, record) {
     mapsUsed: gen.mapsUsed,
   });
 
+  // ── the thumbnail ─────────────────────────────────────────────────────────
+  // Generated here because the review checklist tells Peter to upload "the
+  // thumbnail" in Studio — and until this block, nothing anywhere produced
+  // one. The checklist pointed at an artifact that did not exist, which is the
+  // silent-gap class: every piece tested, the whole disconnected.
+  //
+  // Non-fatal on purpose. A finished video without a thumbnail file is still
+  // deliverable (Peter sees the gap on the checklist); a finished video thrown
+  // away over its thumbnail is not.
+  let thumb = { hook: null, scores: null };
+  let thumbnailPath = null;
+  try {
+    thumb = await generateThumbnailHook({ title: packaging.title, script });
+    if (thumb.hook) {
+      const png = await fitUnderLimit(
+        await renderThumbnail(thumb.hook, { kicker: result.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
+      );
+      thumbnailPath = join(workDir, "thumbnail.png");
+      writeFileSync(thumbnailPath, png);
+      console.log(
+        `[YTPipeline] thumbnail: "${thumb.hook}" ` +
+          `(curiosity=${thumb.scores?.curiosity} legibility=${thumb.scores?.legibility} emotion=${thumb.scores?.emotional_trigger}` +
+          `${thumb.belowBar ? ", BELOW BAR — best of what survived" : ""}, ${thumb.candidatesConsidered ?? "?"} candidate(s) considered)`
+      );
+    } else {
+      console.log(`::warning::no thumbnail line cleared the gates — Peter makes one in Studio (${thumb.reason || "no usable line"})`);
+    }
+  } catch (err) {
+    console.log(`::warning::thumbnail generation failed — Peter makes one in Studio (${err.message})`);
+  }
+
   const videoId = videoIdFor(record.requestId);
   let nextLog = recordRender(videoLog, {
     videoId,
@@ -524,6 +557,10 @@ async function buildFromRecordings(approvals, record) {
     brollHashes: plan.segments.flatMap((s) => (s.broll || []).map((b) => b.contentHash).filter(Boolean)),
     scriptScores: result.scores,
     packagingScores: packaging.scores,
+    // C3: the chosen thumbnail text rides with the video record, so hook style
+    // can be correlated with CTR once analytics exist.
+    thumbnailText: thumb.hook,
+    thumbnailScores: thumb.scores,
   });
   saveVideoLog(nextLog);
 

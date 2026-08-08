@@ -3,9 +3,11 @@
  *
  * A carousel can survive a mediocre middle because the reader is already
  * swiping. A twelve-minute video cannot: every section boundary is a place
- * where a viewer decides to leave, and there are a dozen of them. So the critic
- * scores three axes here rather than the carousel's four, and the extra one is
- * retention — measured at the boundaries, which is where it is actually lost.
+ * where a viewer decides to leave, and there are a dozen of them. The critic
+ * scores seven axes (SCORE_AXES): the original three — clarity, retention,
+ * authenticity — plus hook_punch (the first six words alone), story (a human
+ * with stakes in every section), loop (planted/sustained/paid), and payoff
+ * (every counted claim in the hook cashed out in the body).
  *
  * Structure the writer produces:
  *
@@ -24,8 +26,9 @@
  *
  * Guards are the existing ones, reused verbatim: the leak scanner and
  * findMonthlyPaymentFigure. A stated monthly payment figure is the one thing
- * that forces a regeneration outright — the whole CTA is built on offering that
- * number in a DM, and a script that gives it away has nothing left to trade.
+ * that forces a regeneration outright — the whole close is built on offering
+ * that number personally (by text — YouTube has no DMs, see yt-cta.js), and a
+ * script that gives it away has nothing left to trade.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -270,9 +273,24 @@ WHO YOU ARE WRITING FOR: someone typing "moving to san antonio", "austin vs san 
 
 STRUCTURE, and every part of it earns its place:
 
-"hook" — the first 15 seconds. Cold open on the single most useful or most contrarian thing you have. No greeting, no name, no "welcome back to the channel", no throat-clearing. Start on the claim. The viewer decided to click on a title; the hook has to prove instantly that they were right to.
+"hook" — the first 15 seconds, and THE FIRST SIX WORDS ARE THE WHOLE FIGHT. Cold open. No greeting, no name, no "welcome back to the channel", no throat-clearing.
+
+THE SURPRISING CLAIM COMES FIRST; THE QUALIFYING CONTEXT COMES AFTER. Never open by defining who the video is for — "If you're a veteran with a hundred percent rating..." spends twenty seconds qualifying the audience before anything surprising happens, and the people it is for already know who they are from the title.
+
+  WEAK:   "If you're a veteran with a hundred percent rating, Texas can knock your property tax bill down to nothing..."
+  STRONG: "Your hundred percent disability exemption doesn't cover this. And most veterans moving to San Antonio don't find out until the first bill shows up."
+
+Structural rule, enforced mechanically: a hook whose first sentence opens with "if", "when", "whether", "for those who", or spends its first clause defining the audience is REJECTED and regenerated. Put the claim in the first six words; qualify it in the second sentence.
+
+CASH OUT EVERY COUNTED CLAIM. If the hook says "two of the three areas", the body must deliver exactly two of exactly three, by name. A number, a named set, or a promise in the hook is a debt, and the critic checks that it is paid in full. Do not put a count in the hook you are not going to land in the body.
+
+THE LONG OPEN LOOP. Inside the first 30 seconds, plant ONE specific promise that is not paid off until the back half of the video — a number you will name, a place you will identify, a mistake you will show. Reference it once mid-video ("that fee I mentioned at the start — it's coming, one more thing first") so it stays alive. Pay it EXPLICITLY, in words that call back to the plant ("that's the line I told you about at the start"). A loop that is planted and never mentioned again is a broken promise, not suspense.
 
 "promise" — one or two sentences. What they will know by the end that they do not know now. Concrete and bounded. "By the end you'll know what a 300k house here actually costs you every month" beats "we'll cover everything you need to know".
+
+STORY BEATS ARE MANDATORY, ONE PER SECTION MINIMUM. Facts do not retain; facts attached to a person do. Every section carries at least one concrete human moment — a client, a buyer, a family — with a DECISION they made and a CONSEQUENCE it had. "A lot of buyers regret this" is not a story; "a family I worked with picked the bigger house on the north side, and eight months in the wife was spending two hours a day on 281 and they listed it" is. Specific beats generic every time: a season, a road, a reason. Never a name, never an address, never an invented number — the person is real-shaped, the details stay general enough to be anyone.
+
+EMOTIONAL STAKES RIDE WITH THE NUMBERS. Every section names at least one emotional cost or relief alongside the financial one — resale regret, kids changing schools mid-year, a commute that grinds someone down, buying fast because orders said so. The channels that win this niche cover what a decision FEELS like a year later, not only what it costs.
 
 "sections" — ONE PER OUTLINE CHAPTER, in the order the outline gives them. If the outline has six chapters, write six sections. Do not add a section the outline does not have, and do not split one chapter across two. Never more than 7 in total.
 Each has:
@@ -406,7 +424,7 @@ Use this scale. It is calibrated, not relative — score against these anchors, 
 
 An 8 is a pass, not a prize. If you cannot name a concrete flaw, do not score below 8.
 
-Score three things from 1 to 10.
+Score seven things from 1 to 10.
 
 "clarity" — comprehension, scored across the WHOLE script. Would a distracted viewer understand what is being CLAIMED, first time, without rewinding?
 
@@ -447,10 +465,18 @@ Score 3 or below for any of these, and name the offender:
 
 Score 8 or above only if you could believe a realtor said all of it into his phone without a script in front of him. Contractions, short sentences, and the occasional fragment are GOOD here — do not mark them down as informal. Formality is the failure mode on this axis, not the standard.
 
-Apply the anchors literally. Do not drift the bar upward across the three axes: each is scored on its own against the same scale.
+"hook_punch" — the FIRST SIX WORDS, scored on their own. Cover the rest of the script and read only them: would a stranger scrolling with the sound half-off stop? Six words that open a gap score high ("Your exemption doesn't cover this line"). Six words of setup score low ("If you're a veteran with a..."), however strong the sentence they begin. A hook that spends its first clause qualifying the audience caps this axis at 4 — the title already did that job.
+
+"story" — is there a HUMAN in every section with something at stake? Count them section by section. A qualifying story beat has a person (a client, a buyer, a family), a decision they made, and a consequence it had — and it is SPECIFIC: a road, a season, a reason. "A lot of buyers regret this" is not a beat; it is a statistic wearing a coat. Any section with zero qualifying beats caps this axis at 5. Also score the emotional register: each section should name what a decision FEELS like — resale regret, kids mid-year, a commute that grinds — not only what it costs. All facts and no people caps this at 4 regardless of how good the facts are.
+
+"loop" — the long open loop, scored in three parts: PLANTED (a specific promise inside the first 30 seconds that is not paid immediately), SUSTAINED (referenced at least once mid-video so it stays alive), PAID (explicitly cashed out in the back half, in words that call back to the plant). All three present and specific: 8+. Planted and paid but never sustained: max 6. Planted and never paid: max 3 — that is a broken promise, and worse than no loop. No loop at all: max 5.
+
+"payoff" — every COUNTED OR NAMED claim in the hook and promise, checked against the body. If the hook says "two of the three areas", find the three areas and the two — by name, exactly. If it promises "the number nobody quotes", find the take that delivers that number. List each claim, then verify each is paid IN FULL. One unpaid or miscounted claim caps this axis at 4, because it is the specific lie a viewer notices and remembers.
+
+Apply the anchors literally. Do not drift the bar upward across the axes: each is scored on its own against the same scale.
 
 Return ONLY valid JSON, no preamble and no code fences:
-{"clarity": 0, "retention": 0, "authenticity": 0, "worst_problem": "the single most damaging flaw, one sentence", "worst_boundary": "quote the weakest boundaryPull, or empty string", "fix": "a specific instruction to the writer, one sentence"}`;
+{"clarity": 0, "retention": 0, "authenticity": 0, "hook_punch": 0, "story": 0, "loop": 0, "payoff": 0, "worst_problem": "the single most damaging flaw, one sentence", "worst_boundary": "quote the weakest boundaryPull, or empty string", "fix": "a specific instruction to the writer, one sentence"}`;
 
 export function criticSystem() {
   return CRITIC_SYSTEM;
@@ -513,6 +539,54 @@ export function allTakes(script) {
  * Structural validation. Cheap, deterministic, and runs before the critic so a
  * malformed draft costs one model call instead of two.
  */
+/**
+ * A hook whose first sentence qualifies instead of claiming.
+ *
+ * "If you're a veteran with a hundred percent rating, Texas can..." spends its
+ * first twenty seconds defining the audience — which the title already did —
+ * before anything surprising happens. Retention is decided in the first six
+ * words, so this is checked mechanically rather than left to the critic: word
+ * overlap and phrase shape are things a regex answers every time and a model
+ * answers most times.
+ *
+ * Returns the reason, or null when the hook opens on a claim.
+ */
+export function hookOpensQualified(hook) {
+  const text = String(hook || "").trim();
+  if (!text) return null;
+  const firstSentence = (text.split(/(?<=[.!?])\s+/)[0] || text).trim();
+
+  if (/^(?:if|when|whether|unless|suppose|imagine)\b/i.test(firstSentence)) {
+    return `first sentence opens with a conditional ("${firstSentence.split(/\s+/).slice(0, 4).join(" ")}...") — the claim must come first`;
+  }
+  if (/^for\s+(?:those|anyone|people|everyone|buyers|families|veterans|folks)\b/i.test(firstSentence)) {
+    return "first sentence opens by defining the audience — the claim must come first";
+  }
+  // "Are you a veteran who..." / "Do you have..." — a question that qualifies.
+  if (/^(?:are|do|does|have|has)\s+you\b/i.test(firstSentence) && /\byou(?:'re|r| are| have)?\s+(?:a|an|the)\b/i.test(firstSentence)) {
+    return "first sentence is a question qualifying the audience — the claim must come first";
+  }
+  return null;
+}
+
+/**
+ * Greetings, channel names and self-introductions — the preamble ban.
+ *
+ * Checked on the hook AND the first take, because they are what actually
+ * plays first. Deterministic: this is a list of phrases, not a judgement.
+ */
+const PREAMBLE = /^(?:hey|hi|hello|howdy|what's up|welcome(?:\s+back)?|good\s+(?:morning|afternoon|evening)|my name(?:'s|\s+is)|i'm\s+peter|thanks for (?:watching|joining|clicking)|in (?:this|today's)\s+video|today\s+(?:i|we)(?:'m|'re|'ll|\s+am|\s+are|\s+will)?\s)/i;
+
+export function findPreamble(script) {
+  const found = [];
+  const hook = String(script?.hook || "").trim();
+  if (PREAMBLE.test(hook)) found.push(`hook opens with preamble: "${hook.slice(0, 50)}"`);
+  const firstTake = script?.sections?.[0]?.takes?.[0];
+  const text = String(firstTake?.text || "").trim();
+  if (text && PREAMBLE.test(text)) found.push(`first take opens with preamble: "${text.slice(0, 50)}"`);
+  return found;
+}
+
 export function validateScript(script) {
   const failures = [];
   if (!script || typeof script !== "object") return { valid: false, failures: ["not an object"] };
@@ -520,6 +594,10 @@ export function validateScript(script) {
   if (nonEmpty(script.title) && script.title.length > 70) failures.push(`title is ${script.title.length} chars, max 70`);
   if (!nonEmpty(script.hook)) failures.push("missing hook");
   if (!nonEmpty(script.promise)) failures.push("missing promise");
+
+  const qualified = hookOpensQualified(script.hook);
+  if (qualified) failures.push(`hook: ${qualified}`);
+  failures.push(...findPreamble(script));
 
   const sections = script.sections || [];
   if (sections.length < 4) failures.push(`only ${sections.length} sections, need at least 4`);
@@ -719,6 +797,10 @@ export async function scoreScript(script, modelCall = callModel) {
         clarity: clamp(s.clarity),
         retention: clamp(s.retention),
         authenticity: clamp(s.authenticity),
+        hook_punch: clamp(s.hook_punch),
+        story: clamp(s.story),
+        loop: clamp(s.loop),
+        payoff: clamp(s.payoff),
         worst_problem: String(s.worst_problem || ""),
         worst_boundary: String(s.worst_boundary || ""),
         fix: String(s.fix || ""),
@@ -736,8 +818,11 @@ export async function scoreScript(script, modelCall = callModel) {
   };
 }
 
+/** The axes a script must clear, all at PASS_MARK or above. */
+export const SCORE_AXES = ["clarity", "retention", "authenticity", "hook_punch", "story", "loop", "payoff"];
+
 export function scoresPass(scores, mark = PASS_MARK) {
-  return scores.clarity >= mark && scores.retention >= mark && scores.authenticity >= mark;
+  return Boolean(scores) && SCORE_AXES.every((axis) => (scores[axis] ?? 0) >= mark);
 }
 
 const scoreTotal = (s) => s.clarity + s.retention + s.authenticity;

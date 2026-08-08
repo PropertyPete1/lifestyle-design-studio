@@ -141,6 +141,11 @@ export function recordRender(log, entry) {
         brollHashes: entry.brollHashes || [],
         scriptScores: entry.scriptScores || null,
         packagingScores: entry.packagingScores || null,
+        // The thumbnail line shipped with this video, kept so hook style can
+        // be correlated with CTR once analytics exist. Null when generation
+        // failed and Peter made one by hand in Studio.
+        thumbnailText: entry.thumbnailText || null,
+        thumbnailScores: entry.thumbnailScores || null,
         // Never true at render time. Only an explicit approval sets it.
         approved: false,
       },
