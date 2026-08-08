@@ -534,6 +534,26 @@ function nonEmpty(s) {
  * in place; a payment figure is reported for the caller to regenerate on,
  * because there is no safe way to patch one out of a sentence built around it.
  */
+/**
+ * Apply a string transform to every string in a nested structure.
+ *
+ * Mirrors visualIntentText's walk: the writer invents spec shapes, so scrubbing
+ * a fixed set of known keys would leave a banned term sitting in whichever key
+ * nobody anticipated. `type` is left alone — it is an enum this code chose, not
+ * writer prose, and running it through a leak scanner could only corrupt it.
+ */
+function scrubDeep(value, scrub, depth = 0) {
+  if (depth > 6 || value == null) return value;
+  if (typeof value === "string") return scrub(value);
+  if (Array.isArray(value)) return value.map((v) => scrubDeep(v, scrub, depth + 1));
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, k === "type" ? v : scrubDeep(v, scrub, depth + 1)])
+    );
+  }
+  return value;
+}
+
 export function applyGuards(script) {
   const notes = [];
   const scrub = (text) => {
@@ -550,7 +570,16 @@ export function applyGuards(script) {
     sections: (script.sections || []).map((s) => ({
       ...s,
       boundaryPull: scrub(s.boundaryPull),
-      takes: (s.takes || []).map((t) => ({ ...t, text: scrub(t.text) })),
+      takes: (s.takes || []).map((t) => ({
+        ...t,
+        text: scrub(t.text),
+        // The spec is scrubbed too, and not scrubbing it was a real hole: a
+        // gated development name that appeared ONLY inside a visualIntent was
+        // stripped from nothing, recorded in no leak note, and rendered on
+        // screen in 84px gold. Including the spec in allScriptText made it
+        // VISIBLE to the guards; this is what makes it actually removed.
+        ...(t.visualIntent ? { visualIntent: scrubDeep(t.visualIntent, scrub) } : {}),
+      })),
     })),
     softCta: script.softCta ? { ...script.softCta, text: scrub(script.softCta.text) } : script.softCta,
     close: script.close ? { ...script.close, text: scrub(script.close.text) } : script.close,

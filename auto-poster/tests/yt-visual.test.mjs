@@ -10,7 +10,8 @@ import { renderCardSvg, renderCardPng, CARD_TYPES } from "../src/yt-card-render.
 import { inspectRender, findOverflowingText } from "../src/yt-visual-qc.js";
 import { selectGeneratedVisuals, spliceGenerated, kenBurnsArgs, GENERATED_SHARE_CAP } from "../src/yt-visual-broll.js";
 import { buildDescription, MAP_CREDITS } from "../src/yt-packaging.js";
-import { allScriptText, visualIntentText } from "../src/yt-script.js";
+import { allScriptText, visualIntentText, applyGuards } from "../src/yt-script.js";
+import { gatedDevelopmentNames } from "../src/yt-brief.js";
 import { planTimeline } from "../src/yt-timeline.js";
 
 const intent = (type, spec) => ({ type, spec });
@@ -148,6 +149,39 @@ describe("visualIntent goes through the content guards", () => {
     const cyclic = { a: 1 };
     cyclic.self = cyclic;
     assert.doesNotThrow(() => visualIntentText(cyclic));
+  });
+
+  test("a banned name inside a spec is STRIPPED, not merely detected", () => {
+    // Being visible to the guards is not the same as being removed. A gated
+    // development name that appeared only in a spec was stripped from nothing,
+    // recorded in no leak note, and rendered on screen in 84px gold.
+    const banned = gatedDevelopmentNames()[0];
+    const script = {
+      sections: [{
+        title: "S",
+        takes: [{
+          id: "t1", mode: "VOICEOVER", text: "narration with no problem in it",
+          visualIntent: { type: "NUMBER_BREAKDOWN", spec: { rows: [{ label: banned, value: "1%" }, { label: "County", value: "2%" }], footnote: `also ${banned}` } },
+        }],
+      }],
+    };
+    const { script: guarded, leaksStripped } = applyGuards(script);
+    const spec = guarded.sections[0].takes[0].visualIntent.spec;
+    assert.ok(!spec.rows[0].label.includes(banned), `"${banned}" survived in a row label`);
+    assert.ok(!spec.footnote.includes(banned), `"${banned}" survived in the footnote`);
+    assert.ok(leaksStripped.length >= 2, "the strip should have been recorded");
+  });
+
+  test("scrubbing a spec keeps its structure and its type", () => {
+    const script = {
+      sections: [{ title: "S", takes: [{ id: "t1", mode: "VOICEOVER", text: "words",
+        visualIntent: { type: "NUMBER_BREAKDOWN", spec: { rows: [{ label: "School", value: "1.2%" }, { label: "County", value: "0.3%" }] } } }] }],
+    };
+    const { script: guarded } = applyGuards(script);
+    const vi = guarded.sections[0].takes[0].visualIntent;
+    assert.equal(vi.type, "NUMBER_BREAKDOWN", "the type enum must not be run through a leak scanner");
+    assert.ok(Array.isArray(vi.spec.rows));
+    assert.equal(vi.spec.rows[1].value, "0.3%");
   });
 });
 
