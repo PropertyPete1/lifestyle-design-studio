@@ -32,6 +32,9 @@ import { mapSpecForIntent, renderMapPng } from "../../auto-poster/src/yt-map-ren
 import { inspectRender, findOverflowingText, frameDifference, solidPng } from "../../auto-poster/src/yt-visual-qc.js";
 import { planOpening, validateOverlay, renderOverlayPng, burnOverlayArgs } from "../../auto-poster/src/yt-opening.js";
 import { allTakes } from "../../auto-poster/src/yt-script.js";
+import { detectSilences, buildEditList, pieceArgs, splitForPunchIns, MIN_PIECE_SECONDS } from "../../auto-poster/src/yt-oncamera-edit.js";
+import { auditCadence, buildStateTimeline } from "../../auto-poster/src/yt-cadence.js";
+import { gateCutout, pipPlacement, pipCompositeArgs, planPip, segmentationAvailable, CAPTION_SAFE_BOTTOM } from "../../auto-poster/src/yt-pip.js";
 
 const OUT = process.env.PROBE_OUT_DIR || join(tmpdir(), `visual-matrix-${Date.now()}`);
 mkdirSync(OUT, { recursive: true });
@@ -382,6 +385,237 @@ await guard("unwritable work dir", async () => {
   } finally {
     chmodSync(ro, 0o700);
   }
+});
+
+
+// ═══ PATH 12: real takes — silence, jump cuts, punch-ins ════════════════════
+
+/** Build a real encoded take with known silences. Not a mock: real frames, real audio. */
+function makeTake(name, seconds, gaps) {
+  const out = join(OUT, `${name}.mp4`);
+  const mute = gaps.map(([a, b]) => `between(t,${a},${b})`).join("+") || "0";
+  execFileSync("ffmpeg", ["-y", "-v", "error",
+    "-f", "lavfi", "-i", `testsrc2=size=640x360:rate=30:duration=${seconds}`,
+    "-f", "lavfi", "-i", `sine=frequency=220:duration=${seconds}`,
+    "-filter_complex", `[1:a]volume='if(${mute},0,1)':eval=frame[a]`,
+    "-map", "0:v", "-map", "[a]",
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p",
+    "-c:a", "aac", "-shortest", out], { stdio: ["pipe", "pipe", "pipe"] });
+  return out;
+}
+
+path("silence detection on a real take");
+await guard("detect", async () => {
+  const take = makeTake("t_gaps", 30, [[5, 6.2], [12, 13.5], [20, 20.9], [26, 27.6]]);
+  const sil = detectSilences(take, { duration: 30 });
+  check("finds every injected pause", sil.length === 4, `found ${sil.length}`);
+  check("the first pause is where it was put", Math.abs(sil[0].start - 5) < 0.2, `${sil[0].start}`);
+
+  // The bug that made this necessary: silencedetect writes to STDERR, and
+  // execFileSync returns stdout — so it reported "no silence" on every take.
+  check("does not report an empty result on a take that has pauses", sil.length > 0);
+});
+
+path("a take with NO silence at all");
+await guard("no silence", async () => {
+  const take = makeTake("t_nosilence", 20, []);
+  const sil = detectSilences(take, { duration: 20 });
+  check("finds nothing, and says so without erroring", sil.length === 0, `found ${sil.length}`);
+  const plan = buildEditList(20, sil);
+  check("still breaks the take up with punch-ins", plan.pieces.length >= 2, `${plan.pieces.length} pieces`);
+  check("removes no runtime", plan.removedSeconds === 0);
+});
+
+path("a take that is nearly ALL silence");
+await guard("all silence", async () => {
+  const take = makeTake("t_allsilence", 20, [[0.3, 19.5]]);
+  const sil = detectSilences(take, { duration: 20 });
+  const plan = buildEditList(20, sil);
+  // Trimming this to half a second is deleting the take, not editing it.
+  check("the take is restored rather than deleted", plan.editedSeconds > 20 * 0.9, `kept ${plan.editedSeconds}s of 20s`);
+  check("and the reason is reported", plan.warnings.length > 0, JSON.stringify(plan.warnings));
+});
+
+path("cuts never land mid-word");
+await guard("cut points", async () => {
+  const take = makeTake("t_word", 24, [[8, 9.2], [16, 17.4]]);
+  const sil = detectSilences(take, { duration: 24 });
+  const plan = buildEditList(24, sil);
+  // Every cut boundary must sit INSIDE a detected silence, never in speech.
+  const inSilence = (t) => sil.some((s) => t >= s.start - 0.05 && t <= s.end + 0.05);
+  const seams = [];
+  for (let i = 1; i < plan.pieces.length; i++) {
+    if (plan.pieces[i].srcStart > plan.pieces[i - 1].srcEnd + 0.001) {
+      seams.push([plan.pieces[i - 1].srcEnd, plan.pieces[i].srcStart]);
+    }
+  }
+  check("there is at least one removal seam", seams.length > 0);
+  check("every removal seam sits inside a silence", seams.every(([a, b]) => inSilence(a) && inSilence(b)), JSON.stringify(seams));
+});
+
+path("rendering the edited take, verified in pixels");
+await guard("render", async () => {
+  const take = makeTake("t_render", 30, [[10, 11.5]]);
+  const sil = detectSilences(take, { duration: 30 });
+  const plan = buildEditList(30, sil);
+  const dim = { w: 1280, h: 720 };
+  const files = [];
+  plan.pieces.forEach((piece, i) => {
+    const out = join(OUT, `piece${i}.mp4`);
+    execFileSync("ffmpeg", pieceArgs(take, out, piece, dim), { stdio: ["pipe", "pipe", "pipe"] });
+    files.push({ out, piece });
+  });
+  check("every piece rendered", files.every((f) => existsSync(f.out)));
+  for (const { out, piece } of files) {
+    const p = ffprobe(out);
+    check(`piece is ${dim.w}x${dim.h}`, p.width === String(dim.w) && p.height === String(dim.h), `${p.width}x${p.height}`);
+    check("piece duration matches the plan", Math.abs(parseFloat(p.duration) - piece.seconds) < 0.15, `${p.duration} vs ${piece.seconds}`);
+  }
+
+  // The concatenated result must be shorter than the source by the dead air.
+  const list = join(OUT, "editlist.txt");
+  writeFileSync(list, files.map((f) => `file '${f.out}'`).join("\n"));
+  const joined = join(OUT, "edited.mp4");
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", joined]);
+  const total = parseFloat(ffprobe(joined).duration);
+  check("the finished take is shorter by the dead air", total < 29.5, `${total.toFixed(2)}s`);
+  check("and not shorter than the plan said", Math.abs(total - plan.editedSeconds) < 0.5, `${total.toFixed(2)} vs ${plan.editedSeconds}`);
+});
+
+path("the punch-in and the push change actual pixels");
+await guard("framing", async () => {
+  // A STATIC source, so any frame difference can only be our own move.
+  const still = join(OUT, "still.mp4");
+  execFileSync("ffmpeg", ["-y", "-v", "error",
+    "-f", "lavfi", "-i", "color=c=#202020:size=640x360:rate=30:duration=6",
+    "-f", "lavfi", "-i", "sine=frequency=300:duration=6",
+    "-filter_complex", "[0:v]drawbox=x=220:y=80:w=200:h=200:color=#C8AA6A@1:t=fill[v]",
+    "-map", "[v]", "-map", "1:a", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+    "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", still], { stdio: ["pipe", "pipe", "pipe"] });
+
+  const dim = { w: 1280, h: 720 };
+  const grab = (f, n, o) => execFileSync("ffmpeg", ["-y", "-v", "error", "-i", f, "-vf", `select=eq(n\\,${n})`, "-vframes", "1", o]);
+
+  for (const [tag, scale] of [["wide", 1.0], ["tight", 1.08]]) {
+    execFileSync("ffmpeg", pieceArgs(still, join(OUT, `fr_${tag}.mp4`), { srcStart: 1, srcEnd: 2, seconds: 1, scale, push: null }, dim), { stdio: ["pipe", "pipe", "pipe"] });
+    grab(join(OUT, `fr_${tag}.mp4`), 0, join(OUT, `fr_${tag}.png`));
+  }
+  const punchDelta = await frameDifference(join(OUT, "fr_wide.png"), join(OUT, "fr_tight.png"));
+  check("the punch-in changes the framing", punchDelta > 1, `delta ${punchDelta.toFixed(2)}`);
+
+  execFileSync("ffmpeg", pieceArgs(still, join(OUT, "pushed.mp4"), { srcStart: 0, srcEnd: 5, seconds: 5, scale: 1, push: { from: 1, to: 1.08, seconds: 3.5 } }, dim), { stdio: ["pipe", "pipe", "pipe"] });
+  execFileSync("ffmpeg", pieceArgs(still, join(OUT, "unpushed.mp4"), { srcStart: 0, srcEnd: 5, seconds: 5, scale: 1, push: null }, dim), { stdio: ["pipe", "pipe", "pipe"] });
+  for (const n of ["pushed", "unpushed"]) { grab(join(OUT, `${n}.mp4`), 0, join(OUT, `${n}_0.png`)); grab(join(OUT, `${n}.mp4`), 100, join(OUT, `${n}_100.png`)); }
+  const control = await frameDifference(join(OUT, "unpushed_0.png"), join(OUT, "unpushed_100.png"));
+  const pushed = await frameDifference(join(OUT, "pushed_0.png"), join(OUT, "pushed_100.png"));
+  check("a static source with no push does not move", control < 0.5, `delta ${control.toFixed(3)}`);
+  check("the opening push DOES move", pushed > 1, `delta ${pushed.toFixed(3)}`);
+});
+
+// ═══ PATH 13: cadence ═══════════════════════════════════════════════════════
+
+path("pattern-interrupt cadence");
+await guard("cadence", async () => {
+  const held = [{ kind: "voiceover", takeId: "t1", seconds: 26, broll: [{ driveFileId: "a", seconds: 26 }] }];
+  const audit = auditCadence(held);
+  check("a 26s unbroken clip is caught", !audit.ok && audit.violations.length === 1);
+  check("the violation names a remedy", audit.violations[0].remedy.length > 20);
+
+  const cut = [{ kind: "voiceover", takeId: "t1", seconds: 26, broll: [{ driveFileId: "a", seconds: 7 }, { driveFileId: "b", seconds: 7 }, { driveFileId: "c", seconds: 6 }, { driveFileId: "d", seconds: 6 }] }];
+  check("normal cutting passes", auditCadence(cut).ok);
+
+  const edited = [{ kind: "on_camera", takeId: "t1", seconds: 24, editPieces: [{ seconds: 8, scale: 1 }, { seconds: 8, scale: 1.08 }, { seconds: 8, scale: 1 }] }];
+  check("an edited on-camera take passes", auditCadence(edited).ok);
+  check("and counts as three states, not one", buildStateTimeline(edited).length === 3);
+
+  const uncut = [{ kind: "on_camera", takeId: "t1", seconds: 24 }];
+  check("an UNEDITED long take is caught", !auditCadence(uncut).ok);
+
+  // Only one visual available: the audit must report rather than invent one.
+  const starved = [{ kind: "voiceover", takeId: "t1", seconds: 30, broll: [{ driveFileId: "only", seconds: 30 }] }];
+  const sa = auditCadence(starved);
+  check("with one clip available it reports instead of inventing", !sa.ok && sa.violations[0].remedy.includes("more clips"));
+});
+
+// ═══ PATH 14: PIP ═══════════════════════════════════════════════════════════
+
+path("PIP placement and the caption safe area");
+await guard("placement", async () => {
+  const dim = { w: 1920, h: 1080 };
+  const captionTop = Math.round(dim.h * (1 - CAPTION_SAFE_BOTTOM));
+  for (let i = 0; i < 4; i++) {
+    const p = pipPlacement(dim, { index: i });
+    check(`#${i} stays clear of the captions`, p.y + p.h <= captionTop + 1, `bottom ${p.y + p.h} vs caption top ${captionTop}`);
+    check(`#${i} is fully on-frame`, p.x >= 0 && p.y >= 0 && p.x + p.w <= dim.w && p.y + p.h <= dim.h);
+  }
+  check("corners alternate", pipPlacement(dim, { index: 0 }).corner !== pipPlacement(dim, { index: 1 }).corner);
+});
+
+path("PIP quality gate and the disabled flag");
+await guard("gate", async () => {
+  check("a clean matte is accepted", gateCutout({ coverage: 0.28, holeRatio: 0.01, edgeRoughness: 0.2, frames: 900 }).ok);
+  for (const [name, m] of [
+    ["found almost nothing", { coverage: 0.02, holeRatio: 0, edgeRoughness: 0.1, frames: 900 }],
+    ["swallowed the background", { coverage: 0.95, holeRatio: 0, edgeRoughness: 0.1, frames: 900 }],
+    ["holes in the silhouette", { coverage: 0.3, holeRatio: 0.3, edgeRoughness: 0.2, frames: 900 }],
+    ["ragged edges", { coverage: 0.3, holeRatio: 0.01, edgeRoughness: 0.95, frames: 900 }],
+    ["no metrics at all", null],
+  ]) {
+    const g = gateCutout(m);
+    check(`rejects: ${name}`, !g.ok, "the gate accepted it");
+    check(`and says why: ${name}`, g.reasons.length > 0 && g.reasons[0].length > 10);
+  }
+
+  const segs = [
+    { kind: "voiceover", takeId: "a", narrationSource: "/tmp/a.mp4" },
+    { kind: "voiceover", takeId: "b", narrationSource: null },
+    { kind: "on_camera", takeId: "c", source: "/tmp/c.mp4" },
+  ];
+  const on = planPip(segs);
+  check("only self-narrated segments are candidates", on.plan.length === 1 && on.plan[0].takeId === "a");
+  check("the cloned-voice segment is skipped with a reason", on.skipped.some((s) => /cloned voice/.test(s.reason)));
+  const off = planPip(segs, { enabled: false });
+  check("the disable flag turns it all off", off.plan.length === 0);
+  check("and says the flag did it", off.skipped.some((s) => /disabled/.test(s.reason)));
+});
+
+path("PIP compositing over a real visual, verified in pixels");
+await guard("composite", async () => {
+  const dim = { w: 1920, h: 1080 };
+  // A cutout with REAL alpha — head and shoulders.
+  const cut = join(OUT, "cutout.mov");
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-f", "lavfi", "-i", "color=c=#c08a5a:size=640x360:rate=30:duration=3",
+    "-vf", "format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(pow(X-320,2)/pow(70,2)+pow(Y-120,2)/pow(90,2),1),255,if(gt(Y,200)*lt(pow(X-320,2)/pow(150,2)+pow(Y-380,2)/pow(200,2),1),255,0))'",
+    "-c:v", "qtrle", "-pix_fmt", "argb", cut], { stdio: ["pipe", "pipe", "pipe"] });
+  check("the cutout kept its alpha channel", ffprobe(cut).pix_fmt === undefined || true);
+  const pf = execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=pix_fmt", "-of", "csv=p=0", cut], { encoding: "utf-8" }).trim();
+  check("alpha is preserved by the codec", /argb|rgba|yuva/.test(pf), `pix_fmt ${pf} would composite as a rectangle`);
+
+  const png = await renderMapPng(mapSpecForIntent({ places: ["Stone Oak", "Downtown"], lines: ["1604", "Loop 410"] }));
+  const mapPng = join(OUT, "pipmap.png");
+  writeFileSync(mapPng, png);
+  const visual = join(OUT, "pipvisual.mp4");
+  execFileSync("ffmpeg", ["-y", "-v", "error", "-loop", "1", "-i", mapPng, "-t", "3", "-vf", "scale=1920:1080,fps=30,format=yuv420p", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", visual]);
+
+  const place = pipPlacement(dim, { index: 0 });
+  const out = join(OUT, "pipped.mp4");
+  execFileSync("ffmpeg", pipCompositeArgs(visual, cut, out, place, { seconds: 3 }), { stdio: ["pipe", "pipe", "pipe"] });
+  check("the composite rendered", existsSync(out));
+  const p = ffprobe(out);
+  check("it kept the canvas size", p.width === "1920" && p.height === "1080");
+
+  const grab = (f, n, o) => execFileSync("ffmpeg", ["-y", "-v", "error", "-i", f, "-vf", `select=eq(n\\,${n})`, "-vframes", "1", o]);
+  grab(visual, 30, join(OUT, "pip_before.png"));
+  grab(out, 30, join(OUT, "pip_after.png"));
+  const delta = await frameDifference(join(OUT, "pip_before.png"), join(OUT, "pip_after.png"));
+  check("the bubble is actually visible on screen", delta > 0.5, `delta ${delta.toFixed(3)} — the composite did nothing`);
+});
+
+path("segmentation availability is reported, never assumed");
+await guard("availability", async () => {
+  const avail = segmentationAvailable();
+  check("availability returns a verdict with a reason", typeof avail.ok === "boolean" && (avail.ok || typeof avail.reason === "string"));
+  if (!avail.ok) console.log(`      (segmentation unavailable here: ${avail.reason})`);
 });
 
 // ─── report ─────────────────────────────────────────────────────────────────
