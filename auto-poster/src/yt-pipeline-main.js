@@ -421,27 +421,8 @@ async function buildFromRecordings(approvals, record) {
     if (clip) recordings[m.takeId] = { path: clip.localPath || null, durationSeconds: clip.durationSeconds };
   }
 
-  /**
-   * The market's gazetteer, or nothing.
-   *
-   * A market with no vendored geometry is not an error — it means that market
-   * never gets a map, every take stays FOOTAGE, and the video is exactly what
-   * it would have been before this feature existed.
-   */
-  function placesFor(market) {
-    try {
-      return loadMarket(market).places;
-    } catch {
-      console.log(`[YTPipeline] no map geometry for "${market}" — visuals stay footage-only`);
-      return [];
-    }
-  }
-
   const brollPool = await brollFor(result.market);
-  const plan = planTimeline(script, recordings, brollPool, {
-    usedRecently: recentBrollHashes(videoLog),
-    places: placesFor(result.market),
-  });
+  const plan = planTimeline(script, recordings, brollPool, { usedRecently: recentBrollHashes(videoLog) });
   if (plan.missingTakes.length > 0) {
     console.log(`::warning::plan is missing ${plan.missingTakes.length} on-camera take(s) — not rendering`);
     return;
@@ -467,11 +448,20 @@ async function buildFromRecordings(approvals, record) {
   const withVisuals = await applyGeneratedVisuals(plan, { workDir, market: result.market });
   const gen = withVisuals.generated;
   console.log(
-    `[YTPipeline] generated visuals: ${gen.renderedCount} rendered ` +
-      `(${gen.usedSeconds}s of a ${gen.budgetSeconds}s budget, ${Math.round(gen.share * 100)}% of B-roll), ` +
-      `${gen.candidateCount} candidates, ${gen.skippedForCap} skipped for the cap`
+    `[YTPipeline] visuals: writer asked for ${gen.intents.requested} ` +
+      `(${JSON.stringify(gen.intents.byType)}), ${gen.renderedCount} rendered — ` +
+      `${gen.usedSeconds}s of a ${gen.budgetSeconds}s budget, ${Math.round(gen.share * 100)}% of B-roll`
   );
+  // A script whose intents were all REJECTED looks identical, in the finished
+  // video, to a script that asked for nothing. Only one of those is a bug, so
+  // they are logged differently.
+  for (const r of gen.intents.rejections) {
+    console.log(`::warning::take ${r.takeId} asked for a ${r.type || "?"} visual and it was rejected — ${r.reason}`);
+  }
   for (const f of gen.failures) console.log(`::warning::visual for take ${f.takeId} fell back to footage — ${f.reason}`);
+  if (gen.intents.requested === 0) {
+    console.log("::warning::the writer requested no visuals for this script — every segment is footage");
+  }
 
   const chapters = buildChapters(withVisuals, script);
   const rendered = await renderTimeline(withVisuals, { workDir, resolveBrollPath, resolution: RESOLUTION });
@@ -482,7 +472,7 @@ async function buildFromRecordings(approvals, record) {
     chapters,
     // Only true when a map actually reached the timeline, so the credit line
     // never claims something the video does not contain.
-    mapsUsed: gen.rendered.some((r) => r.kind === "map"),
+    mapsUsed: gen.mapsUsed,
   });
 
   const videoId = videoIdFor(record.requestId);

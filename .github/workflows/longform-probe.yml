@@ -9,12 +9,14 @@ name: Long-form Probe (Phase 0)
 #
 #   [probe-youtube]   round-trip the Metricool youtubeData fields
 #   [probe-assembly]  build and time a full long-form assembly (slow, ~hours)
+#   [probe-visuals]   write three unrelated pillar topics with the REAL writer
+#                     and report which segments asked for a visual, of what type
 #
 # Nothing in this workflow publishes. The Metricool probe creates drafts and
 # deletes them in a finally block; no YouTube upload happens at this phase.
 on:
   push:
-    branches: [feat/youtube-longform]
+    branches: [feat/youtube-longform, feat/yt-illustrated-broll]
     paths:
       - 'longform/**'
       - '.github/workflows/longform-probe.yml'
@@ -32,6 +34,7 @@ on:
           - multipart
           - media-delete
           - video-id
+          - visual-intents
           - all
       resolutions:
         description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
@@ -54,6 +57,38 @@ permissions:
   contents: read
 
 jobs:
+  # Does the visual system work for any topic, or only the one it was built
+  # against? Writes three pillar topics that share no vocabulary — a geographic
+  # one, a numeric one and a comparison — with the real writer, and reports
+  # which segments asked for a visual and of what type. A topic that produces
+  # zero visuals is a finding to read, not a failed build.
+  visual-intents:
+    if: >-
+      github.event.inputs.probe == 'visual-intents' || github.event.inputs.probe == 'all'
+      || contains(github.event.head_commit.message, '[probe-visuals]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        working-directory: auto-poster
+        run: npm ci --no-audit --no-fund
+      - name: Write three topics and report their visual intents
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PROBE_OUT_DIR: ${{ github.workspace }}/visual-intent-probe
+        run: node longform/probe/probe-visual-intents.mjs
+      - name: Upload rendered samples and scripts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-intent-probe
+          path: ${{ github.workspace }}/visual-intent-probe
+          if-no-files-found: warn
+
   assembly:
     if: >-
       github.event.inputs.probe == 'assembly' || github.event.inputs.probe == 'all'

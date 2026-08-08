@@ -295,7 +295,7 @@ export function renderMapSvg(spec) {
   ${markerParts.join("\n  ")}
   ${labelParts.join("\n  ")}
   ${title}
-  <text x="${MAP_WIDTH - 40}" y="${MAP_HEIGHT - 34}" font-family="${SANS}" font-size="22" fill="${ACCENT_DIM}" fill-opacity="0.7" text-anchor="end">${esc(MAP_ATTRIBUTION)}</text>
+  <text x="${MAP_WIDTH - 96}" y="${MAP_HEIGHT - 72}" font-family="${SANS}" font-size="24" fill="${ACCENT_DIM}" fill-opacity="0.75" text-anchor="end">${esc(MAP_ATTRIBUTION)}</text>
 </svg>`;
 }
 
@@ -348,27 +348,81 @@ export async function renderMapPng(spec) {
   return sharp(Buffer.from(renderMapSvg(spec))).png({ compressionLevel: 9 }).toBuffer();
 }
 
-/**
- * Turn a classified segment into something drawable.
- *
- * The classifier reports WHAT it saw (routes, places); this decides what to
- * draw with it. Kept separate so the classifier stays a pure judgement about
- * language and this stays a pure judgement about pictures.
- */
-export function mapSpecForSegment(segment, { market = "san_antonio", maxLabels = 6 } = {}) {
-  const spec = segment?.visualSpec;
-  if (!spec) return null;
-  const { places } = loadMarket(market);
-  const known = new Set(places.map((p) => p.id));
+/** Loose match: "Stone Oak", "stone oak", "stone_oak" and "Stone Oak area" all hit. */
+function slug(s) {
+  return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
 
-  const highlight = (spec.routes || []).filter(Boolean);
-  const labels = (spec.places || []).filter((id) => known.has(id)).slice(0, maxLabels);
+/**
+ * Resolve a name the WRITER wrote to something in the gazetteer.
+ *
+ * The writer produces prose names, not ids — it says "Stone Oak" and "1604",
+ * because that is what it says out loud. Matching is deliberately forgiving on
+ * punctuation and case, and deliberately NOT fuzzy beyond that: guessing that
+ * "Oak Park" means "Stone Oak" would put a label on the wrong side of the city,
+ * which is worse than dropping it.
+ */
+function resolvePlace(name, places) {
+  const want = slug(name);
+  if (!want) return null;
+  return (
+    places.find((p) => slug(p.id) === want) ||
+    places.find((p) => slug(p.label) === want) ||
+    places.find((p) => slug(p.label).startsWith(want) && want.length >= 5) ||
+    null
+  );
+}
+
+function resolveRoad(name, roads) {
+  const want = slug(name);
+  if (!want) return null;
+  const f =
+    roads.features.find((r) => slug(r.properties.id) === want) ||
+    roads.features.find((r) => slug(r.properties.label) === want) ||
+    // "Loop 410" -> loop410, "281" -> us281, "I-35" -> i35
+    roads.features.find((r) => slug(r.properties.id).includes(want) && want.length >= 2) ||
+    roads.features.find((r) => slug(r.properties.label).includes(want) && want.length >= 3);
+  return f ? f.properties.id : null;
+}
+
+/**
+ * Turn a validated MAP intent into something drawable, or decline.
+ *
+ * Declines when NOTHING the writer named could be resolved — a script about
+ * Houston, or one naming a neighbourhood we have no coordinate for. That is a
+ * silent fallback to footage rather than a map of the wrong city. Partial
+ * matches are kept: naming four places and getting three is a good map.
+ */
+export function mapSpecForIntent(spec, { market = "san_antonio", maxLabels = 6 } = {}) {
+  if (!spec) return null;
+  let roads, places;
+  try {
+    ({ roads, places } = loadMarket(market));
+  } catch {
+    return null;
+  }
+
+  const labels = [];
+  for (const name of spec.places || []) {
+    const hit = resolvePlace(name, places);
+    if (hit && !labels.includes(hit.id)) labels.push(hit.id);
+    if (labels.length >= maxLabels) break;
+  }
+
+  const highlight = [];
+  for (const name of spec.lines || []) {
+    const hit = resolveRoad(name, roads);
+    if (hit && !highlight.includes(hit)) highlight.push(hit);
+  }
+
   if (highlight.length === 0 && labels.length === 0) return null;
 
   return {
     market,
+    // With no road named, the rings are the orienting frame for this metro.
     highlight: highlight.length ? highlight : ["loop410", "loop1604"],
     labels,
-    title: null,
+    title: spec.title || null,
+    eyebrow: spec.eyebrow || null,
   };
 }

@@ -16,7 +16,7 @@
 
 import { existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { MAP, INFOGRAPHIC } from "./yt-visual-classify.js";
+import { MAP, attachIntents } from "./yt-visual-intent.js";
 
 /**
  * Share of B-roll runtime that may be a generated visual.
@@ -78,15 +78,16 @@ export function kenBurnsArgs(pngPath, output, { seconds, dim, fps = 30, directio
 }
 
 /**
- * Choose which classified segments actually get a generated visual.
+ * Choose which requested visuals the video can actually afford.
  *
- * Ranked by the classifier's score rather than taken in script order, because
- * when the cap bites — and on a twelve-minute video it always bites — the
- * segments it keeps should be the ones the classifier was most sure about, not
- * whichever happened to come first.
+ * Spread EVENLY across the script rather than taken in order. The writer tends
+ * to cluster intents — a section explaining a tax bill will ask for three
+ * graphics in a row — and spending the whole budget on one section produces a
+ * video that is a slideshow for ninety seconds and then never draws again.
+ * Walking the candidates in stride order spends the budget across the runtime.
  *
- * Returns the plan unmodified except for a `generated` marker on the chosen
- * segments, plus a report the caller can log or surface.
+ * Returns the plan unmodified except for a `generatedSeconds` marker on the
+ * chosen segments, plus a report the caller can log or surface.
  */
 export function selectGeneratedVisuals(segments, { cap = GENERATED_SHARE_CAP } = {}) {
   const brollSeconds = segments
@@ -94,20 +95,48 @@ export function selectGeneratedVisuals(segments, { cap = GENERATED_SHARE_CAP } =
     .reduce((n, s) => n + (s.seconds || 0), 0);
   const budget = brollSeconds * cap;
 
-  const candidates = segments
+  const all = segments
     .map((seg, index) => ({ seg, index }))
-    .filter(({ seg }) => seg.kind === "voiceover" && (seg.visual === MAP || seg.visual === INFOGRAPHIC))
-    .sort((a, b) => (b.seg.visualScore || 0) - (a.seg.visualScore || 0));
+    .filter(({ seg }) => {
+      if (seg.kind !== "voiceover" || !seg.visual) return false;
+
+      // A segment with NO footage is one the B-roll allocator could not fill,
+      // and renderTimeline throws on it — loudly, which is correct. Splicing a
+      // visual in would make the concat succeed with a picture SHORTER than the
+      // narration, and `-shortest` would then quietly cut the narration to
+      // match. That turns a build failure into a video missing a sentence, so
+      // an exhausted segment is left exactly as it was.
+      const footage = (seg.broll || []).reduce((n, c) => n + (c.seconds || 0), 0);
+      return footage > 0;
+    });
+
+  // Interleave: take every Nth candidate first, then fill the gaps. With a
+  // budget that fits 3 of 9 requests this picks roughly the 1st, 4th and 7th
+  // rather than the first three.
+  const candidates = [];
+  const stride = Math.max(1, Math.round(all.length / Math.max(1, Math.floor(budget / MIN_VISUAL_SECONDS))));
+  for (let offset = 0; offset < stride; offset++) {
+    for (let i = offset; i < all.length; i += stride) candidates.push(all[i]);
+  }
 
   const chosen = new Map();
   let spent = 0;
   for (const { seg, index } of candidates) {
     // A generated visual covers PART of a take, not all of it. Holding one
     // graphic for a 30-second take is the slideshow failure in miniature.
-    const want = Math.min(MAX_VISUAL_SECONDS, Math.max(MIN_VISUAL_SECONDS, (seg.seconds || 0) * 0.5));
+    const ideal = Math.min(MAX_VISUAL_SECONDS, Math.max(MIN_VISUAL_SECONDS, (seg.seconds || 0) * 0.5));
+
+    // SHRINK TO FIT rather than skip. The first version compared the ideal
+    // length against the remaining budget and skipped when it did not fit —
+    // so a short script rendered NOTHING: one 22-second take gives a 6.6s
+    // budget, the ideal came out 9s, and a perfectly good 4s visual was
+    // discarded because a 9s one would not fit. Nothing failed and nothing
+    // was logged; the feature simply had no effect on short videos.
+    const room = budget - spent;
+    const want = Math.min(ideal, room, seg.seconds || 0);
     if (want < MIN_VISUAL_SECONDS) continue;
-    if (spent + want > budget) continue;
-    chosen.set(index, want);
+
+    chosen.set(index, round(want));
     spent += want;
   }
 
@@ -142,15 +171,18 @@ export function selectGeneratedVisuals(segments, { cap = GENERATED_SHARE_CAP } =
  * fallback, so there is never a reason to stop the build over a graphic.
  */
 export async function applyGeneratedVisuals(plan, { workDir, market = "san_antonio", cap = GENERATED_SHARE_CAP } = {}) {
-  const { mapSpecForSegment, renderMapPng } = await import("./yt-map-render.js");
-  const { infographicSpecForSegment, renderInfographicPng } = await import("./yt-infographic-render.js");
+  const { mapSpecForIntent, renderMapPng, renderMapSvg } = await import("./yt-map-render.js");
+  const { renderCardPng, renderCardSvg } = await import("./yt-card-render.js");
+  const { inspectRender, findOverflowingText } = await import("./yt-visual-qc.js");
   const { writeFileSync } = await import("fs");
-  const { isNonBlank } = await import("./carousel-render.js");
 
   const dir = workDir || join(process.env.TMPDIR || "/tmp", `yt-visuals-${Date.now()}`);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
-  const { segments, report } = selectGeneratedVisuals(plan.segments || [], { cap });
+  // Validate what the writer asked for before spending anything on it.
+  const { segments: withIntents, report: intentReport } = attachIntents(plan.segments || []);
+  const { segments, report } = selectGeneratedVisuals(withIntents, { cap });
+
   const rendered = [];
   const failures = [];
 
@@ -159,38 +191,58 @@ export async function applyGeneratedVisuals(plan, { workDir, market = "san_anton
     if (!seg.generatedSeconds) continue;
 
     try {
+      let svg = null;
       let png = null;
-      let kind = null;
+
       if (seg.visual === MAP) {
-        const spec = mapSpecForSegment(seg, { market });
-        if (spec) { png = await renderMapPng({ ...spec, title: null }); kind = "map"; }
-      } else if (seg.visual === INFOGRAPHIC) {
-        const spec = infographicSpecForSegment(seg, { section: seg.section });
-        if (spec) { png = await renderInfographicPng(spec); kind = "infographic"; }
+        // The map is the one type that can fail for a reason the writer could
+        // not have known: it names places we have no coordinates for.
+        const spec = mapSpecForIntent(seg.visualSpec, { market });
+        if (spec) {
+          svg = renderMapSvg(spec);
+          png = await renderMapPng(spec);
+        }
+      } else {
+        svg = renderCardSvg(seg.visual, seg.visualSpec);
+        png = await renderCardPng(seg.visual, seg.visualSpec);
       }
 
-      // A builder that declines is the designed path, not an error — prose does
-      // not always decompose into a card, and footage is a fine answer.
-      if (!png) { seg.generatedSeconds = 0; continue; }
-
-      // Vision check before it can reach the timeline. A blank graphic is worse
-      // than no graphic: it looks like the render broke, on camera.
-      if (!(await isNonBlank(png))) {
-        failures.push({ takeId: seg.takeId, reason: "rendered blank" });
+      if (!png) {
+        // An intent the renderer cannot satisfy falls back silently. This is a
+        // designed path, not an error.
+        failures.push({ takeId: seg.takeId, type: seg.visual, reason: "renderer could not satisfy the spec" });
         seg.generatedSeconds = 0;
         continue;
       }
 
-      const path = join(dir, `visual-${String(i).padStart(3, "0")}-${kind}.png`);
+      // QC on the PIXELS, at 1080p, before anything reaches the timeline. A
+      // render that returned a large valid PNG has proved nothing.
+      const verdict = await inspectRender(png, {
+        label: `${seg.visual} for ${seg.takeId}`,
+        // Roads are meant to run off the frame; a card is not.
+        edgeCheck: seg.visual !== MAP,
+      });
+      const overflow = svg ? findOverflowingText(svg) : [];
+      if (!verdict.ok || overflow.length > 0) {
+        failures.push({
+          takeId: seg.takeId,
+          type: seg.visual,
+          reason: [...verdict.failures, ...overflow.map((o) => `text off-canvas: "${o.text}"`)].join("; "),
+        });
+        seg.generatedSeconds = 0;
+        continue;
+      }
+
+      const path = join(dir, `visual-${String(i).padStart(3, "0")}-${seg.visual.toLowerCase()}.png`);
       writeFileSync(path, png);
 
       // Spliced at the head of the segment's B-roll, and the footage that
       // follows is shortened by the same amount so the take's total is
       // unchanged — the narration length is authoritative, not the picture.
-      seg.broll = spliceGenerated(seg.broll || [], { path, seconds: seg.generatedSeconds, kind });
-      rendered.push({ takeId: seg.takeId, kind, seconds: seg.generatedSeconds, path });
+      seg.broll = spliceGenerated(seg.broll || [], { path, seconds: seg.generatedSeconds, kind: seg.visual });
+      rendered.push({ takeId: seg.takeId, kind: seg.visual, seconds: seg.generatedSeconds, path, metrics: verdict.metrics });
     } catch (err) {
-      failures.push({ takeId: seg.takeId, reason: err.message });
+      failures.push({ takeId: seg.takeId, type: seg.visual, reason: err.message });
       seg.generatedSeconds = 0;
     }
   }
@@ -198,7 +250,14 @@ export async function applyGeneratedVisuals(plan, { workDir, market = "san_anton
   return {
     ...plan,
     segments,
-    generated: { ...report, rendered, failures, renderedCount: rendered.length },
+    generated: {
+      ...report,
+      intents: intentReport,
+      rendered,
+      failures,
+      renderedCount: rendered.length,
+      mapsUsed: rendered.some((r) => r.kind === MAP),
+    },
   };
 }
 

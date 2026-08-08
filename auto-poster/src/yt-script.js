@@ -289,6 +289,42 @@ Each take is ${TAKE_SECONDS_MIN}-${TAKE_SECONDS_MAX} seconds of speech, which is
     "mode"      — "${ON_CAMERA}" or "${VOICEOVER}"
     "text"      — what he says, verbatim
     "direction" — one short instruction for filming or delivery. Be practical and specific: "walking shot if you can", "energy up, this is the hook", "say this one slower", "look right at the lens for this line". Not "speak clearly".
+    "visualIntent" — OPTIONAL, VOICEOVER takes only. See below. Omit it entirely, or set it to null, for any take that does not need one.
+
+VISUAL INTENT — the sentences footage cannot show.
+Most takes play over B-roll of homes and streets, and that is right. But some sentences are not describing a place, they are explaining something: a relationship, a number, a comparison, a sequence, or a geography. Footage cannot show those. A drive-by clip of a house does not show what a tax bill is made of, and no shot of a street shows that one road rings another.
+
+THE RULE: if a sentence is explaining a relationship, a number, a comparison, a sequence, or a geography, say what visual would make it land. Otherwise leave it out and real footage plays.
+
+Be sparing. Most takes should have no visualIntent. Only about one voiceover take in four earns one, and a video that cuts to a graphic every thirty seconds stops feeling like a person who drove these roads. If you are unsure, leave it out — footage is a good answer.
+
+Use exactly one of these six types:
+
+"MAP" — any geography: a route, a boundary, a set of locations, an area.
+    "spec": {"places": ["Stone Oak", "Downtown"], "lines": ["1604", "281"], "title": "short label for the shot"}
+    Give the place and road names as you say them out loud. Only name places and roads in the San Antonio or Austin metro.
+
+"COMPARISON" — two or three things held against each other: neighborhoods, districts, options, before and after.
+    "spec": {"columns": [{"name": "Older inside the loop", "points": ["1970s build", "bigger lot"]}, {"name": "Newer outside", "points": ["2000s build", "more square footage"]}], "title": "..."}
+
+"NUMBER_BREAKDOWN" — one figure decomposed into its parts: a tax bill, a payment, closing costs, a budget.
+    "spec": {"rows": [{"label": "School district", "value": "1.24%"}, {"label": "County", "value": "0.28%"}], "total": "2.1% all in", "title": "..."}
+    Set "struck": true on a row that gets removed or waived, when the point is that it disappears.
+
+"LIST" — enumerated items worth seeing rather than only hearing: documents needed, steps, criteria.
+    "spec": {"items": ["Two years of W2s", "Certificate of Eligibility"], "title": "..."}
+
+"TIMELINE" — a sequence or process over time: a closing timeline, a market cycle, a build schedule.
+    "spec": {"steps": [{"label": "Offer accepted", "when": "day 0"}, {"label": "Option period ends", "when": "day 7"}], "title": "..."}
+
+"CALLOUT" — a single number or phrase that deserves the whole screen: a rate, a deadline, a threshold.
+    "spec": {"value": "41 days", "label": "median time on market", "title": "..."}
+
+VISUAL INTENT RULES:
+- NEVER on an ON_CAMERA take. Those show Peter, and there is nothing to replace.
+- Every number you put in a spec must be one you already say out loud in that take's text. Do not invent a figure for the graphic, and do not put a monthly payment figure in one — that ban covers visuals too.
+- Keep labels short. Under about 30 characters each; they are read off a screen in a few seconds, not studied.
+- The graphic supports the sentence, it does not repeat it. Do not paste the take's text into the spec.
 
 MODE RULES:
 - ON_CAMERA is for the hook, the section transitions, the soft CTA and the close. It is roughly ${Math.round(ON_CAMERA_SHARE * 100)}% of the runtime — that is the budget, keep to it.
@@ -325,7 +361,7 @@ JSON SAFETY — read this twice. Every one of these throws the whole script away
 Before you answer, check that every [ you opened has a matching ].
 
 Return ONLY valid JSON, no preamble and no code fences:
-{"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
+{"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, {"id": "s1t2", "mode": "${VOICEOVER}", "text": "...", "direction": "...", "visualIntent": {"type": "CALLOUT", "spec": {"value": "...", "label": "..."}}}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
 
 export function writerSystem({ voiceBlock = "", bannedBlock = buildBannedBlock() } = {}) {
   return buildWriterSystem() + bannedBlock + voiceBlock;
@@ -398,16 +434,42 @@ export function criticSystem() {
 
 // ─── flattening and guards ──────────────────────────────────────────────────
 
-/** Every spoken line in a script, flattened — what the guards and critic see. */
+/**
+ * Every spoken line in a script, flattened — what the guards and critic see.
+ *
+ * visualIntent CONTENT IS INCLUDED, and it has to be. The guards that run over
+ * this are the leak scanner and findMonthlyPaymentFigure, and both exist to
+ * stop specific strings reaching the audience: a gated development name, or a
+ * monthly payment figure that the entire close is built on withholding. A spec
+ * is not spoken, but it IS rendered onto the screen in 84px gold — so a spec
+ * excluded from this list is a hole straight through both guards, and the
+ * first sign of it would be the number sitting in the finished video.
+ */
 export function allScriptText(script) {
   const parts = [script?.title, script?.hook, script?.promise];
   for (const s of script?.sections || []) {
     parts.push(s.title, s.boundaryPull);
-    for (const t of s.takes || []) parts.push(t.text, t.direction);
+    for (const t of s.takes || []) parts.push(t.text, t.direction, ...visualIntentText(t.visualIntent));
   }
   parts.push(script?.softCta?.text, script?.softCta?.direction);
   parts.push(script?.close?.text, script?.close?.direction);
   return parts.filter((p) => typeof p === "string" && p.trim());
+}
+
+/**
+ * Every string anywhere inside a visualIntent, at any depth.
+ *
+ * Walks rather than reading known keys on purpose: the writer invents spec
+ * shapes, and a guard that only looked at `rows[].label` would miss a banned
+ * name the model put in `total`, `footnote`, or a key nobody anticipated.
+ */
+export function visualIntentText(intent, depth = 0) {
+  if (depth > 6 || intent == null) return [];
+  if (typeof intent === "string") return [intent];
+  if (typeof intent === "number") return [String(intent)];
+  if (Array.isArray(intent)) return intent.flatMap((v) => visualIntentText(v, depth + 1));
+  if (typeof intent === "object") return Object.values(intent).flatMap((v) => visualIntentText(v, depth + 1));
+  return [];
 }
 
 /** Just the spoken takes, in order. Used by the recording kit and the assembler. */
