@@ -581,6 +581,189 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-08",
+      "timestamp": "2026-08-08T14:23:55.139Z",
+      "pillar": "motivation_business",
+      "topic": "Why agents go broke after their best year (commission money habits)",
+      "hook": "The agents I watch quit in Texas usually had their best year right before.",
+      "closeType": "share",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Why agents go broke after their best year (commission money habits)",
+        "hook": "The agents I watch quit in Texas usually had their best year right before.",
+        "map": [
+          "The best year trap",
+          "Commission is not salary",
+          "Taxes nobody withholds",
+          "The 90 day lag",
+          "Budget off your worst month"
+        ],
+        "points": [
+          {
+            "title": "The Best Year Trap",
+            "body": [
+              "A big year changes what you spend. It does not promise another big year.",
+              "So the car, the office, the lifestyle all get set at a level one good stretch paid for."
+            ],
+            "loop": "The spending outlives the year."
+          },
+          {
+            "title": "Commission Is Not Salary",
+            "body": [
+              "One closing check is usually three months of work landing on a single day.",
+              "Spend it like a paycheck and you just spent a quarter of the year in three weeks."
+            ],
+            "loop": "And one bill is already waiting."
+          },
+          {
+            "title": "Nobody Withholds Your Taxes",
+            "body": [
+              "No employer takes anything out first. The whole check hits your account and none of it is fully yours.",
+              "I move a third into a separate account the day it lands."
+            ],
+            "loop": "The timing is what actually hurts."
+          },
+          {
+            "title": "Your Work Pays 90 Days Late",
+            "body": [
+              "The calls I make this week close in the spring. A quiet week today costs me nothing today.",
+              "It costs me a quarter from now, when I have forgotten why."
+            ],
+            "loop": "Your bills run on a different clock."
+          },
+          {
+            "title": "Run On Your Worst Month",
+            "body": [
+              "I set my fixed costs against my slowest month, not my average one.",
+              "Everything above that line is optional money, and it gets a job before it gets spent."
+            ],
+            "loop": "You find out in year three."
+          }
+        ],
+        "cta": {
+          "shareLine": "Send this to someone who just had their biggest month and already upgraded the car."
+        }
+      },
+      "scores": {
+        "clarity": 7,
+        "hook": 8,
+        "loops": 6,
+        "cta": 9,
+        "worst_problem": "The hook's word order creates a garden-path stumble ('The agents I watch quit in Texas') and never names what kind of agents, forcing a reread on the one slide that can't afford one.",
+        "fix": "Rewrite slide 1 as a clean subject-first sentence, e.g. 'Most real estate agents who quit in Texas had their best year right before they walked away.', and replace the restating loop 'The spending outlives the year' with a forward tease like 'Then the checks stop matching.'"
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 359735277,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-08T14:26:55.590Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7671666472585940238"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 359735279,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-08T14:26:55.677Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7491861996074708992"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 359735291,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-08T14:26:55.758Z",
+          "publicUrl": "https://www.instagram.com/p/DbyEwgXCjFj/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 359735317,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-08T14:26:55.841Z",
+          "publicUrl": "https://www.instagram.com/p/DbyEwAeCLbf/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 359735318,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-08T14:26:55.921Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7491861995458248704"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 359735333,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-08T14:26:56.004Z",
+          "publicUrl": "https://www.instagram.com/p/DbyEwNjij6P/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 359735337,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-08T14:26:56.085Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122112388443400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 359735339,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-08T14:26:56.166Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7491861994820714496"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-08T14:26:56.167Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
