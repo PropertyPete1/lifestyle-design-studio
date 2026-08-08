@@ -27,6 +27,7 @@ import {
   newRequestId,
   KIND_TOPIC_PICK,
   KIND_VIDEO_REVIEW,
+  isTestRequest,
 } from "../src/yt-approvals.js";
 
 const quiet = { warn: console.warn };
@@ -316,5 +317,59 @@ describe("the dashboard writes a BARE ARRAY — found on the first live round-tr
     // why the request half has to be merged back in rather than relied on alone.
     const log = normaliseApprovals(DASHBOARD_WRITE);
     assert.equal(decisionState(log, KIND_TOPIC_PICK).state, "none");
+  });
+});
+
+describe("TEST- requests are invisible to every scheduled job", () => {
+  // The smoke suite posts cards through the real webhook and taps their
+  // buttons, so the dashboard commits decisions for them exactly as it would
+  // for a real request. On 2026-08-06 a [TEST] card was approved and DID
+  // produce a real script and a real recording kit — the candidates were
+  // marked, the requestId was not, and the requestId is what the pipeline reads.
+  const req = (id, extra = {}) => ({
+    requestId: id,
+    kind: KIND_TOPIC_PICK,
+    requestedAt: "2026-08-08T10:00:00.000Z",
+    payload: {},
+    ...extra,
+  });
+
+  test("isTestRequest recognises the prefix on a record or a bare id", () => {
+    assert.equal(isTestRequest("TEST-topic_pick-2026-08-08-abcd"), true);
+    assert.equal(isTestRequest({ requestId: "TEST-anything" }), true);
+    assert.equal(isTestRequest("topic_pick-2026-08-08-abcd"), false);
+    assert.equal(isTestRequest({ requestId: "not-a-test" }), false);
+    assert.equal(isTestRequest(null), false);
+    assert.equal(isTestRequest({}), false);
+  });
+
+  test("a TEST- request is never returned as the latest of its kind", () => {
+    const log = {
+      requests: [
+        req("topic_pick-2026-08-08-real", { requestedAt: "2026-08-08T09:00:00.000Z" }),
+        req("TEST-topic_pick-2026-08-08-smoke", { requestedAt: "2026-08-08T23:00:00.000Z" }),
+      ],
+    };
+    assert.equal(latestRequestOfKind(log, KIND_TOPIC_PICK).requestId, "topic_pick-2026-08-08-real");
+  });
+
+  test("AN APPROVED TEST- REQUEST DOES NOT MAKE THE PIPELINE ACT", () => {
+    // The exact shape the dashboard commits after the smoke suite taps approve.
+    const log = {
+      requests: [
+        req("TEST-topic_pick-2026-08-08-smoke", { decision: "approve", selection: 1, decidedAt: "t" }),
+      ],
+    };
+    assert.deepEqual(decisionState(log, KIND_TOPIC_PICK), { state: "none" });
+  });
+
+  test("a log of nothing but TEST- requests reads as empty", () => {
+    const log = { requests: [req("TEST-a"), req("TEST-b", { decision: "approve" })] };
+    assert.equal(latestRequestOfKind(log, KIND_TOPIC_PICK), null);
+  });
+
+  test("real requests are completely unaffected", () => {
+    const log = { requests: [req("topic_pick-2026-08-08-real", { decision: "approve", decidedAt: "t" })] };
+    assert.equal(decisionState(log, KIND_TOPIC_PICK).state, "approved");
   });
 });

@@ -162,14 +162,45 @@ export function hasActed(record) {
 }
 
 /**
+ * Requests the pipeline must never act on.
+ *
+ * The dashboard smoke suite posts cards through the real approval webhook —
+ * that is the only way to prove a card type renders — and taps the buttons on
+ * them, because a card whose buttons are never pressed is not tested. The
+ * dashboard then commits a decision for that requestId exactly as it would for
+ * a real one, and yt-approvals.json gains a request that looks answered and
+ * ready to act on.
+ *
+ * If the poll picked one up it would write a script, spend the model budget,
+ * and deliver a recording kit for a video nobody asked for. That is not
+ * hypothetical: a [TEST] card on 2026-08-06 was approved and DID produce a real
+ * script and a real kit, and it took a deliberate cleanup to retire it. The
+ * candidates were marked; the requestId was not, and the requestId is the only
+ * part the pipeline reads.
+ *
+ * So the marker lives in the id itself. Anything a smoke run creates is invisible
+ * to every scheduled job, whatever decision the dashboard records against it.
+ */
+export const TEST_REQUEST_PREFIX = "TEST-";
+
+export function isTestRequest(record) {
+  const id = typeof record === "string" ? record : record?.requestId;
+  return typeof id === "string" && id.startsWith(TEST_REQUEST_PREFIX);
+}
+
+/**
  * The request this run should be looking at: the newest of its kind.
  *
  * Newest rather than oldest-unanswered, because a stale unanswered request is
  * exactly what a fresh brief supersedes. Peter ignoring last week's brief must
  * not wedge this week's.
+ *
+ * Smoke-test requests are filtered out here rather than at the call sites,
+ * because here is the one place every scheduled job passes through.
  */
 export function latestRequestOfKind(log, kind, { videoId = null } = {}) {
   const matches = (log?.requests || [])
+    .filter((r) => !isTestRequest(r))
     .filter((r) => r.kind === kind)
     .filter((r) => (videoId ? r.videoId === videoId : true))
     .sort((a, b) => String(a.requestedAt || "").localeCompare(String(b.requestedAt || "")));
