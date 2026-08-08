@@ -2752,6 +2752,26 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1gfkTew6WU3GZhwEC54qlIBoIjRW5hCuo/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "mindset_motivation",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-08T14:50:26"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-08T15:20:26"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-08T15:50:26"
+        }
+      ],
+      "timestamp": "2026-08-08T19:48:57.378Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
