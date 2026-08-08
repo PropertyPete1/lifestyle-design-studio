@@ -1,0 +1,13 @@
+{
+  "name": "dashboard-smoke",
+  "private": true,
+  "type": "module",
+  "description": "Black-box smoke tests against the DEPLOYED dashboard. Separate from auto-poster so Playwright is never a dependency of the posting path.",
+  "scripts": {
+    "test": "playwright test",
+    "install-browser": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

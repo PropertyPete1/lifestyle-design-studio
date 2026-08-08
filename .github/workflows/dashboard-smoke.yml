@@ -1,0 +1,62 @@
+name: Dashboard Smoke
+
+# Black-box checks against the DEPLOYED dashboard, to be run after any Manus
+# deploy. There is no dev server: the point is to test what actually shipped, at
+# the URL Peter actually opens. Anything that passes against a local build proves
+# nothing about production.
+#
+# READ-ONLY AGAINST REAL DATA. The only writes are TEST- prefixed approval cards,
+# which latestRequestOfKind filters out so no scheduled job can ever act on one,
+# and which the suite removes on the way out. Controls matching a destructive
+# pattern are inventoried and NOT clicked on real records.
+on:
+  workflow_dispatch:
+    inputs:
+      keep_fixtures:
+        description: 'Leave the TEST- cards in place afterwards (for eyeballing the UI)'
+        required: false
+        default: false
+        type: boolean
+
+# Nothing here commits.
+permissions:
+  contents: read
+
+jobs:
+  dashboard-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: dashboard-smoke
+        run: npm install
+      - name: Install Chromium
+        working-directory: dashboard-smoke
+        run: npx playwright install --with-deps chromium
+      - name: Run the smoke suite
+        working-directory: dashboard-smoke
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+          # Optional. Set these if the app is behind a login wall; the suite
+          # reports the gate rather than failing when they are absent.
+          DASHBOARD_USER: ${{ secrets.DASHBOARD_USER }}
+          DASHBOARD_PASS: ${{ secrets.DASHBOARD_PASS }}
+          KEEP_FIXTURES: ${{ github.event.inputs.keep_fixtures || 'false' }}
+        run: npx playwright test
+      # Screenshots and traces exist only for failures, so this is a no-op on a
+      # clean run — hence if-no-files-found: ignore.
+      - name: Upload screenshots and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-smoke-${{ github.run_id }}
+          path: |
+            dashboard-smoke/report/
+            dashboard-smoke/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
