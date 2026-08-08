@@ -27,6 +27,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { generateTTS, postProcessVoiceoverAudio } from "./voiceover.js";
 import { RESOLUTION } from "./yt-config.js";
+import { kenBurnsArgs } from "./yt-visual-broll.js";
 
 export const CANVAS = {
   "1080p": { w: 1920, h: 1080 },
@@ -315,9 +316,21 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       // Voiceover: B-roll for the picture, cloned voice (or his own) for the sound.
       const pieces = [];
       seg.broll.forEach((b, bi) => {
+        const piece = `${base}_b${bi}.mp4`;
+
+        // A generated map or card is a still, so it gets a slow push rather
+        // than the normalise-and-pillarbox path — it is already the right
+        // aspect and the right size, and running it through `scale` would only
+        // cost a resample.
+        if (b.generated) {
+          if (!existsSync(b.sourcePath)) return;
+          ffmpeg(kenBurnsArgs(b.sourcePath, piece, { seconds: b.seconds, dim, fps: FPS }));
+          pieces.push(piece);
+          return;
+        }
+
         const src = resolveBrollPath(b.driveFileId);
         if (!src) return;
-        const piece = `${base}_b${bi}.mp4`;
         // -stream_loop covers a clip shorter than its slot; the -t cut still
         // governs, so a 4s clip filling a 6s slot repeats rather than gapping.
         ffmpeg(normalizeArgs(src, piece, dim, { seconds: b.seconds, loop: true }));

@@ -185,9 +185,25 @@ function deconflict(labels, minGap = 46) {
     while (placed.some((p) => Math.abs(p.y - y) < minGap && Math.abs(p.x - l.x) < 300) && guard++ < 40) {
       y += minGap * 0.6;
     }
-    placed.push({ ...l, y });
+    // anchorY is where the thing actually IS; y is where its name had to go.
+    placed.push({ ...l, y, anchorY: l.y });
   }
   return placed;
+}
+
+/**
+ * A hairline from a marker to its displaced label.
+ *
+ * Deconfliction alone is not enough once places cluster. The northeast side of
+ * San Antonio puts Live Oak, Selma, Universal City, Schertz and Cibolo within a
+ * few miles of each other, and pushing five labels down to clear each other
+ * leaves a tidy column of names sitting nowhere near the dots they belong to —
+ * which is worse than an overlap, because it is legible and wrong. The leader
+ * costs one thin line and makes the pairing unambiguous.
+ */
+function leader(x, y, anchorY) {
+  if (Math.abs(y - anchorY) < 14) return "";
+  return `<path d="M${(x - 14).toFixed(1)},${anchorY.toFixed(1)} L${(x - 14).toFixed(1)},${(y - 10).toFixed(1)}" stroke="${ACCENT}" stroke-width="1.5" stroke-opacity="0.35" fill="none"/>`;
 }
 
 // ─── the map ────────────────────────────────────────────────────────────────
@@ -257,11 +273,12 @@ export function renderMapSvg(spec) {
       return labelPlate(l.x, l.y, l.text, { size: 44, fill: ACCENT, family: SERIF, weight: "bold", anchor: "middle" });
     }
     const strong = l.kind === "base" || l.kind === "landmark";
-    return labelPlate(l.x, l.y, l.text, {
+    return `${leader(l.x, l.y, l.anchorY)}
+  ${labelPlate(l.x, l.y, l.text, {
       size: strong ? 34 : 30,
       fill: strong ? ACCENT : C.ink,
       weight: strong ? "bold" : "normal",
-    });
+    })}`;
   });
 
   const title = spec.title

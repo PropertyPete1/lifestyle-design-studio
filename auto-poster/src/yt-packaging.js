@@ -69,7 +69,21 @@ export const DEFAULT_KEYWORD = "MATH";
  * administrative goes below the chapters. A description that opens with a
  * phone number wastes the only lines most people read.
  */
-export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig() }) {
+/**
+ * Credit for map data, emitted only when a map was actually drawn.
+ *
+ * The geometry is Census TIGER/Line and public domain, so this is a courtesy
+ * rather than a licence condition — see longform/probe/MAP-LICENSING.md. It is
+ * conditional on `mapsUsed` because a standing credit line that is sometimes
+ * false is worse than no credit at all, and because the fallback source is
+ * OpenStreetMap, where the credit IS a condition and the wording differs.
+ */
+export const MAP_CREDITS = {
+  tiger: "Maps in this video were drawn from US Census Bureau TIGER/Line® geographic data, which is in the public domain.",
+  osm: "Maps in this video contain data from OpenStreetMap, © OpenStreetMap contributors, available under the Open Database License. https://www.openstreetmap.org/copyright",
+};
+
+export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig(), mapsUsed = false, mapSource = "tiger" }) {
   const missing = [];
   const parts = [];
 
@@ -104,6 +118,18 @@ export function buildDescription({ hook, promise, chapters = [], keyword = DEFAU
 
   parts.push("");
   parts.push("I'm a licensed Realtor in Texas working San Antonio and Austin.");
+
+  if (mapsUsed) {
+    const credit = MAP_CREDITS[mapSource];
+    if (credit) {
+      parts.push("");
+      parts.push(credit);
+    } else {
+      // An unknown source is a wiring mistake, and silently publishing an
+      // uncredited map is the one outcome worth failing loudly for.
+      missing.push(`map attribution for unknown source "${mapSource}"`);
+    }
+  }
 
   return { text: parts.join("\n").trim(), missing };
 }
@@ -361,6 +387,7 @@ const MAX_RETRIES = 2;
  * @param {object} opts.topic     the approved brief candidate
  * @param {object} opts.script    the written script
  * @param {Array}  opts.chapters  from buildChapters
+ * @param {boolean} opts.mapsUsed whether a generated map reached the timeline
  */
 export async function buildPackaging({
   topic,
@@ -369,6 +396,8 @@ export async function buildPackaging({
   keyword = DEFAULT_KEYWORD,
   maxRetries = MAX_RETRIES,
   modelCall = callModel,
+  mapsUsed = false,
+  mapSource = "tiger",
 } = {}) {
   if (!topic?.title) throw new Error("buildPackaging requires a topic with a title");
 
@@ -382,6 +411,8 @@ export async function buildPackaging({
       promise: script?.promise,
       chapters,
       keyword,
+      mapsUsed,
+      mapSource,
     });
     const pkg = {
       title,

@@ -23,6 +23,7 @@
  */
 
 import { ON_CAMERA, VOICEOVER } from "./yt-script.js";
+import { classifyTake, FOOTAGE, MAP, INFOGRAPHIC } from "./yt-visual-classify.js";
 
 /** How long one B-roll clip holds the screen before cutting. */
 export const BROLL_SEGMENT_SECONDS = 6;
@@ -103,9 +104,10 @@ function pickClip(pool, usedInVideo, usedRecently) {
  * @param {Map|object} recordings takeId -> { path, durationSeconds } for Peter's clips
  * @param {Array} brollPool       [{ id, name, durationSeconds, contentHash }]
  * @param {Set}   usedRecently    content hashes spent on recent videos
+ * @param {Array} places          gazetteer for the market, for visual classification
  * @returns {{ segments, totalSeconds, missingTakes, brollExhausted, stats }}
  */
-export function planTimeline(script, recordings, brollPool = [], { usedRecently = new Set() } = {}) {
+export function planTimeline(script, recordings, brollPool = [], { usedRecently = new Set(), places = [] } = {}) {
   const takes = orderedTakes(script);
   const get = (id) => (recordings instanceof Map ? recordings.get(id) : recordings?.[id]);
 
@@ -144,6 +146,12 @@ export function planTimeline(script, recordings, brollPool = [], { usedRecently 
     const { segments: broll, exhausted } = allocateBroll(seconds, brollPool, { usedInVideo, usedRecently });
     if (exhausted) brollExhausted = true;
 
+    // Whether this narration would be better served by a drawing than by
+    // footage. Recorded on the segment, acted on later: the planner's job is to
+    // say what each segment IS, and yt-visual-broll.js decides how many of
+    // those opinions the video can afford.
+    const visual = classifyTake(take.text, { places });
+
     segments.push({
       kind: "voiceover",
       takeId: take.id,
@@ -154,6 +162,9 @@ export function planTimeline(script, recordings, brollPool = [], { usedRecently 
       seconds: round(seconds),
       text: take.text,
       broll,
+      visual: visual.kind,
+      visualScore: visual.score,
+      visualSpec: visual.spec,
     });
     voiceoverSeconds += seconds;
   }
@@ -171,6 +182,8 @@ export function planTimeline(script, recordings, brollPool = [], { usedRecently 
       onCameraShare: totalSeconds > 0 ? round(onCameraSeconds / totalSeconds) : 0,
       brollClipsUsed: usedInVideo.size,
       estimatedMinutes: round(totalSeconds / 60),
+      mapCandidates: segments.filter((s) => s.visual === MAP).length,
+      infographicCandidates: segments.filter((s) => s.visual === INFOGRAPHIC).length,
     },
   };
 }

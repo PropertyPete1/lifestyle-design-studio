@@ -2,14 +2,16 @@
   "_comment": "Label anchors for the San Antonio map. Two provenances, marked per entry — see longform/probe/MAP-LICENSING.md for why these are hand-authored rather than derived.",
   "_provenance": {
     "census": "Centroid straight from the Census TIGERweb Places layer (CENTLON/CENTLAT). Public domain. Exact.",
-    "hand": "Hand-placed. The Census does not carry these: neighbourhoods are not incorporated places, and Randolph, Fort Sam and BAMC are inside one merged 'Joint Base San Antonio' polygon. Accurate to a few hundred metres, which is what a stylized map needs. The map-geometry test asserts each of these falls on the correct side of the ring it is described against, so a bad coordinate fails the suite rather than shipping.",
-    "note": "'Medical Center' here is the South Texas Medical Center district, not a military installation."
+    "geocoded": "A real street address run through the Census geocoder (Public_AR_Current). Public domain, and authoritative to the building.",
+    "hand": "Hand-placed. The Census does not carry these: neighbourhoods are not incorporated places, and Randolph, Fort Sam and BAMC sit inside one merged 'Joint Base San Antonio' polygon. Accurate to a few hundred metres, which is what a stylized map needs. The map-geometry test asserts each falls on the correct side of the ring it is described against, so a bad coordinate fails the suite rather than shipping.",
+    "note": "'Medical Center' here is the South Texas Medical Center district, not a military installation.",
+    "_finding": "Two places STRADDLE Loop 410 rather than sitting cleanly inside it, which the geometry test caught. Castle Hills is a small city the loop runs through, so its centroid lands ~250m outside. The Medical Center (geocoded from 7703 Floyd Curl Dr) sits ~1.9km NORTH of the loop — outside it. The video-1 script says the Medical Center is 'inside Loop 410'; the data disagrees, and a map drawn from this file would visibly contradict that line. Flagged for Peter rather than silently fudged."
   },
   "places": [
-    { "id": "downtown",      "label": "Downtown",        "lon": -98.4936, "lat": 29.4241, "kind": "anchor",       "source": "hand" },
-    { "id": "medical_center","label": "Medical Center",  "lon": -98.5760, "lat": 29.5090, "kind": "landmark",     "source": "hand" },
+    { "id": "downtown",      "label": "Downtown",        "lon": -98.4947, "lat": 29.4248, "kind": "anchor",       "source": "geocoded" },
+    { "id": "medical_center","label": "Medical Center",  "lon": -98.5722, "lat": 29.5061, "kind": "landmark",     "source": "geocoded" },
     { "id": "fort_sam",      "label": "Fort Sam",        "lon": -98.4400, "lat": 29.4600, "kind": "base",         "source": "hand" },
-    { "id": "bamc",          "label": "BAMC",            "lon": -98.4260, "lat": 29.4570, "kind": "landmark",     "source": "hand" },
+    { "id": "bamc",          "label": "BAMC",            "lon": -98.4170, "lat": 29.4595, "kind": "landmark",     "source": "geocoded" },
     { "id": "randolph",      "label": "Randolph",        "lon": -98.2788, "lat": 29.5302, "kind": "base",         "source": "census" },
     { "id": "lackland",      "label": "Lackland",        "lon": -98.6179, "lat": 29.3866, "kind": "base",         "source": "census" },
 

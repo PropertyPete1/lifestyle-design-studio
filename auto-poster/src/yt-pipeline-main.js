@@ -56,6 +56,8 @@ import {
 import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
 import { generateNarration, renderTimeline, syntheticNarrationUsed } from "./yt-assemble.js";
+import { applyGeneratedVisuals } from "./yt-visual-broll.js";
+import { loadMarket } from "./yt-map-render.js";
 import { buildPackaging } from "./yt-packaging.js";
 import { uploadPrivate, requestReview } from "./yt-publish.js";
 import {
@@ -419,8 +421,27 @@ async function buildFromRecordings(approvals, record) {
     if (clip) recordings[m.takeId] = { path: clip.localPath || null, durationSeconds: clip.durationSeconds };
   }
 
+  /**
+   * The market's gazetteer, or nothing.
+   *
+   * A market with no vendored geometry is not an error — it means that market
+   * never gets a map, every take stays FOOTAGE, and the video is exactly what
+   * it would have been before this feature existed.
+   */
+  function placesFor(market) {
+    try {
+      return loadMarket(market).places;
+    } catch {
+      console.log(`[YTPipeline] no map geometry for "${market}" — visuals stay footage-only`);
+      return [];
+    }
+  }
+
   const brollPool = await brollFor(result.market);
-  const plan = planTimeline(script, recordings, brollPool, { usedRecently: recentBrollHashes(videoLog) });
+  const plan = planTimeline(script, recordings, brollPool, {
+    usedRecently: recentBrollHashes(videoLog),
+    places: placesFor(result.market),
+  });
   if (plan.missingTakes.length > 0) {
     console.log(`::warning::plan is missing ${plan.missingTakes.length} on-camera take(s) — not rendering`);
     return;
@@ -439,13 +460,29 @@ async function buildFromRecordings(approvals, record) {
     `[YTPipeline] synthetic narration in this render: ${syntheticNarration}` +
       ` — disclosure ${syntheticNarration ? "REQUIRED" : "not required"}`
   );
-  const chapters = buildChapters(plan, script);
-  const rendered = await renderTimeline(plan, { workDir, resolveBrollPath, resolution: RESOLUTION });
+  // Generated visuals go in AFTER narration, because narration is what sets
+  // each segment's final length and the 30% cap is a share of that length.
+  // Selecting against the pre-TTS estimate would spend a budget that does not
+  // exist yet.
+  const withVisuals = await applyGeneratedVisuals(plan, { workDir, market: result.market });
+  const gen = withVisuals.generated;
+  console.log(
+    `[YTPipeline] generated visuals: ${gen.renderedCount} rendered ` +
+      `(${gen.usedSeconds}s of a ${gen.budgetSeconds}s budget, ${Math.round(gen.share * 100)}% of B-roll), ` +
+      `${gen.candidateCount} candidates, ${gen.skippedForCap} skipped for the cap`
+  );
+  for (const f of gen.failures) console.log(`::warning::visual for take ${f.takeId} fell back to footage — ${f.reason}`);
+
+  const chapters = buildChapters(withVisuals, script);
+  const rendered = await renderTimeline(withVisuals, { workDir, resolveBrollPath, resolution: RESOLUTION });
 
   const packaging = await buildPackaging({
     topic: { title: result.selectedTitle, query: result.query, market: result.market, intent: result.intent },
     script,
     chapters,
+    // Only true when a map actually reached the timeline, so the credit line
+    // never claims something the video does not contain.
+    mapsUsed: gen.rendered.some((r) => r.kind === "map"),
   });
 
   const videoId = videoIdFor(record.requestId);
