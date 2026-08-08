@@ -237,6 +237,13 @@ jobs:
         if: github.event.inputs.dry_run_mode == 'recordings'
         working-directory: auto-poster
         env:
+          # MUST match the pipeline job. The dry run's whole purpose is to
+          # predict what the real build will do, and takesToRecord() keys off
+          # this — without it the dry run expects 12 on-camera takes while the
+          # build expects all 36, so it passes with every voiceover take
+          # missing and the build then fails. The header of takesToRecord
+          # describes this exact disagreement happening once already.
+          YT_NARRATION_MODE: peter
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -247,6 +254,13 @@ jobs:
         env:
           # DELIBERATELY NO METRICOOL CREDENTIALS. The dry run cannot upload
           # because it has nothing to upload with.
+          # MUST match the pipeline job. The dry run's whole purpose is to
+          # predict what the real build will do, and takesToRecord() keys off
+          # this — without it the dry run expects 12 on-camera takes while the
+          # build expects all 36, so it passes with every voiceover take
+          # missing and the build then fails. The header of takesToRecord
+          # describes this exact disagreement happening once already.
+          YT_NARRATION_MODE: peter
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -285,6 +299,13 @@ jobs:
           # LIVE: sends a real recording kit to the dashboard and Peter's inbox.
           I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          YT_NARRATION_MODE: peter
+          # MUST match the pipeline job. The dry run's whole purpose is to
+          # predict what the real build will do, and takesToRecord() keys off
+          # this — without it the dry run expects 12 on-camera takes while the
+          # build expects all 36, so it passes with every voiceover take
+          # missing and the build then fails. The header of takesToRecord
+          # describes this exact disagreement happening once already.
           YT_NARRATION_MODE: peter
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
