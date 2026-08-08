@@ -746,6 +746,62 @@ function openerOf(text) {
   return String(text ?? "").trim().replace(/^["'“”‘’\-—–(\[]+\s*/, "");
 }
 
+
+/**
+ * Discourse markers a take can lose without losing meaning.
+ *
+ * "So the number that matters is the second one" minus "So" is the same
+ * sentence, standing alone — which is the entire requirement. The back-
+ * reference openers ("Which...", "That's why...") are NOT here: stripping
+ * them leaves a sentence pointing at nothing, and those takes genuinely need
+ * rewriting.
+ */
+const STRIPPABLE_OPENER = /^(so|and|but|or|plus|also|then|anyway|besides|however|meanwhile|therefore|nor)[,\s]+/i;
+
+/**
+ * Strip repairable connective openers instead of regenerating the script.
+ *
+ * THE COST THIS REMOVES, measured on run 31283932043: two of three topics
+ * produced no script at all, and the killing gate was this one — the budget
+ * topic burned attempts on 5, then 1, then 1 connective openers; the schools
+ * topic died the same way. Each rejection threw away a ~700-second generation
+ * over, in the end, ONE take of thirty that began with "Then". Same class as
+ * repairTitle: the most expensive possible response to the cheapest possible
+ * problem.
+ *
+ * The repair is conservative: strip the marker, re-test the opening, and if it
+ * STILL reads as connective (e.g. "And that's why..." -> "that's why..."), put
+ * the original back and let it regenerate — that take really does lean on its
+ * neighbour. A repaired take must also still clear the length floor.
+ */
+export function repairConnectiveOpeners(script) {
+  const repaired = [];
+  const fix = (take) => {
+    const text = String(take?.text || "");
+    if (!STRIPPABLE_OPENER.test(text)) return take;
+
+    const stripped = text.replace(STRIPPABLE_OPENER, "");
+    const recapped = stripped.charAt(0).toUpperCase() + stripped.slice(1);
+
+    // Still connective after the strip, or now too short to be a take — the
+    // repair did not work; hand it back for regeneration untouched.
+    const stillBad = CONNECTIVE_OPENER_PATTERNS.some((re) => re.test(recapped));
+    const words = recapped.split(/\s+/).filter(Boolean).length;
+    if (stillBad || words < 15) return take;
+
+    repaired.push({ id: take.id || null, from: text.slice(0, 40), to: recapped.slice(0, 40) });
+    return { ...take, text: recapped };
+  };
+
+  const out = {
+    ...script,
+    sections: (script.sections || []).map((s) => ({ ...s, takes: (s.takes || []).map(fix) })),
+  };
+  if (script.softCta) out.softCta = fix(script.softCta);
+  if (script.close) out.close = fix(script.close);
+  return { script: out, repaired };
+}
+
 /** Every take that opens with connective tissue, in any mode. */
 export function findConnectiveOpeners(script) {
   const found = [];
@@ -943,6 +999,18 @@ export async function generateScript({
     // capped authenticity at 6 for it. A rule a regex can check should never
     // depend on the critic noticing: it gets three chances, this catches every
     // one and hands back the exact take ids to fix.
+    // Repair before rejecting: a leading "So," costs one word to fix and a
+    // whole generation to regenerate. Only what the repair cannot fix — the
+    // genuine back-references — still forces the retry.
+    const repair = repairConnectiveOpeners(guarded.script);
+    if (repair.repaired.length > 0) {
+      guarded.script = repair.script;
+      console.log(
+        `[YTScript] attempt ${attempt + 1}: stripped connective openers from ` +
+          `${repair.repaired.map((r) => r.id || "?").join(", ")} — repaired, not regenerated`
+      );
+    }
+
     const connective = findConnectiveOpeners(guarded.script);
     if (connective.length > 0) {
       const list = connective.map((c) => `${c.id || "?"} ("${c.opener}...")`).join(", ");

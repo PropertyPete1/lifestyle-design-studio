@@ -123,6 +123,10 @@ async function runTopic(name, topic) {
   const rendered = [];
   const seen = new Set();
   for (const r of requests) {
+    // FOOTAGE is a choice, not a graphic — there is nothing to render. It was
+    // counted here once and produced "no card layout for type FOOTAGE" as a
+    // phantom QC failure on an otherwise clean run.
+    if (r.type === "FOOTAGE") continue;
     if (seen.has(r.type)) continue;
     seen.add(r.type);
     try {

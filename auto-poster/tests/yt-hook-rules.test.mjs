@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   hookOpensQualified, findPreamble, validateScript, scoresPass, SCORE_AXES,
-  writerSystem, criticSystem, PASS_MARK,
+  writerSystem, criticSystem, PASS_MARK, repairConnectiveOpeners, findConnectiveOpeners,
 } from "../src/yt-script.js";
 
 /** A minimal script that clears every structural check. */
@@ -131,6 +131,62 @@ describe("the seven critic axes", () => {
       "YOUTUBE HAS NO DIRECT MESSAGES",
     ]) {
       assert.ok(w.includes(needle), `writer prompt missing: ${needle}`);
+    }
+  });
+});
+
+describe("repairConnectiveOpeners — repair beats regeneration", () => {
+  const take = (id, text) => ({ id, mode: "VOICEOVER", text, direction: "d" });
+  const LONG = (t) => `${t} the appraisal district mails a number in April and the protest clock starts running for everyone.`;
+
+  test("strips pure discourse markers and the take then passes the gate", () => {
+    const { script, repaired } = repairConnectiveOpeners({
+      sections: [{ takes: [take("a", LONG("So")), take("b", LONG("Then")), take("c", LONG("And"))] }],
+    });
+    assert.equal(repaired.length, 3);
+    for (const t of script.sections[0].takes) {
+      assert.match(t.text, /^The appraisal/, t.id);
+    }
+    assert.deepEqual(findConnectiveOpeners(script), []);
+  });
+
+  test("a back-reference is NOT repairable and stays for regeneration", () => {
+    // "And that's why..." minus "And" still points at the previous take.
+    const { script, repaired } = repairConnectiveOpeners({
+      sections: [{ takes: [take("a", LONG("And that's why")), take("b", LONG("Which brings me to"))] }],
+    });
+    assert.equal(repaired.length, 0);
+    assert.equal(findConnectiveOpeners(script).length, 2, "both must still be flagged");
+  });
+
+  test("a repair that would drop the take under the length floor is refused", () => {
+    const short = { sections: [{ takes: [take("a", "So fifteen words is the floor and this take sits right on it exactly here now.")] }] };
+    const words = short.sections[0].takes[0].text.split(/\s+/).length;
+    assert.equal(words, 16, "fixture: 16 words, 15 after stripping");
+    const { repaired } = repairConnectiveOpeners(short);
+    assert.equal(repaired.length, 1, "15 words after the strip still clears the floor");
+
+    const shorter = { sections: [{ takes: [take("a", "So fourteen words is under the floor once the marker comes off this take.")] }] };
+    assert.equal(repairConnectiveOpeners(shorter).repaired.length, 0, "14 words after the strip is refused");
+  });
+
+  test("clean takes are untouched, softCta and close are covered", () => {
+    const clean = LONG("The");
+    const { script, repaired } = repairConnectiveOpeners({
+      sections: [{ takes: [take("a", clean)] }],
+      softCta: take("cta", LONG("So")),
+      close: take("close", LONG("Plus")),
+    });
+    assert.equal(script.sections[0].takes[0].text, clean);
+    assert.deepEqual(repaired.map((r) => r.id), ["cta", "close"]);
+  });
+
+  test("this run's actual killers would have been saved", () => {
+    // Run 31283932043: budget died on s2t3 ("Then..."), schools on
+    // s3t6 ("And...") + s4t5 ("So...") — every one a strippable marker.
+    for (const opener of ["Then", "And", "So"]) {
+      const { repaired } = repairConnectiveOpeners({ sections: [{ takes: [take("x", LONG(opener))] }] });
+      assert.equal(repaired.length, 1, `"${opener}" should be repairable`);
     }
   });
 });
