@@ -86,15 +86,12 @@ test("the dashboard loads at all, and says whether it wants a login", async ({ p
   expect(res.status(), `root returned ${res.status()}`).toBeLessThan(400);
 
   await page.waitForLoadState("networkidle").catch(() => {});
-  if (await looksLikeAuthGate(page)) {
-    note(
-      "auth gate", "INFO",
-      "a login wall is in front of the app — set DASHBOARD_USER / DASHBOARD_PASS " +
-        "secrets and the suite can go past it. Everything below tests only what is public."
-    );
-  } else {
-    note("auth gate", "PASS", "the app renders without a login");
-  }
+  const gated = await looksLikeAuthGate(page);
+  note(
+    "past the passcode wall", gated ? "FAIL" : "PASS",
+    gated ? "still looking at a login screen — the saved session did not stick" : "the app itself is rendering"
+  );
+  expect(gated, "the suite is still outside the passcode wall; everything below would test the login screen").toBe(false);
   note("root console errors", errors.length ? "FAIL" : "PASS", errors.slice(0, 3).join(" | ") || "none");
   expect(errors, `console errors on /: ${errors.join(" | ")}`).toEqual([]);
 });
@@ -163,10 +160,15 @@ test("no dead controls — safe buttons respond, destructive ones are only inven
   for (const { name, index } of safe.slice(0, 20)) {
     const b = buttons.nth(index);
     if (!(await b.isEnabled().catch(() => false))) continue;
-    const before = `${page.url()}::${(await page.textContent("body").catch(() => "")).length}`;
+    // innerHTML, not textContent. "Show passcode" flips an input's type
+    // attribute and changes no visible text at all, so a text-length signature
+    // reported a working control as dead on the first run.
+    const sig = async () =>
+      `${page.url()}::${((await page.innerHTML("body").catch(() => "")) || "").length}`;
+    const before = await sig();
     await b.click({ timeout: 5000 }).catch(() => {});
     await page.waitForTimeout(400);
-    const after = `${page.url()}::${(await page.textContent("body").catch(() => "")).length}`;
+    const after = await sig();
     if (before === after) dead.push(name);
     if (page.url() !== "/" && !page.url().endsWith("/")) {
       await page.goto("/", { waitUntil: "networkidle" }).catch(() => {});

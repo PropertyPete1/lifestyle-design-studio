@@ -1,0 +1,5 @@
+# A live authenticated session. Never commit, never upload as an artifact.
+.auth/
+node_modules/
+report/
+test-results/

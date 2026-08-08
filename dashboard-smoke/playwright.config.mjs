@@ -9,7 +9,6 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: ".",
-  testMatch: "**/*.spec.mjs",
   // One worker. Several of these checks post to a shared webhook and clean up
   // after themselves; running them in parallel would have them deleting each
   // other's fixtures.
@@ -22,13 +21,31 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never", outputFolder: "report" }]],
   use: {
     baseURL: process.env.DASHBOARD_URL,
-    // Screenshots and traces on failure only — this runs against production and
-    // a passing run should leave nothing behind worth storing.
-    screenshot: "only-on-failure",
-    trace: "retain-on-failure",
-    video: "off",
     ignoreHTTPSErrors: false,
     actionTimeout: 10_000,
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      // Runs first and hands its session to the suite. Screenshots and traces
+      // are OFF here on purpose: a failure screenshot of a login form is a
+      // screenshot of a filled passcode field, and these artifacts are uploaded.
+      name: "setup",
+      testMatch: /auth\.setup\.mjs/,
+      use: { ...devices["Desktop Chrome"], screenshot: "off", trace: "off", video: "off" },
+    },
+    {
+      name: "chromium",
+      testMatch: /smoke\.spec\.mjs/,
+      dependencies: ["setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: ".auth/state.json",
+        // Failures only — this runs against production and a clean run should
+        // leave nothing behind worth storing.
+        screenshot: "only-on-failure",
+        trace: "retain-on-failure",
+        video: "off",
+      },
+    },
+  ],
 });

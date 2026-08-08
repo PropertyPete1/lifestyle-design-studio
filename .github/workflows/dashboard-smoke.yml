@@ -42,9 +42,9 @@ jobs:
         env:
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
-          # Optional. Set these if the app is behind a login wall; the suite
-          # reports the gate rather than failing when they are absent.
-          DASHBOARD_USER: ${{ secrets.DASHBOARD_USER }}
+          # The dashboard is behind a single passcode field, no username. The
+          # setup project signs in once and hands the session to the suite; it
+          # never screenshots or traces, so the value cannot reach an artifact.
           DASHBOARD_PASS: ${{ secrets.DASHBOARD_PASS }}
           KEEP_FIXTURES: ${{ github.event.inputs.keep_fixtures || 'false' }}
         run: npx playwright test
@@ -58,5 +58,6 @@ jobs:
           path: |
             dashboard-smoke/report/
             dashboard-smoke/test-results/
+          # .auth/state.json is deliberately NOT uploaded — it is a live session.
           if-no-files-found: ignore
           retention-days: 14
