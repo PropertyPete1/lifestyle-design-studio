@@ -22,8 +22,47 @@ import { RECORDINGS_ROOT } from "./yt-config.js";
 
 const TRANSCRIBE_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "..", "scripts", "transcribe-take.py");
 
-/** Clips longer than this are not takes — a 10-30s take never runs 10 minutes. */
+/**
+ * Clips longer than this are not takes — a 10-30s take never runs 10 minutes.
+ *
+ * Only fires when Drive filled in videoMediaMetadata, which it does not do for
+ * a clip it has mistyped (see MEDIA_EXTENSIONS). Those get transcribed and then
+ * fail to match, which is the slow path to the same answer, not a wrong one.
+ */
 const MAX_CLIP_SECONDS = 600;
+
+/**
+ * Extensions that mean "this is a take".
+ *
+ * The name decides, not Drive's mimeType. The dashboard has already uploaded a
+ * valid mp4 typed as text/plain, and a mimeType filter drops that file without
+ * a word — which reads downstream as "Peter has not recorded that take yet",
+ * the one wrong answer this module exists to avoid. The extension is what Peter
+ * controls and what survives a bad upload.
+ */
+const MEDIA_EXTENSIONS = new Set([
+  "mp4", "mov", "m4v", "avi", "mkv", "webm", "mpg", "mpeg", "3gp", "3g2", "wmv", "flv",
+  "m4a", "mp3", "wav", "aac", "flac", "ogg", "oga", "opus", "caf", "aiff", "aif", "wma",
+]);
+
+/**
+ * Is this Drive file one of Peter's takes?
+ *
+ * Extension first, so a mistyped upload still counts. Drive's mimeType is the
+ * fallback for the opposite case — a phone upload that arrived with the type
+ * intact and no extension on the name.
+ *
+ * Google's own doc types are always out: alt=media cannot fetch bytes for them,
+ * so admitting one buys a download failure later instead of a skip now.
+ */
+export function looksLikeRecording(file) {
+  const mimeType = file?.mimeType || "";
+  if (mimeType.startsWith("application/vnd.google-apps")) return false;
+  const name = file?.name || "";
+  const dot = name.lastIndexOf(".");
+  if (dot > 0 && MEDIA_EXTENSIONS.has(name.slice(dot + 1).toLowerCase())) return true;
+  return mimeType.startsWith("video/") || mimeType.startsWith("audio/");
+}
 
 async function driveFetch(url, accessToken, opts = {}) {
   const res = await fetch(url, {
@@ -91,14 +130,19 @@ export async function findRecordingsFolder(requestId, accessToken = null) {
   return findFolder(token, requestId, rootId);
 }
 
-/** Every video/audio file Peter has put in the folder, newest last. */
+/**
+ * Every recording Peter has put in the folder, newest last.
+ *
+ * Drive is asked for everything in the folder and the filtering happens here,
+ * because the query language can only filter on the mimeType we do not trust.
+ */
 export async function listRecordings(folderId, accessToken = null) {
   const token = accessToken || (await getAccessToken());
   const files = [];
   let pageToken;
   do {
     const params = new URLSearchParams({
-      q: `'${folderId}' in parents and trashed = false and (mimeType contains 'video/' or mimeType contains 'audio/')`,
+      q: `'${folderId}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
       fields: "nextPageToken,files(id,name,mimeType,size,createdTime,modifiedTime,videoMediaMetadata)",
       pageSize: "200",
       orderBy: "createdTime",
@@ -106,7 +150,10 @@ export async function listRecordings(folderId, accessToken = null) {
     if (pageToken) params.set("pageToken", pageToken);
     const res = await driveFetch(`https://www.googleapis.com/drive/v3/files?${params}`, token);
     const data = await res.json();
-    files.push(...(data.files || []));
+    for (const file of data.files || []) {
+      if (looksLikeRecording(file)) files.push(file);
+      else console.log(`[Ingest] ignoring ${file.name} (${file.mimeType}) — not a recording`);
+    }
     pageToken = data.nextPageToken;
   } while (pageToken);
   return files;
