@@ -32,6 +32,36 @@ const DESTRUCTIVE = /approve|reject|publish|delete|remove|send|upload|post now|c
 /** Console noise that is not a defect. Third-party embeds, favicons, cookie frames. */
 const IGNORABLE_CONSOLE = /favicon|third-party cookie|Download the React DevTools|\[vite\]|sourcemap/i;
 
+
+/**
+ * The app's routes, discovered rather than assumed.
+ *
+ * The first authenticated run found seven: Deliveries, Trial, Approvals,
+ * LinkedIn, Performance, Rotation, Video. Hardcoding those would break the
+ * moment a tab is renamed, which is exactly the coupling a black-box suite is
+ * supposed to avoid.
+ */
+async function routes(page) {
+  const found = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('a[href^="/"], [role="tab"], nav a'))
+      .map((a) => ({ href: a.getAttribute("href"), label: (a.textContent || "").trim().slice(0, 40) }))
+      .filter((x) => x.href && !x.href.startsWith("//") && !/^\/(api|_)/.test(x.href))
+  );
+  return [...new Map(found.map((h) => [h.href, h])).values()];
+}
+
+/** Go to the tab whose label matches, and wait for it to actually paint. */
+async function gotoTab(page, pattern) {
+  const all = await routes(page);
+  const hit = all.find((r) => pattern.test(r.label) || pattern.test(r.href));
+  if (!hit) return null;
+  await page.goto(hit.href, { waitUntil: "networkidle" });
+  await page
+    .waitForFunction(() => (document.body.innerText || "").trim().length > 100, null, { timeout: 10_000 })
+    .catch(() => {});
+  return hit;
+}
+
 const findings = [];
 const note = (check, status, detail) => {
   findings.push({ check, status, detail });
@@ -104,12 +134,7 @@ test("every tab loads without console errors", async ({ page }) => {
 
   // Discover navigation rather than assuming it. Internal links and anything
   // with a tab role, de-duplicated by destination.
-  const hrefs = await page.evaluate(() =>
-    Array.from(document.querySelectorAll('a[href^="/"], [role="tab"], nav a'))
-      .map((a) => ({ href: a.getAttribute("href"), label: (a.textContent || "").trim().slice(0, 40) }))
-      .filter((x) => x.href && !x.href.startsWith("//") && !/^\/(api|_)/.test(x.href))
-  );
-  const unique = [...new Map(hrefs.map((h) => [h.href, h])).values()].slice(0, 15);
+  const unique = (await routes(page)).slice(0, 15);
 
   if (unique.length === 0) {
     note("tab discovery", "INFO", "no internal nav links found — the app may be a single view or behind auth");
@@ -200,18 +225,46 @@ test("each approval card type renders from a TEST- payload", async ({ page }) =>
     note(`POST ${c.label}`, res.ok ? "PASS" : "FAIL", `HTTP ${res.status}${res.ok ? "" : ` — ${res.body}`}`);
   }
 
-  // Give the dashboard a moment to persist, then look for each one.
+  // Give the dashboard a moment to persist before looking.
   await page.goto("/", { waitUntil: "networkidle" });
-  await page.waitForTimeout(2000);
-  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(3000);
+
+  // SEARCH EVERY TAB, AND SAY WHICH ONE IT WAS ON.
+  //
+  // The previous run asserted against the root view alone and reported four
+  // failures, which proved only that cards do not live on the root — the
+  // Approvals tab is a separate route. A card on the wrong tab is a different
+  // problem from a card that does not exist, and reporting them the same way
+  // would have sent a false alarm to Manus.
+  const all = await routes(page);
+  const searchOrder = [
+    ...all.filter((r) => /approval/i.test(r.label)),
+    ...all.filter((r) => !/approval/i.test(r.label)),
+    { href: "/", label: "root" },
+  ];
+
+  const pageText = new Map();
+  for (const r of searchOrder) {
+    await page.goto(r.href, { waitUntil: "networkidle" }).catch(() => {});
+    await page
+      .waitForFunction(() => (document.body.innerText || "").trim().length > 100, null, { timeout: 8000 })
+      .catch(() => {});
+    pageText.set(r.label || r.href, (await page.locator("body").innerText().catch(() => "")) || "");
+  }
+  note("tabs searched", "INFO", [...pageText.keys()].join(", "));
 
   const missing = [];
   for (const c of posted) {
     if (!c.res.ok) continue;
-    const body = (await page.locator("body").innerText().catch(() => "")) || "";
-    const found = c.expect.test(body) || body.includes(c.requestId);
-    note(`render ${c.label}`, found ? "PASS" : "FAIL", found ? "visible" : `not found on the root view (${c.requestId})`);
-    if (!found) missing.push(c.label);
+    let where = null;
+    for (const [label, text] of pageText) {
+      if (c.expect.test(text) || text.includes(c.requestId)) {
+        where = label;
+        break;
+      }
+    }
+    note(`render ${c.label}`, where ? "PASS" : "FAIL", where ? `visible on "${where}"` : `not on ANY tab (${c.requestId})`);
+    if (!where) missing.push(c.label);
   }
 
   expect(
@@ -224,6 +277,8 @@ test("each approval card type renders from a TEST- payload", async ({ page }) =>
 
 test("deliveries render, and their thumbnails are not broken images", async ({ page }) => {
   await page.goto("/", { waitUntil: "networkidle" });
+  const tab = await gotoTab(page, /deliver/i);
+  note("deliveries tab", tab ? "PASS" : "INFO", tab ? `on "${tab.label}"` : "no Deliveries tab found — checking root");
 
   const images = await page.evaluate(() =>
     Array.from(document.images).map((img) => ({
@@ -248,9 +303,15 @@ test("Copy Caption copies the caption, not the internal notes", async ({ page, c
   await context.grantPermissions(["clipboard-read", "clipboard-write"]).catch(() => {});
   await page.goto("/", { waitUntil: "networkidle" });
 
-  const button = page.getByRole("button", { name: /copy caption/i }).first();
+  // Copy Caption belongs to a delivery card, so look on the Deliveries tab
+  // before concluding it is absent.
+  let button = page.getByRole("button", { name: /copy caption/i }).first();
   if ((await button.count()) === 0) {
-    note("Copy Caption", "INFO", "no 'Copy Caption' control on the root view — likely on a delivery card elsewhere");
+    await gotoTab(page, /deliver/i);
+    button = page.getByRole("button", { name: /copy caption/i }).first();
+  }
+  if ((await button.count()) === 0) {
+    note("Copy Caption", "INFO", "no 'Copy Caption' control on root or Deliveries");
     return;
   }
 
@@ -271,8 +332,13 @@ test("Copy Caption copies the caption, not the internal notes", async ({ page, c
 
 test("camera and recorder screens open and render", async ({ page }) => {
   await page.goto("/", { waitUntil: "networkidle" });
-  const link = page.getByRole("link", { name: /record|camera|teleprompter|upload clips/i }).first();
-  const button = page.getByRole("button", { name: /record|camera|teleprompter|upload clips/i }).first();
+  // The recorder is likelier to hang off Video or Approvals than the root.
+  const entry = /record|camera|teleprompter|upload clips/i;
+  if ((await page.getByRole("link", { name: entry }).count()) === 0) {
+    await gotoTab(page, /video|approval/i);
+  }
+  const link = page.getByRole("link", { name: entry }).first();
+  const button = page.getByRole("button", { name: entry }).first();
   const target = (await link.count()) > 0 ? link : (await button.count()) > 0 ? button : null;
 
   if (!target) {
