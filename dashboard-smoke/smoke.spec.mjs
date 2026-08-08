@@ -54,8 +54,11 @@ function watchConsole(page) {
 async function looksLikeAuthGate(page) {
   const pw = await page.locator('input[type="password"]').count();
   if (pw > 0) return true;
-  const body = (await page.textContent("body").catch(() => "")) || "";
-  return /sign in|log in|login|unauthori[sz]ed|access denied/i.test(body) && body.length < 2000;
+  // innerText, not textContent — textContent includes <script> bodies, and
+  // matching login words inside a JS bundle is how the setup project failed a
+  // login that had already succeeded.
+  const visible = (await page.locator("body").innerText().catch(() => "")) || "";
+  return /enter studio passcode|sign in|log ?in/i.test(visible) && visible.length < 2000;
 }
 
 test.describe.configure({ mode: "serial" });
@@ -205,7 +208,7 @@ test("each approval card type renders from a TEST- payload", async ({ page }) =>
   const missing = [];
   for (const c of posted) {
     if (!c.res.ok) continue;
-    const body = (await page.textContent("body").catch(() => "")) || "";
+    const body = (await page.locator("body").innerText().catch(() => "")) || "";
     const found = c.expect.test(body) || body.includes(c.requestId);
     note(`render ${c.label}`, found ? "PASS" : "FAIL", found ? "visible" : `not found on the root view (${c.requestId})`);
     if (!found) missing.push(c.label);
@@ -279,7 +282,7 @@ test("camera and recorder screens open and render", async ({ page }) => {
   const errors = watchConsole(page);
   await target.click({ timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(1500);
-  const rendered = ((await page.textContent("body").catch(() => "")) || "").length > 200;
+  const rendered = ((await page.locator("body").innerText().catch(() => "")) || "").length > 200;
 
   note("camera/recorder screen", rendered && !errors.length ? "PASS" : "FAIL",
     rendered ? (errors.length ? errors.slice(0, 2).join(" | ") : "opens and renders") : "opened but rendered nothing");

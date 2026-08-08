@@ -102,13 +102,28 @@ setup("sign in with the passcode", async ({ page }) => {
   // Clear the field before anything can fail with it on screen.
   await field.fill("").catch(() => {});
 
+  // WAIT FOR THE APP TO MOUNT before judging anything.
+  //
+  // Immediately after submit the document is the shell plus inline bundles, and
+  // sampling then measures React's source rather than the app.
+  await page
+    .waitForFunction(() => (document.body.innerText || "").trim().length > 100, null, { timeout: 15_000 })
+    .catch(() => {});
+
+  // innerText, NOT textContent.
+  //
+  // textContent includes the contents of <script> elements, so the first
+  // authenticated run matched /invalid/ inside the React production bundle and
+  // failed a login that had already succeeded. innerText is rendered text only:
+  // what a person could actually read on the page.
+  const visible = (await page.locator("body").innerText().catch(() => "")) || "";
   const stillGated =
     (await page.locator('input[type="password"]').count()) > 0 ||
-    /incorrect|invalid|try again|wrong passcode/i.test((await page.textContent("body").catch(() => "")) || "");
+    /incorrect passcode|invalid passcode|wrong passcode|try again/i.test(visible);
 
   if (stillGated) {
     const after = await page.evaluate(() => ({
-      text: (document.body.textContent || "").replace(/\s+/g, " ").trim().slice(0, 300),
+      text: (document.body.innerText || "").replace(/\s+/g, " ").trim().slice(0, 300),
       inputs: document.querySelectorAll("input").length,
       url: location.pathname,
     }));
@@ -121,8 +136,7 @@ setup("sign in with the passcode", async ({ page }) => {
     );
   }
 
-  const body = (await page.textContent("body").catch(() => "")) || "";
-  console.log(`  [auth] through the wall — ${body.length} chars of app rendered`);
+  console.log(`  [auth] through the wall — ${visible.length} chars of app text rendered`);
 
   if (!existsSync(dirname(STORAGE))) mkdirSync(dirname(STORAGE), { recursive: true });
   await page.context().storageState({ path: STORAGE });
