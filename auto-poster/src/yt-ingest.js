@@ -45,6 +45,17 @@ const MEDIA_EXTENSIONS = new Set([
   "m4a", "mp3", "wav", "aac", "flac", "ogg", "oga", "opus", "caf", "aiff", "aif", "wma",
 ]);
 
+/** The lowercased extension, or "" when the name carries none. */
+function extensionOf(name) {
+  const dot = (name || "").lastIndexOf(".");
+  return dot > 0 ? name.slice(dot + 1).toLowerCase() : "";
+}
+
+/** Drive's own answer, when we are willing to believe it. */
+function isMediaType(mimeType) {
+  return mimeType.startsWith("video/") || mimeType.startsWith("audio/");
+}
+
 /**
  * Is this Drive file one of Peter's takes?
  *
@@ -58,10 +69,22 @@ const MEDIA_EXTENSIONS = new Set([
 export function looksLikeRecording(file) {
   const mimeType = file?.mimeType || "";
   if (mimeType.startsWith("application/vnd.google-apps")) return false;
-  const name = file?.name || "";
-  const dot = name.lastIndexOf(".");
-  if (dot > 0 && MEDIA_EXTENSIONS.has(name.slice(dot + 1).toLowerCase())) return true;
-  return mimeType.startsWith("video/") || mimeType.startsWith("audio/");
+  if (MEDIA_EXTENSIONS.has(extensionOf(file?.name))) return true;
+  return isMediaType(mimeType);
+}
+
+/**
+ * The name says take, Drive says otherwise.
+ *
+ * We take the file anyway — that is the point of reading the name. But the
+ * disagreement means whatever uploaded it set the type wrong, and absorbing
+ * that quietly is how a broken uploader stays broken: the pipeline stops
+ * noticing, so nobody fixes it, and the next symptom is one that tolerance
+ * cannot paper over. Tolerant about the file, loud about the cause.
+ */
+export function isMistypedUpload(file) {
+  if (!MEDIA_EXTENSIONS.has(extensionOf(file?.name))) return false;
+  return !isMediaType(file?.mimeType || "");
 }
 
 async function driveFetch(url, accessToken, opts = {}) {
@@ -151,8 +174,17 @@ export async function listRecordings(folderId, accessToken = null) {
     const res = await driveFetch(`https://www.googleapis.com/drive/v3/files?${params}`, token);
     const data = await res.json();
     for (const file of data.files || []) {
-      if (looksLikeRecording(file)) files.push(file);
-      else console.log(`[Ingest] ignoring ${file.name} (${file.mimeType}) — not a recording`);
+      if (!looksLikeRecording(file)) {
+        console.log(`[Ingest] ignoring ${file.name} (${file.mimeType}) — not a recording`);
+        continue;
+      }
+      if (isMistypedUpload(file)) {
+        console.log(
+          `::warning::[Ingest] ${file.name} arrived typed as ${file.mimeType || "nothing"} — ` +
+          `taking it on the name, but whatever uploaded it is setting the type wrong`
+        );
+      }
+      files.push(file);
     }
     pageToken = data.nextPageToken;
   } while (pageToken);

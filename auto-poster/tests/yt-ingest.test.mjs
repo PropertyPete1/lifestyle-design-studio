@@ -8,7 +8,7 @@
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { looksLikeRecording, listRecordings } from "../src/yt-ingest.js";
+import { looksLikeRecording, isMistypedUpload, listRecordings } from "../src/yt-ingest.js";
 
 /** A Drive files.list entry, with only the fields the ingest reads. */
 function driveFile(name, mimeType, extra = {}) {
@@ -53,6 +53,28 @@ describe("looksLikeRecording", () => {
   });
 });
 
+describe("isMistypedUpload", () => {
+  test("flags the take Drive typed as text", () => {
+    assert.equal(isMistypedUpload(driveFile("s1t1.mp4", "text/plain")), true);
+    assert.equal(isMistypedUpload(driveFile("s1t1.mp4", "application/octet-stream")), true);
+  });
+
+  test("says nothing about a take that arrived correctly typed", () => {
+    assert.equal(isMistypedUpload(driveFile("s1t1.mp4", "video/mp4")), false);
+    assert.equal(isMistypedUpload(driveFile("s2t1.m4a", "audio/mp4")), false);
+  });
+
+  test("a media type with no extension is not the uploader's fault", () => {
+    // Admitted on the mimeType alone. There is no name to contradict it.
+    assert.equal(isMistypedUpload(driveFile("IMG_4021", "video/mp4")), false);
+  });
+
+  test("stays quiet about files the ingest was never going to take", () => {
+    assert.equal(isMistypedUpload(driveFile("shot-list.txt", "text/plain")), false);
+    assert.equal(isMistypedUpload({}), false);
+  });
+});
+
 describe("listRecordings", () => {
   /** Serve one canned files.list page and capture the query that asked for it. */
   function stubDrive(files) {
@@ -86,6 +108,40 @@ describe("listRecordings", () => {
         stub.seen.logs.some((l) => l.includes("shot-list.txt")),
         "a skipped file should say so — a silent drop is what caused this bug"
       );
+    } finally {
+      stub.restore();
+    }
+  });
+
+  test("takes the mistyped file AND says the uploader got it wrong", async () => {
+    const stub = stubDrive([
+      driveFile("s1t1.mp4", "text/plain"),
+      driveFile("s1t2.mov", "video/quicktime"),
+    ]);
+    try {
+      const files = await listRecordings("folder1", "token");
+      assert.deepEqual(files.map((f) => f.name), ["s1t1.mp4", "s1t2.mov"]);
+
+      // Actions surfaces ::warning:: in the run summary — a log line nobody
+      // reads would not do the job this is here for.
+      const warnings = stub.seen.logs.filter((l) => l.startsWith("::warning::"));
+      assert.equal(warnings.length, 1, `expected one warning, got: ${stub.seen.logs.join(" | ")}`);
+      assert.ok(warnings[0].includes("s1t1.mp4"), warnings[0]);
+      assert.ok(warnings[0].includes("text/plain"), warnings[0]);
+      assert.ok(
+        !warnings[0].includes("s1t2.mov"),
+        "the correctly typed take should not be dragged into the warning"
+      );
+    } finally {
+      stub.restore();
+    }
+  });
+
+  test("a clean folder produces no warning at all", async () => {
+    const stub = stubDrive([driveFile("s1t1.mp4", "video/mp4"), driveFile("s1t2.mov", "video/quicktime")]);
+    try {
+      await listRecordings("folder1", "token");
+      assert.deepEqual(stub.seen.logs.filter((l) => l.startsWith("::warning::")), []);
     } finally {
       stub.restore();
     }
