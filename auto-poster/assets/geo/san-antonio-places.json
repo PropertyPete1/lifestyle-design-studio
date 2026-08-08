@@ -1,0 +1,39 @@
+{
+  "_comment": "Label anchors for the San Antonio map. Two provenances, marked per entry — see longform/probe/MAP-LICENSING.md for why these are hand-authored rather than derived.",
+  "_provenance": {
+    "census": "Centroid straight from the Census TIGERweb Places layer (CENTLON/CENTLAT). Public domain. Exact.",
+    "hand": "Hand-placed. The Census does not carry these: neighbourhoods are not incorporated places, and Randolph, Fort Sam and BAMC are inside one merged 'Joint Base San Antonio' polygon. Accurate to a few hundred metres, which is what a stylized map needs. The map-geometry test asserts each of these falls on the correct side of the ring it is described against, so a bad coordinate fails the suite rather than shipping.",
+    "note": "'Medical Center' here is the South Texas Medical Center district, not a military installation."
+  },
+  "places": [
+    { "id": "downtown",      "label": "Downtown",        "lon": -98.4936, "lat": 29.4241, "kind": "anchor",       "source": "hand" },
+    { "id": "medical_center","label": "Medical Center",  "lon": -98.5760, "lat": 29.5090, "kind": "landmark",     "source": "hand" },
+    { "id": "fort_sam",      "label": "Fort Sam",        "lon": -98.4400, "lat": 29.4600, "kind": "base",         "source": "hand" },
+    { "id": "bamc",          "label": "BAMC",            "lon": -98.4260, "lat": 29.4570, "kind": "landmark",     "source": "hand" },
+    { "id": "randolph",      "label": "Randolph",        "lon": -98.2788, "lat": 29.5302, "kind": "base",         "source": "census" },
+    { "id": "lackland",      "label": "Lackland",        "lon": -98.6179, "lat": 29.3866, "kind": "base",         "source": "census" },
+
+    { "id": "castle_hills",  "label": "Castle Hills",    "lon": -98.5197, "lat": 29.5228, "kind": "neighborhood", "source": "census" },
+    { "id": "shavano_park",  "label": "Shavano Park",    "lon": -98.5564, "lat": 29.5861, "kind": "neighborhood", "source": "census" },
+    { "id": "hollywood_park","label": "Hollywood Park",  "lon": -98.4839, "lat": 29.5994, "kind": "neighborhood", "source": "census" },
+    { "id": "alamo_heights", "label": "Alamo Heights",   "lon": -98.4682, "lat": 29.4828, "kind": "neighborhood", "source": "census" },
+    { "id": "timberwood",    "label": "Timberwood Park", "lon": -98.4838, "lat": 29.6995, "kind": "neighborhood", "source": "census" },
+
+    { "id": "stone_oak",     "label": "Stone Oak",       "lon": -98.4700, "lat": 29.6250, "kind": "neighborhood", "source": "hand" },
+    { "id": "oak_hills",     "label": "Oak Hills",       "lon": -98.5730, "lat": 29.4950, "kind": "neighborhood", "source": "hand" },
+    { "id": "churchill",     "label": "Churchill Estates","lon": -98.5450, "lat": 29.5450, "kind": "neighborhood", "source": "hand" },
+    { "id": "deerfield",     "label": "Deerfield",       "lon": -98.5330, "lat": 29.5800, "kind": "neighborhood", "source": "hand" },
+    { "id": "encino_park",   "label": "Encino Park",     "lon": -98.4550, "lat": 29.6120, "kind": "neighborhood", "source": "hand" },
+
+    { "id": "live_oak",      "label": "Live Oak",        "lon": -98.3404, "lat": 29.5545, "kind": "neighborhood", "source": "census" },
+    { "id": "selma",         "label": "Selma",           "lon": -98.3134, "lat": 29.5866, "kind": "neighborhood", "source": "census" },
+    { "id": "universal_city","label": "Universal City",  "lon": -98.3072, "lat": 29.5523, "kind": "neighborhood", "source": "census" },
+    { "id": "converse",      "label": "Converse",        "lon": -98.3065, "lat": 29.5073, "kind": "neighborhood", "source": "census" },
+    { "id": "schertz",       "label": "Schertz",         "lon": -98.2480, "lat": 29.5626, "kind": "neighborhood", "source": "census" },
+    { "id": "cibolo",        "label": "Cibolo",          "lon": -98.2111, "lat": 29.5632, "kind": "neighborhood", "source": "census" },
+    { "id": "new_braunfels", "label": "New Braunfels",   "lon": -98.1149, "lat": 29.6992, "kind": "anchor",       "source": "census" },
+    { "id": "boerne",        "label": "Boerne",          "lon": -98.7289, "lat": 29.7846, "kind": "anchor",       "source": "census" },
+    { "id": "helotes",       "label": "Helotes",         "lon": -98.6960, "lat": 29.5687, "kind": "neighborhood", "source": "census" },
+    { "id": "bulverde",      "label": "Bulverde",        "lon": -98.4469, "lat": 29.7768, "kind": "anchor",       "source": "census" }
+  ]
+}
