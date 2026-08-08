@@ -64,6 +64,124 @@ export const DEFAULT_KEYWORD = "MATH";
 
 // ─── description ────────────────────────────────────────────────────────────
 
+
+// ─── D5: the search-facing opener ───────────────────────────────────────────
+
+/**
+ * Words from the search query that must survive into the opener.
+ *
+ * The first two description lines are what YouTube indexes hardest and what
+ * shows under the title in search. Leading with the spoken hook wastes them on
+ * copy written for a viewer who already clicked.
+ */
+export function queryTerms(query) {
+  const STOP = new Set(["a", "an", "the", "to", "in", "for", "of", "and", "or", "vs", "is", "what", "how", "best", "2025", "2026"]);
+  return String(query || "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !STOP.has(w));
+}
+
+/** Does this opener actually carry the query? Deterministic, not a critic call. */
+export function openerCarriesQuery(opener, query) {
+  const text = String(opener || "").toLowerCase();
+  const terms = queryTerms(query);
+  if (terms.length === 0) return true;
+  const hit = terms.filter((t) => text.includes(t)).length;
+  return hit / terms.length >= 0.7;
+}
+
+const SEO_OPENER_SYSTEM = `You write the first two lines of a YouTube description for a real-estate explainer. These two lines are what search indexes and what shows under the title in results — they are for someone DECIDING whether to click, not someone who already did.
+
+RULES:
+- Exactly two lines, separated by a newline.
+- The first line must naturally contain the target search phrase (or all its meaningful words). Not stuffed — a sentence a person would write.
+- The second line says concretely what the video delivers.
+- No hype words, no emoji, no "in this video". Under 140 characters per line.
+- Never promise a DM or "sending" anything without naming text/email/description.
+
+Return ONLY valid JSON, no preamble and no code fences:
+{"line1": "...", "line2": "..."}`;
+
+/**
+ * Generate the opener, or null — the description falls back to leading with
+ * the hook, which is what it did before this existed. Never throws.
+ */
+export async function generateSeoOpener(topic, modelCall = callModel) {
+  try {
+    const raw = await modelCall(
+      SEO_OPENER_SYSTEM,
+      `TARGET SEARCH PHRASE: ${topic.query}
+VIDEO TITLE: ${topic.title}
+MARKET: ${topic.market === "austin" ? "Austin" : "San Antonio"}, Texas
+
+Write the two lines.`
+    );
+    const parsed = JSON.parse(String(raw).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+    const line1 = String(parsed.line1 || "").trim();
+    const line2 = String(parsed.line2 || "").trim();
+    if (!line1 || !line2) return null;
+    if (line1.length > 140 || line2.length > 140) return null;
+    const opener = `${line1}\n${line2}`;
+    if (!openerCarriesQuery(opener, topic.query)) {
+      console.warn(`[YTPackaging] SEO opener dropped the query terms — falling back to the hook`);
+      return null;
+    }
+    if (findImpossibleCta(opener).length > 0) return null;
+    return opener;
+  } catch (err) {
+    console.warn(`[YTPackaging] SEO opener generation failed (${err.message}) — falling back to the hook`);
+    return null;
+  }
+}
+
+// ─── D6: chapters that sell the click ───────────────────────────────────────
+
+/** A chapter title short enough for the chapter list, long enough to mean something. */
+export const CHAPTER_TITLE_MAX = 45;
+
+const CHAPTER_SYSTEM = `You rewrite YouTube chapter titles. The list of chapters is ITSELF a selling surface — a viewer deciding whether to commit reads it like a menu, and "Property taxes" sells nothing while "The tax bill nobody warns you about" opens a loop.
+
+RULES:
+- Same number of titles, same order, same topics — you are rewording, not restructuring.
+- Each under ${45} characters. Short, spoken English.
+- Each should open a small loop: a cost, a mistake, a surprise. Not a category label.
+- Do not use clickbait punctuation. No ALL CAPS words. No emoji.
+- Keep any place name that was in the original — chapters are also search surface.
+
+Return ONLY valid JSON, no preamble and no code fences:
+{"titles": ["...", "..."]}`;
+
+/**
+ * Rewrite chapter titles curiosity-shaped, with a hard fallback.
+ *
+ * Timestamps are never touched — only the words change. Any structural
+ * violation (count mismatch, over-length, empty, duplicate) falls back to the
+ * ORIGINAL titles wholesale, because chapters that misalign with their
+ * timestamps are worse than dull ones.
+ */
+export async function curiosityChapters(chapters, modelCall = callModel) {
+  if (!chapters || chapters.length === 0) return { chapters, rewritten: false };
+  try {
+    const raw = await modelCall(
+      CHAPTER_SYSTEM,
+      `ORIGINAL CHAPTERS:\n${chapters.map((c, i) => `${i + 1}. ${c.title}`).join("\n")}\n\nRewrite them.`
+    );
+    const parsed = JSON.parse(String(raw).trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+    const titles = Array.isArray(parsed.titles) ? parsed.titles.map((t) => String(t || "").trim()) : [];
+
+    const bad =
+      titles.length !== chapters.length ||
+      titles.some((t) => !t || t.length > CHAPTER_TITLE_MAX) ||
+      new Set(titles.map((t) => t.toLowerCase())).size !== titles.length;
+    if (bad) {
+      console.warn(`[YTPackaging] chapter rewrite failed structure (${titles.length}/${chapters.length}) — keeping the originals`);
+      return { chapters, rewritten: false };
+    }
+    return { chapters: chapters.map((c, i) => ({ ...c, title: titles[i] })), rewritten: true };
+  } catch (err) {
+    console.warn(`[YTPackaging] chapter rewrite failed (${err.message}) — keeping the originals`);
+    return { chapters, rewritten: false };
+  }
+}
+
 /**
  * Build the description.
  *
@@ -86,12 +204,19 @@ export const MAP_CREDITS = {
   osm: "Maps in this video contain data from OpenStreetMap, © OpenStreetMap contributors, available under the Open Database License. https://www.openstreetmap.org/copyright",
 };
 
-export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig(), mapsUsed = false, mapSource = "tiger" }) {
+export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig(), mapsUsed = false, mapSource = "tiger", seoOpener = null }) {
   const missing = [];
   const parts = [];
 
-  if (hook) parts.push(String(hook).trim());
-  if (promise) parts.push(String(promise).trim());
+  // The first two lines are search surface (D5). When the opener exists it
+  // leads and the hook follows; when it does not, the old order stands.
+  if (seoOpener) {
+    parts.push(String(seoOpener).trim());
+    if (hook) parts.push(String(hook).trim());
+  } else {
+    if (hook) parts.push(String(hook).trim());
+    if (promise) parts.push(String(promise).trim());
+  }
 
   if (chapters.length >= MIN_CHAPTERS) {
     parts.push("");
@@ -421,6 +546,12 @@ export async function buildPackaging({
   const attempts = [];
   let feedback = "";
 
+  // D5/D6 run once, outside the retry loop — retries are about the TITLE, and
+  // burning opener/chapter calls on each retitle would triple their cost.
+  const seoOpener = await generateSeoOpener(topic, modelCall);
+  const chapterResult = await curiosityChapters(chapters, modelCall);
+  chapters = chapterResult.chapters;
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const { text: description, missing } = buildDescription({
       hook: script?.hook,
@@ -429,6 +560,7 @@ export async function buildPackaging({
       keyword,
       mapsUsed,
       mapSource,
+      seoOpener,
     });
     const pkg = {
       title,

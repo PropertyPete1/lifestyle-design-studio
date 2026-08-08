@@ -85,9 +85,19 @@ export function reviewChecklist({ packaging, narrationMode = NARRATION_MODE, syn
       "and synthetic speech in a real person's voice is what the policy covers."
     );
   }
-  items.push("Upload the thumbnail (attached / in the Drive folder). Metricool's API cannot set it.");
+  items.push(
+    "Thumbnail: the sweep sets it via the API within one cron of approval — CONFIRM it took in Studio. " +
+    "If it is missing there, the account may need enabling for custom thumbnails, and the run log says why."
+  );
   items.push("Check the chapters render — the first one has to be 0:00 or YouTube ignores all of them.");
-  items.push("Pin the comment below.");
+  items.push(
+    "After you publish: the pinned-comment text posts itself within one cron (the API cannot post to a private video). " +
+    "PIN it when you see it — pinning is the one comment step the API cannot do."
+  );
+  items.push(
+    "Add the end screen in Studio (last ~20s): your most recent video + a subscribe element. " +
+    "The API cannot set end screens — see longform/probe/DISTRIBUTION-API.md."
+  );
   for (const missing of packaging.missingCta || []) {
     items.push(`MISSING FROM THE DESCRIPTION: ${missing}. Add it by hand, or set the secret and it fixes itself next time.`);
   }

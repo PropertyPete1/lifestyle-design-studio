@@ -60,7 +60,10 @@ import { applyGeneratedVisuals } from "./yt-visual-broll.js";
 import { generateOpeningOverlay, planOpening } from "./yt-opening.js";
 import { generateThumbnailHook } from "./yt-thumbnail-hook.js";
 import { renderThumbnail, fitUnderLimit } from "./yt-thumbnail.js";
-import { buildPackaging } from "./yt-packaging.js";
+import { buildPackaging, buildPinnedComment } from "./yt-packaging.js";
+import { distributeVideo, completedSteps, videoIdFromPost, accessToken as ytApiToken } from "./yt-distribute.js";
+import { verifyPostStatus } from "./metricool.js";
+import { PIP_ENABLED } from "./yt-config.js";
 import { uploadPrivate, requestReview } from "./yt-publish.js";
 import {
   loadLog as loadVideoLog,
@@ -673,7 +676,110 @@ async function handleVideoReview(approvals, review) {
   console.log("[YTPipeline] notes recorded for the rework — nothing was published");
 }
 
+
+/**
+ * The distribution sweep — everything that happens to a video after approval.
+ *
+ * Runs at the top of every scheduled run, over every approved entry whose
+ * distribution is incomplete. Idempotent by construction (yt-distribute.js
+ * checks-before-acting and completed steps are merged into the log), so a cron
+ * hitting it twice costs nothing.
+ *
+ * WHY THE THUMBNAIL IS RE-RENDERED HERE rather than read from disk: the build
+ * wrote it into that run's workDir, which is gone by the time a later cron
+ * sweeps. The render is deterministic from the logged thumbnailText, so the
+ * sweep rebuilds the identical PNG instead of depending on an artifact that no
+ * longer exists — one less piece of state to lose.
+ *
+ * NOTHING HERE PUBLISHES. The comment step inside distributeVideo waits until
+ * it can SEE that Peter made the video public in Studio.
+ */
+async function sweepDistribution() {
+  const videoLog = loadVideoLog();
+  const pending = (videoLog.videos || []).filter(
+    (v) => v.approved && !String(v.requestId || "").startsWith("TEST-") &&
+      !(v.distribution?.thumbnail?.done && v.distribution?.playlist?.done && v.distribution?.comment?.done)
+  );
+  if (pending.length === 0) return;
+
+  let token;
+  try {
+    token = await ytApiToken();
+  } catch (err) {
+    // No YouTube credentials is a configuration gap, not a crash — the build
+    // half of the pipeline must keep working without them.
+    console.log(`::warning::distribution sweep skipped — ${err.message}`);
+    return;
+  }
+
+  let log = videoLog;
+  for (const entry of pending) {
+    // Resolve the real YouTube id from the Metricool post, once, and keep it.
+    if (!entry.youtubeVideoId && entry.metricoolPostId) {
+      const status = await verifyPostStatus(entry.metricoolPostId, entry.blogId || process.env.METRICOOL_BLOG_ID);
+      const resolved = videoIdFromPost(status.raw);
+      if (resolved) {
+        entry.youtubeVideoId = resolved;
+        console.log(`[YTDistribute] ${entry.videoId}: YouTube id resolved to ${resolved}`);
+      } else {
+        // The known unknown: whether a private long-form post carries the id.
+        console.log(`::warning::${entry.videoId}: no YouTube id on the Metricool post yet — distribution waits`);
+        continue;
+      }
+    }
+    if (!entry.youtubeVideoId) continue;
+
+    // The thumbnail, rebuilt from the logged text (see the header).
+    let thumbnailPath = null;
+    if (entry.thumbnailText) {
+      try {
+        const png = await fitUnderLimit(
+          await renderThumbnail(entry.thumbnailText, { kicker: entry.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
+        );
+        thumbnailPath = join(process.env.RUNNER_TEMP || tmpdir(), `thumb-${entry.videoId}.png`);
+        writeFileSync(thumbnailPath, png);
+      } catch (err) {
+        console.log(`::warning::${entry.videoId}: thumbnail re-render failed (${err.message})`);
+      }
+    }
+
+    const report = await distributeVideo(entry, {
+      token,
+      thumbnailPath,
+      pinnedComment: buildPinnedComment(),
+      market: entry.market,
+      intent: entry.intent,
+    });
+
+    for (const [name, r] of Object.entries(report.steps || {})) {
+      if (r.already) continue;
+      if (r.done && r.waiting) console.log(`[YTDistribute] ${entry.videoId}: ${name} — ${r.waiting}`);
+      else if (r.done) console.log(`[YTDistribute] ${entry.videoId}: ${name} done ${r.skipped ? `(${r.skipped})` : ""}`);
+      else console.log(`::warning::${entry.videoId}: ${name} FAILED — ${r.error} (retries next run)`);
+    }
+    if (report.blocked) console.log(`::warning::${entry.videoId}: distribution blocked — ${report.blocked}`);
+
+    const done = completedSteps(report);
+    if (Object.keys(done).length > 0 || entry.youtubeVideoId) {
+      log = {
+        ...log,
+        videos: log.videos.map((v) =>
+          v.videoId === entry.videoId
+            ? { ...v, youtubeVideoId: entry.youtubeVideoId, distribution: { ...(v.distribution || {}), ...done } }
+            : v
+        ),
+      };
+      saveVideoLog(log);
+    }
+  }
+}
+
 async function main() {
+  // Distribution first: it is independent of the stage machine below, and a
+  // video Peter published overnight gets its comment posted on this run rather
+  // than after whatever the stage machine decides to do.
+  await sweepDistribution();
+
   const approvals = loadApprovals();
   const topic = decisionState(approvals, KIND_TOPIC_PICK);
 
