@@ -33,6 +33,7 @@ import { stripDashes } from "./sanitize.js";
 import { scanAndStripLeaks } from "./caption.js";
 import { gatedDevelopmentNames } from "./yt-brief.js";
 import { findMonthlyPaymentFigure } from "./caption-validator.js";
+import { findImpossibleCta } from "./yt-cta.js";
 import { findBannedTellsIn, buildVoiceBlock, buildBannedBlock } from "./yt-voice.js";
 import { TAKE_SECONDS_MIN, TAKE_SECONDS_MAX, ON_CAMERA_SHARE, TARGET_MINUTES_MIN, TARGET_MINUTES_MAX, NARRATION_MODE } from "./yt-config.js";
 
@@ -286,9 +287,18 @@ The video opens on his face and one claim. This line is the claim in text, and i
 - No period at the end. No quotes. Plain words, 4 to 8 of them.
 - It is read in about one second at the top of a video by somebody who does not know you yet, so it has to earn attention on its own.
 
-"softCta" — mid-video, placed after the section where you have most earned it. Low friction. One line, no hard sell.
+CALL TO ACTION MECHANICS — READ THIS BEFORE WRITING softCta OR close.
+YOUTUBE HAS NO DIRECT MESSAGES. A creator cannot message a viewer here. Never write "comment X and I'll DM you", "I'll send it over", or anything that implies a private message arriving. It is a promise the platform makes impossible to keep, and the viewer this channel is for has used YouTube for years and will notice.
 
-"close" — the strong one. Phone number, and the offer of a personalised payment breakdown. Ask for the comment or the text, once, plainly.
+There are exactly four things that work. Use these and nothing else:
+    1. "Comment [KEYWORD] and I'll reply with [the thing]" — the answer appears publicly in the comment thread
+    2. "Text me at [the number on screen]" — he reads and answers these himself
+    3. "Email me" — same
+    4. "Link in the description" — his links page
+
+"softCta" — mid-video, placed after the section where you have most earned it. COMMENT-BASED, because it is the low-friction ask and a comment is worth something to the video itself. One line, no hard sell. Ask for a specific thing that is easy to type — a city, a base, a budget — and say what he will reply with.
+
+"close" — the strong one, and CONTACT-BASED. Someone who watched twelve minutes about where to buy has a real question, and a real question deserves a real channel. Lead with the text number, offer the personalised payment breakdown, and mention the comment as the second, lower-friction option. Ask once, plainly. Never promise a message you cannot send.
 
 TAKES — this is the part people get wrong:
 Each take is ${TAKE_SECONDS_MIN}-${TAKE_SECONDS_MAX} seconds of speech, which is roughly 25 to 80 words. Peter reads it off his phone one take at a time, so it must stand alone: no take may begin with a word that only makes sense if the previous take just played ("So...", "And that's why...", "Which brings me to..."). Each take has:
@@ -603,11 +613,18 @@ export function applyGuards(script) {
   const payment = findMonthlyPaymentFigure(spoken.join("\n"));
   const bannedTells = findBannedTellsIn(spoken);
 
+  // YouTube has no direct messages, so a take promising one is a promise he
+  // physically cannot keep on camera. Reported like the payment figure rather
+  // than stripped: the sentence is built around the offer, and patching the
+  // words out would leave a CTA that asks for nothing.
+  const impossibleCta = findImpossibleCta(spoken.join("\n"));
+
   return {
     script: scrubbed,
     leaksStripped: notes,
     paymentFigure: payment,
     bannedTells,
+    impossibleCta,
   };
 }
 

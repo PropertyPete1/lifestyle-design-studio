@@ -160,7 +160,8 @@ async function runTopic(name, topic) {
   const gen = withVisuals.generated;
   console.log(
     `  after the cap: ${gen.renderedCount} on the timeline, ` +
-      `${gen.usedSeconds}s of ${gen.budgetSeconds}s budget (${Math.round(gen.share * 100)}% of B-roll)`
+      `${gen.split.graphicPct}% graphic / ${gen.split.footagePct}% footage ` +
+      `(${gen.split.graphicSeconds}s of ${gen.split.brollSeconds}s of B-roll)`
   );
   for (const f of gen.failures) console.log(`    fell back to footage: ${f.takeId} — ${f.reason}`);
 
@@ -178,7 +179,8 @@ async function runTopic(name, topic) {
     requests,
     rendered,
     onTimeline: gen.renderedCount,
-    sharePct: Math.round(gen.share * 100),
+    graphicPct: gen.split.graphicPct,
+    footagePct: gen.split.footagePct,
   };
 }
 

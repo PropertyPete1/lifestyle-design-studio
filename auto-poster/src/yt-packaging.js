@@ -29,6 +29,7 @@ import { findMonthlyPaymentFigure } from "./caption-validator.js";
 import { findBannedTellsIn } from "./yt-voice.js";
 import { KEYWORD_PAYOFFS } from "./carousel-content.js";
 import { formatTimestamp } from "./yt-timeline.js";
+import { findImpossibleCta } from "./yt-cta.js";
 
 const MODEL = "claude-opus-5";
 
@@ -53,8 +54,10 @@ export const PASS_MARK = 8;
 export function ctaConfig() {
   const phone = (process.env.YT_TEXT_NUMBER || "").trim();
   const links = (process.env.YT_LINKS_URL || "").trim();
-  return { phone: phone || null, links: links || null };
+  const email = (process.env.YT_CONTACT_EMAIL || "peter@lifestyledesignrealty.com").trim();
+  return { phone: phone || null, links: links || null, email: email || null };
 }
+
 
 /** The keyword this video's offer uses. MATH is the payment breakdown. */
 export const DEFAULT_KEYWORD = "MATH";
@@ -101,7 +104,8 @@ export function buildDescription({ hook, promise, chapters = [], keyword = DEFAU
   const payoff = KEYWORD_PAYOFFS[keyword] || null;
   parts.push("");
   if (payoff) {
-    parts.push(`Want ${payoff} for a specific house? Comment ${keyword} below and I'll send it over.`);
+    // "reply", not "send". On YouTube the answer arrives in the comment thread.
+    parts.push(`Want ${payoff} for a specific house? Comment ${keyword} below and I'll reply with it.`);
   }
 
   if (cta.phone) {
@@ -143,8 +147,12 @@ export function buildDescription({ hook, promise, chapters = [], keyword = DEFAU
  */
 export function buildPinnedComment({ keyword = DEFAULT_KEYWORD, cta = ctaConfig() } = {}) {
   const payoff = KEYWORD_PAYOFFS[keyword] || "the breakdown";
-  const lines = [`Comment ${keyword} and I'll send you ${payoff} for whatever house you're looking at — no charge, no pitch.`];
-  if (cta.phone) lines.push(`Faster: text ${cta.phone}.`);
+  // Comment-keyword first because it is the low-friction ask and the pinned
+  // comment lives where commenting happens; contact second for the viewer who
+  // actually has a house in front of them.
+  const lines = [`Comment ${keyword} and I'll reply with ${payoff} for whatever house you're looking at — no charge, no pitch.`];
+  if (cta.phone) lines.push(`If you'd rather not do it publicly, text me: ${cta.phone}.`);
+  else if (cta.email) lines.push(`If you'd rather not do it publicly, email me: ${cta.email}.`);
   return lines.join("\n");
 }
 
@@ -223,6 +231,14 @@ export function validatePackaging(pkg) {
         failures.push(`chapter "${c.title}" (${stamp}) is not in the description`);
         break;
       }
+    }
+  }
+
+  // YouTube has no DMs. Checked here rather than trusted to the prompt, because
+  // the prompt is advice and this is a promise the platform cannot keep.
+  for (const [what, text] of [["description", description], ["pinned comment", pkg?.pinnedComment]]) {
+    for (const line of findImpossibleCta(text)) {
+      failures.push(`${what} promises a message YouTube cannot send: "${line}"`);
     }
   }
 
