@@ -2728,6 +2728,30 @@
       ],
       "timestamp": "2026-08-07T20:35:20.007Z",
       "success": true
+    },
+    {
+      "driveFileId": "1UdPT7zffkaTEK_4geMGSCbUwYSVN5WDr",
+      "fileName": "45A7E871-87DA-41D6-9924-2FDF9F25367E.mp4",
+      "city": "austin",
+      "caption": "Would you believe this is brand new construction in San Marcos for $329,990?\n\nNew construction like this doesn't sit long. Builder incentives are moving fast.\n\n✨ Open floor plan with natural light pou",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-08T17:16:57.083Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Marcos",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Send this to somebody that's dirt cheap.",
+      "content_hash": "60f0e100003f77fb:ffffffffff130000:ff7f078747038303:3f3f3f3f3f3f3000:3f7fffff001c0f00",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1gfkTew6WU3GZhwEC54qlIBoIjRW5hCuo/view"
     }
   ],
   "lastTemplateIndex": -1
