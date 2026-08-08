@@ -236,6 +236,25 @@ if (failedRenders.length) {
 writeFileSync(join(OUT, "summary.json"), JSON.stringify(results, null, 1));
 console.log(`\nartifacts in ${OUT}\n`);
 
-// Exit non-zero only on a render that produced a bad picture. Zero visuals is a
-// finding to read, not a broken build.
-process.exit(failedRenders.length > 0 ? 1 : 0);
+/**
+ * Exit conditions, and why the first one had to be added.
+ *
+ * The first live run of this probe reported SUCCESS while proving nothing: all
+ * three scripts failed to generate, so there were no renders, so the only exit
+ * check — "did any render fail?" — found nothing wrong and returned 0. A probe
+ * whose entire job is to answer a question exited green having answered it not
+ * at all. That is the same silent-success failure it was written to hunt.
+ *
+ * A topic producing ZERO VISUALS is still a finding rather than a failure. A
+ * topic that never produced a SCRIPT is a failure, because nothing downstream
+ * was exercised at all.
+ */
+const errored = results.filter((r) => r.error);
+if (errored.length) {
+  console.log(`FAILURE: ${errored.length} of ${results.length} topic(s) never produced a script:`);
+  for (const r of errored) console.log(`  ${r.topic}: ${r.error}`);
+  console.log("Nothing downstream was exercised for those topics — this run proves nothing about them.");
+}
+if (results.length === 0) console.log("FAILURE: no topics ran at all.");
+
+process.exit(failedRenders.length > 0 || errored.length > 0 || results.length === 0 ? 1 : 0);

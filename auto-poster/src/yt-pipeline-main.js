@@ -57,7 +57,7 @@ import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
 import { generateNarration, renderTimeline, syntheticNarrationUsed } from "./yt-assemble.js";
 import { applyGeneratedVisuals } from "./yt-visual-broll.js";
-import { loadMarket } from "./yt-map-render.js";
+import { generateOpeningOverlay, planOpening } from "./yt-opening.js";
 import { buildPackaging } from "./yt-packaging.js";
 import { uploadPrivate, requestReview } from "./yt-publish.js";
 import {
@@ -447,11 +447,24 @@ async function buildFromRecordings(approvals, record) {
   // exist yet.
   const withVisuals = await applyGeneratedVisuals(plan, { workDir, market: result.market });
   const gen = withVisuals.generated;
+
+  // THE SPLIT. There is no cap any more, so this number is the whole control:
+  // it is how the graphic-first default gets judged on a finished video.
   console.log(
-    `[YTPipeline] visuals: writer asked for ${gen.intents.requested} ` +
-      `(${JSON.stringify(gen.intents.byType)}), ${gen.renderedCount} rendered — ` +
-      `${gen.usedSeconds}s of a ${gen.budgetSeconds}s budget, ${Math.round(gen.share * 100)}% of B-roll`
+    `[YTPipeline] visual split: ${gen.split.graphicPct}% graphic / ${gen.split.footagePct}% footage ` +
+      `(${gen.split.graphicSeconds}s of ${gen.split.brollSeconds}s of B-roll)`
   );
+  console.log(
+    `[YTPipeline] of ${gen.intents.voiceoverTakes} voiceover takes: ` +
+      `${gen.intents.graphicTakes} asked for a graphic, ${gen.intents.footageTakes} chose footage, ` +
+      `${gen.intents.unspecifiedTakes} said nothing — ${JSON.stringify(gen.intents.byType)}`
+  );
+  if (gen.intents.unspecifiedTakes > 0) {
+    // Every voiceover take is supposed to carry an intent now. Silence means
+    // the prompt is not landing, and it looks identical to a footage choice in
+    // the finished video.
+    console.log(`::warning::${gen.intents.unspecifiedTakes} voiceover take(s) carried no visualIntent — the writer prompt is not landing`);
+  }
   // A script whose intents were all REJECTED looks identical, in the finished
   // video, to a script that asked for nothing. Only one of those is a bug, so
   // they are logged differently.
@@ -463,8 +476,31 @@ async function buildFromRecordings(approvals, record) {
     console.log("::warning::the writer requested no visuals for this script — every segment is footage");
   }
 
+  // ── the opening ──────────────────────────────────────────────────────────
+  // Composed rather than allocated: his face, one claim, and nothing else for
+  // fifteen seconds. Generated here so a failure stops the build before twelve
+  // minutes of encoding rather than after it.
+  const overlayResult = await generateOpeningOverlay({ hook: script?.hook, candidate: script?.openingOverlay });
+  if (!overlayResult.overlay) {
+    console.log(`::warning::no opening overlay cleared the gates (${overlayResult.reason}) — opening on the face alone`);
+  }
+
+  const opening = planOpening(withVisuals.segments, { overlay: overlayResult.overlay });
+  console.log(`[YTPipeline] opening: ${JSON.stringify(opening.composition, null, 1)}`);
+  if (!opening.ok) {
+    // Opening on somebody else's drone footage is a different product, so this
+    // stops the build rather than warning and continuing.
+    for (const f of opening.failures) console.log(`::error::opening: ${f}`);
+    throw new Error(`the opening treatment cannot be satisfied: ${opening.failures.join("; ")}`);
+  }
+
   const chapters = buildChapters(withVisuals, script);
-  const rendered = await renderTimeline(withVisuals, { workDir, resolveBrollPath, resolution: RESOLUTION });
+  const rendered = await renderTimeline(withVisuals, {
+    workDir,
+    resolveBrollPath,
+    resolution: RESOLUTION,
+    openingOverlay: overlayResult.overlay,
+  });
 
   const packaging = await buildPackaging({
     topic: { title: result.selectedTitle, query: result.query, market: result.market, intent: result.intent },

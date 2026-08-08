@@ -37,17 +37,26 @@ const INK_THRESHOLD = 28;
 /**
  * A card with less ink than this is empty in all but file size.
  *
- * Set from measurement, not taste. The five card layouts with realistic content
- * render between 0.89% (TIMELINE) and 2.79% (CALLOUT) ink; a bare CALLOUT
- * carrying nothing but "6%" still reaches 1.13%, and a deliberately degenerate
- * list — a one-character title and two one-character items — reaches 0.10%.
- * 0.25% sits well clear of the real floor and still catches the degenerate case.
+ * Set from measurement, not taste, and RAISED once after a measurement that
+ * contradicted the first choice.
  *
- * Erring low is deliberate. A false positive here silently drops a good visual
- * and nobody finds out; the case that must never pass is the one that renders
- * as an empty gold-on-black rectangle in the finished video.
+ * Real content renders between 0.89% (TIMELINE) and 2.79% (CALLOUT). Chrome
+ * alone — the header rule, the row dividers, the bullet dots, with every label
+ * blank — renders between 0.12% and 0.31%, and NUMBER_BREAKDOWN's dividers put
+ * it at 0.31%, which cleared the original 0.25% floor. A card of pure furniture
+ * with nothing readable on it passed QC.
+ *
+ * 0.55% sits in the empty band between the two populations: 78% above the
+ * worst chrome-only card, 38% below the sparsest real one. Both margins are
+ * wide enough that neither a slightly busier chrome nor a slightly sparser card
+ * crosses it.
+ *
+ * The spec normaliser rejects blank content before it can ever be drawn, so
+ * this is defence in depth rather than the primary guard — but it is the LAST
+ * thing between a render and the screen, and it should not be the layer that
+ * waves through an empty rectangle.
  */
-const MIN_INK_RATIO = 0.0025;
+const MIN_INK_RATIO = 0.0055;
 
 /** More than this and something has filled the frame — a solid block, not type. */
 const MAX_INK_RATIO = 0.55;
@@ -167,6 +176,32 @@ export function findOverflowingText(svg, { width = 2560, safeMargin = 90 } = {})
     }
   }
   return offenders;
+}
+
+/**
+ * Mean absolute greyscale difference between two images, 0-255.
+ *
+ * Exported because it is the only honest way to prove a moving picture MOVES.
+ * ffmpeg will accept a zoom expression that is a constant, produce a clip of
+ * exactly the right size and duration, and fill it with identical frames — and
+ * every check short of comparing pixels reports success. Lives here rather than
+ * in a probe so callers outside auto-poster/ can use it without resolving sharp
+ * from their own directory, which is a real problem for longform/probe/.
+ */
+export async function frameDifference(pngA, pngB) {
+  const [a, b] = await Promise.all([
+    sharp(pngA).greyscale().raw().toBuffer(),
+    sharp(pngB).greyscale().raw().toBuffer(),
+  ]);
+  if (a.length !== b.length) throw new Error(`frames differ in size: ${a.length} vs ${b.length} bytes`);
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += Math.abs(a[i] - b[i]);
+  return sum / a.length;
+}
+
+/** A flat single-colour PNG of the given size. Used to prove blank detection works. */
+export async function solidPng(width, height, background = "#000") {
+  return sharp({ create: { width, height, channels: 3, background } }).png().toBuffer();
 }
 
 function round(n) {

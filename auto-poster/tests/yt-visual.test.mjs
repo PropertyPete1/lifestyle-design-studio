@@ -3,12 +3,16 @@ import assert from "node:assert/strict";
 
 import {
   normaliseIntent, attachIntents, REJECTED,
-  MAP, COMPARISON, NUMBER_BREAKDOWN, LIST, TIMELINE, CALLOUT, VISUAL_TYPES,
+  MAP, COMPARISON, NUMBER_BREAKDOWN, LIST, TIMELINE, CALLOUT, FOOTAGE,
+  VISUAL_TYPES, GRAPHIC_TYPES,
 } from "../src/yt-visual-intent.js";
 import { loadMarket, renderMapSvg, renderMapPng, mapSpecForIntent, buildProjection, MAP_ATTRIBUTION } from "../src/yt-map-render.js";
 import { renderCardSvg, renderCardPng, CARD_TYPES } from "../src/yt-card-render.js";
 import { inspectRender, findOverflowingText } from "../src/yt-visual-qc.js";
-import { selectGeneratedVisuals, spliceGenerated, kenBurnsArgs, GENERATED_SHARE_CAP } from "../src/yt-visual-broll.js";
+import { selectGeneratedVisuals, spliceGenerated, kenBurnsArgs } from "../src/yt-visual-broll.js";
+import {
+  planOpening, validateOverlay, longestSharedRun, renderOverlayPng, burnOverlayArgs, scoresPass,
+} from "../src/yt-opening.js";
 import { buildDescription, MAP_CREDITS } from "../src/yt-packaging.js";
 import { allScriptText, visualIntentText, applyGuards } from "../src/yt-script.js";
 import { gatedDevelopmentNames } from "../src/yt-brief.js";
@@ -17,7 +21,7 @@ import { planTimeline } from "../src/yt-timeline.js";
 const intent = (type, spec) => ({ type, spec });
 
 describe("normaliseIntent — the writer's contract", () => {
-  test("accepts each of the six types", () => {
+  test("accepts each of the seven types", () => {
     const good = {
       [MAP]: { places: ["Stone Oak"], lines: ["1604"] },
       [COMPARISON]: { columns: [{ name: "A", points: ["x"] }, { name: "B", points: ["y"] }] },
@@ -25,12 +29,54 @@ describe("normaliseIntent — the writer's contract", () => {
       [LIST]: { items: ["W2s", "Bank statements"] },
       [TIMELINE]: { steps: [{ label: "Offer", when: "day 0" }, { label: "Close", when: "day 30" }] },
       [CALLOUT]: { value: "41 days", label: "median" },
+      [FOOTAGE]: { note: "wide streets, grown trees" },
     };
     for (const type of VISUAL_TYPES) {
       const r = normaliseIntent(intent(type, good[type]));
       assert.equal(r.ok, true, `${type} was rejected: ${r.reason}`);
       assert.equal(r.type, type);
     }
+  });
+
+  describe("FOOTAGE is a choice, not an absence", () => {
+    test("a bare {type:FOOTAGE} with no spec is valid", () => {
+      const r = normaliseIntent({ type: FOOTAGE });
+      assert.equal(r.ok, true);
+      assert.equal(r.type, FOOTAGE);
+    });
+
+    test('the string shorthand "FOOTAGE" is valid', () => {
+      // Every voiceover take now carries an intent, and a 38-take script would
+      // otherwise gain 38 nested objects to a JSON payload the writer already
+      // struggles to close. The first live run failed all three topics, twice
+      // on malformed JSON.
+      const r = normaliseIntent("FOOTAGE");
+      assert.equal(r.ok, true);
+      assert.equal(r.type, FOOTAGE);
+    });
+
+    test("the shorthand tolerates casing and whitespace", () => {
+      for (const s of ["footage", " Footage ", "FOOTAGE"]) {
+        assert.equal(normaliseIntent(s).ok, true, `"${s}" was rejected`);
+      }
+    });
+
+    test("a shorthand string for a DRAWN type is rejected — there is nothing to draw", () => {
+      const r = normaliseIntent("CALLOUT");
+      assert.equal(r.ok, false);
+      assert.equal(r.reason, REJECTED.EMPTY);
+    });
+
+    test("an unknown shorthand is rejected, not treated as footage", () => {
+      const r = normaliseIntent("VIBES");
+      assert.equal(r.ok, false);
+      assert.equal(r.reason, REJECTED.UNKNOWN_TYPE);
+    });
+
+    test("FOOTAGE is not a graphic type", () => {
+      assert.ok(!GRAPHIC_TYPES.includes(FOOTAGE));
+      assert.equal(GRAPHIC_TYPES.length, 6);
+    });
   });
 
   test("normalises the casings a model actually emits", () => {
@@ -421,58 +467,84 @@ describe("the map render", () => {
   });
 });
 
-describe("the 30% cap", () => {
+describe("selection — no cap, graphics start after the opening", () => {
   const seg = (i, seconds, type = CALLOUT) => ({
     kind: "voiceover", takeId: `t${i}`, seconds, visual: type,
     visualSpec: { value: "x" }, broll: [{ driveFileId: `c${i}`, seconds }],
   });
+  /** Pushes the rest of the script clear of the protected opening window. */
+  const opener = { kind: "on_camera", takeId: "open", seconds: 20, source: "/tmp/a.mp4" };
 
-  test("never spends more than the cap", () => {
-    const segments = Array.from({ length: 20 }, (_, i) => seg(i, 12));
+  test("there is no ratio cap — every requested graphic past the opening is taken", () => {
+    const segments = [opener, ...Array.from({ length: 20 }, (_, i) => seg(i, 12))];
     const { report } = selectGeneratedVisuals(segments);
-    assert.ok(report.share <= GENERATED_SHARE_CAP + 1e-9, `share was ${report.share}`);
-    assert.ok(report.skippedForCap > 0);
+    assert.equal(report.chosenCount, 20, "a cap would have trimmed this");
+    assert.ok(report.graphicShare > 0.9, `graphics should dominate, got ${report.graphicShare}`);
   });
 
-  test("spreads across the script instead of front-loading one section", () => {
-    // Nine requests, a budget for about three. Taking the first three would
-    // make the opening a slideshow and leave the rest of the video bare.
-    const segments = Array.from({ length: 9 }, (_, i) => seg(i, 20));
-    const { segments: out } = selectGeneratedVisuals(segments);
-    const chosen = out.map((s, i) => (s.generatedSeconds > 0 ? i : -1)).filter((i) => i >= 0);
-    assert.ok(chosen.length >= 2, `expected several, got ${chosen.length}`);
-    assert.ok(Math.max(...chosen) - Math.min(...chosen) > 3, `all clustered: ${chosen.join(",")}`);
+  test("graphics are suppressed inside the first 15 seconds", () => {
+    // A map is not charming to somebody who is not invested yet.
+    // t1 starts at 0s, t2 at 6s (both inside), t3 at 16s (clear of it).
+    const segments = [seg(1, 6), seg(2, 10), seg(3, 30)];
+    const { segments: out, report } = selectGeneratedVisuals(segments);
+    assert.equal(out[0].generatedSeconds, 0);
+    assert.equal(out[1].generatedSeconds, 0);
+    assert.ok(out[2].generatedSeconds > 0, "the take starting at 16s should draw");
+    assert.equal(report.suppressedInOpening.length, 2);
+    assert.equal(report.suppressedInOpening[0].takeId, "t1");
   });
 
-  test("segments with no validated visual are never chosen", () => {
-    const segments = [{ kind: "voiceover", takeId: "a", seconds: 30, visual: null, broll: [] }];
+  test("a take is judged by where it STARTS, not where it ends", () => {
+    // A 30s take beginning at 14s runs well past the window, and is still
+    // suppressed — a graphic appearing one second before the hook lands is the
+    // thing this rule exists to prevent.
+    const straddling = selectGeneratedVisuals([seg(1, 14), seg(2, 30)]);
+    assert.equal(straddling.segments[1].generatedSeconds, 0, "starts at 14s, inside the window");
+
+    const clear = selectGeneratedVisuals([seg(1, 16), seg(2, 30)]);
+    assert.equal(clear.segments[1].generatedSeconds, 30, "starts at 16s, past the window");
+  });
+
+  test("FOOTAGE is never rendered as a graphic", () => {
+    const segments = [opener, { ...seg(1, 30), visual: FOOTAGE, visualSpec: { note: "wide streets" } }];
     const { report } = selectGeneratedVisuals(segments);
     assert.equal(report.chosenCount, 0);
   });
 
-  test("a short script still gets a visual — the budget shrinks it, not skips it", () => {
-    // One 22s take gives a 6.6s budget against a 9s ideal. Comparing the two
-    // and skipping meant short videos rendered NOTHING, silently.
-    const { report, segments } = selectGeneratedVisuals([seg(1, 22)]);
-    assert.equal(report.chosenCount, 1, "a 4s visual fits in 6.6s and should have been chosen");
-    assert.ok(segments[0].generatedSeconds >= 4);
-    assert.ok(report.share <= GENERATED_SHARE_CAP + 1e-9);
+  test("segments with no validated visual are never chosen", () => {
+    const { report } = selectGeneratedVisuals([opener, { kind: "voiceover", takeId: "a", seconds: 30, visual: null, broll: [] }]);
+    assert.equal(report.chosenCount, 0);
   });
 
   test("a segment the allocator could not fill is left alone", () => {
     // renderTimeline throws loudly on a voiceover take with no B-roll. Splicing
     // a visual in makes the concat succeed with a picture shorter than the
-    // narration, and -shortest then cuts the narration — a lost sentence
-    // instead of a failed build.
+    // narration, and -shortest then quietly cuts the narration — a lost
+    // sentence instead of a failed build.
     const starved = { kind: "voiceover", takeId: "a", seconds: 30, visual: CALLOUT, visualSpec: { value: "x" }, broll: [] };
-    const { report } = selectGeneratedVisuals([starved]);
+    const { report } = selectGeneratedVisuals([opener, starved]);
     assert.equal(report.chosenCount, 0);
   });
 
-  test("on-camera runtime is excluded from the budget", () => {
-    const { report } = selectGeneratedVisuals([{ kind: "on_camera", seconds: 600 }, seg(1, 40)]);
+  test("on-camera runtime is excluded from the split", () => {
+    const { report } = selectGeneratedVisuals([{ kind: "on_camera", seconds: 600, source: "/a.mp4" }, seg(1, 40)]);
     assert.equal(report.brollSeconds, 40);
-    assert.ok(report.budgetSeconds <= 12 + 1e-9);
+  });
+
+  test("the split is reported at both extremes", () => {
+    const allGraphic = selectGeneratedVisuals([opener, seg(1, 30), seg(2, 30)]);
+    assert.equal(allGraphic.report.graphicShare, 1);
+    assert.equal(allGraphic.report.footageSeconds, 0);
+
+    const allFootage = selectGeneratedVisuals([opener, { ...seg(1, 30), visual: FOOTAGE }, { ...seg(2, 30), visual: FOOTAGE }]);
+    assert.equal(allFootage.report.graphicShare, 0);
+    assert.equal(allFootage.report.footageSeconds, 60);
+  });
+
+  test("a script with no voiceover reports 0/0 rather than dividing by zero", () => {
+    const { report } = selectGeneratedVisuals([opener]);
+    assert.equal(report.brollSeconds, 0);
+    assert.equal(report.graphicShare, 0);
   });
 });
 
@@ -544,5 +616,118 @@ describe("attribution in the description", () => {
   test("an unknown source is reported rather than silently uncredited", () => {
     const { missing } = buildDescription({ hook: "h", promise: "p", mapsUsed: true, mapSource: "bing" });
     assert.ok(missing.some((m) => /map attribution/.test(m)));
+  });
+});
+
+describe("the opening treatment", () => {
+  const onCam = (id, seconds = 20) => ({ kind: "on_camera", takeId: id, seconds, source: `/tmp/${id}.mp4` });
+  const vo = (id, seconds = 20, extra = {}) => ({ kind: "voiceover", takeId: id, seconds, broll: [{ driveFileId: "c", seconds }], ...extra });
+
+  test("a timeline opening on the face passes", () => {
+    const r = planOpening([onCam("s1t1"), vo("s1t2", 30)], { overlay: "The trade nobody explains" });
+    assert.equal(r.ok, true, r.failures.join("; "));
+    assert.match(r.composition.opensOn, /on-camera take s1t1/);
+  });
+
+  test("a timeline opening on B-roll FAILS", () => {
+    // Opening on somebody else's drone footage is a different product.
+    const r = planOpening([vo("s1t1"), onCam("s1t2")]);
+    assert.equal(r.ok, false);
+    assert.ok(r.failures.some((f) => /must open on an on-camera take/.test(f)), r.failures.join("; "));
+  });
+
+  test("an opening take with no recording FAILS rather than rendering a hole", () => {
+    const r = planOpening([{ kind: "on_camera", takeId: "s1t1", seconds: 20, source: null }]);
+    assert.equal(r.ok, false);
+    assert.ok(r.failures.some((f) => /no recording/.test(f)));
+  });
+
+  test("an empty timeline fails cleanly instead of throwing", () => {
+    const r = planOpening([]);
+    assert.equal(r.ok, false);
+    assert.equal(r.composition, null);
+  });
+
+  test("a graphic scheduled inside the protected window FAILS", () => {
+    const r = planOpening([onCam("s1t1", 5), vo("s1t2", 6, { generatedSeconds: 6, visual: "MAP" })]);
+    assert.equal(r.ok, false);
+    assert.ok(r.failures.some((f) => /protected opening/.test(f)));
+  });
+
+  test("the punctuation CALLOUT is allowed inside the window", () => {
+    const r = planOpening([
+      onCam("s1t1", 8),
+      vo("s1t2", 4, { generatedSeconds: 1, visual: "CALLOUT", isOpeningPunctuation: true }),
+    ]);
+    assert.equal(r.ok, true, r.failures.join("; "));
+    assert.match(r.composition.punctuation, /1s CALLOUT/);
+  });
+
+  test("the composition report says enough to judge without scrubbing", () => {
+    const r = planOpening([onCam("s1t1", 12), vo("s1t2", 30)], { overlay: "The trade nobody explains" });
+    const c = r.composition;
+    assert.equal(c.overlay, "The trade nobody explains");
+    assert.match(c.overlayWindow, /^0\.4s to 4s$/);
+    assert.equal(c.protectedSeconds, 15);
+    assert.equal(c.takesInWindow[0].takeId, "s1t1");
+    assert.equal(c.punctuation, "none");
+  });
+});
+
+describe("the opening overlay line", () => {
+  const HOOK = "There is no state income tax here. That is the trade, and nobody explains the other half of it.";
+
+  test("accepts a line that reuses the topic's nouns but not its phrasing", () => {
+    // The first gate compared word SETS and rejected this — every content word
+    // appears in the hook, and it is still the right line. Any overlay worth
+    // burning reuses the topic's nouns.
+    assert.deepEqual(validateOverlay("The trade nobody explains", HOOK), []);
+  });
+
+  test("rejects a verbatim run of the spoken hook", () => {
+    const f = validateOverlay("there is no state income tax", HOOK);
+    assert.ok(f.some((x) => /consecutive words/.test(x)), f.join("; "));
+  });
+
+  test("enforces the 4 to 8 word budget", () => {
+    assert.ok(validateOverlay("Taxes bite", HOOK).some((f) => /at least 4/.test(f)));
+    assert.ok(validateOverlay("this line has far too many words in it to ever work here", HOOK).some((f) => /ceiling is 8/.test(f)));
+  });
+
+  test("rejects trailing punctuation and quote marks", () => {
+    assert.ok(validateOverlay("The trade nobody explains.", HOOK).some((f) => /ends with punctuation/.test(f)));
+    assert.ok(validateOverlay('The "trade" nobody explains', HOOK).some((f) => /quote mark/.test(f)));
+  });
+
+  test("empty is rejected, not silently accepted", () => {
+    assert.deepEqual(validateOverlay("", HOOK), ["overlay is empty"]);
+    assert.deepEqual(validateOverlay(null, HOOK), ["overlay is empty"]);
+  });
+
+  test("longestSharedRun measures phrases, not word sets", () => {
+    assert.equal(longestSharedRun("nobody explains", "and nobody explains the"), 2);
+    assert.equal(longestSharedRun("completely unrelated wording", "and nobody explains the"), 0);
+  });
+
+  test("both critic axes must clear the bar", () => {
+    assert.equal(scoresPass({ stopping_power: 9, complement: 9 }), true);
+    assert.equal(scoresPass({ stopping_power: 9, complement: 6 }), false);
+    assert.equal(scoresPass(null), false);
+  });
+
+  test("renders a legible overlay image", async () => {
+    const png = await renderOverlayPng("The trade nobody explains", { width: 1920, height: 1080 });
+    const v = await inspectRender(png, { label: "overlay", edgeCheck: false });
+    // A transparent plate over video, so the card ink floor does not apply —
+    // what matters is that it is not blank.
+    assert.ok(v.metrics.range > 8, "overlay rendered blank");
+    assert.ok(png.length > 3000);
+  });
+
+  test("the burn arguments fade the OVERLAY's alpha and leave the audio alone", () => {
+    const args = burnOverlayArgs("in.mp4", "ov.png", "out.mp4").join(" ");
+    assert.match(args, /alpha=1/);
+    assert.match(args, /overlay=0:0:enable='between\(t,/);
+    assert.match(args, /-c:a copy/);
   });
 });

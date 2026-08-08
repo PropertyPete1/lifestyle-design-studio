@@ -32,7 +32,26 @@ export const LIST = "LIST";
 export const TIMELINE = "TIMELINE";
 export const CALLOUT = "CALLOUT";
 
-export const VISUAL_TYPES = [MAP, COMPARISON, NUMBER_BREAKDOWN, LIST, TIMELINE, CALLOUT];
+/**
+ * FOOTAGE is a CHOICE now, not the absence of one.
+ *
+ * The default flipped: a twelve-minute explainer that cuts to reel B-roll every
+ * few seconds is using the visual language of a 15-second hype clip, and under
+ * a teaching sentence that reads as filler. So the writer is asked to reach for
+ * a graphic that teaches the sentence, and to name FOOTAGE explicitly when the
+ * point genuinely IS what a place looks and feels like.
+ *
+ * Keeping it as a type rather than a null matters for reporting. "The writer
+ * chose footage for this line" and "the writer said nothing" look identical in
+ * the finished video and mean completely different things — one is an editorial
+ * decision, the other is a prompt that is not landing.
+ */
+export const FOOTAGE = "FOOTAGE";
+
+/** Types that produce a rendered graphic. FOOTAGE deliberately is not one. */
+export const GRAPHIC_TYPES = [MAP, COMPARISON, NUMBER_BREAKDOWN, LIST, TIMELINE, CALLOUT];
+
+export const VISUAL_TYPES = [...GRAPHIC_TYPES, FOOTAGE];
 
 /** Why an intent was dropped. Reported, never thrown. */
 export const REJECTED = {
@@ -175,7 +194,20 @@ function normaliseCallout(spec) {
   };
 }
 
+/**
+ * FOOTAGE takes any spec, including none.
+ *
+ * There is nothing to validate — the renderer is the B-roll allocator, which
+ * already ran. `note` is carried through only so the build summary can say WHY
+ * the writer wanted footage here, which is the difference between a reviewable
+ * decision and an unexplained one.
+ */
+function normaliseFootage(spec) {
+  return { ok: true, spec: { note: str(spec?.note) || str(spec?.reason) || null } };
+}
+
 const NORMALISERS = {
+  [FOOTAGE]: normaliseFootage,
   [MAP]: normaliseMap,
   [COMPARISON]: normaliseComparison,
   [NUMBER_BREAKDOWN]: normaliseBreakdown,
@@ -190,6 +222,23 @@ const NORMALISERS = {
  * @returns {{ ok: true, type, spec } | { ok: false, reason }}
  */
 export function normaliseIntent(intent) {
+  // STRING SHORTHAND: "visualIntent": "FOOTAGE".
+  //
+  // Not a convenience. Every voiceover take now carries an intent, and a
+  // twelve-minute script is around 38 takes — so the object form adds 38 nested
+  // objects to a JSON payload the writer already struggles to close. The first
+  // live run failed all three topics, twice on malformed JSON. FOOTAGE is the
+  // one type with nothing to describe and will be a large share of those takes,
+  // so letting it be a bare string removes most of that nesting outright.
+  if (typeof intent === "string") {
+    const bare = intent.trim().toUpperCase().replace(/[\s-]+/g, "_");
+    if (!bare) return { ok: false, reason: REJECTED.NONE };
+    if (!VISUAL_TYPES.includes(bare)) return { ok: false, reason: REJECTED.UNKNOWN_TYPE, type: intent };
+    // Only FOOTAGE is meaningful without a spec; the rest have nothing to draw.
+    if (bare !== FOOTAGE) return { ok: false, reason: REJECTED.EMPTY, type: bare };
+    return { ok: true, type: FOOTAGE, spec: { note: null } };
+  }
+
   if (!intent || typeof intent !== "object") return { ok: false, reason: REJECTED.NONE };
 
   // Models write "number_breakdown", "Number Breakdown" and "numberBreakdown"
@@ -198,7 +247,11 @@ export function normaliseIntent(intent) {
   if (!VISUAL_TYPES.includes(type)) return { ok: false, reason: REJECTED.UNKNOWN_TYPE, type: intent.type || null };
 
   const spec = intent.spec;
-  if (!spec || typeof spec !== "object" || Array.isArray(spec)) return { ok: false, reason: REJECTED.MALFORMED, type };
+  // FOOTAGE is the one type with nothing to describe, so a bare
+  // {"type":"FOOTAGE"} is valid and is what the writer will usually send.
+  if (type !== FOOTAGE && (!spec || typeof spec !== "object" || Array.isArray(spec))) {
+    return { ok: false, reason: REJECTED.MALFORMED, type };
+  }
 
   const result = NORMALISERS[type](spec);
   if (!result.ok) return { ok: false, reason: result.reason, type };
@@ -227,11 +280,22 @@ export function attachIntents(segments) {
     return { ...seg, visual: result.type, visualSpec: result.spec };
   });
 
-  const requested = out.filter((s) => s.visual).length;
+  const voiceover = out.filter((s) => s.kind === "voiceover");
+  const graphics = voiceover.filter((s) => GRAPHIC_TYPES.includes(s.visual));
+  const chosenFootage = voiceover.filter((s) => s.visual === FOOTAGE);
+  const silent = voiceover.filter((s) => !s.visual);
+
   return {
     segments: out,
     report: {
-      requested,
+      requested: graphics.length,
+      // Three distinct populations, and collapsing any two of them hides
+      // something worth seeing: a graphic, a deliberate "show the place", and a
+      // take the writer said nothing about. The last one is the prompt failing.
+      graphicTakes: graphics.length,
+      footageTakes: chosenFootage.length,
+      unspecifiedTakes: silent.length,
+      voiceoverTakes: voiceover.length,
       rejected: rejections.length,
       rejections,
       byType: VISUAL_TYPES.reduce((acc, t) => {

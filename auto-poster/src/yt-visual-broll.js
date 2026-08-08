@@ -16,16 +16,25 @@
 
 import { existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { MAP, attachIntents } from "./yt-visual-intent.js";
+import { MAP, FOOTAGE, GRAPHIC_TYPES, attachIntents } from "./yt-visual-intent.js";
 
 /**
- * Share of B-roll runtime that may be a generated visual.
+ * THERE IS NO RATIO CAP.
  *
- * The brief said ~30% and 30% is right: it is enough for the two or three
- * moments in a twelve-minute video that genuinely cannot be filmed, and not
- * enough to change what the video feels like.
+ * There was one — 30% of B-roll runtime — and it was built on the assumption
+ * that footage is the right default and graphics are the exception. That
+ * assumption was wrong for this format. The B-roll library is cut for
+ * 15-second hype reels, and under a twelve-minute explainer those clips are
+ * filler: pretty, and teaching nothing. So the writer now decides per sentence,
+ * a graphic is the default, and FOOTAGE is an explicit choice.
+ *
+ * What replaces the cap is REPORTING. The split is measured and surfaced per
+ * video so it can be judged on the finished thing rather than constrained in
+ * advance by a number nobody has tested against a real explainer.
  */
-export const GENERATED_SHARE_CAP = 0.3;
+
+/** Graphics are suppressed entirely for this long. See yt-opening.js. */
+export const OPENING_PROTECTED_SECONDS = 15;
 
 /** Below this a graphic is a flash, above it a still starts to feel stuck. */
 export const MIN_VISUAL_SECONDS = 4;
@@ -89,56 +98,52 @@ export function kenBurnsArgs(pngPath, output, { seconds, dim, fps = 30, directio
  * Returns the plan unmodified except for a `generatedSeconds` marker on the
  * chosen segments, plus a report the caller can log or surface.
  */
-export function selectGeneratedVisuals(segments, { cap = GENERATED_SHARE_CAP } = {}) {
+export function selectGeneratedVisuals(segments, { protectedSeconds = OPENING_PROTECTED_SECONDS } = {}) {
   const brollSeconds = segments
     .filter((s) => s.kind === "voiceover")
     .reduce((n, s) => n + (s.seconds || 0), 0);
-  const budget = brollSeconds * cap;
 
-  const all = segments
-    .map((seg, index) => ({ seg, index }))
-    .filter(({ seg }) => {
-      if (seg.kind !== "voiceover" || !seg.visual) return false;
-
-      // A segment with NO footage is one the B-roll allocator could not fill,
-      // and renderTimeline throws on it — loudly, which is correct. Splicing a
-      // visual in would make the concat succeed with a picture SHORTER than the
-      // narration, and `-shortest` would then quietly cut the narration to
-      // match. That turns a build failure into a video missing a sentence, so
-      // an exhausted segment is left exactly as it was.
-      const footage = (seg.broll || []).reduce((n, c) => n + (c.seconds || 0), 0);
-      return footage > 0;
-    });
-
-  // Interleave: take every Nth candidate first, then fill the gaps. With a
-  // budget that fits 3 of 9 requests this picks roughly the 1st, 4th and 7th
-  // rather than the first three.
-  const candidates = [];
-  const stride = Math.max(1, Math.round(all.length / Math.max(1, Math.floor(budget / MIN_VISUAL_SECONDS))));
-  for (let offset = 0; offset < stride; offset++) {
-    for (let i = offset; i < all.length; i += stride) candidates.push(all[i]);
-  }
+  // Elapsed position of each segment, so the opening can be protected by time
+  // rather than by index — the first 15 seconds may be one take or three.
+  let elapsed = 0;
+  const starts = segments.map((s) => {
+    const at = elapsed;
+    elapsed += s.seconds || 0;
+    return at;
+  });
 
   const chosen = new Map();
+  const suppressed = [];
   let spent = 0;
-  for (const { seg, index } of candidates) {
-    // A generated visual covers PART of a take, not all of it. Holding one
-    // graphic for a 30-second take is the slideshow failure in miniature.
-    const ideal = Math.min(MAX_VISUAL_SECONDS, Math.max(MIN_VISUAL_SECONDS, (seg.seconds || 0) * 0.5));
 
-    // SHRINK TO FIT rather than skip. The first version compared the ideal
-    // length against the remaining budget and skipped when it did not fit —
-    // so a short script rendered NOTHING: one 22-second take gives a 6.6s
-    // budget, the ideal came out 9s, and a perfectly good 4s visual was
-    // discarded because a 9s one would not fit. Nothing failed and nothing
-    // was logged; the feature simply had no effect on short videos.
-    const room = budget - spent;
-    const want = Math.min(ideal, room, seg.seconds || 0);
-    if (want < MIN_VISUAL_SECONDS) continue;
+  segments.forEach((seg, index) => {
+    if (seg.kind !== "voiceover" || !GRAPHIC_TYPES.includes(seg.visual)) return;
+
+    // Nothing competes with the hook. A map is not charming to somebody who is
+    // not invested yet, and the first fifteen seconds are where they decide.
+    if (starts[index] < protectedSeconds) {
+      suppressed.push({ takeId: seg.takeId, type: seg.visual, startsAt: round(starts[index]) });
+      return;
+    }
+
+    // A segment with NO footage is one the B-roll allocator could not fill, and
+    // renderTimeline throws on it — loudly, which is correct. Splicing a visual
+    // in would make the concat succeed with a picture SHORTER than the
+    // narration, and `-shortest` would quietly cut the narration to match. That
+    // turns a build failure into a video missing a sentence.
+    const footage = (seg.broll || []).reduce((n, c) => n + (c.seconds || 0), 0);
+    if (footage <= 0) return;
+
+    // The graphic now carries the WHOLE take by default. Under the old cap it
+    // covered half and footage filled the rest; with footage demoted to a
+    // deliberate choice, cutting away from a card mid-explanation just to show
+    // a drone shot is the filler this change exists to remove.
+    const want = Math.min(seg.seconds || 0, footage);
+    if (want < MIN_VISUAL_SECONDS) return;
 
     chosen.set(index, round(want));
     spent += want;
-  }
+  });
 
   const out = segments.map((seg, index) =>
     chosen.has(index) ? { ...seg, generatedSeconds: round(chosen.get(index)) } : { ...seg, generatedSeconds: 0 }
@@ -148,12 +153,11 @@ export function selectGeneratedVisuals(segments, { cap = GENERATED_SHARE_CAP } =
     segments: out,
     report: {
       brollSeconds: round(brollSeconds),
-      budgetSeconds: round(budget),
-      usedSeconds: round(spent),
-      share: brollSeconds > 0 ? round(spent / brollSeconds) : 0,
-      candidateCount: candidates.length,
+      graphicSeconds: round(spent),
+      footageSeconds: round(Math.max(0, brollSeconds - spent)),
+      graphicShare: brollSeconds > 0 ? round(spent / brollSeconds) : 0,
       chosenCount: chosen.size,
-      skippedForCap: candidates.length - chosen.size,
+      suppressedInOpening: suppressed,
     },
   };
 }
@@ -170,7 +174,7 @@ export function selectGeneratedVisuals(segments, { cap = GENERATED_SHARE_CAP } =
  * segment keeps its footage and the failure is reported. There is always a
  * fallback, so there is never a reason to stop the build over a graphic.
  */
-export async function applyGeneratedVisuals(plan, { workDir, market = "san_antonio", cap = GENERATED_SHARE_CAP } = {}) {
+export async function applyGeneratedVisuals(plan, { workDir, market = "san_antonio", protectedSeconds = OPENING_PROTECTED_SECONDS } = {}) {
   const { mapSpecForIntent, renderMapPng, renderMapSvg } = await import("./yt-map-render.js");
   const { renderCardPng, renderCardSvg } = await import("./yt-card-render.js");
   const { inspectRender, findOverflowingText } = await import("./yt-visual-qc.js");
@@ -181,7 +185,7 @@ export async function applyGeneratedVisuals(plan, { workDir, market = "san_anton
 
   // Validate what the writer asked for before spending anything on it.
   const { segments: withIntents, report: intentReport } = attachIntents(plan.segments || []);
-  const { segments, report } = selectGeneratedVisuals(withIntents, { cap });
+  const { segments, report } = selectGeneratedVisuals(withIntents, { protectedSeconds });
 
   const rendered = [];
   const failures = [];
@@ -247,6 +251,12 @@ export async function applyGeneratedVisuals(plan, { workDir, market = "san_anton
     }
   }
 
+  // The split is what replaces the cap: measured on the finished plan and
+  // surfaced, rather than constrained in advance by a ratio nobody has tested
+  // against a real explainer.
+  const graphicSeconds = rendered.reduce((n, r) => n + r.seconds, 0);
+  const brollSeconds = report.brollSeconds || 0;
+
   return {
     ...plan,
     segments,
@@ -257,6 +267,13 @@ export async function applyGeneratedVisuals(plan, { workDir, market = "san_anton
       failures,
       renderedCount: rendered.length,
       mapsUsed: rendered.some((r) => r.kind === MAP),
+      split: {
+        graphicSeconds: round(graphicSeconds),
+        footageSeconds: round(Math.max(0, brollSeconds - graphicSeconds)),
+        graphicPct: brollSeconds > 0 ? Math.round((graphicSeconds / brollSeconds) * 100) : 0,
+        footagePct: brollSeconds > 0 ? Math.round(((brollSeconds - graphicSeconds) / brollSeconds) * 100) : 0,
+        brollSeconds: round(brollSeconds),
+      },
     },
   };
 }

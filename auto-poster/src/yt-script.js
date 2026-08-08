@@ -279,6 +279,13 @@ Each has:
     "takes"      — the spoken content, split into units of ${TAKE_SECONDS_MIN} to ${TAKE_SECONDS_MAX} seconds
     "boundaryPull" — one sentence at the END of the section giving a concrete reason to stay for the next one. Not "up next we'll talk about schools" — that is a table of contents. Something with a stake in it: "But the number that actually moves your payment isn't the price. It's the one nobody quotes you."
 
+"openingOverlay" — 4 to 8 words, burned on screen over the first seconds while Peter is talking.
+The video opens on his face and one claim. This line is the claim in text, and it is doing a different job from the words he is saying: he is talking, and this is what somebody scrolling with the sound off reads before deciding to stay.
+- Do NOT restate the hook word for word. If he says "there is no state income tax here, that is the trade", the overlay is not "no state income tax" — it is something like "The trade nobody explains".
+- It should complement, sharpen, or add the stake. Think of the two together as one opening.
+- No period at the end. No quotes. Plain words, 4 to 8 of them.
+- It is read in about one second at the top of a video by somebody who does not know you yet, so it has to earn attention on its own.
+
 "softCta" — mid-video, placed after the section where you have most earned it. Low friction. One line, no hard sell.
 
 "close" — the strong one. Phone number, and the offer of a personalised payment breakdown. Ask for the comment or the text, once, plainly.
@@ -291,14 +298,18 @@ Each take is ${TAKE_SECONDS_MIN}-${TAKE_SECONDS_MAX} seconds of speech, which is
     "direction" — one short instruction for filming or delivery. Be practical and specific: "walking shot if you can", "energy up, this is the hook", "say this one slower", "look right at the lens for this line". Not "speak clearly".
     "visualIntent" — OPTIONAL, VOICEOVER takes only. See below. Omit it entirely, or set it to null, for any take that does not need one.
 
-VISUAL INTENT — the sentences footage cannot show.
-Most takes play over B-roll of homes and streets, and that is right. But some sentences are not describing a place, they are explaining something: a relationship, a number, a comparison, a sequence, or a geography. Footage cannot show those. A drive-by clip of a house does not show what a tax bill is made of, and no shot of a street shows that one road rings another.
+VISUAL INTENT — what the viewer looks at while you talk. EVERY VOICEOVER TAKE GETS ONE.
+This is a teaching video, not a highlight reel. The B-roll library is drone and walkthrough footage cut for 15-second hype clips, and under a twelve-minute explainer that footage is filler — pretty, and doing no work. So the DEFAULT is a graphic that teaches the sentence, and footage is a deliberate choice you make when the point genuinely is what a place looks and feels like.
 
-THE RULE: if a sentence is explaining a relationship, a number, a comparison, a sequence, or a geography, say what visual would make it land. Otherwise leave it out and real footage plays.
+THE RULE: ask what the viewer needs to SEE to understand this sentence. If the answer is a relationship, a number, a comparison, a sequence, a geography, or a single figure worth the screen — pick that graphic type. If the answer is honestly "what this place looks like" — pick FOOTAGE and say why.
 
-Be sparing. Most takes should have no visualIntent. Only about one voiceover take in four earns one, and a video that cuts to a graphic every thirty seconds stops feeling like a person who drove these roads. If you are unsure, leave it out — footage is a good answer.
+Do not stretch for a graphic you cannot fill. A card with two vague bullets on it teaches nothing and looks like a slide from a bad deck; FOOTAGE is the better answer there and it is a real answer, not a failure.
 
-Use exactly one of these six types:
+Use exactly one of these seven types:
+
+"FOOTAGE" — the point IS the place: what a neighborhood feels like to drive through, lot sizes, grown-in trees. Pick it when a graphic would abstract away the thing the viewer wants to see.
+    WRITE IT AS A BARE STRING, not an object: "visualIntent": "FOOTAGE"
+    That shorthand exists to keep your JSON simple. Use it every time you choose footage.
 
 "MAP" — any geography: a route, a boundary, a set of locations, an area.
     "spec": {"places": ["Stone Oak", "Downtown"], "lines": ["1604", "281"], "title": "short label for the shot"}
@@ -321,7 +332,9 @@ Use exactly one of these six types:
     "spec": {"value": "41 days", "label": "median time on market", "title": "..."}
 
 VISUAL INTENT RULES:
+- EVERY VOICEOVER take gets a visualIntent. A take with none is a take nobody decided about.
 - NEVER on an ON_CAMERA take. Those show Peter, and there is nothing to replace.
+- Do not put a visualIntent on any take in the first 15 seconds. The video opens on Peter's face and one claim; graphics start after the hook has landed.
 - Every number you put in a spec must be one you already say out loud in that take's text. Do not invent a figure for the graphic, and do not put a monthly payment figure in one — that ban covers visuals too.
 - Keep labels short. Under about 30 characters each; they are read off a screen in a few seconds, not studied.
 - The graphic supports the sentence, it does not repeat it. Do not paste the take's text into the spec.
@@ -356,12 +369,13 @@ ${gatedDevelopmentNames().map((n) => `    - ${n}`).join("\n")}
 
 JSON SAFETY — read this twice. Every one of these throws the whole script away.
 1. CLOSE THE SECTIONS ARRAY. After the last section's closing brace you must write "]" before "softCta". This is the single most common failure: the last section ends with } and the next character is a comma and then "softCta", with no ] between them. The shape is  ...}]  ,"softCta":  — never  ...}  ,"softCta": .
+1b. CLOSE EVERY visualIntent. Each one opens two braces — {"type": ..., "spec": {...}} — and both must close before the take's own closing brace. When you choose footage, write the bare string "FOOTAGE" instead; it opens nothing. A run of three unclosed intents is what turns a finished script into an unparseable one.
 2. NEVER put a double quote (") inside any text value. If you need to quote something, use single quotes: 'the north side'. Apostrophes are fine.
 3. No newlines inside a value. Keep every value on one line.
 Before you answer, check that every [ you opened has a matching ].
 
 Return ONLY valid JSON, no preamble and no code fences:
-{"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, {"id": "s1t2", "mode": "${VOICEOVER}", "text": "...", "direction": "...", "visualIntent": {"type": "CALLOUT", "spec": {"value": "...", "label": "..."}}}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
+{"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "openingOverlay": "4 to 8 words", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, {"id": "s1t2", "mode": "${VOICEOVER}", "text": "...", "direction": "...", "visualIntent": "FOOTAGE"}, {"id": "s1t3", "mode": "${VOICEOVER}", "text": "...", "direction": "...", "visualIntent": {"type": "CALLOUT", "spec": {"value": "...", "label": "..."}}}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
 
 export function writerSystem({ voiceBlock = "", bannedBlock = buildBannedBlock() } = {}) {
   return buildWriterSystem() + bannedBlock + voiceBlock;

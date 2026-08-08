@@ -28,6 +28,7 @@ import { tmpdir } from "os";
 import { generateTTS, postProcessVoiceoverAudio } from "./voiceover.js";
 import { RESOLUTION } from "./yt-config.js";
 import { kenBurnsArgs } from "./yt-visual-broll.js";
+import { renderOverlayPng, burnOverlayArgs } from "./yt-opening.js";
 
 export const CANVAS = {
   "1080p": { w: 1920, h: 1080 },
@@ -270,7 +271,7 @@ export function mediaDuration(path) {
  * @param {string} [opts.resolution]
  * @returns {{ outputPath, seconds, bytes, stages }}
  */
-export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPath = null, resolution = RESOLUTION } = {}) {
+export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPath = null, resolution = RESOLUTION, openingOverlay = null } = {}) {
   if (!plan?.segments?.length) throw new Error("renderTimeline needs a plan with segments");
   if (plan.missingTakes?.length) {
     // Rendering around a missing on-camera take would produce a video with a
@@ -289,6 +290,14 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
     console.log(`[Assemble] ${name}: ${stages[name]}s`);
     return out;
   };
+
+  // The overlay is rasterised once, up front, because the segment loop below
+  // is synchronous ffmpeg work and sharp is not.
+  let overlayPngPath = null;
+  if (openingOverlay) {
+    overlayPngPath = join(dir, "opening-overlay.png");
+    writeFileSync(overlayPngPath, await renderOverlayPng(openingOverlay, dim));
+  }
 
   // ── 1. each segment becomes one normalised, narrated file ────────────────
   const segmentFiles = [];
@@ -309,6 +318,20 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
           withAudio,
         ]);
         rmSync(visual, { force: true });
+
+        // The opening overlay burns onto the FIRST segment only, and only when
+        // that segment is on-camera — which planOpening has already guaranteed.
+        // Burning here rather than after the concat keeps the filter operating
+        // on a 20-second file instead of a twelve-minute one.
+        if (i === 0 && overlayPngPath) {
+          const burned = `${base}_burned.mp4`;
+          ffmpeg(burnOverlayArgs(withAudio, overlayPngPath, burned));
+          rmSync(withAudio, { force: true });
+          segmentFiles.push(burned);
+          console.log(`[Assemble] burned the opening overlay: "${openingOverlay}"`);
+          return;
+        }
+
         segmentFiles.push(withAudio);
         return;
       }
