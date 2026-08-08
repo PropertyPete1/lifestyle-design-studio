@@ -245,21 +245,27 @@ export async function generateOpeningOverlay({ hook, candidate = null, maxRetrie
 export function overlaySvg(text, { width = 1920, height = 1080 } = {}) {
   const C = BRAND.colors;
   const accent = BRAND.accentRotation[0];
-  const maxWidth = width * 0.82;
+  const maxWidth = width * 0.76;
 
-  let size = Math.round(width * 0.058);
+  // Sized to sit UNDER a face, not to compete with it. The first pass used 5.8%
+  // of frame width, which wrapped an ordinary six-word line onto two rows and
+  // produced a plate deep enough to cover his torso. 4.2% keeps almost every
+  // line in the 4-8 word budget on a single row, and the loop shrinks the rest
+  // rather than stacking them.
+  let size = Math.round(width * 0.042);
   let lines = wrapText(text, size, maxWidth, BOLD_SERIF);
-  while (lines.length > 2 && size > Math.round(width * 0.032)) {
-    size -= 3;
+  while (lines.length > 1 && size > Math.round(width * 0.028)) {
+    size -= 2;
     lines = wrapText(text, size, maxWidth, BOLD_SERIF);
   }
+  lines = lines.slice(0, 2);
 
   const lineHeight = size * 1.2;
   const blockH = lines.length * lineHeight;
-  // Lower third, clear of the face and clear of the caption band beneath.
-  const top = Math.round(height * 0.68);
-  const padX = size * 0.7;
-  const padY = size * 0.44;
+  // Lower third, clear of the face and above the caption band beneath.
+  const top = Math.round(height * 0.7);
+  const padX = size * 0.62;
+  const padY = size * 0.38;
   const widest = Math.min(Math.max(...lines.map((l) => measure(l, size, BOLD_SERIF))), maxWidth);
   const boxW = widest + padX * 2;
   const boxX = (width - boxW) / 2;
