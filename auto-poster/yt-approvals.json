@@ -237,8 +237,8 @@
         "reoutlineReason": "Outline regenerated under the named-places rule (#34). Peter's pick and notes preserved."
       },
       "decision": "approve",
-      "notes": "36 take(s) recorded and uploaded",
-      "decidedAt": "2026-08-09T16:32:33.554Z",
+      "notes": "Let’s target veterans",
+      "decidedAt": "2026-08-07T17:47:33.055Z",
       "selection": 1,
       "actedAt": "2026-08-07T22:04:00.450Z",
       "actedAction": "kit_delivered",
@@ -515,6 +515,17 @@
           }
         }
       }
+    },
+    {
+      "requestId": "video_review-2026-08-09-680b7259",
+      "kind": "video_review",
+      "requestedAt": "2026-08-09T17:13:18.942Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "North San Antonio Neighborhoods: Stone Oak, ISD Lines and MUD Fees",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
