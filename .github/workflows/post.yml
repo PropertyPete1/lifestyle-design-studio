@@ -128,6 +128,12 @@ jobs:
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          # The voice to narrate with. Unset falls back to the cloned voice
+          # hardcoded in voiceover.js — which is a PROFESSIONAL voice, and on
+          # 2026-07-27 the account lost the Creator tier that made it usable.
+          # Every voiceover run failed for 14 days and the only fix required a
+          # code change, because this knob was read but never plumbed through.
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
@@ -197,6 +203,12 @@ jobs:
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          # The voice to narrate with. Unset falls back to the cloned voice
+          # hardcoded in voiceover.js — which is a PROFESSIONAL voice, and on
+          # 2026-07-27 the account lost the Creator tier that made it usable.
+          # Every voiceover run failed for 14 days and the only fix required a
+          # code change, because this knob was read but never plumbed through.
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
@@ -254,6 +266,12 @@ jobs:
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          # The voice to narrate with. Unset falls back to the cloned voice
+          # hardcoded in voiceover.js — which is a PROFESSIONAL voice, and on
+          # 2026-07-27 the account lost the Creator tier that made it usable.
+          # Every voiceover run failed for 14 days and the only fix required a
+          # code change, because this knob was read but never plumbed through.
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
@@ -319,6 +337,12 @@ jobs:
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          # The voice to narrate with. Unset falls back to the cloned voice
+          # hardcoded in voiceover.js — which is a PROFESSIONAL voice, and on
+          # 2026-07-27 the account lost the Creator tier that made it usable.
+          # Every voiceover run failed for 14 days and the only fix required a
+          # code change, because this knob was read but never plumbed through.
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}

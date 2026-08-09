@@ -64,8 +64,20 @@ describe("MAIL_PREFIX — a scannable inbox", () => {
   test("each class has its own prefix", () => {
     assert.deepEqual(
       Object.values(MAIL_PREFIX).sort(),
-      ["[CAROUSEL]", "[REELS]", "[YT PIPELINE]"]
+      ["[CAROUSEL]", "[DAILY ALERT]", "[REELS]", "[YT PIPELINE]"]
     );
+  });
+
+  /**
+   * The alert prefix must not collide with the routine ones. [REELS] and
+   * [CAROUSEL] mark mail that arrives every day and gets skimmed; that is how a
+   * fortnight of failed trial runs went unread. An alert has to look different
+   * from the traffic it is hiding in.
+   */
+  test("the alert prefix is distinct from the routine delivery prefixes", () => {
+    const routine = [MAIL_PREFIX.REELS, MAIL_PREFIX.CAROUSEL, MAIL_PREFIX.YT];
+    assert.ok(!routine.includes(MAIL_PREFIX.ALERT), "alerts must not share a prefix with daily delivery mail");
+    assert.match(MAIL_PREFIX.ALERT, /ALERT/, "the prefix should say what it is at a glance");
   });
 
   test("prefixes are pure ASCII, so they survive in the clear even when encoded", () => {

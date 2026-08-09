@@ -31,8 +31,10 @@ import { prePostQualityCheck } from "./quality-check.js";
 import { applyFreshness } from "./freshness.js";
 import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
-import { loadLog, saveLog, hasRecentPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds } from "./state.js";
+import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
+import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
+import { remedyFor } from "./failure-remedy.js";
 import { computeContentHash, findContentDuplicate, CONTENT_DUP_THRESHOLD } from "./content-hash.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
@@ -41,13 +43,29 @@ import { tmpdir } from "os";
 
 // Prevent unhandled EPIPE crashes from Anthropic SDK's keepalive agent.
 // These occur when a stale TLS socket is reused after a failed request (e.g., 413).
-process.on("uncaughtException", (err) => {
+process.on("uncaughtException", async (err) => {
   if (err.code === "EPIPE" || err.code === "ECONNRESET") {
     console.warn(`[Process] Suppressed ${err.code} on socket — retrying operation will use a fresh connection`);
     return; // Don't crash — the retry logic in the SDK will handle it
   }
   // Re-throw anything else
   console.error("[Process] Uncaught exception:", err);
+  // An uncaught exception does NOT pass through main().catch(), so without this
+  // it is the one way a run can still die completely silently. The exit is
+  // deferred until the alert settles — returning from this handler does not end
+  // the process, and the pending request keeps the loop alive until it does.
+  // Read the env directly rather than the consts below: this handler is
+  // registered before they are initialised, and an exception thrown during
+  // module evaluation would otherwise hit the temporal dead zone and replace
+  // the real error with a ReferenceError.
+  await notifyDailyFailure({
+    pipeline: "Reels",
+    label: `${process.env.CITY || "san_antonio"} ${process.env.SLOT || "pm"}`,
+    outcome: OUTCOME.FAILED,
+    reason: `Uncaught exception: ${err.message}`,
+    remedy: remedyFor(err),
+    detail: err.stack,
+  }).catch(() => {});
   process.exit(1);
 });
 
@@ -102,33 +120,77 @@ function captionCityMismatch(caption, postingCity) {
 }
 
 /**
- * Fetch the LIVE posted-log.json from GitHub's raw API (main branch)
- * and check if this city has posted in the last 20 hours.
- * This catches race conditions where another concurrent run already posted
- * but hasn't committed yet (or committed after our checkout).
- * Returns true if a conflict is detected (should abort).
+ * Read the live posted-log.json off main, or null if it cannot be read.
+ *
+ * Split out of checkRemoteLog because the LinkedIn guard needs exactly the same
+ * live read for exactly the same reason — see checkRemoteLinkedin below.
  */
+async function fetchRemoteLog() {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) {
+    console.warn("[RemoteCheck] No GITHUB_TOKEN — skipping remote log check");
+    return null;
+  }
+  // Use GitHub Contents API — NOT raw.githubusercontent.com (which is CDN-cached ~5 min)
+  const url = `https://api.github.com/repos/PropertyPete1/lifestyle-design-studio/contents/auto-poster/posted-log.json?ref=main&t=${Date.now()}`;
+  const resp = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github.raw",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  if (!resp.ok) {
+    console.warn(`[RemoteCheck] GitHub API returned ${resp.status} — skipping check (fail-open)`);
+    return null;
+  }
+  return await resp.json();
+}
+
+/**
+ * Has LinkedIn already been posted in the last 20 hours, according to the LIVE log?
+ *
+ * WHY THE IN-MEMORY CHECK IS NOT ENOUGH — this cost four days of duplicate posts
+ * on three real LinkedIn accounts (2026-08-05 through 08-08, same topic twice,
+ * roughly 45 minutes apart).
+ *
+ * Every slot has a primary and a :30 backup cron. Both runs load posted-log.json
+ * ONCE, at job start, from their own checkout. The backup checks out before the
+ * primary has committed, so its in-memory log cannot contain the primary's
+ * LinkedIn entry no matter how correct the 20-hour arithmetic is.
+ *
+ * Normally the backup never gets this far: the video guard sees the primary's
+ * post and exits early. From 2026-07-27 the primary stopped posting videos at
+ * all (ElevenLabs 403), so the early exit stopped happening, the backup ran on
+ * to the LinkedIn block, and the stale snapshot said "nothing posted today".
+ *
+ * The video path already solved this with a live re-read (checkRemoteLog). This
+ * is the same fix for the other publisher in this file.
+ *
+ * FAIL-OPEN, deliberately and identically to checkRemoteLog: a GitHub API blip
+ * must not stop the day's recruiting post. The in-memory guard still runs first,
+ * so failing open here returns the behaviour to what it was, not worse.
+ */
+async function checkRemoteLinkedin(hoursAgo = 20) {
+  try {
+    const remoteLog = await fetchRemoteLog();
+    if (!remoteLog) return false;
+    if (hasRecentLinkedinPost(remoteLog, hoursAgo)) {
+      console.log(`[RemoteCheck] ⚠️ CONFLICT: the live log already has a LinkedIn post within ${hoursAgo}h`);
+      return true;
+    }
+    console.log(`[RemoteCheck] ✓ No LinkedIn post in the remote log within ${hoursAgo}h`);
+    return false;
+  } catch (err) {
+    console.warn(`[RemoteCheck] LinkedIn remote check failed: ${err.message} — proceeding (fail-open)`);
+    return false;
+  }
+}
+
 async function checkRemoteLog(city, slot) {
   try {
-    const token = process.env.GITHUB_TOKEN;
-    if (!token) {
-      console.warn("[RemoteCheck] No GITHUB_TOKEN — skipping remote log check");
-      return false;
-    }
-    // Use GitHub Contents API — NOT raw.githubusercontent.com (which is CDN-cached ~5 min)
-    const url = `https://api.github.com/repos/PropertyPete1/lifestyle-design-studio/contents/auto-poster/posted-log.json?ref=main&t=${Date.now()}`;
-    const resp = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github.raw",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
-    if (!resp.ok) {
-      console.warn(`[RemoteCheck] GitHub API returned ${resp.status} — skipping check (fail-open)`);
-      return false;
-    }
-    const remoteLog = await resp.json();
+    const remoteLog = await fetchRemoteLog();
+    if (!remoteLog) return false;
     const slotCutoff = Date.now() - 20 * 60 * 60 * 1000;
     const hardCooldown = Date.now() - 2 * 60 * 60 * 1000;
     const posts = (remoteLog.posts || []).filter(p => p.city === city && !p.type && p.platform !== "instagram_main_native" && p.type !== "trial_variant" && p.type !== "trial_variant_confirm");
@@ -243,7 +305,18 @@ async function main() {
   const allVideos = await listCityVideos(CITY);
 
   if (allVideos.length === 0) {
-    console.log(`[AutoPoster] No videos found in Drive folder for ${CITY}. Exiting.`);
+    // GREEN RUN, NO POST. Exit 0 is right — an empty folder is not a crash — but
+    // it must not also be silent, or the slot quietly stops producing and the
+    // Actions history looks perfect.
+    const reason = `No videos at all in the Drive folder for ${CITY}.`;
+    console.log(`[AutoPoster] ${reason} Exiting.`);
+    await notifyDailyFailure({
+      pipeline: "Reels",
+      label: `${CITY} ${SLOT}`,
+      outcome: OUTCOME.NOTHING_TO_POST,
+      reason,
+      remedy: remedyFor("No videos found in Drive"),
+    });
     process.exit(0);
   }
 
@@ -354,7 +427,30 @@ async function main() {
   }
 
   if (eligible.length === 0) {
-    console.log(`[AutoPoster] All videos for ${CITY} have been posted in the last 30 days. Exiting.`);
+    // THE POOL IS EXHAUSTED. Same shape as the empty-folder case: a legitimate
+    // exit 0 that must not be quiet. The per-reason tally goes in the alert
+    // because "0 eligible" and "0 eligible, 40 of them blocklisted" call for
+    // completely different actions from Peter.
+    const tally = {};
+    for (const b of blocked) {
+      const key = String(b.reason).split(":")[0].split("(")[0].trim();
+      tally[key] = (tally[key] || 0) + 1;
+    }
+    const breakdown = Object.entries(tally)
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, n]) => `  ${n} × ${k}`)
+      .join("\n");
+    const reason =
+      `Every one of the ${allVideos.length} videos for ${CITY} was filtered out — nothing left to post.\n\n` +
+      `WHY EACH WAS BLOCKED\n${breakdown}`;
+    console.log(`[AutoPoster] ${CITY}: 0 eligible of ${allVideos.length}. Exiting.`);
+    await notifyDailyFailure({
+      pipeline: "Reels",
+      label: `${CITY} ${SLOT}`,
+      outcome: OUTCOME.NOTHING_TO_POST,
+      reason,
+      remedy: remedyFor("All videos for x have been posted"),
+    });
     process.exit(0);
   }
 
@@ -484,12 +580,16 @@ async function main() {
   // Only fires on san_antonio PM slot to avoid duplicates across city/slot runs.
   // Has its own 20-hour idempotency guard so manual re-runs can't double-post.
   if (CITY === "san_antonio" && SLOT === "pm" && !TEST_DELIVERY_ONLY) {
-    const hasRecentLinkedin = log.posts.some(
-      p => p.type === "linkedin" && (Date.now() - new Date(p.timestamp).getTime()) < 20 * 60 * 60 * 1000
-    );
+    const hasRecentLinkedin = hasRecentLinkedinPost(log, 20);
 
-    if (hasRecentLinkedin) {
-      console.log("\n[LinkedIn] Already posted in last 20 hours — skipping");
+    // Two guards, and both are needed. The in-memory one is free and catches the
+    // common case; the live one catches the primary/backup cron pair, whose
+    // second run cannot possibly see the first run's entry in its own checkout.
+    const remoteLinkedinConflict = hasRecentLinkedin ? false : await checkRemoteLinkedin(20);
+
+    if (hasRecentLinkedin || remoteLinkedinConflict) {
+      const which = hasRecentLinkedin ? "local log" : "LIVE remote log";
+      console.log(`\n[LinkedIn] Already posted in last 20 hours (${which}) — skipping`);
     } else {
       try {
         console.log("\n[LinkedIn] Generating daily recruiting post...");
@@ -517,7 +617,17 @@ async function main() {
 
   // Exit with error if video posting failed (after LinkedIn has had its chance)
   if (!posted) {
+    // Every candidate threw. This is the path the ElevenLabs 403 took on every
+    // city slot from 2026-07-27 onward, and it notified nobody.
     console.error(`\n[AutoPoster] All video candidates failed. Last error: ${lastError?.message}`);
+    await notifyDailyFailure({
+      pipeline: "Reels",
+      label: `${CITY} ${SLOT}`,
+      outcome: OUTCOME.FAILED,
+      reason: `Every candidate video failed. Last error: ${lastError?.message || "(none recorded)"}`,
+      remedy: remedyFor(lastError),
+      detail: lastError?.stack,
+    });
     process.exit(1);
   }
 
@@ -589,6 +699,29 @@ async function main() {
       console.error("[Verify] One or more brands did NOT reach PUBLISHED status.");
       console.error("[Verify] Check Metricool dashboard for details.");
       console.error("!".repeat(60));
+      // Metricool accepted the post and then did not publish it. The run already
+      // wrote a posted-log entry, so the duplicate guards now believe this slot
+      // is done — which means without an alert the slot is simply lost.
+      const perBrand = verificationResults
+        .map((r) => {
+          const detail = r.error
+            ? `error: ${r.error}`
+            : (r.providers || []).map((p) => `${p.network}=${p.status}`).join(", ") || "no provider status";
+          return `  ${r.label} (post ${r.postId}): ${r.verified ? "PUBLISHED" : detail}`;
+        })
+        .join("\n");
+      await notifyDailyFailure({
+        pipeline: "Reels",
+        label: `${CITY} ${SLOT}`,
+        outcome: OUTCOME.UNVERIFIED,
+        reason:
+          `Metricool accepted the post but at least one brand never reached PUBLISHED.\n\n` +
+          `PER BRAND\n${perBrand}\n\n` +
+          `posted-log already records this slot, so the duplicate guard will NOT retry it.`,
+        remedy:
+          "Open Metricool and check the post's status. If it failed to publish, post that brand manually — " +
+          "the next scheduled run will treat this slot as already done.",
+      });
       process.exit(1);
     }
     console.log(`[Verify] ✓ All ${postedBrands.length} brand(s) verified PUBLISHED`);
@@ -1024,6 +1157,20 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         console.error(`[Delivery] CRITICAL FAILURE — all channels exhausted: ${err.message}`);
         console.error(`[Delivery] Video is preserved in Drive "Ready to Post" folder (manifest written).`);
         console.error(`[Delivery] Main IG will NOT be auto-published — owner must post natively.`);
+        // deliverToOwner's own two channels are gone, so this alert is a third
+        // attempt down the same wire and may well fail too — the annotation is
+        // then the only record, which is why notifyDailyFailure always emits one.
+        await notifyDailyFailure({
+          pipeline: "Reels",
+          label: `${CITY} ${SLOT}`,
+          outcome: OUTCOME.DELIVERY_FAILED,
+          reason:
+            `The ${CITY} reel posted to the satellite accounts but could NOT be delivered for main Instagram: ${err.message}. ` +
+            `The finished video is in the Drive "Ready to Post" folder with a manifest beside it.`,
+          remedy:
+            "Open Drive → \"Ready to Post\", take the newest video and its manifest, and post it natively on main Instagram.",
+          detail: err.stack,
+        });
         // Exit with non-zero so GitHub Actions shows red X (owner gets email alert from GitHub)
         process.exitCode = 1;
       }
@@ -1096,7 +1243,18 @@ function parsePublishedAt(publishedAt) {
 }
 
 // Run
-main().catch(err => {
+//
+// The backstop for everything the steps above did not catch — a dead Drive
+// token, an unreadable log, a bug. A red run is not a notification; this is.
+main().catch(async err => {
   console.error("[AutoPoster] Fatal error:", err);
+  await notifyDailyFailure({
+    pipeline: "Reels",
+    label: `${CITY} ${SLOT}`,
+    outcome: OUTCOME.FAILED,
+    reason: `Unhandled failure: ${err.message}`,
+    remedy: remedyFor(err),
+    detail: err.stack,
+  });
   process.exit(1);
 });
