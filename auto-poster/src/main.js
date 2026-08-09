@@ -33,6 +33,7 @@ import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
+import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
 import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
 import { remedyFor } from "./failure-remedy.js";
 import { computeContentHash, findContentDuplicate, CONTENT_DUP_THRESHOLD } from "./content-hash.js";
@@ -122,8 +123,9 @@ function captionCityMismatch(caption, postingCity) {
 /**
  * Read the live posted-log.json off main, or null if it cannot be read.
  *
- * Split out of checkRemoteLog because the LinkedIn guard needs exactly the same
- * live read for exactly the same reason — see checkRemoteLinkedin below.
+ * Used by the video guard (checkRemoteLog). The LinkedIn guard no longer reads
+ * and hopes — it CLAIMS the slot with a compare-and-swap write before posting;
+ * see src/linkedin-claim.js for the whole story.
  */
 async function fetchRemoteLog() {
   const token = process.env.GITHUB_TOKEN;
@@ -145,46 +147,6 @@ async function fetchRemoteLog() {
     return null;
   }
   return await resp.json();
-}
-
-/**
- * Has LinkedIn already been posted in the last 20 hours, according to the LIVE log?
- *
- * WHY THE IN-MEMORY CHECK IS NOT ENOUGH — this cost four days of duplicate posts
- * on three real LinkedIn accounts (2026-08-05 through 08-08, same topic twice,
- * roughly 45 minutes apart).
- *
- * Every slot has a primary and a :30 backup cron. Both runs load posted-log.json
- * ONCE, at job start, from their own checkout. The backup checks out before the
- * primary has committed, so its in-memory log cannot contain the primary's
- * LinkedIn entry no matter how correct the 20-hour arithmetic is.
- *
- * Normally the backup never gets this far: the video guard sees the primary's
- * post and exits early. From 2026-07-27 the primary stopped posting videos at
- * all (ElevenLabs 403), so the early exit stopped happening, the backup ran on
- * to the LinkedIn block, and the stale snapshot said "nothing posted today".
- *
- * The video path already solved this with a live re-read (checkRemoteLog). This
- * is the same fix for the other publisher in this file.
- *
- * FAIL-OPEN, deliberately and identically to checkRemoteLog: a GitHub API blip
- * must not stop the day's recruiting post. The in-memory guard still runs first,
- * so failing open here returns the behaviour to what it was, not worse.
- */
-async function checkRemoteLinkedin(hoursAgo = 20) {
-  try {
-    const remoteLog = await fetchRemoteLog();
-    if (!remoteLog) return false;
-    if (hasRecentLinkedinPost(remoteLog, hoursAgo)) {
-      console.log(`[RemoteCheck] ⚠️ CONFLICT: the live log already has a LinkedIn post within ${hoursAgo}h`);
-      return true;
-    }
-    console.log(`[RemoteCheck] ✓ No LinkedIn post in the remote log within ${hoursAgo}h`);
-    return false;
-  } catch (err) {
-    console.warn(`[RemoteCheck] LinkedIn remote check failed: ${err.message} — proceeding (fail-open)`);
-    return false;
-  }
 }
 
 async function checkRemoteLog(city, slot) {
@@ -582,35 +544,76 @@ async function main() {
   if (CITY === "san_antonio" && SLOT === "pm" && !TEST_DELIVERY_ONLY) {
     const hasRecentLinkedin = hasRecentLinkedinPost(log, 20);
 
-    // Two guards, and both are needed. The in-memory one is free and catches the
-    // common case; the live one catches the primary/backup cron pair, whose
-    // second run cannot possibly see the first run's entry in its own checkout.
-    const remoteLinkedinConflict = hasRecentLinkedin ? false : await checkRemoteLinkedin(20);
-
-    if (hasRecentLinkedin || remoteLinkedinConflict) {
-      const which = hasRecentLinkedin ? "local log" : "LIVE remote log";
-      console.log(`\n[LinkedIn] Already posted in last 20 hours (${which}) — skipping`);
-    } else {
+    if (hasRecentLinkedin) {
+      console.log(`\n[LinkedIn] Already posted in last 20 hours (local log) — skipping`);
+    } else if (DRY_RUN) {
+      // Dry runs never write to main, so there is nothing to claim.
       try {
-        console.log("\n[LinkedIn] Generating daily recruiting post...");
-        const liResult = await postToLinkedin({ dryRun: DRY_RUN });
-        if (liResult.ok) {
-          console.log(`[LinkedIn] ✓ Recruiting post published (topic: ${liResult.topic})`);
-          // Log LinkedIn post for idempotency
-          if (!DRY_RUN) {
+        console.log("\n[LinkedIn] DRY RUN — generating without claiming the daily slot...");
+        await postToLinkedin({ dryRun: true });
+      } catch (err) {
+        console.error(`[LinkedIn] ✗ Dry run failed (non-fatal): ${err.message}`);
+      }
+    } else {
+      // CLAIM FIRST, POST SECOND. The claim is a compare-and-swap append to
+      // posted-log.json on origin/main: of two racing runs exactly one wins,
+      // and the loser's re-read shows the winner's entry. Checking (locally or
+      // live) and then acting posted six duplicates in five days — the claim is
+      // the only guard whose evidence exists BEFORE the post does.
+      // Fail-closed by design; see src/linkedin-claim.js.
+      const claim = await claimLinkedinSlot({ hoursAgo: 20 });
+
+      if (!claim.claimed) {
+        if (claim.conflict) {
+          console.log(`\n[LinkedIn] Already posted in last 20 hours (LIVE log) — skipping (${claim.reason})`);
+        } else {
+          console.error(`\n[LinkedIn] ✗ Could not claim the daily slot — NOT posting (fail-closed): ${claim.reason}`);
+          await notifyDailyFailure({
+            pipeline: "LinkedIn",
+            label: "daily recruiting post",
+            outcome: OUTCOME.NOTHING_TO_POST,
+            reason: `Could not claim the LinkedIn slot on main, so the recruiting post was skipped rather than risk a duplicate. ${claim.reason}`,
+            remedy: "If GitHub's API was down, re-run the SA pm job once it recovers. Never post manually without checking posted-log.json first.",
+          });
+        }
+      } else {
+        try {
+          console.log("\n[LinkedIn] Generating daily recruiting post...");
+          const liResult = await postToLinkedin({ dryRun: false });
+          if (liResult.ok) {
+            console.log(`[LinkedIn] ✓ Recruiting post published (topic: ${liResult.topic})`);
+            const brands = liResult.brands.map(b => ({ label: b.label, publishAt: b.publishAt }));
+            // Upgrade the bare claim on main into the full audit record, and
+            // mirror it locally under the SAME timestamp so the end-of-run
+            // merge-log-push dedupes instead of double-logging.
+            await finalizeLinkedinClaim(claim, { topic: liResult.topic, brands });
             log.posts.push({
               type: "linkedin",
               topic: liResult.topic,
-              brands: liResult.brands.map(b => ({ label: b.label, publishAt: b.publishAt })),
-              timestamp: new Date().toISOString(),
+              brands,
+              timestamp: claim.timestamp,
+              runId: claim.runId,
               success: true,
             });
             saveLog(log);
+          } else {
+            // Every brand failed — give the slot back so a re-run can post today.
+            await releaseLinkedinClaim(claim);
+          }
+        } catch (err) {
+          // LinkedIn failure is non-fatal in both directions
+          console.error(`[LinkedIn] ✗ Failed (non-fatal): ${err.message}`);
+          const released = await releaseLinkedinClaim(claim);
+          if (!released.ok) {
+            await notifyDailyFailure({
+              pipeline: "LinkedIn",
+              label: "daily recruiting post",
+              outcome: OUTCOME.NOTHING_TO_POST,
+              reason: `The LinkedIn post failed (${err.message}) AND the claim could not be released (${released.reason}). Today's slot stays blocked until the 20h guard expires — safe, but no recruiting post today.`,
+              remedy: "Check GitHub API status; the claim entry in posted-log.json can be removed by hand once you have confirmed nothing was posted.",
+            });
           }
         }
-      } catch (err) {
-        // LinkedIn failure is non-fatal in both directions
-        console.error(`[LinkedIn] ✗ Failed (non-fatal): ${err.message}`);
       }
     }
   }

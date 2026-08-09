@@ -126,13 +126,18 @@ export function hasRecentPost(log, city, slot, hoursAgo = 20) {
  * Has a LinkedIn recruiting post gone out within the last N hours?
  *
  * Pure and exported so both callers can share it AND so the rule can be tested
- * without a network: main.js asks this of its own in-memory log first, then of
- * the LIVE log fetched from GitHub. The second call is the one that matters —
- * see checkRemoteLinkedin in main.js for why the in-memory answer is not
- * trustworthy when the primary and backup crons overlap.
+ * without a network: main.js asks this of its own in-memory log as a free early
+ * skip, and claimLinkedinSlot (src/linkedin-claim.js) asks it of the LIVE log
+ * it is about to compare-and-swap against. The claim is the call that matters —
+ * a checkout is pinned to the SHA the run was created at, so the in-memory
+ * answer is not trustworthy when the primary and backup crons overlap.
  *
- * Duplicates on 2026-08-05 through 08-08 are what this is guarding: same topic,
- * twice, ~45 minutes apart, on three real LinkedIn accounts.
+ * A claim entry ({type:"linkedin", status:"claimed"}) counts as a post here,
+ * ON PURPOSE: the slot is taken from the moment the claim lands, not from the
+ * moment Metricool answers.
+ *
+ * Duplicates on 2026-08-05 through 08-09 are what this is guarding: same topic,
+ * twice a day for five days, on three real LinkedIn accounts.
  */
 export function hasRecentLinkedinPost(log, hoursAgo = 20) {
   const cutoff = Date.now() - hoursAgo * 60 * 60 * 1000;
