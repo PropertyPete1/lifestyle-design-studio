@@ -515,6 +515,17 @@
           }
         }
       }
+    },
+    {
+      "requestId": "video_review-2026-08-09-680b7259",
+      "kind": "video_review",
+      "requestedAt": "2026-08-09T17:13:18.942Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "North San Antonio Neighborhoods: Stone Oak, ISD Lines and MUD Fees",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }

@@ -1,48 +1,76 @@
 {
   "weights": {
-    "question": 0.99,
-    "bold_claim": 0.99,
-    "wait_tease": 1.11,
-    "reaction": 1.04,
-    "vibe": 1.02
+    "question": 0.98,
+    "bold_claim": 0.98,
+    "wait_tease": 1.36,
+    "reaction": 1.14,
+    "vibe": 1.06
   },
-  "lastUpdated": "2026-08-09T16:11:57.070Z",
-  "reelsAnalyzed": 1,
-  "classifiedCount": 1,
+  "lastUpdated": "2026-07-26T19:08:11.077Z",
+  "reelsAnalyzed": 24,
+  "classifiedCount": 23,
   "styleBreakdown": {
     "question": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 0.99
+      "count": 6,
+      "avgScore": 882,
+      "weight": 0.98
     },
     "bold_claim": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 0.99
+      "count": 8,
+      "avgScore": 773,
+      "weight": 0.98
     },
     "wait_tease": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 1.11
+      "count": 4,
+      "avgScore": 1384,
+      "weight": 1.36
     },
     "reaction": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 1.04
+      "count": 3,
+      "avgScore": 1163,
+      "weight": 1.14
     },
     "vibe": {
-      "count": 1,
-      "avgScore": 997,
-      "weight": 1.02
+      "count": 2,
+      "avgScore": 771,
+      "weight": 1.06
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/Dby9J_yM0zB/",
-      "hookStyle": "vibe",
-      "score": 997,
-      "views": 882,
-      "firstLine": "🌳 Luxury, privacy, and Guadalupe River access all in one address… this River Ch"
+      "url": "https://www.instagram.com/reel/DbEWQMystSy/",
+      "hookStyle": "bold_claim",
+      "score": 2183,
+      "views": 1731,
+      "firstLine": "This might be the best value I’ve seen at this price point in North Austin right"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DbJG1BSMB_n/",
+      "hookStyle": "wait_tease",
+      "score": 2077,
+      "views": 1515,
+      "firstLine": "Wait until you see what $279,995 gets you in San Antonio right now 😮‍💨"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DbOUlM4sesJ/",
+      "hookStyle": "reaction",
+      "score": 1896,
+      "views": 1539,
+      "firstLine": "the floor plan in this one made me stop mid-tour"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DbEPd7wMm6p/",
+      "hookStyle": "wait_tease",
+      "score": 1839,
+      "views": 1430,
+      "firstLine": "Wait until you see the kitchen in this one 😮‍💨"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DbMIFHqMuwD/",
+      "hookStyle": "question",
+      "score": 1396,
+      "views": 1017,
+      "firstLine": "Would you believe brand new construction in South Austin starts at just $339,990"
     }
   ],
   "history": [
@@ -78,17 +106,6 @@
         "vibe": 1.06
       },
       "reelsAnalyzed": 24
-    },
-    {
-      "date": "2026-08-09",
-      "weights": {
-        "question": 0.99,
-        "bold_claim": 0.99,
-        "wait_tease": 1.11,
-        "reaction": 1.04,
-        "vibe": 1.02
-      },
-      "reelsAnalyzed": 1
     }
   ]
 }
