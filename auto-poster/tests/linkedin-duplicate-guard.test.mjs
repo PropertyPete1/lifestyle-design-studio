@@ -26,6 +26,13 @@ describe("the LinkedIn duplicate guard", () => {
     assert.equal(hasRecentLinkedinPost(log, 20), false);
   });
 
+  test("a bare claim blocks exactly like a finished post", () => {
+    // claim-before-post writes this shape to main BEFORE Metricool is called;
+    // every reader of the log must treat it as "today is taken".
+    const log = { posts: [{ type: "linkedin", status: "claimed", timestamp: hoursAgo(0.1), success: false }] };
+    assert.equal(hasRecentLinkedinPost(log, 20), true);
+  });
+
   test("a malformed entry does not crash the guard", () => {
     // posted-log is merged by an external script and can carry a null.
     const log = { posts: [null, "nonsense", 42, { type: "linkedin", timestamp: hoursAgo(1) }] };
@@ -38,97 +45,156 @@ describe("the LinkedIn duplicate guard", () => {
   });
 
   test("a log with no posts array degrades to 'nothing posted'", () => {
-    // This is the FAIL-OPEN direction and it is deliberate: the live remote
-    // check is the real guard. Pinned so a change of mind here is a choice.
+    // Deliberate for the IN-MEMORY arithmetic: this function only reads. The
+    // fail-closed direction lives where it matters — claimLinkedinSlot refuses
+    // to post when the LIVE log cannot be read or written. Pinned so a change
+    // of mind here is a choice.
     assert.equal(hasRecentLinkedinPost({}, 20), false);
     assert.equal(hasRecentLinkedinPost(null, 20), false);
   });
 });
 
 /**
- * THE INCIDENT, REPLAYED.
+ * THE INCIDENT, GENERATION TWO.
  *
- * On four consecutive days the same recruiting topic went out twice, about 45
- * minutes apart, to three real LinkedIn accounts. The arithmetic in the guard
- * was never wrong — the log it was asked about was.
+ * Six duplicate posts in five days (2026-08-05, 06, 07, 08, and 08-09 — the
+ * last one twelve minutes apart), same recruiting topic twice a day, on three
+ * real LinkedIn accounts. Three lessons, each paid for separately:
  *
- * The primary cron (19:00) and its backup (19:30) each load posted-log.json once,
- * from their own checkout. The backup checks out BEFORE the primary commits, so
- * its snapshot cannot contain the primary's entry. Both then read "nothing
- * posted today" and both post.
+ * 1. The in-memory guard reads a checkout pinned to the SHA the run was
+ *    CREATED at — a backup queued behind its primary still sees the world
+ *    from before the primary pushed. The concurrency group serialized the
+ *    jobs perfectly on 2026-08-09 (2-second gap) and the duplicate happened anyway.
+ * 2. The live re-read (checkRemoteLinkedin) was still check-then-act: the
+ *    posting run only pushed its entry at the END of the job — minutes after
+ *    the post, behind a 7-minute verify sleep — and a cancellation or push
+ *    failure in that window loses the evidence entirely.
+ * 3. So the fix is to invert the order: CLAIM the slot on origin/main with a
+ *    compare-and-swap write FIRST, post SECOND. Two racing runs cannot both
+ *    win a CAS. The mechanics live in src/linkedin-claim.js and are unit-tested
+ *    (including the exact both-read-clean interleaving) in linkedin-claim.test.mjs.
+ *
+ * These tests pin main.js's USE of that mechanism, so a refactor cannot
+ * quietly reintroduce check-then-act.
  */
-describe("the incident of 2026-08-05..08 replays correctly", () => {
-  const primaryPostedAt = hoursAgo(0.75);
+describe("main.js claims before it posts", () => {
+  const src = readFileSync(join(ROOT, "src", "main.js"), "utf-8");
 
-  test("the backup run's OWN checkout says it is safe to post — this is the bug", () => {
-    const staleSnapshot = { posts: [] }; // checked out before the primary committed
-    assert.equal(
-      hasRecentLinkedinPost(staleSnapshot, 20),
-      false,
-      "the stale snapshot is why the in-memory guard could never have caught this"
-    );
+  test("the claim is awaited before the live post call", () => {
+    const claimIdx = src.indexOf("await claimLinkedinSlot(");
+    const liveIdx = src.indexOf("postToLinkedin({ dryRun: false })");
+    assert.ok(claimIdx > 0, "main.js must claim the slot via claimLinkedinSlot");
+    assert.ok(liveIdx > 0, "the live post call must exist");
+    assert.ok(claimIdx < liveIdx, "the claim must come BEFORE the live post — that ordering is the entire fix");
   });
 
-  test("the LIVE log says it is not — this is the fix", () => {
-    const liveLog = { posts: [{ type: "linkedin", topic: "lead_overflow", timestamp: primaryPostedAt }] };
+  test("the live post is gated on holding the claim", () => {
+    assert.match(src, /if \(!claim\.claimed\)/, "the claim result must gate the post decision");
+  });
+
+  test("an infrastructure failure skips the post instead of risking a duplicate", () => {
+    // claim.conflict distinguishes "someone already posted" (skip quietly)
+    // from "GitHub is down" (skip LOUDLY). Both directions skip. Fail-closed.
+    assert.match(src, /if \(claim\.conflict\)/, "conflict and failure must be told apart for alerting");
+    assert.match(src, /fail-closed/i, "the fail-closed stance should be stated where the decision is made");
+  });
+
+  test("the fail-open live check is gone", () => {
+    // checkRemoteLinkedin read the live log and PROCEEDED on any API error.
+    // With a claim in place a second, weaker guard is not defense in depth —
+    // it is an invitation to 'simplify' back to it. It must stay deleted.
+    assert.ok(!src.includes("checkRemoteLinkedin"), "check-then-act must not come back alongside the claim");
+  });
+
+  test("a stale checkout still cannot see a sibling's post — which is why checking can never be enough", () => {
+    const staleSnapshot = { posts: [] }; // pinned at run creation, before the sibling pushed
+    assert.equal(hasRecentLinkedinPost(staleSnapshot, 20), false);
+    const liveLog = { posts: [{ type: "linkedin", topic: "lead_overflow", timestamp: hoursAgo(0.75) }] };
     assert.equal(hasRecentLinkedinPost(liveLog, 20), true);
-  });
-
-  test("main.js consults the live log and not only its own snapshot", () => {
-    const src = readFileSync(join(ROOT, "src", "main.js"), "utf-8");
-    assert.match(src, /checkRemoteLinkedin/, "the live LinkedIn check must exist");
-    // The call has to be at the decision point, not merely defined.
-    const block = src.slice(src.indexOf("[LinkedIn] Generating daily recruiting post") - 2500);
-    assert.match(
-      block.slice(0, 2500),
-      /await checkRemoteLinkedin\(/,
-      "the live check must be awaited before the post decision"
-    );
-  });
-
-  test("the live check is reached even when the local guard says nothing was posted", () => {
-    // Guard against a future short-circuit that skips the remote read when the
-    // local log looks clean — which is exactly the state the bug occurs in.
-    const src = readFileSync(join(ROOT, "src", "main.js"), "utf-8");
-    const m = src.match(/const remoteLinkedinConflict = ([^;]+);/);
-    assert.ok(m, "the remote conflict decision should be one readable expression");
-    assert.match(
-      m[1],
-      /hasRecentLinkedin \? false : await checkRemoteLinkedin/,
-      "the remote check must run precisely when the local guard is clean"
-    );
   });
 });
 
 /**
- * The historical record this was found in. If posted-log.json is ever rewritten,
- * this stops asserting anything real — so it checks that the entries it relies
- * on are still there rather than silently passing on an empty filter.
+ * THE HISTORICAL RECORD, WITH AN ALARM ON IT.
+ *
+ * Everything before REGRESSION_CUTOFF is immutable history: the six duplicate
+ * posts the claim fix was bought with. Everything at or after the cutoff runs
+ * under claim-before-post — where a same-day duplicate is IMPOSSIBLE unless
+ * the claim was bypassed or broke. So the assertion splits:
+ *
+ *   - before the cutoff: the known duplicates must still be on record
+ *     (teeth against a history rewrite), pinned SAFELY because the past
+ *     cannot grow — unlike the live count whose stale pin broke all CI
+ *     on 2026-08-09;
+ *   - at/after the cutoff: ZERO duplicates, forever. This is the regression
+ *     alarm that catches duplicate number seven the day it happens, in every
+ *     workstream's CI, with a message that says exactly what broke.
  */
-describe("the committed log still shows the duplicates that prompted the fix", () => {
+describe("the committed log: known duplicates preserved, new ones forbidden", () => {
+  // Midnight UTC after the last pre-fix run. The claim fix merged 2026-08-09;
+  // the final old-code duplicate posted 2026-08-09T19:59:37Z.
+  const REGRESSION_CUTOFF = Date.parse("2026-08-10T00:00:00Z");
+  const KNOWN_DUPLICATE_DAYS = ["2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09"];
+
   const log = JSON.parse(readFileSync(join(ROOT, "posted-log.json"), "utf-8"));
-  const li = log.posts.filter((p) => p && p.type === "linkedin");
+  const li = log.posts
+    .filter((p) => p && p.type === "linkedin" && !Number.isNaN(Date.parse(p.timestamp)))
+    .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+
+  // Consecutive LinkedIn entries under 20h apart — the definition the runtime
+  // guard enforces, applied to what actually got recorded.
+  const violations = [];
+  for (let i = 1; i < li.length; i++) {
+    const gapH = (Date.parse(li[i].timestamp) - Date.parse(li[i - 1].timestamp)) / 3600000;
+    if (gapH < 20) {
+      violations.push({
+        at: li[i].timestamp,
+        after: li[i - 1].timestamp,
+        gapH,
+        text: `${li[i].timestamp} (+${gapH.toFixed(2)}h after ${li[i - 1].timestamp})`,
+      });
+    }
+  }
+  const preCutoff = violations.filter((v) => Date.parse(v.at) < REGRESSION_CUTOFF);
+  const postCutoff = violations.filter((v) => Date.parse(v.at) >= REGRESSION_CUTOFF);
 
   test("there is a meaningful LinkedIn history to check", () => {
     assert.ok(li.length >= 20, `only ${li.length} LinkedIn entries — this test is no longer meaningful`);
   });
 
-  test("the four known duplicate days are present and under 20h apart", () => {
-    const violations = [];
-    for (let i = 1; i < li.length; i++) {
-      const gapH = (new Date(li[i].timestamp) - new Date(li[i - 1].timestamp)) / 3600000;
-      if (gapH < 20) violations.push(`${li[i].timestamp} (+${gapH.toFixed(2)}h after ${li[i - 1].timestamp})`);
+  test("the five known pre-fix duplicates are still on record", () => {
+    const daysStillPresent = KNOWN_DUPLICATE_DAYS.filter((day) =>
+      li.some((p) => p.timestamp.startsWith(day))
+    );
+    if (daysStillPresent.length === 0) {
+      // The incident has aged past the 365-day retention window (Aug 2027).
+      // Nothing left to characterize; the post-cutoff alarm below still runs.
+      return;
     }
-    // NOT pinned to exactly 4 any more. This is a characterization of the
-    // KNOWN duplicates that prompted the fix — but the count is live data,
-    // and a FIFTH appeared on 2026-08-09 (2026-08-08T20:34 +0.76h), which
-    // broke every workstream's CI through a stale pin rather than telling
-    // anyone anything. The four known ones must still be present (the teeth);
-    // the total may grow, and each growth is the duplicate bug still firing —
-    // tracked as its own follow-up, not as a global red.
-    assert.ok(
-      violations.length >= 4,
-      `expected at least the 4 known duplicates from 2026-08-05..08, found ${violations.length}:\n${violations.join("\n")}`
+    // One violation per fully-retained known day. Safe to pin: the past can't
+    // grow. (For about a day at the retention boundary in Aug 2027 a known
+    // day can be half-trimmed and this can disagree by one — if that is
+    // literally today, wait for the trim to finish or drop the aged day
+    // from KNOWN_DUPLICATE_DAYS.)
+    assert.equal(
+      preCutoff.length,
+      daysStillPresent.length,
+      `the record of the 2026-08 incident changed: expected one duplicate on each of ` +
+        `[${daysStillPresent.join(", ")}], found ${preCutoff.length}:\n` +
+        preCutoff.map((v) => v.text).join("\n")
+    );
+  });
+
+  test("NO new duplicate since claim-before-post shipped (2026-08-10)", () => {
+    assert.equal(
+      postCutoff.length,
+      0,
+      `THE DUPLICATE BUG IS FIRING AGAIN. ${postCutoff.length} same-day LinkedIn duplicate(s) ` +
+        `appeared after the claim fix shipped:\n` +
+        postCutoff.map((v) => v.text).join("\n") +
+        `\nThe claim in src/linkedin-claim.js was bypassed or failed. Find the two workflow runs ` +
+        `around each timestamp (gh run list --workflow=post.yml) and read their [LinkedInClaim] ` +
+        `log lines. Do NOT relax this assertion — it is the alarm, not the bug.`
     );
   });
 });
