@@ -174,6 +174,19 @@ export function segmentationAvailable() {
  * correct response — play the visual without a bubble over it.
  */
 export function segmentTake(input, output, { python = PYTHON, model = MODEL_PATH, timeoutMs = 30 * 60_000 } = {}) {
+  // Video 1's voiceover takes arrived as .m4a voice memos — audio only. The
+  // segmenter reported "could not open", which reads like a broken file when
+  // the truth is there is NOTHING TO SEGMENT: no video of him exists for that
+  // take. Checked BEFORE the python availability probe on purpose: it needs
+  // only ffprobe, and "no video to segment" is the more precise verdict for
+  // an audio file than whatever the segmentation stack has to say. The fix it
+  // points at is a recording choice (film the narration as a video selfie),
+  // not a debugging session.
+  const streams = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v", "-show_entries", "stream=codec_type", "-of", "csv=p=0", input], { encoding: "utf-8", timeout: 60_000 });
+  if ((streams.stdout || "").trim() === "") {
+    return { ok: false, audioOnly: true, reason: "the narration was recorded audio-only — there is no video of Peter to cut out. Record voiceover takes as video (a selfie reading the line) if the floating head should appear here." };
+  }
+
   const available = segmentationAvailable();
   if (!available.ok) return { ok: false, reason: available.reason };
 

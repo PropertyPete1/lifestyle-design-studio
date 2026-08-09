@@ -123,10 +123,14 @@ export async function videoStatus(videoId, { fetchImpl = fetch, token }) {
 export async function setThumbnail(videoId, pngPath, { fetchImpl = fetch, token }) {
   if (!existsSync(pngPath)) throw new Error(`thumbnail file missing: ${pngPath}`);
   const png = readFileSync(pngPath);
+  // The file may be a JPEG — fitUnderLimit converts when the PNG exceeds
+  // YouTube's 2MB thumbnail cap. Declaring a JPEG as image/png is the same
+  // wrong-mimeType class the ingest warns about from the other direction.
+  const contentType = /\.jpe?g$/i.test(pngPath) ? "image/jpeg" : "image/png";
   const url = `${UPLOAD_API}/thumbnails/set?videoId=${encodeURIComponent(videoId)}`;
   const res = await fetchImpl(url, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "image/png", "Content-Length": String(png.length) },
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": contentType, "Content-Length": String(png.length) },
     body: png,
   });
   const body = await res.json().catch(() => ({}));
