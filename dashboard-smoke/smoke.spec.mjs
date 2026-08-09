@@ -91,7 +91,26 @@ async function looksLikeAuthGate(page) {
   return /enter studio passcode|sign in|log ?in/i.test(visible) && visible.length < 2000;
 }
 
-test.describe.configure({ mode: "serial" });
+/**
+ * NOT SERIAL — and that is the point.
+ *
+ * This file used to declare `mode: "serial"`, whose one real effect here was to
+ * SKIP EVERY REMAINING TEST after the first failure. On 2026-08-09 the
+ * approval-card check failed and the run reported "3 did not run": Deliveries,
+ * Copy Caption, and the camera screens. A long-form rendering bug made the
+ * entire daily half of the dashboard unreportable, while the summary still read
+ * like a complete result — an accurate red signal answering a different
+ * question than the one being asked.
+ *
+ * Serial mode was buying nothing else. `workers: 1` and `fullyParallel: false`
+ * in playwright.config.mjs already guarantee these run one at a time, in order,
+ * in a single worker, so the TEST- fixtures still cannot interleave and
+ * afterAll still cleans them up exactly once.
+ *
+ * If a future check genuinely depends on a previous one, wrap that pair in its
+ * own `test.describe.serial` — do not restore it file-wide and take the whole
+ * suite's reporting down with it.
+ */
 
 test.afterAll(async () => {
   const removed = await cleanup().catch((e) => [{ error: e.message }]);
