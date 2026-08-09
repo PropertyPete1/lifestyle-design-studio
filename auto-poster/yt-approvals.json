@@ -799,6 +799,17 @@
         "videoId": "vid-2026-08-07-d5cddf9d",
         "notes": "graphics retrofit (16 visuals) + vertical blur-fill treatment — first iteration render"
       }
+    },
+    {
+      "requestId": "video_review-2026-08-09-bef3721c",
+      "kind": "video_review",
+      "requestedAt": "2026-08-09T20:59:33.191Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "North San Antonio Neighborhoods: Commutes, School Districts, MUD Fees",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
