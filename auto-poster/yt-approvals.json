@@ -816,6 +816,17 @@
         "videoId": "vid-2026-08-07-d5cddf9d",
         "notes": "cap graphic holds at 9s — revision 2 broke the ≤10s cadence rule 16 times"
       }
+    },
+    {
+      "requestId": "video_review-2026-08-09-d0e31b57",
+      "kind": "video_review",
+      "requestedAt": "2026-08-09T21:49:08.664Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "Where to Live in North San Antonio: Commutes, School Districts, MUD Fees",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
