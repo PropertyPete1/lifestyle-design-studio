@@ -134,11 +134,14 @@ export function selectGeneratedVisuals(segments, { protectedSeconds = OPENING_PR
     const footage = (seg.broll || []).reduce((n, c) => n + (c.seconds || 0), 0);
     if (footage <= 0) return;
 
-    // The graphic now carries the WHOLE take by default. Under the old cap it
-    // covered half and footage filled the rest; with footage demoted to a
-    // deliberate choice, cutting away from a card mid-explanation just to show
-    // a drone shot is the filler this change exists to remove.
-    const want = Math.min(seg.seconds || 0, footage);
+    // A graphic holds AT MOST ~9 seconds, and footage completes the take.
+    // The whole-take version shipped in revision 2 of video 1 and the cadence
+    // audit convicted it 16 times over: a 20-second card is a slide, and the
+    // pattern-interrupt rule (nothing static past ~10s) is Peter's own spec.
+    // MAX_VISUAL_SECONDS puts the graphic's hold under that line while the
+    // splice's footage tail supplies the state change that clears the audit.
+    // Density beyond one-graphic-per-take is an iteration note, not a default.
+    const want = Math.min(MAX_VISUAL_SECONDS, seg.seconds || 0, footage);
     if (want < MIN_VISUAL_SECONDS) return;
 
     chosen.set(index, round(want));

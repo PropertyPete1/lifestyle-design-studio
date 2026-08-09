@@ -14,6 +14,7 @@ import {
   planOpening, validateOverlay, longestSharedRun, renderOverlayPng, burnOverlayArgs, scoresPass,
 } from "../src/yt-opening.js";
 import { buildDescription, MAP_CREDITS } from "../src/yt-packaging.js";
+import { buildStateTimeline, MAX_STATIC_SECONDS } from "../src/yt-cadence.js";
 import { allScriptText, visualIntentText, applyGuards } from "../src/yt-script.js";
 import { gatedDevelopmentNames } from "../src/yt-brief.js";
 import { planTimeline } from "../src/yt-timeline.js";
@@ -475,11 +476,14 @@ describe("selection — no cap, graphics start after the opening", () => {
   /** Pushes the rest of the script clear of the protected opening window. */
   const opener = { kind: "on_camera", takeId: "open", seconds: 20, source: "/tmp/a.mp4" };
 
-  test("there is no ratio cap — every requested graphic past the opening is taken", () => {
+  test("there is no RATIO cap — every requested graphic past the opening is taken", () => {
     const segments = [opener, ...Array.from({ length: 20 }, (_, i) => seg(i, 12))];
-    const { report } = selectGeneratedVisuals(segments);
-    assert.equal(report.chosenCount, 20, "a cap would have trimmed this");
-    assert.ok(report.graphicShare > 0.9, `graphics should dominate, got ${report.graphicShare}`);
+    const { report, segments: out } = selectGeneratedVisuals(segments);
+    assert.equal(report.chosenCount, 20, "a ratio cap would have trimmed this");
+    // No RATIO cap — but each graphic's HOLD is bounded by the cadence rule,
+    // so the share tops out below 1.0 on long takes. 9s of every 12s here.
+    assert.ok(report.graphicShare > 0.7, `graphics should dominate, got ${report.graphicShare}`);
+    assert.ok(out.slice(1).every((s2) => s2.generatedSeconds <= 9), "no graphic may out-hold the cadence rule");
   });
 
   test("graphics are suppressed inside the first 15 seconds", () => {
@@ -502,7 +506,8 @@ describe("selection — no cap, graphics start after the opening", () => {
     assert.equal(straddling.segments[1].generatedSeconds, 0, "starts at 14s, inside the window");
 
     const clear = selectGeneratedVisuals([seg(1, 16), seg(2, 30)]);
-    assert.equal(clear.segments[1].generatedSeconds, 30, "starts at 16s, past the window");
+    assert.ok(clear.segments[1].generatedSeconds >= 4, "starts at 16s, past the window — must draw");
+    assert.ok(clear.segments[1].generatedSeconds <= 9, "but never out-hold the cadence rule");
   });
 
   test("FOOTAGE is never rendered as a graphic", () => {
@@ -532,7 +537,9 @@ describe("selection — no cap, graphics start after the opening", () => {
   });
 
   test("the split is reported at both extremes", () => {
-    const allGraphic = selectGeneratedVisuals([opener, seg(1, 30), seg(2, 30)]);
+    // 9s takes: the hold cap equals the take, so full coverage is reachable
+    // and the 100% extreme of the report is a real state, not a fiction.
+    const allGraphic = selectGeneratedVisuals([opener, seg(1, 9), seg(2, 9)]);
     assert.equal(allGraphic.report.graphicShare, 1);
     assert.equal(allGraphic.report.footageSeconds, 0);
 
@@ -729,5 +736,24 @@ describe("the opening overlay line", () => {
     assert.match(args, /alpha=1/);
     assert.match(args, /overlay=0:0:enable='between\(t,/);
     assert.match(args, /-c:a copy/);
+  });
+});
+
+describe("a graphic's hold clears the cadence rule", () => {
+  test("a long take gets a capped graphic plus a footage tail, never a 20s card", () => {
+    // Revision 2 of video 1 shipped whole-take graphics and the cadence audit
+    // convicted it 16 times. The ≤10s pattern-interrupt rule wins.
+    // Realistic allocation: planTimeline hands a 20s take several clips, not
+    // one — the footage tail after the splice is therefore several short
+    // states, which is what keeps the tail itself under the cadence line.
+    const seg = { kind: "voiceover", takeId: "t1", seconds: 20, visual: CALLOUT, visualSpec: { value: "x" }, broll: [
+      { driveFileId: "a", seconds: 7 }, { driveFileId: "b", seconds: 7 }, { driveFileId: "c", seconds: 6 },
+    ] };
+    const opener = { kind: "on_camera", takeId: "open", seconds: 20, source: "/tmp/a.mp4" };
+    const { segments } = selectGeneratedVisuals([opener, seg]);
+    assert.ok(segments[1].generatedSeconds <= 9, `graphic holds ${segments[1].generatedSeconds}s`);
+    const spliced = spliceGenerated(seg.broll, { path: "/t.png", seconds: segments[1].generatedSeconds, kind: CALLOUT });
+    const states = buildStateTimeline([{ ...seg, broll: spliced }]);
+    assert.ok(states.every((s) => s.seconds <= MAX_STATIC_SECONDS), JSON.stringify(states.map((s) => s.seconds)));
   });
 });
