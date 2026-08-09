@@ -2823,6 +2823,50 @@
       ],
       "timestamp": "2026-08-09T19:47:51.169Z",
       "success": true
+    },
+    {
+      "driveFileId": "1q1qDpP268x05ivuNWogyXY81cihyRVMX",
+      "fileName": "401500F0-7CDB-4742-8158-AF2E5C818F8D.mp4",
+      "city": "san_antonio",
+      "caption": "this is what new construction is supposed to feel like\n\nNew construction like this doesn't sit long in San Antonio. Starting at $300,990, these homes are built for people ready to move in with modern ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-09T19:59:28.366Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "hot_take_contrarian",
+      "content_hash": "ffffff00000706ff:f891031393fb3f3f:ffffff7e0e01c0f0:7ff9f8fcfcb8e080:ffffee86c0df3e03",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1yBGALOHPEie5sLOsxVWBNKeCy18AlVeN/view"
+    },
+    {
+      "type": "linkedin",
+      "topic": "wish_i_knew",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-09T15:01:06"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-09T15:31:06"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-09T16:01:06"
+        }
+      ],
+      "timestamp": "2026-08-09T19:59:37.163Z",
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
