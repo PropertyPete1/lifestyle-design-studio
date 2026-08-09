@@ -72,6 +72,7 @@ import {
   recordRender,
   recordUpload,
   recordReview,
+  recordRework,
   findByRequest,
   videoIdFor,
   isUploaded,
@@ -685,9 +686,14 @@ async function handleVideoReview(approvals, review) {
 
   const notes = review.notes || null;
   console.log(`[YTPipeline] ${review.record.requestId} was NOT approved${notes ? ` — "${notes}"` : ""}`);
-  saveVideoLog(recordReview(videoLog, videoId, { approved: false, notes }));
-  saveApprovals(markActed(approvals, review.record.requestId, { action: "review_recorded", result: { videoId, approved: false, notes } }));
-  console.log("[YTPipeline] notes recorded for the rework — nothing was published");
+  let next = recordReview(videoLog, videoId, { approved: false, notes });
+  // A rejection is not an ending, it is a revision request: clear the upload
+  // markers so the next run rebuilds from the SAME takes and sends a fresh
+  // review card. The superseded upload moves into the entry's rework history.
+  next = recordRework(next, videoId, { notes });
+  saveVideoLog(next);
+  saveApprovals(markActed(approvals, review.record.requestId, { action: "review_recorded", result: { videoId, approved: false, notes, reworkQueued: true } }));
+  console.log(`[YTPipeline] rework queued — the next run rebuilds ${videoId} with the same takes and Peter's notes applied`);
 }
 
 
@@ -833,8 +839,19 @@ async function main() {
         return;
       }
       if (review.state === "already-acted") {
-        console.log(`[YTPipeline] ${review.record.requestId} review already recorded — nothing further`);
-        return;
+        // A recorded APPROVAL is final — nothing further. A recorded REJECTION
+        // queued a rework, which cleared the upload markers, so the build gate
+        // below is open again: fall through and rebuild with the same takes.
+        const entry = findByRequest(loadVideoLog(), topic.record.requestId);
+        if (entry && !isUploaded(entry)) {
+          console.log(
+            `[YTPipeline] ${review.record.requestId} was rejected and queued for rework ` +
+            `(revision ${entry.revision || 2}) — rebuilding with the same takes`
+          );
+        } else {
+          console.log(`[YTPipeline] ${review.record.requestId} review already recorded — nothing further`);
+          return;
+        }
       }
       await buildFromRecordings(approvals, topic.record);
       return;

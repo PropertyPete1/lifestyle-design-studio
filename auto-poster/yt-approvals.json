@@ -275,19 +275,61 @@
                   "id": "s1t2",
                   "mode": "VOICEOVER",
                   "text": "Castle Hills sits just inside Loop 410 on the north side, and it's technically its own little city with its own police department. Most of it went up in the fifties and sixties. Ranch style, low and wide, big lots, oak trees older than the house. Nothing new is being built there. What you buy is what somebody already lived in for forty years.",
-                  "direction": "Play over slow drive-by footage of older ranch homes and big trees."
+                  "direction": "Play over slow drive-by footage of older ranch homes and big trees.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "Loop 410",
+                        "1604"
+                      ],
+                      "places": [
+                        "Castle Hills",
+                        "Downtown"
+                      ],
+                      "eyebrow": "North San Antonio",
+                      "title": "Two rings, three neighborhoods"
+                    }
+                  }
                 },
                 {
                   "id": "s1t3",
                   "mode": "VOICEOVER",
                   "text": "Shavano Park is a couple miles further out, sitting right up against 1604. Also its own small city. Bigger lots, a lot of them close to an acre, and prices to match. It's quiet in a way that surprises people. Deer in the front yard quiet. You're paying for the address and the land, not for a new kitchen.",
-                  "direction": "Quieter delivery. Lot and street B-roll, no interiors."
+                  "direction": "Quieter delivery. Lot and street B-roll, no interiors.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "Loop 410",
+                        "1604"
+                      ],
+                      "places": [
+                        "Shavano Park",
+                        "Castle Hills",
+                        "Downtown"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s1t4",
                   "mode": "VOICEOVER",
                   "text": "Stone Oak is the third one, and it's the one you've already seen online. It starts just past 1604 and climbs north up the hill from there. Newer than the other two, bigger houses, more of them, shopping on every corner. It's also where the extra fees start showing up on the tax statement.",
-                  "direction": "Wider shots, newer two-story homes, retail corners."
+                  "direction": "Wider shots, newer two-story homes, retail corners.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "1604",
+                        "281"
+                      ],
+                      "places": [
+                        "Stone Oak",
+                        "Shavano Park"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s1t5",
@@ -311,25 +353,54 @@
                   "id": "s2t2",
                   "mode": "VOICEOVER",
                   "text": "Oak Hills sits just south and west of that hospital cluster. It's about as close as you can live without being in a parking lot. Houses from the sixties and seventies, mostly one story, real grown trees. The drive over to Floyd Curl is short on a normal morning. Some days it's five minutes.",
-                  "direction": "Drive-by B-roll, hospital towers in the background if you have it."
+                  "direction": "Drive-by B-roll, hospital towers in the background if you have it.",
+                  "visualIntent": "FOOTAGE"
                 },
                 {
                   "id": "s2t3",
                   "mode": "VOICEOVER",
                   "text": "Churchill Estates is a little further north, still inside 1604, off Northwest Military Highway, which is the road that runs up toward Castle Hills. Bigger two stories, seventies and eighties builds, and a lot of them have been redone inside. Sidewalks, mature trees, and you're still close to Wurzbach.",
-                  "direction": "Neighborhood entrance and tree-lined street shots."
+                  "direction": "Neighborhood entrance and tree-lined street shots.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "Loop 410",
+                        "1604"
+                      ],
+                      "places": [
+                        "Churchill Estates",
+                        "Castle Hills",
+                        "Medical Center"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s2t4",
                   "mode": "VOICEOVER",
                   "text": "Deerfield is the newest of the three inside that ring. Mostly eighties and nineties, sitting up near 1604 off Lockhill Selma, one of the north-south roads inside the loop. Bigger floor plans than Oak Hills, tile roofs on some streets, straight shot down to the hospitals. It's what people pick when they want space but don't want the highway drive.",
-                  "direction": "Wider street shots, show the size difference."
+                  "direction": "Wider street shots, show the size difference.",
+                  "visualIntent": "FOOTAGE"
                 },
                 {
                   "id": "s2t5",
                   "mode": "VOICEOVER",
                   "text": "Here's the actual trade inside the loop. These homes are older, so you're inspecting foundations, cast iron drain lines, thirty year old ductwork. Budget for that. But you're inside established city limits, where the infrastructure got built decades ago. No new development fee bolted onto your tax statement. That difference is bigger than most people expect.",
-                  "direction": "Flat, matter of fact. This is the setup for the whole video."
+                  "direction": "Flat, matter of fact. This is the setup for the whole video.",
+                  "visualIntent": {
+                    "type": "LIST",
+                    "spec": {
+                      "eyebrow": "Older inside the loop",
+                      "title": "What the inspection is really for",
+                      "items": [
+                        "Foundation movement",
+                        "Cast iron drain lines",
+                        "Thirty-year-old ductwork"
+                      ],
+                      "footnote": "Budget for it going in, not after."
+                    }
+                  }
                 }
               ],
               "boundaryPull": "Push past 1604 on 281 and you get a bigger, newer house for the same money, as long as you've actually driven that highway at seven in the morning. Almost nobody does that before they sign."
@@ -347,25 +418,48 @@
                   "id": "s3t2",
                   "mode": "VOICEOVER",
                   "text": "Stone Oak is the big one. It starts just north of 1604 and climbs up the hill from there. Two story homes, mostly two thousands and newer, gated pockets, grocery stores and urgent cares everywhere. If you want a house that already looks like the photos you've been saving at eleven at night, this is that area.",
-                  "direction": "Newer construction B-roll, gated entrances, retail."
+                  "direction": "Newer construction B-roll, gated entrances, retail.",
+                  "visualIntent": "FOOTAGE"
                 },
                 {
                   "id": "s3t3",
                   "mode": "VOICEOVER",
                   "text": "Encino Park is smaller and quieter, just off 281 near Bulverde Road, which runs parallel to the highway. Late eighties and nineties, so the trees are grown in and the lots are a decent size. It flies under the radar because it doesn't have a giant entrance sign and eleven villages. People who buy there tend to stay a long time.",
-                  "direction": "Slow, warm read. Quiet street footage."
+                  "direction": "Slow, warm read. Quiet street footage.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "281",
+                        "1604"
+                      ],
+                      "places": [
+                        "Encino Park",
+                        "Stone Oak"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s3t4",
                   "mode": "VOICEOVER",
                   "text": "Timberwood Park is further north, past Stone Oak, and it's a different animal. Half acre and acre lots. Some homes on well water and septic. It's unincorporated Bexar County, which means no city property tax line on your bill. That's real money every year. It also means county sheriff instead of city police, and a longer drive to everything.",
-                  "direction": "Big lot and open land B-roll."
+                  "direction": "Big lot and open land B-roll.",
+                  "visualIntent": "FOOTAGE"
                 },
                 {
                   "id": "s3t5",
                   "mode": "VOICEOVER",
                   "text": "Drive 281 before you sign. Not on a Saturday afternoon. On a Tuesday, at seven fifteen in the morning, from the actual street you're looking at, to the actual gate or building you report to. That drive is one thing at noon and it is a completely different thing at seven. I've had people change neighborhoods entirely after doing it once.",
-                  "direction": "Say this one slower. It's the most useful sentence in the section."
+                  "direction": "Say this one slower. It's the most useful sentence in the section.",
+                  "visualIntent": {
+                    "type": "CALLOUT",
+                    "spec": {
+                      "eyebrow": "The only honest test",
+                      "value": "Tuesday, 7:15 AM",
+                      "label": "drive the 281 commute before you sign"
+                    }
+                  }
                 },
                 {
                   "id": "s3t6",
@@ -389,25 +483,65 @@
                   "id": "s4t2",
                   "mode": "VOICEOVER",
                   "text": "Live Oak and Selma sit right along Interstate 35, the highway that runs northeast out of San Antonio toward Austin. Live Oak is older, eighties and nineties, smaller yards, easier prices. Selma is right next door and newer in spots. Both of them put you close to Randolph and a reasonable drive to Fort Sam outside of rush hour.",
-                  "direction": "Highway and neighborhood B-roll."
+                  "direction": "Highway and neighborhood B-roll.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "I-35",
+                        "1604"
+                      ],
+                      "places": [
+                        "Live Oak",
+                        "Selma",
+                        "Randolph"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s4t3",
                   "mode": "VOICEOVER",
                   "text": "Universal City is the closest thing to Randolph's front gate. The town grew up around the base and it still feels that way. Modest houses, older, priced under most of what you'll see up north. If you want a short drive and a smaller payment, and you don't need brand new construction, that's the value play on this side of the map.",
-                  "direction": "Calm, honest tone. Older ranch home B-roll."
+                  "direction": "Calm, honest tone. Older ranch home B-roll.",
+                  "visualIntent": "FOOTAGE"
                 },
                 {
                   "id": "s4t4",
                   "mode": "VOICEOVER",
                   "text": "Schertz and Cibolo are the next two out, heading up 35 toward New Braunfels. This is where the new construction lives on the northeast side. Bigger homes, more yard, and a much easier drive to Randolph than anybody sitting up on 281 gets. They've grown fast, and that growth is exactly why the school district question matters here.",
-                  "direction": "New construction B-roll, wide streets."
+                  "direction": "New construction B-roll, wide streets.",
+                  "visualIntent": "FOOTAGE"
                 },
                 {
                   "id": "s4t5",
                   "mode": "VOICEOVER",
                   "text": "Schertz Cibolo Universal City ISD, people call it SCUC, covers most of those three towns, and it's the one relocating families chase. Judson ISD covers a big piece of the Live Oak side and Converse, the town just south of there. Two districts, same highway, ten minutes apart, and the line does not follow the city limits.",
-                  "direction": "Say SCUC as letters, then as the full name once."
+                  "direction": "Say SCUC as letters, then as the full name once.",
+                  "visualIntent": {
+                    "type": "COMPARISON",
+                    "spec": {
+                      "eyebrow": "The district line",
+                      "title": "Same house, different district",
+                      "columns": [
+                        {
+                          "name": "SCUC ISD",
+                          "points": [
+                            "Schertz, Cibolo, Universal City",
+                            "The one relocating families chase"
+                          ]
+                        },
+                        {
+                          "name": "Judson ISD",
+                          "points": [
+                            "Live Oak side and Converse",
+                            "Easier prices, tougher resale"
+                          ]
+                        }
+                      ],
+                      "footnote": "The line moves the price of the exact same house."
+                    }
+                  }
                 },
                 {
                   "id": "s4t6",
@@ -431,25 +565,77 @@
                   "id": "s5t2",
                   "mode": "VOICEOVER",
                   "text": "Northside ISD is the giant district covering the west and northwest side. North East ISD covers the north and northeast. Both of them own pieces of Stone Oak. Same subdivision, same entrance sign, and a house on one street feeds one high school while a house three streets over feeds a different one, in a different district.",
-                  "direction": "Play over Stone Oak street footage, no signage close-ups."
+                  "direction": "Play over Stone Oak street footage, no signage close-ups.",
+                  "visualIntent": {
+                    "type": "COMPARISON",
+                    "spec": {
+                      "eyebrow": "Both own pieces of Stone Oak",
+                      "title": "One subdivision, two districts",
+                      "columns": [
+                        {
+                          "name": "Northside ISD",
+                          "points": [
+                            "West and northwest side",
+                            "Owns part of Stone Oak"
+                          ]
+                        },
+                        {
+                          "name": "North East ISD",
+                          "points": [
+                            "North and northeast",
+                            "Owns the other part"
+                          ]
+                        }
+                      ],
+                      "footnote": "Same entrance sign. Different schools."
+                    }
+                  }
                 },
                 {
                   "id": "s5t3",
                   "mode": "VOICEOVER",
                   "text": "Comal ISD is the district that reaches down from New Braunfels, the town up 35 between here and Austin. It comes a lot further south than people expect. It picks up a chunk of Timberwood Park and it reaches into Cibolo Canyons, a large development east of 281 north of Stone Oak. Bexar County address, district headquartered in another county.",
-                  "direction": "Slower on the last sentence, that is the surprising part."
+                  "direction": "Slower on the last sentence, that is the surprising part.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "I-35",
+                        "281"
+                      ],
+                      "places": [
+                        "Timberwood Park",
+                        "Bulverde",
+                        "New Braunfels"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s5t4",
                   "mode": "VOICEOVER",
                   "text": "Verify by address. Not by subdivision name, not by what the listing says, not by what the sales office told you on a Saturday. Every district has a boundary lookup where you type in the street address and it hands you the exact campus. Do that before you write an offer. Listings get this wrong constantly, and usually nobody's lying, they just copied the last one.",
-                  "direction": "Firm. This is instruction, not commentary."
+                  "direction": "Firm. This is instruction, not commentary.",
+                  "visualIntent": {
+                    "type": "LIST",
+                    "spec": {
+                      "eyebrow": "Before you write the offer",
+                      "title": "Verify the school by address",
+                      "items": [
+                        "Find the district's boundary lookup",
+                        "Type the exact street address",
+                        "Note all three campus assignments",
+                        "Never trust the subdivision name"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s5t5",
                   "mode": "VOICEOVER",
                   "text": "This matters even if your kids are grown, or you don't have kids at all. Resale. The next buyer is going to look it up, and if your house sits on the wrong side of that line for the neighborhood's reputation, you eat the difference when you sell. Especially on a house you might only hold three or four years on orders.",
-                  "direction": "Bring it back to money. Steady pace."
+                  "direction": "Bring it back to money. Steady pace.",
+                  "visualIntent": "FOOTAGE"
                 }
               ],
               "boundaryPull": "And there's one more line on a north side tax bill that your veteran exemption does not touch at all. That's the one I care about most."
@@ -467,31 +653,112 @@
                   "id": "s6t2",
                   "mode": "VOICEOVER",
                   "text": "Here's the part that catches people. The exemption applies to property taxes. It does not apply to a MUD or a PID. A MUD is a municipal utility district. A PID is a public improvement district. Different setups, same idea. A development outside city services borrowed money to put in the water lines and the roads, and the homeowners pay it back.",
-                  "direction": "Slow down on MUD and PID. Spell out the words."
+                  "direction": "Slow down on MUD and PID. Spell out the words.",
+                  "visualIntent": {
+                    "type": "COMPARISON",
+                    "spec": {
+                      "eyebrow": "Two things that are not taxes",
+                      "title": "MUD and PID, plainly",
+                      "columns": [
+                        {
+                          "name": "MUD",
+                          "points": [
+                            "Municipal utility district",
+                            "Pays for water and sewer"
+                          ]
+                        },
+                        {
+                          "name": "PID",
+                          "points": [
+                            "Public improvement district",
+                            "Pays for roads and amenities"
+                          ]
+                        }
+                      ],
+                      "footnote": "Your exemption does not touch either one."
+                    }
+                  }
                 },
                 {
                   "id": "s6t3",
                   "mode": "VOICEOVER",
                   "text": "That charge shows up on the same statement, in the same envelope, looking exactly like a tax. It isn't one. It's an assessment. Your exemption wipes out the school line and the county line, and that assessment just sits there, unchanged, year after year, usually for a couple of decades.",
-                  "direction": "Flat and clear. Let the last line hang."
+                  "direction": "Flat and clear. Let the last line hang.",
+                  "visualIntent": "FOOTAGE"
                 },
                 {
                   "id": "s6t4",
                   "mode": "VOICEOVER",
                   "text": "You'll find these north and east of 1604, in the newer developments, the ones with the stone entrance and the amenity center. Inside Loop 410, in Oak Hills, Churchill Estates, Deerfield and Castle Hills, you're generally not dealing with it, because the city put that infrastructure in fifty years ago and it's long paid for.",
-                  "direction": "Contrast the two, newer entrance B-roll then older street B-roll."
+                  "direction": "Contrast the two, newer entrance B-roll then older street B-roll.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "1604",
+                        "I-35"
+                      ],
+                      "places": [
+                        "Stone Oak",
+                        "Schertz",
+                        "Cibolo",
+                        "Timberwood Park"
+                      ],
+                      "eyebrow": "North and east of 1604",
+                      "title": "Where the assessments live"
+                    }
+                  }
                 },
                 {
                   "id": "s6t5",
                   "mode": "VOICEOVER",
                   "text": "For a hundred percent rated veteran the math flips completely. A newer house north of 1604 with an assessment on it can cost you more every year than an older house inside the loop with a higher tax rate. Because you're exempt from the tax and you are not exempt from the assessment. Same price tag, different cost to own.",
-                  "direction": "Say this one twice as slow as the rest. It is the thesis."
+                  "direction": "Say this one twice as slow as the rest. It is the thesis.",
+                  "visualIntent": {
+                    "type": "NUMBER_BREAKDOWN",
+                    "spec": {
+                      "eyebrow": "100% disabled veteran",
+                      "title": "What the exemption does not touch",
+                      "rows": [
+                        {
+                          "label": "School district tax",
+                          "value": "exempt",
+                          "struck": true
+                        },
+                        {
+                          "label": "County tax",
+                          "value": "exempt",
+                          "struck": true
+                        },
+                        {
+                          "label": "MUD / PID assessment",
+                          "value": "still due"
+                        }
+                      ],
+                      "footnote": "It is an assessment, not a tax."
+                    }
+                  }
                 },
                 {
                   "id": "s6t6",
                   "mode": "VOICEOVER",
                   "text": "Where do veterans actually stay put around here. Universal City, Schertz and Cibolo, over and over, because the drive to Randolph is short and it stays short. Live Oak too, on price. The ones I see back on the market in three years are usually 281 buyers who picked the bigger house first and drove the commute second.",
-                  "direction": "Conversational. Like you're telling a friend what you've noticed."
+                  "direction": "Conversational. Like you're telling a friend what you've noticed.",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "lines": [
+                        "I-35"
+                      ],
+                      "places": [
+                        "Universal City",
+                        "Schertz",
+                        "Cibolo",
+                        "Live Oak",
+                        "Randolph"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s6t7",
@@ -525,7 +792,13 @@
         "title": "North San Antonio Neighborhoods: Stone Oak, ISD Lines and MUD Fees",
         "requestId": "topic_pick-2026-08-07-d5cddf9d"
       },
-      "videoId": "vid-2026-08-07-d5cddf9d"
+      "videoId": "vid-2026-08-07-d5cddf9d",
+      "actedAt": "2026-08-09T20:02:53.895Z",
+      "actedAction": "superseded_by_rebuild",
+      "actedResult": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "notes": "graphics retrofit (16 visuals) + vertical blur-fill treatment — first iteration render"
+      }
     }
   ]
 }

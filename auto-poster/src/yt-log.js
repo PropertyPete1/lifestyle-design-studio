@@ -182,6 +182,56 @@ export function recordUpload(log, videoId, { youtubeUrl, metricoolPostId, blogId
   };
 }
 
+
+/**
+ * Queue a rejected video for a rebuild with the same takes.
+ *
+ * THE ITERATION LOOP THIS ENABLES: Peter rejects the review card with notes,
+ * the edit is adjusted, and the next run rebuilds — same recordings, new
+ * render, new review card. Before this existed a rejection was a dead end:
+ * the notes were recorded and every later run said "review already recorded —
+ * nothing further", which is an archive, not an edit bay.
+ *
+ * The previous upload is not erased — it moves into `reworks[]` with the
+ * rejection notes, so the whole revision history of the video is readable in
+ * one entry. `uploadedAt` clearing is what re-opens buildFromRecordings, and
+ * `reviewedAt` clearing is what lets the NEXT review card be recorded on the
+ * same entry (recordReview refuses to overwrite an existing verdict, which is
+ * correct for a final decision and wrong for a superseded one).
+ */
+export function recordRework(log, videoId, { notes = null } = {}) {
+  return {
+    ...log,
+    videos: (log?.videos || []).map((v) => {
+      if (v.videoId !== videoId) return v;
+      return {
+        ...v,
+        reworks: [
+          ...(v.reworks || []),
+          {
+            revision: v.revision || 1,
+            uploadedAt: v.uploadedAt || null,
+            metricoolPostId: v.metricoolPostId || null,
+            youtubeUrl: v.youtubeUrl || null,
+            rejectedAt: v.reviewedAt || new Date().toISOString(),
+            notes,
+          },
+        ],
+        revision: (v.revision || 1) + 1,
+        uploadedAt: null,
+        metricoolPostId: null,
+        youtubeUrl: null,
+        reviewedAt: null,
+        reviewNotes: null,
+        approved: false,
+        // Distribution state belongs to the superseded upload.
+        distribution: null,
+        youtubeVideoId: null,
+      };
+    }),
+  };
+}
+
 /**
  * Record Peter's decision on the finished video.
  *

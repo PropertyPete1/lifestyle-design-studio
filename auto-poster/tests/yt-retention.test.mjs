@@ -401,3 +401,53 @@ describe("audio-only narration and the PIP", () => {
     assert.match(r.reason, /video/i, "the reason must say what recording choice fixes it");
   });
 });
+
+describe("the vertical blur-fill treatment", () => {
+  const piece = { srcStart: 0, srcEnd: 4, seconds: 4, scale: 1.0, push: null };
+
+  test("blur-fill is the default and composes fg over blurred bg", () => {
+    const args = pieceArgs("in.mp4", "o.mp4", piece, DIM).join(" ");
+    assert.match(args, /-filter_complex/);
+    assert.match(args, /gblur=sigma=/);
+    assert.match(args, /overlay=\(W-w\)\/2:0/, "the take must be centered");
+    assert.match(args, /scale=-2:1080/, "the take must fill the full height");
+  });
+
+  test("the gold vignette sits on the background only, and 0 disables it", () => {
+    const withV = pieceArgs("in.mp4", "o.mp4", piece, DIM, { treatment: { mode: "blur-fill", blur: 24, darken: 0.4, bgZoom: 1.1, vignette: 0.35 } }).join(" ");
+    assert.match(withV, /vignette=angle/);
+    assert.match(withV, /colorbalance=rs=0\.028/, "warm shift scales with the knob");
+    const noV = pieceArgs("in.mp4", "o.mp4", piece, DIM, { treatment: { mode: "blur-fill", blur: 24, darken: 0.4, bgZoom: 1.1, vignette: 0 } }).join(" ");
+    assert.ok(!/vignette=angle/.test(noV), "vignette 0 must remove the filter entirely");
+  });
+
+  test("pillarbox mode remains the escape hatch", () => {
+    const args = pieceArgs("in.mp4", "o.mp4", piece, DIM, { treatment: { mode: "pillarbox" } }).join(" ");
+    assert.match(args, /pad=1920:1080/);
+    assert.ok(!/gblur/.test(args));
+  });
+
+  test("the punch-in crops the SOURCE, before composition", () => {
+    // Cropping after composition would zoom the blurred background too — a
+    // digital zoom, not a second camera.
+    const args = pieceArgs("in.mp4", "o.mp4", { ...piece, scale: 1.08 }, DIM).join(" ");
+    const graph = /-filter_complex (\S+)/.exec(args)[1];
+    assert.ok(graph.indexOf("crop=iw/1.08") < graph.indexOf("split"), "punch crop must precede the fg/bg split");
+  });
+
+  test("the push rides the COMPOSED frame and varies with the frame counter", () => {
+    const args = pieceArgs("in.mp4", "o.mp4", { ...piece, push: { from: 1, to: 1.08, seconds: 3.5 } }, DIM).join(" ");
+    assert.match(args, /zoompan=z='1\+0\.08\*sin/);
+    assert.match(args, /\bon\b/, "a constant zoom is a still — that mistake shipped once");
+  });
+
+  test("audio is mapped through the filter graph", () => {
+    // filter_complex drops implicit stream mapping; without -map 0:a? every
+    // edited take would go silent. Optional-mapped because a video-only
+    // fixture must not fail the render.
+    const args = pieceArgs("in.mp4", "o.mp4", piece, DIM);
+    const i = args.indexOf("-map");
+    assert.ok(i > 0 && args.slice(i).join(" ").includes("0:a?"), "audio map missing");
+    assert.match(args.join(" "), /-ar 48000/);
+  });
+});
