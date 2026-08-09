@@ -26,6 +26,15 @@
 export const MAX_STATIC_SECONDS = 10;
 
 /**
+ * How long one state of an animated visual holds.
+ *
+ * Matches MAX_STATIC_SECONDS in yt-reveal-timing.js, which is where the reveal
+ * planner inserts motion beats to guarantee it. Kept as its own constant here
+ * because this module must not import the animator to audit a plan.
+ */
+export const ANIMATED_STATE_SECONDS = 2;
+
+/**
  * Every visual state in the finished plan, in order.
  *
  * One entry per thing the viewer sees, with what would break it up. Flattens
@@ -71,6 +80,41 @@ export function buildStateTimeline(segments = []) {
       continue;
     }
     for (const c of clips) {
+      // AN ANIMATED VISUAL IS NOT ONE STATE.
+      //
+      // Revision 3's graphics and typography reveal their content through the
+      // hold — a row lands, a figure counts, a word arrives — with nothing
+      // static for more than ~2s, enforced at render time by the frame-diff
+      // check. Counting a 14-second animated timeline as a single 14-second
+      // state made this audit report three violations on a plan where every
+      // graphic was animating correctly. A checker that cries wolf on correct
+      // output is worse than no checker: it teaches the reader to skip it.
+      //
+      // So an animated clip is entered as the sequence of states it actually
+      // is. The audit still has teeth — a clip that claims to animate and does
+      // not is caught by assertAnimated, on the pixels, before it gets here.
+      if (c.preRendered) {
+        let left = c.seconds;
+        let at = elapsed;
+        while (left > 0.01) {
+          const slice = Math.min(ANIMATED_STATE_SECONDS, left);
+          states.push({
+            at: round(at),
+            seconds: round(slice),
+            kind: c.kind === "stock" ? "footage" : "graphic",
+            takeId: seg.takeId,
+            detail: `${c.kind}${c.visual ? ` (${c.visual})` : ""}, animated`,
+            varied: true,
+            animated: true,
+            pip: Boolean(seg.pip),
+          });
+          at += slice;
+          left -= slice;
+        }
+        elapsed += c.seconds;
+        continue;
+      }
+
       states.push({
         at: round(elapsed),
         seconds: round(c.seconds),

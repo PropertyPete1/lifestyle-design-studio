@@ -265,6 +265,12 @@ export function findEmphasisWords(words, { minGap = 2.0, limit = 12 } = {}) {
     let kind = null;
     if (/[0-9]/.test(norm)) kind = "number";
     else if (NEGATIONS.has(norm)) kind = "negation";
+    // An ACRONYM is the jargon this channel exists to explain — MUD, HOA, PMI,
+    // FHA, ARM — and it is exactly the word a presenter leans on. The
+    // mixed-case pattern below misses all of them, because "MUD" has no
+    // lowercase tail: a cold run over a take whose whole point was the MUD
+    // district produced zero emphasis pulses.
+    else if (/^[A-Z]{2,6}$/.test(raw.replace(/[^A-Za-z]/g, ""))) kind = "acronym";
     else if (/^[A-Z][a-z]{2,}/.test(raw) && !afterSentenceEnd) kind = "proper";
 
     if (!kind) continue;
