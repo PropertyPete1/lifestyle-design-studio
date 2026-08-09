@@ -764,6 +764,188 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-09",
+      "timestamp": "2026-08-09T14:24:54.720Z",
+      "pillar": "market_insight",
+      "topic": "Price cut vs seller credit in the current Texas market",
+      "hook": "Texas sellers are cutting prices right now. Asking for the price cut is usually the wrong move.",
+      "closeType": "dm",
+      "keyword": "MATH",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Price cut vs seller credit in the current Texas market",
+        "hook": "Texas sellers are cutting prices right now. Asking for the price cut is usually the wrong move.",
+        "map": [
+          "Homes sitting longer",
+          "Price cut vs credit",
+          "The 9,000 dollar test",
+          "Why sellers say yes",
+          "The cap nobody checks"
+        ],
+        "points": [
+          {
+            "title": "Homes Are Sitting",
+            "body": [
+              "Across most Texas metros, houses are taking longer to sell than they did last spring.",
+              "Sellers who priced like it was 2022 are watching their listing get older every week."
+            ],
+            "loop": "That changes their answer."
+          },
+          {
+            "title": "The Price Cut Trap",
+            "body": [
+              "Buyers ask for money off the price because it sounds like the biggest win.",
+              "Spread across 30 years, a small price cut barely moves what you pay every month."
+            ],
+            "loop": "Point it somewhere better."
+          },
+          {
+            "title": "Same 9,000 Dollars",
+            "body": [
+              "Knock 9,000 off the price and your monthly change is pocket change.",
+              "Ask for that same 9,000 toward your rate instead and the monthly drop is far bigger."
+            ],
+            "loop": "Most buyers never run both."
+          },
+          {
+            "title": "Sellers Prefer This",
+            "body": [
+              "A price cut lowers the number every neighbor and every future appraiser sees.",
+              "A credit at closing keeps their sale price on paper, so they agree faster."
+            ],
+            "loop": "But there is a ceiling here."
+          },
+          {
+            "title": "Know The Cap",
+            "body": [
+              "Your loan type limits how much a seller is allowed to hand you.",
+              "Ask above that limit and the extra money just disappears at the table."
+            ],
+            "loop": "Most buyers guess this wrong."
+          }
+        ],
+        "cta": {
+          "payoff": "the full payment breakdown showing what a price cut and a rate credit each do to your monthly number"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 5,
+        "cta": 8,
+        "worst_problem": "The loop on slide 1 (\"That changes their answer.\") is ambiguous — no question has been posed, so \"their answer\" points at nothing, and the final loop (\"Most buyers guess this wrong.\") reuses the same construction as slide 3's loop, blunting both.",
+        "fix": "Rewrite slide 1's loop to name the stake concretely (e.g. \"So ask for this instead\") and vary the closing loop so it doesn't echo \"Most buyers never run both.\""
+      },
+      "attemptsUsed": 2,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 359941895,
+          "verified": false,
+          "verdict": "pending",
+          "verifiedAt": "2026-08-09T14:30:57.540Z"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 359941898,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-09T14:27:55.509Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492224675800928256"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 359941918,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-09T14:29:27.033Z",
+          "publicUrl": "https://www.instagram.com/p/Db0psfhCCmQ/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 359941934,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-09T14:27:55.768Z",
+          "publicUrl": "https://www.instagram.com/p/Db0pnKpDeOL/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 359941936,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-09T14:27:55.896Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492224677784895488"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 359941955,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-09T14:27:56.026Z",
+          "publicUrl": "https://www.instagram.com/p/Db0pr7Yim2O/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 359941956,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-09T14:27:56.153Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122112622731400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 359941958,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-09T14:27:56.283Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492224677277458432"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-09T14:30:57.540Z",
+        "anyFailed": false,
+        "pendingRecheck": true
+      }
     }
   ]
 }
