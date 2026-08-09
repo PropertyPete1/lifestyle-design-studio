@@ -29,6 +29,7 @@
  */
 
 import { join } from "path";
+import sharp from "sharp";
 
 import { renderCardPng, revealLabels } from "./yt-card-render.js";
 import { frameDifference } from "./yt-visual-qc.js";
@@ -198,6 +199,9 @@ export async function renderAnimatedGraphic({
   return {
     path: out,
     states,
+    // Kept so verifyStateSequence can compare the encoded clip against the
+    // exact pixels each moment was supposed to show.
+    framePaths,
     stateDiffs,
     deadStates,
     stateCount: states.length,
@@ -320,21 +324,114 @@ export function concatArgs(listPath, output, { seconds, fps = GRAPHIC_FPS }) {
 }
 
 /**
+ * Prove the clip shows the STATES THAT WERE PLANNED, by comparing it against
+ * the state renders themselves.
+ *
+ * This is the check that actually catches "the content never arrived", and it
+ * works where the statistical one did not, because it has ground truth: the
+ * exact pixels each moment is supposed to look like already exist on disk.
+ *
+ * For a sample of states, grab the clip at the middle of the state's hold and
+ * ask which state render it most resembles. Content differences — three rows
+ * versus five, a figure at $2,100 versus $4,200 — dwarf the 4.5% camera push,
+ * so the nearest match is unambiguous when the concat is right and wrong when
+ * it is not. A clip that is a push over a finished card matches the LAST state
+ * everywhere, which is exactly the signature we want to name.
+ *
+ * @returns {{ ok, failures, matches, checked }}
+ */
+export async function verifyStateSequence(clipPath, { states, framePaths, seconds, dir, ffmpeg, index = 0, sample = 6 }) {
+  const failures = [];
+  const matches = [];
+  if (!states?.length || !framePaths?.length) return { ok: true, failures, matches, checked: 0 };
+
+  // THE REFERENCE MUST BE ZOOMED TO MATCH THE MOMENT IT IS COMPARED AGAINST.
+  //
+  // The clip has the push baked in; the state renders do not. Comparing them
+  // raw makes the score a measure of how far the push has travelled rather than
+  // of what the card is showing — every sampled frame matched state 0, with
+  // scores climbing steadily from 0.54 to 3.62 across the clip. That is the
+  // zoom, read as content.
+  //
+  // Applying the same centre-crop the push applies at time t removes it from
+  // the comparison and leaves the thing we actually care about: which rows are
+  // on screen.
+  const W = 480;
+  const H = 270;
+  const zoomAt = (t) => 1 + PUSH_TRAVEL * (t / Math.max(0.001, seconds));
+
+  const grey = (pipeline) => pipeline.resize(W, H, { fit: "fill" }).greyscale().raw().toBuffer();
+  const zoomedRef = async (src, zoom) => {
+    const meta = await sharp(src).metadata();
+    const cw = Math.max(2, Math.round(meta.width / zoom));
+    const ch = Math.max(2, Math.round(meta.height / zoom));
+    return grey(
+      sharp(src).extract({
+        left: Math.floor((meta.width - cw) / 2),
+        top: Math.floor((meta.height - ch) / 2),
+        width: cw,
+        height: ch,
+      })
+    );
+  };
+
+  const step = Math.max(1, Math.floor(states.length / sample));
+  for (let i = 0; i < states.length; i += step) {
+    const s = states[i];
+    const mid = s.at + (s.until - s.at) / 2;
+    if (mid <= 0.05 || mid >= seconds - 0.05) continue;
+
+    const grabbed = join(dir, `seq-${String(index).padStart(3, "0")}-${i}.png`);
+    ffmpeg(["-y", "-ss", String(round(mid)), "-i", clipPath, "-frames:v", "1", "-q:v", "2", grabbed]);
+    const actual = await grey(sharp(grabbed));
+
+    const zoom = zoomAt(mid);
+    let best = -1;
+    let bestScore = Infinity;
+    for (let ri = 0; ri < framePaths.length; ri++) {
+      const ref = await zoomedRef(framePaths[ri], zoom);
+      if (ref.length !== actual.length) continue;
+      let sum = 0;
+      for (let k = 0; k < ref.length; k += 3) sum += Math.abs(ref[k] - actual[k]);
+      const score = sum / Math.ceil(ref.length / 3);
+      if (score < bestScore) { bestScore = score; best = ri; }
+    }
+
+    matches.push({ state: i, at: round(mid), matched: best, score: round(bestScore) });
+  }
+
+  // The clip must not collapse onto a single state. That is the push-over-a-
+  // finished-card signature, and it is the failure this function exists for.
+  const distinct = new Set(matches.map((m) => m.matched));
+  if (matches.length >= 3 && distinct.size === 1) {
+    failures.push(
+      `every sampled moment matches the same state (${[...distinct][0]}) — the clip is not stepping through its reveals`
+    );
+  }
+
+  // And it must move FORWARD. A concat that shuffled or dropped states shows up
+  // as a match sequence that does not increase.
+  const matched = matches.map((m) => m.matched);
+  const regressions = matched.filter((v, i) => i > 0 && v < matched[i - 1] - 1).length;
+  if (regressions > Math.max(1, Math.floor(matched.length / 3))) {
+    failures.push(`the clip does not step through its states in order: matched ${JSON.stringify(matched)}`);
+  }
+
+  return { ok: failures.length === 0, failures, matches, checked: matches.length };
+}
+
+/**
  * Prove the finished clip actually animates.
  *
- * TWO separate claims, because they fail separately and only one of them is
- * caught by looking at the file:
+ * NOT FROZEN — no window longer than ~2s where the picture does not change.
+ * This is Peter's rule and the one a stuck render violates.
  *
- *   1. NOT FROZEN — no window longer than ~2s where the picture does not
- *      change. This is the rule Peter set and the one a stuck render violates.
- *   2. REVEALS LANDED — the picture changed MORE at each planned reveal than it
- *      does while merely pushing. This is the one that matters, because a clip
- *      whose reveals silently did not render still passes (1): the camera push
- *      alone makes every frame differ from the last. Without this check the
- *      static test would wave through a nine-second slow zoom over a finished
- *      table and report a fully animated graphic.
+ * The reveal measurements are also taken here and REPORTED. They are not a
+ * gate; see the note at the bottom of this function for why the ratio between
+ * them was demoted, and use `verifyStateSequence` for the claim it was trying
+ * to make.
  *
- * @returns {{ ok, failures, samples, revealDiffs, ambient }}
+ * @returns {{ ok, failures, samples, revealDiffs, ambient, revealRatio }}
  */
 export async function assertAnimated(clipPath, { seconds, reveals = [], maxStatic = MAX_STATIC_SECONDS, dir, ffmpeg, index = 0 }) {
   const failures = [];
@@ -438,15 +535,36 @@ export async function assertAnimated(clipPath, { seconds, reveals = [], maxStati
   // it to split the difference more finely would buy nothing and start failing
   // sparse cards, whose reveals are genuinely smaller.
   const landed = revealDiffs.filter((r) => r.landed).length;
-  if (revealDiffs.length > 0 && ambient > 0) {
+  if (revealDiffs.length > 0) {
     const revealMedian = median(revealDiffs.map((r) => r.diff));
-    const ratio = revealMedian / ambient;
-    if (ratio < 1.15) {
+
+    // A REVEAL MUST MOVE PIXELS. This much is robust and is a gate.
+    const REVEAL_FLOOR = 0.05;
+    if (revealMedian < REVEAL_FLOOR) {
       failures.push(
-        `reveal moments are no busier than the rest of the clip (median ${round(revealMedian)} vs ambient ${round(ambient)}, ` +
-          `ratio ${round(ratio)}) — the graphic is moving but its content is not arriving`
+        `reveals do not change the picture at all (median ${round(revealMedian)}, floor ${REVEAL_FLOOR}) — ` +
+          `the graphic's content is not arriving`
       );
     }
+
+    // THE RATIO IS REPORTED, NOT ENFORCED, and that demotion was earned.
+    //
+    // The idea was sound: if reveals rendered, the moments they occur at are
+    // busier than the moments they do not. The measurement is not. x264 over a
+    // near-static source does not distribute its error evenly — it updates some
+    // frames and coasts through others — so the difference between two frames
+    // 0.18s apart depends on where the encoder chose to spend bits as much as
+    // on what the picture is doing.
+    //
+    // Measured on the same push-over-a-finished-card clip, which contains no
+    // reveals whatsoever, the ratio came out 0.69 with one set of probe
+    // positions and 1.368 with another. A gate that swings either side of its
+    // threshold on sampling position is not measuring the thing it names, and
+    // shipping it would have meant a build that fails on encoder noise and
+    // passes on the failure it was written to catch.
+    //
+    // What replaced it is `verifyStateSequence`, which compares the clip
+    // against the state renders themselves. Ground truth beats a proxy.
   }
 
   return {
