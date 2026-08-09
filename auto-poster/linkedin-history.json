@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "unpopular_opinion",
-      "body": "Most agents think their brokerage should handle their marketing for them.\n\nThat's backwards. Your brokerage should give you the tools and the freedom to do your own marketing. The second you're waiting for your broker to build your brand, you've already lost. I've seen agents with mediocre brokerages crush agents at big names because they took ownership of their own positioning. They built their own database. They showed up consistently online. They became the expert their sphere trusted. Your broker's job is to support transactions and give you a solid foundation. Your job is to build your own reputation. The agents winning right now aren't the ones waiting for permission or relying on company branding. They're the ones creating their own.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
-      "format": "bold_statement",
-      "ending": "dm_cta",
-      "date": "2026-07-25"
-    },
-    {
       "topic": "team_wins",
       "body": "Our team just closed back-to-back deals that looked impossible three weeks ago. Multiple offers fell through, financing issues, appraisal gaps. Every one of them. We solved them together. That's the momentum we've built here. When you're part of a team that doesn't quit, deals close.",
       "format": "short_punchy",
@@ -48,6 +41,13 @@
       "format": "story",
       "ending": "question",
       "date": "2026-08-08"
+    },
+    {
+      "topic": "wish_i_knew",
+      "body": "I wish I knew earlier that your first deal means nothing. Your second deal means nothing either. What matters is what you do on deal number fifty when the market shifts and nothing feels like it's working anymore. 1. I thought closing deals made you a real estate agent. Turns out staying consistent when deals dry up is what separates agents from everyone else who tried and quit. 2. I thought a higher split would keep me motivated. It didn't. What kept me going was knowing I had people around me who believed I'd figure it out. Compensation is noise compared to that. 3. I thought hustle was enough. It's not. Hustle without a system burns you out. Hustle without support breaks you. You need both or you don't last. The agents I see win aren't the smartest or the luckiest.",
+      "format": "list",
+      "ending": "dm_cta",
+      "date": "2026-08-09"
     }
   ]
 }
