@@ -212,3 +212,17 @@ describe("fitUnderLimit", () => {
     await assert.rejects(() => fitUnderLimit(png, 200));
   });
 });
+
+describe("fitUnderLimit's return shape reaches disk as bytes", () => {
+  test("the pipeline call sites destructure .buffer — the object is not writable", async () => {
+    // Video 1's real build failed here: writeFileSync(path, {buffer, ...})
+    // throws "Received an instance of Object". Assert the contract so a
+    // future caller cannot repeat it silently.
+    const { fitUnderLimit } = await import("../src/yt-thumbnail.js");
+    const small = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+    const out = await fitUnderLimit(small);
+    assert.ok(Buffer.isBuffer(out.buffer), "buffer property must be the bytes");
+    assert.equal(out.converted, false);
+    assert.ok(!Buffer.isBuffer(out), "the return itself is NOT bytes — callers must destructure");
+  });
+});

@@ -383,3 +383,21 @@ describe("PIP compositing arguments", () => {
     assert.match(pipCompositeArgs("v.mp4", "c.mov", "o.mp4", { x: 0, y: 0, w: 10, h: 10 }).join(" "), /-c:a copy/);
   });
 });
+
+describe("audio-only narration and the PIP", () => {
+  test("an audio-only take is named as such, not 'could not open'", async () => {
+    // Video 1's real voiceover takes were .m4a voice memos. The report must
+    // say the fix is a recording choice, not a broken file.
+    const { execFileSync } = await import("child_process");
+    const { tmpdir } = await import("os");
+    const { join } = await import("path");
+    const { segmentTake } = await import("../src/yt-pip.js");
+    const m4a = join(tmpdir(), `audio-only-${Date.now()}.m4a`);
+    execFileSync("ffmpeg", ["-y", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=220:duration=2", "-c:a", "aac", m4a], { stdio: ["pipe", "pipe", "pipe"] });
+    const r = segmentTake(m4a, join(tmpdir(), "never-written.mov"));
+    assert.equal(r.ok, false);
+    assert.equal(r.audioOnly, true, `expected the audio-only verdict, got: ${r.reason}`);
+    assert.match(r.reason, /audio-only/);
+    assert.match(r.reason, /video/i, "the reason must say what recording choice fixes it");
+  });
+});

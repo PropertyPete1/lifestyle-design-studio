@@ -540,11 +540,15 @@ async function buildFromRecordings(approvals, record) {
   try {
     thumb = await generateThumbnailHook({ title: packaging.title, script });
     if (thumb.hook) {
-      const png = await fitUnderLimit(
+      // fitUnderLimit returns { buffer, converted } — NOT bytes. Writing the
+      // object threw on video 1's real build ("Received an instance of
+      // Object") and the run shipped without its thumbnail attachment. The
+      // fallback held, which is why this was a warning and not a dead build.
+      const fitted = await fitUnderLimit(
         await renderThumbnail(thumb.hook, { kicker: result.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
       );
-      thumbnailPath = join(workDir, "thumbnail.png");
-      writeFileSync(thumbnailPath, png);
+      thumbnailPath = join(workDir, fitted.converted ? "thumbnail.jpg" : "thumbnail.png");
+      writeFileSync(thumbnailPath, fitted.buffer);
       console.log(
         `[YTPipeline] thumbnail: "${thumb.hook}" ` +
           `(curiosity=${thumb.scores?.curiosity} legibility=${thumb.scores?.legibility} emotion=${thumb.scores?.emotional_trigger}` +
@@ -743,11 +747,11 @@ async function sweepDistribution() {
     let thumbnailPath = null;
     if (entry.thumbnailText) {
       try {
-        const png = await fitUnderLimit(
+        const fitted = await fitUnderLimit(
           await renderThumbnail(entry.thumbnailText, { kicker: entry.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
         );
-        thumbnailPath = join(process.env.RUNNER_TEMP || tmpdir(), `thumb-${entry.videoId}.png`);
-        writeFileSync(thumbnailPath, png);
+        thumbnailPath = join(process.env.RUNNER_TEMP || tmpdir(), `thumb-${entry.videoId}.${fitted.converted ? "jpg" : "png"}`);
+        writeFileSync(thumbnailPath, fitted.buffer);
       } catch (err) {
         console.log(`::warning::${entry.videoId}: thumbnail re-render failed (${err.message})`);
       }
