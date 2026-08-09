@@ -827,6 +827,17 @@
         "requestId": "topic_pick-2026-08-07-d5cddf9d"
       },
       "videoId": "vid-2026-08-07-d5cddf9d"
+    },
+    {
+      "requestId": "video_review-2026-08-09-3b35a150",
+      "kind": "video_review",
+      "requestedAt": "2026-08-09T22:31:09.292Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "Where to live in North San Antonio: inside or outside Loop 1604",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
