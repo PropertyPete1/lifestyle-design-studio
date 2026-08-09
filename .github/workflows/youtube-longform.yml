@@ -337,8 +337,6 @@ jobs:
           # LIVE: sends a real recording kit to the dashboard and Peter's inbox.
           I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-          YT_NARRATION_MODE: peter
-          YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
           # MUST match the pipeline job. The dry run's whole purpose is to
           # predict what the real build will do, and takesToRecord() keys off
           # this — without it the dry run expects 12 on-camera takes while the
