@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "fs";
+import { readFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -114,5 +114,39 @@ describe("the distribution sweep's credentials reach the job that runs it", () =
       assert.match(all[name], /group:\s*youtube-longform-approvals/, `${name} must share the approvals group`);
       assert.match(all[name], /cancel-in-progress:\s*false/, `${name} must queue, not kill a build mid-upload`);
     }
+  });
+});
+
+describe("no workflow env block repeats a key", () => {
+  /**
+   * GitHub rejects a workflow with duplicate env keys AT DISPATCH TIME — the
+   * file merges fine, every text-level test passes, and then every cron and
+   * every manual dispatch fails with HTTP 422 until someone notices. That is
+   * how an invalid youtube-longform.yml shipped through two reviewed PRs and
+   * a launch audit: two sequential patches each inserted the same env pair
+   * after different anchors that landed in one block. Found only when the
+   * first real build was dispatched.
+   */
+  test("every env block in every workflow has unique keys", () => {
+    const dir = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".github", "workflows");
+    const problems = [];
+    for (const file of readdirSync(dir).filter((f) => f.endsWith(".yml"))) {
+      const lines = readFileSync(join(dir, file), "utf-8").split("\n");
+      let keys = null;
+      let indent = 0;
+      lines.forEach((line, i) => {
+        const start = line.match(/^(\s+)env:\s*$/);
+        if (start) { keys = new Map(); indent = start[1].length + 2; return; }
+        if (keys === null) return;
+        const kv = line.match(new RegExp(`^\\s{${indent}}([A-Za-z_][A-Za-z0-9_]*):`));
+        if (kv) {
+          if (keys.has(kv[1])) problems.push(`${file}:${i + 1} duplicates ${kv[1]} (first at ${keys.get(kv[1])})`);
+          keys.set(kv[1], i + 1);
+        } else if (line.trim() && !line.startsWith(" ".repeat(indent))) {
+          keys = null;
+        }
+      });
+    }
+    assert.deepEqual(problems, [], problems.join("; "));
   });
 });
