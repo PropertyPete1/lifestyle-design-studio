@@ -223,6 +223,13 @@ export function latestRequestOfKind(log, kind, { videoId = null } = {}) {
 export function decisionState(log, kind, opts = {}) {
   const record = latestRequestOfKind(log, kind, opts);
   if (!record) return { state: "none" };
+  // Acted WITHOUT a decision means the system closed the request itself — a
+  // review card superseded by a rebuild is the case that found this. The old
+  // order checked hasDecision first, so a superseded card read as "waiting"
+  // forever: the queue-rework supersede was recorded, the state machine never
+  // looked at it, and the dispatched rebuild exited as a no-op saying it was
+  // still waiting on Peter. Acted is acted, decided or not.
+  if (hasActed(record) && !hasDecision(record)) return { state: "already-acted", record };
   if (!hasDecision(record)) return { state: "waiting", record };
   if (hasActed(record)) return { state: "already-acted", record };
   if (isApproved(record)) return { state: "approved", record };

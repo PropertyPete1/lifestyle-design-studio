@@ -373,3 +373,28 @@ describe("TEST- requests are invisible to every scheduled job", () => {
     assert.equal(decisionState(log, KIND_TOPIC_PICK).state, "approved");
   });
 });
+
+describe("a superseded (acted, undecided) request is closed, not waiting", () => {
+  test("decisionState returns already-acted for acted-without-decision", async () => {
+    const { decisionState, KIND_VIDEO_REVIEW } = await import("../src/yt-approvals.js");
+    // The queue-rework case: the system supersedes a WAITING review card. No
+    // decision exists — Peter never answered — but the request is closed. The
+    // old order made this "waiting" forever, and the rebuild dispatched after
+    // the supersede exited as a no-op.
+    const log = { requests: [{
+      requestId: "video_review-2026-08-09-test",
+      kind: KIND_VIDEO_REVIEW,
+      requestedAt: "2026-08-09T17:13:18.000Z",
+      actedAt: "2026-08-09T20:02:53.000Z",
+      actedAction: "superseded_by_rebuild",
+    }] };
+    const st = decisionState(log, KIND_VIDEO_REVIEW);
+    assert.equal(st.state, "already-acted", `superseded card must be closed, got "${st.state}"`);
+  });
+
+  test("an untouched waiting request still reads as waiting", async () => {
+    const { decisionState, KIND_VIDEO_REVIEW } = await import("../src/yt-approvals.js");
+    const log = { requests: [{ requestId: "r", kind: KIND_VIDEO_REVIEW, requestedAt: "2026-08-09T17:13:18.000Z" }] };
+    assert.equal(decisionState(log, KIND_VIDEO_REVIEW).state, "waiting");
+  });
+});
