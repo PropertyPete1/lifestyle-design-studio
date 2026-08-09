@@ -385,6 +385,43 @@ function mergeVideoRecord(x, y) {
     out.shorts = s.shorts ?? [];
   }
 
+  // revision history — the iteration loop's memory. Max revision wins;
+  // reworks union on (revision, rejectedAt) so neither side's history is lost.
+  const revNo = Math.max(x.revision || 0, y.revision || 0);
+  if (revNo > 0) out.revision = revNo;
+  const reworkKey = (r) => `${r?.revision ?? "?"}|${r?.rejectedAt ?? "?"}`;
+  const reworks = new Map();
+  for (const r of [...(x.reworks || []), ...(y.reworks || [])]) {
+    if (r && !reworks.has(reworkKey(r))) reworks.set(reworkKey(r), r);
+  }
+  if (reworks.size > 0) out.reworks = [...reworks.values()].sort((a, b) => (a.revision || 0) - (b.revision || 0));
+
+  // distribution — per-step done-wins, like approved. A completed
+  // thumbnails.set that a stale copy erases would re-run against YouTube.
+  if (x.distribution || y.distribution) {
+    out.distribution = { ...(y.distribution || {}), ...(x.distribution || {}) };
+    for (const step of new Set([...Object.keys(x.distribution || {}), ...Object.keys(y.distribution || {})])) {
+      const xa = x.distribution?.[step];
+      const ya = y.distribution?.[step];
+      out.distribution[step] = xa?.done ? xa : ya?.done ? ya : (xa ?? ya);
+    }
+  }
+
+  // EVERYTHING ELSE SURVIVES BY DEFAULT. The groups above exist to apply
+  // POLICY (asymmetric approval, upload never dropped) — they were never
+  // meant to be an allowlist, but that is what they became: this function
+  // rebuilt records from named fields only, and every field added after it
+  // was written (revision, reworks, distribution, youtubeVideoId,
+  // thumbnailText) was silently dropped at every two-sided merge. Video 1's
+  // revision history vanished exactly that way. Unknown fields now carry
+  // through — defined-over-undefined, x (local) winning a tie — so the NEXT
+  // new field survives without anyone remembering this function exists.
+  for (const key of new Set([...Object.keys(x), ...Object.keys(y)])) {
+    if (key in out) continue;
+    const v = x[key] !== undefined ? x[key] : y[key];
+    if (v !== undefined) out[key] = v;
+  }
+
   return out;
 }
 

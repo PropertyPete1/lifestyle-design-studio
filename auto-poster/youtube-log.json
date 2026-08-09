@@ -1,51 +1,59 @@
 {
-  "videos": [
+ "videos": [
+  {
+   "videoId": "vid-2026-08-07-d5cddf9d",
+   "requestId": "topic_pick-2026-08-07-d5cddf9d",
+   "title": "North San Antonio Neighborhoods: Stone Oak, ISD Lines and MUD Fees",
+   "market": "san_antonio",
+   "intent": null,
+   "createdAt": "2026-08-09T17:12:48.371Z",
+   "runtimeSeconds": 668.722083,
+   "bytes": 333866061,
+   "resolution": "1080p",
+   "brollHashes": [],
+   "scriptScores": {
+    "clarity": 9,
+    "retention": 8,
+    "authenticity": 8,
+    "worst_problem": "The hook's specific claim \u2014 \"two of the three areas everybody points you to have a line on the bill that exemption does not touch\" \u2014 is never actually cashed out, since the MUD/PID section says the fee lives north and east of 1604 and only one of the three opening areas (Stone Oak) sits there, so the viewer can't tell if the opening promise was kept.",
+    "worst_boundary": "But if you're reporting to Randolph or Fort Sam, none of this applies, because you're driving the wrong direction entirely, and the northeast side has its own thing nobody warns you about.",
+    "fix": "Rewrite the hook so the counted claim matches what the MUD/PID section actually delivers (name the specific areas carrying assessments), and cut the near-verbatim second description of Stone Oak in section 3 so it adds something the first one didn't."
+   },
+   "packagingScores": {
+    "searchability": 8,
+    "promise_match": 5,
+    "worst_problem": "The description's opening two lines promise a broad price-and-commute comparison including Alamo Heights, Hollywood Park and Shavano Park \u2014 none of which appear anywhere in the chapters, which are actually a military/VA-buyer piece about 1604, ISD lines and MUD fees.",
+    "fix": "Delete the boilerplate first two description lines and replace them with a summary that matches the chapters (Stone Oak vs Timberwood Park vs the northeast bases, the Northside/Comal ISD line, MUD and PID fees on top of the VA exemption), and put the veteran angle in the title, e.g. \"Moving to North San Antonio: Stone Oak, ISD Lines, and the MUD Fee Your VA Exemption Won't Cover.\""
+   },
+   "uploadedAt": null,
+   "privacy": "private",
+   "youtubeUrl": null,
+   "metricoolPostId": null,
+   "blogId": "4807109",
+   "approved": false,
+   "reworks": [
     {
-      "videoId": "vid-2026-08-07-d5cddf9d",
-      "requestId": "topic_pick-2026-08-07-d5cddf9d",
-      "title": "North San Antonio Neighborhoods: Stone Oak, ISD Lines and MUD Fees",
-      "market": "san_antonio",
-      "intent": null,
-      "createdAt": "2026-08-09T17:12:48.371Z",
-      "runtimeSeconds": 668.722083,
-      "bytes": 333866061,
-      "resolution": "1080p",
-      "brollHashes": [],
-      "scriptScores": {
-        "clarity": 9,
-        "retention": 8,
-        "authenticity": 8,
-        "worst_problem": "The hook's specific claim — \"two of the three areas everybody points you to have a line on the bill that exemption does not touch\" — is never actually cashed out, since the MUD/PID section says the fee lives north and east of 1604 and only one of the three opening areas (Stone Oak) sits there, so the viewer can't tell if the opening promise was kept.",
-        "worst_boundary": "But if you're reporting to Randolph or Fort Sam, none of this applies, because you're driving the wrong direction entirely, and the northeast side has its own thing nobody warns you about.",
-        "fix": "Rewrite the hook so the counted claim matches what the MUD/PID section actually delivers (name the specific areas carrying assessments), and cut the near-verbatim second description of Stone Oak in section 3 so it adds something the first one didn't."
-      },
-      "packagingScores": {
-        "searchability": 8,
-        "promise_match": 5,
-        "worst_problem": "The description's opening two lines promise a broad price-and-commute comparison including Alamo Heights, Hollywood Park and Shavano Park — none of which appear anywhere in the chapters, which are actually a military/VA-buyer piece about 1604, ISD lines and MUD fees.",
-        "fix": "Delete the boilerplate first two description lines and replace them with a summary that matches the chapters (Stone Oak vs Timberwood Park vs the northeast bases, the Northside/Comal ISD line, MUD and PID fees on top of the VA exemption), and put the veteran angle in the title, e.g. \"Moving to North San Antonio: Stone Oak, ISD Lines, and the MUD Fee Your VA Exemption Won't Cover.\""
-      },
-      "uploadedAt": null,
-      "privacy": "private",
-      "youtubeUrl": null,
-      "metricoolPostId": null,
-      "blogId": "4807109",
-      "approved": false,
-      "reworks": [
-        {
-          "revision": 1,
-          "uploadedAt": "2026-08-09T20:59:30.341Z",
-          "metricoolPostId": 360018868,
-          "youtubeUrl": "https://static.metricool.com/video/3748462/202608/848252e713dc42f0.mp4",
-          "rejectedAt": "2026-08-09T21:05:19.560Z",
-          "notes": "cap graphic holds at 9s — revision 2 broke the ≤10s cadence rule 16 times"
-        }
-      ],
-      "revision": 2,
-      "reviewedAt": null,
-      "reviewNotes": null,
-      "distribution": null,
-      "youtubeVideoId": null
+     "revision": 1,
+     "uploadedAt": "2026-08-09T17:13:16.162Z",
+     "metricoolPostId": 359975994,
+     "youtubeUrl": "https://static.metricool.com/video/3748462/202608/d8420191a8bc49ac.mp4",
+     "rejectedAt": "2026-08-09T20:02:53.916Z",
+     "notes": "graphics retrofit (16 visuals) + vertical blur-fill treatment \u2014 first iteration render"
+    },
+    {
+     "revision": 2,
+     "uploadedAt": "2026-08-09T20:59:30.341Z",
+     "metricoolPostId": 360018868,
+     "youtubeUrl": "https://static.metricool.com/video/3748462/202608/848252e713dc42f0.mp4",
+     "rejectedAt": "2026-08-09T21:04:00.000Z",
+     "notes": "cap graphic holds at 9s \u2014 revision 2 broke the \u226410s cadence rule 16 times"
     }
-  ]
+   ],
+   "revision": 3,
+   "reviewedAt": null,
+   "reviewNotes": null,
+   "distribution": null,
+   "youtubeVideoId": null
+  }
+ ]
 }
