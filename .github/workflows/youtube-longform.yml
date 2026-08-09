@@ -149,6 +149,13 @@ jobs:
           # ships ~30GB of toolchains this job never touches.
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
           df -h /
+      - name: Set up PIP segmentation
+        # Best-effort on purpose: if this fails, segmentationAvailable() reports
+        # it and the build ships without the floating head — a degraded video,
+        # never a dead job.
+        run: |
+          python3 -m venv /tmp/segenv || true
+          /tmp/segenv/bin/pip install --quiet mediapipe opencv-python-headless || echo "::warning::segmentation setup failed — PIP will report unavailable"
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
@@ -162,6 +169,7 @@ jobs:
           # skips any segment that has one, so nothing synthetic reaches the
           # render — which is what makes the disclosure unnecessary.
           YT_NARRATION_MODE: peter
+          YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -230,6 +238,13 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
           df -h /
+      - name: Set up PIP segmentation
+        # Best-effort on purpose: if this fails, segmentationAvailable() reports
+        # it and the build ships without the floating head — a degraded video,
+        # never a dead job.
+        run: |
+          python3 -m venv /tmp/segenv || true
+          /tmp/segenv/bin/pip install --quiet mediapipe opencv-python-headless || echo "::warning::segmentation setup failed — PIP will report unavailable"
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
@@ -244,6 +259,7 @@ jobs:
           # missing and the build then fails. The header of takesToRecord
           # describes this exact disagreement happening once already.
           YT_NARRATION_MODE: peter
+          YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -261,6 +277,7 @@ jobs:
           # missing and the build then fails. The header of takesToRecord
           # describes this exact disagreement happening once already.
           YT_NARRATION_MODE: peter
+          YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -300,6 +317,7 @@ jobs:
           I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           YT_NARRATION_MODE: peter
+          YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
           # MUST match the pipeline job. The dry run's whole purpose is to
           # predict what the real build will do, and takesToRecord() keys off
           # this — without it the dry run expects 12 on-camera takes while the
@@ -307,6 +325,7 @@ jobs:
           # missing and the build then fails. The header of takesToRecord
           # describes this exact disagreement happening once already.
           YT_NARRATION_MODE: peter
+          YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}

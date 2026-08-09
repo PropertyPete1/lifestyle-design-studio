@@ -116,7 +116,10 @@ def main():
                 edge_scores.append(edge_roughness(person, cv2))
             frames += 1
     except BrokenPipeError:
-        print("ffmpeg closed the pipe early", file=sys.stderr)
+        # Surface ffmpeg's OWN stderr — "the pipe closed" names the symptom,
+        # and the cause (a missing directory, a bad codec) is in ffmpeg's log.
+        detail = ff.stderr.read().decode("utf-8", "replace")[-300:] if ff.stderr else ""
+        print(f"ffmpeg closed the pipe early: {detail}", file=sys.stderr)
         return 5
     finally:
         cap.release()

@@ -36,6 +36,10 @@ import { takesToRecord } from "../src/yt-recording-kit.js";
 import { transcribeFile } from "../src/yt-ingest.js";
 import { matchTakesToClips, describeMatchResult } from "../src/yt-take-match.js";
 import { planTimeline, buildChapters } from "../src/yt-timeline.js";
+import { applyGeneratedVisuals } from "../src/yt-visual-broll.js";
+import { planOpening } from "../src/yt-opening.js";
+import { applyRetentionStage, renderRetentionSummary } from "../src/yt-retention-stage.js";
+import { canvasFor } from "../src/yt-assemble.js";
 import { renderTimeline, generateNarration, mediaDuration } from "../src/yt-assemble.js";
 import { pickMoments, cutShorts } from "../src/yt-shorts.js";
 
@@ -221,8 +225,6 @@ async function main() {
   if (plan.missingTakes.length) {
     console.log(`::warning::${plan.missingTakes.length} on-camera take(s) missing — the real build would stop here`);
   }
-  const chapters = buildChapters(plan, script);
-  console.log(`[DryRun] chapters: ${chapters.length ? chapters.map((c) => `${c.timestamp} ${c.title}`).join(" | ") : "NONE (under the 3 minimum)"}`);
 
   // ── narrate ───────────────────────────────────────────────────────────────
   const doneN = stage("narrate");
@@ -230,14 +232,43 @@ async function main() {
   else offlineNarration(plan, join(WORK, "vo"));
   doneN();
 
+  // ── visuals + opening + retention — PARITY WITH THE REAL BUILD ───────────
+  // The dry run exists to predict the build, and it had drifted: the pipeline
+  // gained the generated-visuals stage, the opening treatment and the
+  // retention edit, and this gate ran none of them — it would have passed a
+  // plan the real build then handled completely differently. Same stage
+  // functions, same order, so it cannot drift again without failing here.
+  const doneV = stage("visuals");
+  const withVisuals = await applyGeneratedVisuals(plan, { workDir: join(WORK, "visuals"), market: value("market", "san_antonio") });
+  const gen = withVisuals.generated;
+  console.log(
+    `[DryRun] visuals: ${gen.renderedCount} rendered, ${gen.split.graphicPct}% graphic / ${gen.split.footagePct}% footage; ` +
+    `writer asked ${gen.intents.requested}, rejected ${gen.intents.rejected}, unspecified ${gen.intents.unspecifiedTakes}`
+  );
+  doneV();
+
+  const opening = planOpening(withVisuals.segments, { overlay: null });
+  if (!opening.ok) {
+    console.log(`::warning::opening treatment cannot be satisfied — the real build would STOP: ${opening.failures.join("; ")}`);
+  } else {
+    console.log(`[DryRun] opening: ${opening.composition.opensOn}, ${opening.composition.takesInWindow.length} take(s) in the protected window`);
+  }
+
+  const doneRet = stage("retention edit");
+  const retention = applyRetentionStage(withVisuals, { workDir: join(WORK, "retention"), dim: canvasFor(value("resolution", "1080p")) });
+  console.log(renderRetentionSummary(retention).split("\n").map((l) => `[DryRun] ${l}`).join("\n"));
+  doneRet();
+
   // ── render ────────────────────────────────────────────────────────────────
   const doneR = stage("render");
-  const rendered = await renderTimeline(plan, {
+  const rendered = await renderTimeline(withVisuals, {
     workDir: join(WORK, "render"),
     resolveBrollPath: (id) => brollPool.find((b) => b.id === id)?.localPath || null,
     resolution: value("resolution", "1080p"),
   });
   doneR();
+  const chapters = buildChapters(withVisuals, script);
+  console.log(`[DryRun] chapters: ${chapters.length ? chapters.map((c) => `${c.timestamp} ${c.title}`).join(" | ") : "NONE (under the 3 minimum)"}`);
   console.log(
     `[DryRun] rendered ${(rendered.seconds / 60).toFixed(1)} min, ` +
     `${(rendered.bytes / 1024 / 1024).toFixed(1)} MB, ${rendered.chunkCount} caption chunks`

@@ -148,7 +148,7 @@ export function parseSilenceLog(log, { duration = null } = {}) {
  * @param {number}  opts.minKeep     narration floor — see below
  * @returns {{ pieces, removedSeconds, originalSeconds, editedSeconds, warnings }}
  */
-export function buildEditList(duration, silences = [], { isOpening = false, minKeep = 0, seed = 0 } = {}) {
+export function buildEditList(duration, silences = [], { isOpening = false, minKeep = 0, seed = 0, punchIns = true } = {}) {
   const warnings = [];
   const total = Math.max(0, Number(duration) || 0);
   if (total <= 0) return { pieces: [], removedSeconds: 0, originalSeconds: 0, editedSeconds: 0, warnings: ["take has no duration"] };
@@ -206,7 +206,7 @@ export function buildEditList(duration, silences = [], { isOpening = false, minK
   for (const span of spans) {
     // Every span boundary is already a cut, so the framing flips there — that
     // is what hides the removed pause.
-    const sub = splitForPunchIns(span, { enabled: !isOpening && total >= PUNCH_MIN_TAKE_SECONDS });
+    const sub = splitForPunchIns(span, { enabled: punchIns && !isOpening && total >= PUNCH_MIN_TAKE_SECONDS });
     for (const piece of sub) {
       pieces.push({
         srcStart: round(piece.start),
@@ -220,7 +220,7 @@ export function buildEditList(duration, silences = [], { isOpening = false, minK
     }
   }
 
-  if (!isOpening && total >= PUNCH_MIN_TAKE_SECONDS && pieces.length === 1) {
+  if (punchIns && !isOpening && total >= PUNCH_MIN_TAKE_SECONDS && pieces.length === 1) {
     warnings.push("take is long enough for a punch-in but produced a single piece");
   }
 

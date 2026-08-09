@@ -184,7 +184,14 @@ export function segmentTake(input, output, { python = PYTHON, model = MODEL_PATH
   });
 
   if (res.status !== 0) {
-    const detail = String(res.stderr || res.error?.message || "no detail").trim().split("\n").slice(-2).join(" ");
+    // MediaPipe spews W0000/INFO lines on stderr; the real error is the last
+    // line that is NOT that noise. Taking the raw tail buried a missing-
+    // directory error under a harmless feedback-tensor warning.
+    const lines = String(res.stderr || res.error?.message || "no detail")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !/^(W\d{4}|I\d{4}|INFO:|WARNING)/.test(l));
+    const detail = lines.slice(-2).join(" ") || "no detail beyond runtime noise";
     return { ok: false, reason: `segmentation failed: ${detail}` };
   }
 

@@ -55,7 +55,8 @@ import {
 } from "./yt-approvals.js";
 import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
-import { generateNarration, renderTimeline, syntheticNarrationUsed } from "./yt-assemble.js";
+import { generateNarration, renderTimeline, syntheticNarrationUsed, canvasFor } from "./yt-assemble.js";
+import { applyRetentionStage, renderRetentionSummary } from "./yt-retention-stage.js";
 import { applyGeneratedVisuals } from "./yt-visual-broll.js";
 import { generateOpeningOverlay, planOpening } from "./yt-opening.js";
 import { generateThumbnailHook } from "./yt-thumbnail-hook.js";
@@ -498,6 +499,15 @@ async function buildFromRecordings(approvals, record) {
     for (const f of opening.failures) console.log(`::error::opening: ${f}`);
     throw new Error(`the opening treatment cannot be satisfied: ${opening.failures.join("; ")}`);
   }
+
+  // ── the retention edit + PIP + cadence, on the finished plan ─────────────
+  // AFTER visuals (the splice changes what each voiceover segment shows) and
+  // BEFORE chapters and render — the edit changes on-camera segment lengths,
+  // and captions timed against the unedited lengths would drift for twelve
+  // minutes. planOpening above already guaranteed segment 0 is his face, so
+  // the stage's isOpening flag lands on the right take.
+  const retention = applyRetentionStage(withVisuals, { workDir, dim: canvasFor(RESOLUTION) });
+  console.log(renderRetentionSummary(retention).split("\n").map((l) => `[YTPipeline] ${l}`).join("\n"));
 
   const chapters = buildChapters(withVisuals, script);
   const rendered = await renderTimeline(withVisuals, {
