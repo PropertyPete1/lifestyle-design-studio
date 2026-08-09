@@ -16,6 +16,19 @@ export default defineConfig({
   fullyParallel: false,
   // A smoke suite that retries is a smoke suite that hides a flaky deploy.
   retries: 0,
+  /**
+   * ONE FAILURE MUST NEVER HIDE THE REST.
+   *
+   * On 2026-08-09 the approval-card test failed and the run reported "3 did not
+   * run" — the three that check Deliveries, Copy Caption and the camera screens.
+   * A long-form rendering bug had made the entire daily side of the dashboard
+   * unreportable, and the summary still read like a complete result.
+   *
+   * That is the same shape as the outage this suite was run to investigate: an
+   * accurate red signal that answers a different question than the one being
+   * asked. Pinned to 0 (no limit) so every check always reports.
+   */
+  maxFailures: 0,
   timeout: 45_000,
   expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never", outputFolder: "report" }]],
