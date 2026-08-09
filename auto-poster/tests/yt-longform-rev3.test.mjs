@@ -388,6 +388,53 @@ describe("8. long-form cannot reach the reels library", () => {
   test("the reels id list is not empty — a vacuous assertion would pass forever", () => {
     assert.ok(reelsFolderIds().length >= 3, "if this list empties, every test above passes for the wrong reason");
   });
+
+  /**
+   * THE STRUCTURAL ASSERTION, and the one that actually holds the line.
+   *
+   * Everything above tests the guard. This tests that nothing in the long-form
+   * path is in a position to need the guard: the reels folder listing is not
+   * reachable from the pipeline at all. A runtime check only fires on the code
+   * paths someone thought to route through it, and the original bug was not a
+   * bypassed check — it was a call site that looked completely reasonable.
+   */
+  test("no long-form module imports the reels folder listing", () => {
+    const longformSources = [
+      "yt-pipeline-main.js", "yt-visual-build.js", "yt-visual-plan.js", "yt-visual-broll.js",
+      "yt-footage-source.js", "yt-stock.js", "yt-timeline.js", "yt-assemble.js", "yt-brief.js",
+    ];
+    // COMMENTS ARE STRIPPED FIRST. The removed call sites are documented in
+    // prose right where they used to be — that is deliberate, it is how the
+    // next person learns why long-form does not read those folders — and a
+    // scanner that cannot tell an explanation from a call would force the
+    // explanation to be deleted to make the test pass. That trade is backwards.
+    const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+    const offenders = [];
+    for (const file of longformSources) {
+      const path = join(import.meta.dirname, "..", "src", file);
+      if (!existsSync(path)) continue;
+      const src = stripComments(readFileSync(path, "utf-8"));
+      if (/\blistCityVideos\s*\(/.test(src)) offenders.push(`${file} calls listCityVideos()`);
+      if (/\blistCityVideos\b/.test(src)) offenders.push(`${file} imports listCityVideos`);
+      if (/\bCITY_FOLDER_IDS\b/.test(src) && file !== "yt-footage-source.js") {
+        offenders.push(`${file} references CITY_FOLDER_IDS`);
+      }
+    }
+    assert.deepEqual(offenders, [], `long-form must not reach the reels library:\n  ${offenders.join("\n  ")}`);
+  });
+
+  test("the hard-coded reels ids appear nowhere in the long-form path", () => {
+    const ids = reelsFolderIds();
+    for (const file of ["yt-pipeline-main.js", "yt-visual-build.js", "yt-footage-source.js", "yt-stock.js"]) {
+      const path = join(import.meta.dirname, "..", "src", file);
+      if (!existsSync(path)) continue;
+      const src = readFileSync(path, "utf-8");
+      for (const id of ids) {
+        assert.ok(!src.includes(id), `${file} hard-codes the reels folder id ${id}`);
+      }
+    }
+  });
 });
 
 describe("9. frame-diff catches a deliberately frozen render", () => {

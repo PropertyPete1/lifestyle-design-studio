@@ -204,7 +204,7 @@ export const MAP_CREDITS = {
   osm: "Maps in this video contain data from OpenStreetMap, © OpenStreetMap contributors, available under the Open Database License. https://www.openstreetmap.org/copyright",
 };
 
-export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig(), mapsUsed = false, mapSource = "tiger", seoOpener = null }) {
+export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig(), mapsUsed = false, mapSource = "tiger", seoOpener = null, stockCredits = "" }) {
   const missing = [];
   const parts = [];
 
@@ -257,6 +257,27 @@ export function buildDescription({ hook, promise, chapters = [], keyword = DEFAU
       // An unknown source is a wiring mistake, and silently publishing an
       // uncredited map is the one outcome worth failing loudly for.
       missing.push(`map attribution for unknown source "${mapSource}"`);
+    }
+  }
+
+  // STOCK CREDITS. Required by the Pexels API guidelines — a prominent link to
+  // Pexels for anything obtained through the API, plus the photographer where
+  // possible. The content licence asks for neither; the API terms we acquired
+  // the clips under ask for both, and both bind us. See
+  // longform/STOCK-LICENSING.md.
+  //
+  // The description is the right surface: permanent, public, and not on screen.
+  // Revision 3 exists partly to get burned-in text OUT of the picture, so the
+  // one new obligation it introduces must not put text back in.
+  if (stockCredits.length > 0) {
+    const block = String(stockCredits).trim();
+    if (block) {
+      parts.push("");
+      parts.push(block);
+    } else {
+      // Stock reached the timeline but produced no credit text. Publishing that
+      // is a licence breach, so it is a missing-item rather than a silent skip.
+      missing.push("Pexels attribution for stock footage used in this video");
     }
   }
 
@@ -538,6 +559,7 @@ export async function buildPackaging({
   maxRetries = MAX_RETRIES,
   modelCall = callModel,
   mapsUsed = false,
+  stockCredits = "",
   mapSource = "tiger",
 } = {}) {
   if (!topic?.title) throw new Error("buildPackaging requires a topic with a title");
@@ -559,6 +581,7 @@ export async function buildPackaging({
       chapters,
       keyword,
       mapsUsed,
+      stockCredits,
       mapSource,
       seoOpener,
     });

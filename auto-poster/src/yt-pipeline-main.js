@@ -25,7 +25,9 @@
  */
 
 import { loadLog, getRecentlyPostedIdsAllCities } from "./state.js";
-import { getAccessToken, listCityVideos, downloadVideo } from "./drive.js";
+import Anthropic from "@anthropic-ai/sdk";
+
+import { getAccessToken, downloadVideo } from "./drive.js";
 import { join } from "path";
 import { tmpdir } from "os";
 import { mkdirSync, writeFileSync, readFileSync } from "fs";
@@ -57,7 +59,10 @@ import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
 import { generateNarration, renderTimeline, syntheticNarrationUsed, canvasFor } from "./yt-assemble.js";
 import { applyRetentionStage, renderRetentionSummary } from "./yt-retention-stage.js";
-import { applyGeneratedVisuals } from "./yt-visual-broll.js";
+import { buildVisuals } from "./yt-visual-build.js";
+import { listLongformFootage } from "./yt-footage-source.js";
+import { creditsBlock } from "./yt-stock.js";
+import { getWordTimestamps } from "./burned-captions.js";
 import { generateOpeningOverlay, planOpening } from "./yt-opening.js";
 import { generateThumbnailHook } from "./yt-thumbnail-hook.js";
 import { renderThumbnail, fitUnderLimit } from "./yt-thumbnail.js";
@@ -334,16 +339,20 @@ async function reBriefAfterRejection(approvals, record) {
     ...(notes ? { notes } : {}),
   });
 
-  const byMarket = new Map();
+  // THE BRIEF DOES NOT PROPOSE REELS CLIPS EITHER.
+  //
+  // This read `listCityVideos(candidate.market)` — the reels bot's folder for
+  // that city — and showed Peter which of those clips a long-form topic could
+  // use. Under revision 3 the answer is none of them, so proposing them would
+  // be offering footage the pipeline is forbidden to fetch. It is the SAME
+  // violation as the render path, one stage earlier and easier to miss because
+  // nothing it produces reaches the screen.
+  //
+  // The long-form folder is market-independent and starts empty, so this is
+  // normally an empty list and the brief simply carries no footage proposals.
+  const longformClips = await listLongformFootage();
   for (const candidate of brief.candidates) {
-    if (!byMarket.has(candidate.market)) {
-      try {
-        byMarket.set(candidate.market, await listCityVideos(candidate.market));
-      } catch {
-        byMarket.set(candidate.market, []);
-      }
-    }
-    candidate.proposedClips = proposeFootage(byMarket.get(candidate.market), usedIds);
+    candidate.proposedClips = proposeFootage(longformClips, usedIds);
   }
 
   const requestId = newRequestId(KIND_TOPIC_PICK);
@@ -428,7 +437,7 @@ async function buildFromRecordings(approvals, record) {
     if (clip) recordings[m.takeId] = { path: clip.localPath || null, durationSeconds: clip.durationSeconds };
   }
 
-  const brollPool = await brollFor(result.market);
+  const brollPool = await brollFor();
   const plan = planTimeline(script, recordings, brollPool, { usedRecently: recentBrollHashes(videoLog) });
   if (plan.missingTakes.length > 0) {
     console.log(`::warning::plan is missing ${plan.missingTakes.length} on-camera take(s) — not rendering`);
@@ -448,22 +457,46 @@ async function buildFromRecordings(approvals, record) {
     `[YTPipeline] synthetic narration in this render: ${syntheticNarration}` +
       ` — disclosure ${syntheticNarration ? "REQUIRED" : "not required"}`
   );
-  // Generated visuals go in AFTER narration, because narration is what sets
-  // each segment's final length and the 30% cap is a share of that length.
-  // Selecting against the pre-TTS estimate would spend a budget that does not
-  // exist yet.
-  const withVisuals = await applyGeneratedVisuals(plan, { workDir, market: result.market });
-  const gen = withVisuals.generated;
+  // Visuals go in AFTER narration, because narration is what sets each
+  // segment's final length AND because the word timings the reveals are
+  // anchored to come from the narration audio. Planning against the pre-TTS
+  // estimate would sync the graphics to a guess.
+  const { plan: withVisuals, report: gen } = await buildVisuals(plan, {
+    workDir,
+    market: result.market,
+    ffmpeg,
+    getWordTimestamps,
+    visionClient: visionClientOrNull(),
+    ownedPool: brollPool,
+    usedHashes: recentBrollHashes(videoLog),
+  });
 
-  // THE SPLIT. There is no cap any more, so this number is the whole control:
-  // it is how the graphic-first default gets judged on a finished video.
+  // THE COVERAGE SPLIT. Every voiceover second is carried by exactly one layer,
+  // and this is the number that says which kind of video this turned out to be.
   console.log(
-    `[YTPipeline] visual split: ${gen.split.graphicPct}% graphic / ${gen.split.footagePct}% footage ` +
-      `(${gen.split.graphicSeconds}s of ${gen.split.brollSeconds}s of B-roll)`
+    `[YTPipeline] visual coverage: ${gen.byPct.graphic}% graphic / ${gen.byPct.typography}% typography / ` +
+      `${gen.byPct.stock}% stock / ${gen.byPct.owned}% owned footage ` +
+      `(${gen.voiceoverSeconds}s of voiceover)`
   );
+  if (gen.uncoveredSeconds > 0) {
+    // Should be impossible — typography is the floor. If it ever fires, the
+    // floor has a hole in it and that is worth stopping for.
+    throw new Error(`${gen.uncoveredSeconds}s of voiceover has no picture — the typography fallback did not cover it`);
+  }
+  console.log(
+    `[YTPipeline] word timing: ${gen.wordTimingCoverage.withTiming}/${gen.wordTimingCoverage.takes} takes transcribed ` +
+      `— the rest use even pacing`
+  );
+  for (const f of gen.fallbacks) {
+    console.log(`::warning::take ${f.takeId} asked for ${f.asked} and got ${f.got} — ${f.reason}`);
+  }
+  for (const f of gen.animationFailures) {
+    console.log(`::warning::take ${f.takeId} ${f.type} failed verification — ${f.reason}`);
+  }
   console.log(
     `[YTPipeline] of ${gen.intents.voiceoverTakes} voiceover takes: ` +
       `${gen.intents.graphicTakes} asked for a graphic, ${gen.intents.footageTakes} chose footage, ` +
+      `${gen.intents.typographyTakes} chose typography, ` +
       `${gen.intents.unspecifiedTakes} said nothing — ${JSON.stringify(gen.intents.byType)}`
   );
   if (gen.intents.unspecifiedTakes > 0) {
@@ -525,6 +558,10 @@ async function buildFromRecordings(approvals, record) {
     // Only true when a map actually reached the timeline, so the credit line
     // never claims something the video does not contain.
     mapsUsed: gen.mapsUsed,
+    // Built from the clips that actually survived the vision check and reached
+    // the timeline — empty when none did, so a graphics-and-typography video
+    // carries no stock credit block at all.
+    stockCredits: creditsBlock(gen.stockCredits),
   });
 
   // ── the thumbnail ─────────────────────────────────────────────────────────
@@ -634,20 +671,37 @@ async function buildFromRecordings(approvals, record) {
  * Drive already holds. Only the clips the plan actually uses get downloaded,
  * afterwards.
  */
-async function brollFor(market) {
-  try {
-    const videos = await listCityVideos(market || "san_antonio");
-    return videos.map((v) => ({
-      id: v.id,
-      name: v.name,
-      durationSeconds: Number(v.videoMediaMetadata?.durationMillis || 0) / 1000 || 0,
-      contentHash: null,
-      localPath: null,
-    }));
-  } catch (err) {
-    console.warn(`[YTPipeline] could not list B-roll: ${err.message}`);
-    return [];
+/**
+ * Long-form footage. NOT the reels library.
+ *
+ * This function used to call `listCityVideos(market)`, which is the reels bot's
+ * folder for that city. Those clips carry burned-in listing copy — "San Antonio
+ * starting at $X / 4.99%" — and revision 3 removes them from long-form
+ * entirely: wrong inside an education video, and a rate that ages into a false
+ * claim on a video that stays up for years.
+ *
+ * The replacement reads one folder that starts EMPTY, and empty is the correct
+ * steady state rather than a setup step. With nothing in it every segment is
+ * carried by a graphic, typography or licensed stock, which is the whole point
+ * of the three-layer system.
+ */
+async function brollFor() {
+  return listLongformFootage();
+}
+
+/**
+ * The vision client for the stock check, or null.
+ *
+ * Null is a working configuration: `visionCheckClip` fails closed, so no key
+ * means no stock passes and every FOOTAGE intent falls to typography. Loud,
+ * once, rather than silently shipping unverified clips.
+ */
+function visionClientOrNull() {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.log("[YTPipeline] no ANTHROPIC_API_KEY — stock clips cannot be vision-checked, so stock is disabled this run");
+    return null;
   }
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 }
 
 /** Fetch just the clips the plan uses, and hand back a resolver for the renderer. */

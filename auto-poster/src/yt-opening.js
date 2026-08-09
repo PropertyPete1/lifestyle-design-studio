@@ -400,6 +400,24 @@ export function burnHookArgs(videoIn, statePaths, output, { times, hold = OVERLA
 }
 
 /**
+ * When the teaser element arrives.
+ *
+ * DERIVED FROM THE HOOK, not fixed at second 3, and the audit is what forced
+ * that. A five-word hook slamming in at 0.22s per word is finished at 1.28s; a
+ * teaser pinned to 2.6s then leaves 1.3 seconds in the middle of the opening
+ * where the only thing on screen is a face holding still. That is the precise
+ * thing revision 3's opening note exists to kill, and it was invisible until
+ * the gap check was written.
+ *
+ * So the teaser follows the hook by a beat, and second 3 becomes the LATEST it
+ * may arrive rather than when it does.
+ */
+export function openingTeaserAt(hookStates, { completeBy = HOOK_COMPLETE_BY, gap = 0.6 } = {}) {
+  const last = hookStates?.length ? hookStates[hookStates.length - 1].at : OVERLAY_START;
+  return round(Math.min(completeBy, last + gap));
+}
+
+/**
  * Everything that moves in the opening three seconds, and whether that is enough.
  *
  * PURE, AND IT FAILS. The note behind revision 3's opening is "the static
