@@ -140,6 +140,36 @@ export const JUMP_CUTS_ENABLED = process.env.YT_JUMP_CUTS !== "false";
 export const PUNCH_INS_ENABLED = process.env.YT_PUNCH_INS !== "false";
 
 /**
+ * How often the framing changes during an on-camera take, in seconds.
+ *
+ * WAS 7-9. IS 3, and the change is the point of revision 3's edit note.
+ *
+ * Seven seconds is a documentary cadence: it reads as considered, and it is
+ * what you want if the viewer has already decided to watch. This channel is
+ * fighting for the first thirty seconds against an infinite feed, and the
+ * format that wins that fight cuts every two to four. Peter asked for ~3.
+ *
+ * A KNOB RATHER THAN A CONSTANT because 3 is a hypothesis. Video 1 goes through
+ * review rounds and the right number is whatever survives them; the whole point
+ * is that finding out costs a workflow edit rather than a code change. The
+ * bounds are wide enough to get back to the old feel (7-9) without touching
+ * this file.
+ */
+export const PUNCH_INTERVAL = clampFloat(process.env.YT_PUNCH_INTERVAL, 3, 1.5, 12);
+
+/**
+ * Whether emphasis words get a quick zoom pulse.
+ *
+ * Separate from the punch-in cadence deliberately, and for the same reason jump
+ * cuts are separate from framing: if the pulses ever read as a tic, they can be
+ * turned off without losing the cadence, which is the part carrying retention.
+ */
+export const ZOOM_PULSES_ENABLED = process.env.YT_ZOOM_PULSES !== "false";
+
+/** How hard a pulse hits. 0.04 is a nudge; 0.10 is a shove. */
+export const ZOOM_PULSE_STRENGTH = clampFloat(process.env.YT_ZOOM_PULSE_STRENGTH, 0.05, 0.01, 0.15);
+
+/**
  * How a portrait on-camera take sits in the 16:9 frame.
  *
  *   "blur-fill"  — the take centered at full height, a blurred and darkened
