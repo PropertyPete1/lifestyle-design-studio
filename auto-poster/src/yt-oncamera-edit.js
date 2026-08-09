@@ -31,6 +31,7 @@
  */
 
 import { spawnSync } from "child_process";
+import { ONCAM_TREATMENT, ONCAM_BG_BLUR, ONCAM_BG_DARKEN, ONCAM_BG_ZOOM, ONCAM_VIGNETTE } from "./yt-config.js";
 
 /** Silence shorter than this is breath and rhythm — cutting it sounds clipped. */
 export const MIN_SILENCE_SECONDS = 0.4;
@@ -295,34 +296,60 @@ export function splitForPunchIns(span, { enabled = true } = {}) {
  * cropping keeps the centre of the frame and discards the edges, which is what
  * a tighter lens does. Scaling alone would just make a smaller picture.
  */
-export function pieceArgs(input, output, piece, dim, { fps = 30 } = {}) {
+export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = null } = {}) {
+  const t = treatment || {
+    mode: ONCAM_TREATMENT,
+    blur: ONCAM_BG_BLUR,
+    darken: ONCAM_BG_DARKEN,
+    bgZoom: ONCAM_BG_ZOOM,
+    vignette: ONCAM_VIGNETTE,
+  };
   const args = ["-y", "-i", input, "-ss", String(piece.srcStart), "-to", String(piece.srcEnd)];
 
-  const filters = [];
+  // The punch-in crop applies to the SOURCE — a tighter framing of him — and
+  // the treatment then composes that tighter framing into the 16:9 frame.
+  // Cropping after composition would zoom the blurred background too, which
+  // reads as a digital zoom rather than a second camera.
+  const punch = piece.scale && piece.scale > 1.0001
+    ? `crop=iw/${piece.scale}:ih/${piece.scale}:(iw-iw/${piece.scale})/2:(ih-ih/${piece.scale})/2,`
+    : "";
+
+  let graph;
+  if (t.mode === "blur-fill") {
+    // The take centered at full height; a blurred, darkened, slightly zoomed
+    // copy of the same frame filling the width behind it. The gold vignette
+    // sits on the BACKGROUND only — warmth in the corners, never a colour
+    // cast on his face.
+    const gold = t.vignette > 0
+      ? `,vignette=angle=PI/4,colorbalance=rs=${(0.08 * t.vignette).toFixed(3)}:gs=${(0.04 * t.vignette).toFixed(3)}:bs=${(-0.06 * t.vignette).toFixed(3)}`
+      : "";
+    graph =
+      `[0:v]${punch}split=2[fg][bg];` +
+      `[bg]scale=${Math.round(dim.w * t.bgZoom)}:${Math.round(dim.h * t.bgZoom)}:force_original_aspect_ratio=increase,` +
+      `crop=${dim.w}:${dim.h},gblur=sigma=${t.blur},eq=brightness=${(-t.darken * 0.5).toFixed(3)}:saturation=${(1 - t.darken * 0.4).toFixed(3)}${gold}[bgd];` +
+      `[fg]scale=-2:${dim.h}[fgs];` +
+      `[bgd][fgs]overlay=(W-w)/2:0[comp]`;
+  } else {
+    graph = `[0:v]${punch}scale=${dim.w}:${dim.h}:force_original_aspect_ratio=decrease,pad=${dim.w}:${dim.h}:(ow-iw)/2:(oh-ih)/2:color=black[comp]`;
+  }
+
+  let tail = "[comp]";
   if (piece.push) {
-    // The one animated move: an eased push over the opening seconds. `on` is
-    // the output frame index — a constant here would produce a still zoom, and
-    // that mistake has already been made once in this codebase.
+    // The one animated move: an eased push over the opening seconds, applied
+    // to the COMPOSED frame so foreground and background travel together —
+    // which is what a real camera push does. `on` is the output frame index;
+    // a constant here produces a still zoom, a mistake made once already.
     const frames = Math.max(1, Math.round(piece.push.seconds * fps));
     const travel = round(piece.push.to - piece.push.from);
-    // Ease-out: fast at the start, settling. `sin` gives it without a lookup.
     const z = `${piece.push.from}+${travel}*sin(min(on/${frames}\\,1)*PI/2)`;
-    filters.push(
-      `scale=${dim.w * 2}:${dim.h * 2}:force_original_aspect_ratio=increase`,
-      `crop=${dim.w * 2}:${dim.h * 2}`,
-      `zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${dim.w}x${dim.h}:fps=${fps}`
-    );
-  } else if (piece.scale && piece.scale > 1.0001) {
-    const cw = `iw/${piece.scale}`;
-    const ch = `ih/${piece.scale}`;
-    filters.push(`crop=${cw}:${ch}:(iw-${cw})/2:(ih-${ch})/2`, `scale=${dim.w}:${dim.h}`);
-  } else {
-    filters.push(`scale=${dim.w}:${dim.h}:force_original_aspect_ratio=decrease`, `pad=${dim.w}:${dim.h}:(ow-iw)/2:(oh-ih)/2:color=black`);
+    graph += `;[comp]scale=${dim.w * 2}:${dim.h * 2},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${dim.w}x${dim.h}:fps=${fps}[pushed]`;
+    tail = "[pushed]";
   }
-  filters.push(`fps=${fps}`, "setsar=1");
+  graph += `;${tail}fps=${fps},setsar=1[v]`;
 
   args.push(
-    "-vf", filters.join(","),
+    "-filter_complex", graph,
+    "-map", "[v]", "-map", "0:a?",
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
     output

@@ -104,7 +104,12 @@ const HOW_TO = [
   `  3. Fluffed one? Just record it again. The last version of a take is the one that gets used.`,
   `  4. Upload everything to the Drive folder at the bottom. One folder, all the clips.`,
   ``,
-  `  Hold the phone horizontally. Get somewhere quiet-ish. Don't worry about being perfect —`,
+  `  LANDSCAPE. Phone SIDEWAYS, every take — the video is 16:9, and a portrait take gets`,
+  `  composited into a blurred-fill frame instead of filling the screen. Voiceover takes too:`,
+  `  record them as VIDEO of you reading the line (not a voice memo) — that footage is what`,
+  `  puts you on screen in a corner bubble while the maps and graphics play.`,
+  ``,
+  `  Get somewhere quiet-ish. Don't worry about being perfect —`,
   `  the words matter more than the delivery, and a stumble sounds more like you than a`,
   `  clean read does.`,
 ];

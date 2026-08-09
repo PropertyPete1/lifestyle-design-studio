@@ -310,6 +310,31 @@ export async function ingestRecordings({ requestId, takes, accessToken = null, w
     `${result.missingTakes.length} missing, ${result.strayClips.length} unused clip(s)`
   );
 
+  // Orientation report — the structural answer to "did the landscape recorder
+  // change land?". The kit says landscape; video 1 arrived 100% portrait
+  // anyway, so the build now MEASURES rather than trusts. Portrait is not an
+  // error — the blur-fill treatment absorbs it — but it must never be silent.
+  try {
+    let portrait = 0, landscape = 0, audioOnly = 0;
+    for (const clip of clips) {
+      if (!clip.localPath || !existsSync(clip.localPath)) continue;
+      const out = execFileSync(
+        "ffprobe",
+        ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", clip.localPath],
+        { encoding: "utf-8", timeout: 60_000 }
+      ).trim();
+      if (!out) { audioOnly++; continue; }
+      const [w, h] = out.split(",").map(Number);
+      if (h > w) portrait++; else landscape++;
+    }
+    console.log(`[Ingest] orientation: ${landscape} landscape, ${portrait} portrait, ${audioOnly} audio-only`);
+    if (portrait > 0) {
+      console.log(`::warning::${portrait} take(s) arrived PORTRAIT — the blur-fill treatment applies. If the recorder was updated to shoot landscape, it is not doing so yet.`);
+    }
+  } catch (err) {
+    console.log(`[Ingest] orientation probe skipped (${err.message})`);
+  }
+
   return {
     state: result.complete ? "matched" : "incomplete",
     requestId,

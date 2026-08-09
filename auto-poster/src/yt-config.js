@@ -138,3 +138,32 @@ export const JUMP_CUTS_ENABLED = process.env.YT_JUMP_CUTS !== "false";
 
 /** Whether on-camera takes get punch-in framing changes. */
 export const PUNCH_INS_ENABLED = process.env.YT_PUNCH_INS !== "false";
+
+/**
+ * How a portrait on-camera take sits in the 16:9 frame.
+ *
+ *   "blur-fill"  — the take centered at full height, a blurred and darkened
+ *                  copy of itself filling the sides. The polished treatment.
+ *   "pillarbox"  — black bars. The old behaviour, kept as the escape hatch.
+ *
+ * THE TUNING KNOBS BELOW ARE THE POINT: video 1 iterates through Peter's
+ * review notes, and each note should be a config change, not a code change.
+ * Whatever combination finally gets his approve is the standing recipe.
+ */
+export const ONCAM_TREATMENT = oneOf(process.env.YT_ONCAM_TREATMENT, ["blur-fill", "pillarbox"], "blur-fill");
+
+/** Gaussian blur sigma on the background copy. Higher = softer, more abstract. */
+export const ONCAM_BG_BLUR = clampFloat(process.env.YT_ONCAM_BG_BLUR, 24, 4, 60);
+
+/** How much the background is darkened, 0 (none) to 0.8 (near black). */
+export const ONCAM_BG_DARKEN = clampFloat(process.env.YT_ONCAM_BG_DARKEN, 0.4, 0, 0.8);
+
+/** Extra zoom on the background so its edges never show through the blur. */
+export const ONCAM_BG_ZOOM = clampFloat(process.env.YT_ONCAM_BG_ZOOM, 1.1, 1.0, 1.5);
+
+/**
+ * The gold-tinted vignette over the background. Subtle by design — it reads
+ * as warmth in the corners, not a colour cast on his face (it never touches
+ * the centered foreground). Set to 0 to disable.
+ */
+export const ONCAM_VIGNETTE = clampFloat(process.env.YT_ONCAM_VIGNETTE, 0.35, 0, 1);
