@@ -234,6 +234,13 @@ function scriptedModel(responses) {
   const calls = [];
   let i = 0;
   const fn = async (system, prompt) => {
+    // The D5/D6 generators (SEO opener, chapter rewrite) run before the
+    // title/critic sequence these fixtures script. Answer them with an empty
+    // object — both fall back cleanly — WITHOUT consuming the sequence, so
+    // every existing expectation about call order still holds.
+    if (/first two lines of a YouTube description/i.test(system) || /rewrite YouTube chapter titles/i.test(system)) {
+      return "{}";
+    }
     calls.push({ system, prompt });
     const r = responses[Math.min(i, responses.length - 1)];
     i++;

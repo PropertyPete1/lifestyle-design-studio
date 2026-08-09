@@ -39,8 +39,10 @@ const C = BRAND.colors;
 const BG = "#000000";
 const INK = C.ink;
 const MUTED = C.muted;
-const SERIF = "Georgia, 'DejaVu Serif', 'Liberation Serif', 'Times New Roman', serif";
-const SANS = "'Helvetica Neue', Helvetica, 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif";
+// Exported so the long-form map and infographic renderers resolve to the same
+// fonts as the carousel. Two type systems on one brand is a tell.
+export const SERIF = "Georgia, 'DejaVu Serif', 'Liberation Serif', 'Times New Roman', serif";
+export const SANS = "'Helvetica Neue', Helvetica, 'DejaVu Sans', 'Liberation Sans', Arial, sans-serif";
 
 /** Accents in rotation. The brand resolves to a single gold, so this is one entry. */
 export const ACCENTS = BRAND.accentRotation;

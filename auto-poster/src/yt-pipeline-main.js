@@ -55,8 +55,16 @@ import {
 } from "./yt-approvals.js";
 import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
-import { generateNarration, renderTimeline, syntheticNarrationUsed } from "./yt-assemble.js";
-import { buildPackaging } from "./yt-packaging.js";
+import { generateNarration, renderTimeline, syntheticNarrationUsed, canvasFor } from "./yt-assemble.js";
+import { applyRetentionStage, renderRetentionSummary } from "./yt-retention-stage.js";
+import { applyGeneratedVisuals } from "./yt-visual-broll.js";
+import { generateOpeningOverlay, planOpening } from "./yt-opening.js";
+import { generateThumbnailHook } from "./yt-thumbnail-hook.js";
+import { renderThumbnail, fitUnderLimit } from "./yt-thumbnail.js";
+import { buildPackaging, buildPinnedComment } from "./yt-packaging.js";
+import { distributeVideo, completedSteps, videoIdFromPost, accessToken as ytApiToken } from "./yt-distribute.js";
+import { verifyPostStatus } from "./metricool.js";
+import { PIP_ENABLED } from "./yt-config.js";
 import { uploadPrivate, requestReview } from "./yt-publish.js";
 import {
   loadLog as loadVideoLog,
@@ -439,14 +447,115 @@ async function buildFromRecordings(approvals, record) {
     `[YTPipeline] synthetic narration in this render: ${syntheticNarration}` +
       ` — disclosure ${syntheticNarration ? "REQUIRED" : "not required"}`
   );
-  const chapters = buildChapters(plan, script);
-  const rendered = await renderTimeline(plan, { workDir, resolveBrollPath, resolution: RESOLUTION });
+  // Generated visuals go in AFTER narration, because narration is what sets
+  // each segment's final length and the 30% cap is a share of that length.
+  // Selecting against the pre-TTS estimate would spend a budget that does not
+  // exist yet.
+  const withVisuals = await applyGeneratedVisuals(plan, { workDir, market: result.market });
+  const gen = withVisuals.generated;
+
+  // THE SPLIT. There is no cap any more, so this number is the whole control:
+  // it is how the graphic-first default gets judged on a finished video.
+  console.log(
+    `[YTPipeline] visual split: ${gen.split.graphicPct}% graphic / ${gen.split.footagePct}% footage ` +
+      `(${gen.split.graphicSeconds}s of ${gen.split.brollSeconds}s of B-roll)`
+  );
+  console.log(
+    `[YTPipeline] of ${gen.intents.voiceoverTakes} voiceover takes: ` +
+      `${gen.intents.graphicTakes} asked for a graphic, ${gen.intents.footageTakes} chose footage, ` +
+      `${gen.intents.unspecifiedTakes} said nothing — ${JSON.stringify(gen.intents.byType)}`
+  );
+  if (gen.intents.unspecifiedTakes > 0) {
+    // Every voiceover take is supposed to carry an intent now. Silence means
+    // the prompt is not landing, and it looks identical to a footage choice in
+    // the finished video.
+    console.log(`::warning::${gen.intents.unspecifiedTakes} voiceover take(s) carried no visualIntent — the writer prompt is not landing`);
+  }
+  // A script whose intents were all REJECTED looks identical, in the finished
+  // video, to a script that asked for nothing. Only one of those is a bug, so
+  // they are logged differently.
+  for (const r of gen.intents.rejections) {
+    console.log(`::warning::take ${r.takeId} asked for a ${r.type || "?"} visual and it was rejected — ${r.reason}`);
+  }
+  for (const f of gen.failures) console.log(`::warning::visual for take ${f.takeId} fell back to footage — ${f.reason}`);
+  if (gen.intents.requested === 0) {
+    console.log("::warning::the writer requested no visuals for this script — every segment is footage");
+  }
+
+  // ── the opening ──────────────────────────────────────────────────────────
+  // Composed rather than allocated: his face, one claim, and nothing else for
+  // fifteen seconds. Generated here so a failure stops the build before twelve
+  // minutes of encoding rather than after it.
+  const overlayResult = await generateOpeningOverlay({ hook: script?.hook, candidate: script?.openingOverlay });
+  if (!overlayResult.overlay) {
+    console.log(`::warning::no opening overlay cleared the gates (${overlayResult.reason}) — opening on the face alone`);
+  }
+
+  const opening = planOpening(withVisuals.segments, { overlay: overlayResult.overlay });
+  console.log(`[YTPipeline] opening: ${JSON.stringify(opening.composition, null, 1)}`);
+  if (!opening.ok) {
+    // Opening on somebody else's drone footage is a different product, so this
+    // stops the build rather than warning and continuing.
+    for (const f of opening.failures) console.log(`::error::opening: ${f}`);
+    throw new Error(`the opening treatment cannot be satisfied: ${opening.failures.join("; ")}`);
+  }
+
+  // ── the retention edit + PIP + cadence, on the finished plan ─────────────
+  // AFTER visuals (the splice changes what each voiceover segment shows) and
+  // BEFORE chapters and render — the edit changes on-camera segment lengths,
+  // and captions timed against the unedited lengths would drift for twelve
+  // minutes. planOpening above already guaranteed segment 0 is his face, so
+  // the stage's isOpening flag lands on the right take.
+  const retention = applyRetentionStage(withVisuals, { workDir, dim: canvasFor(RESOLUTION) });
+  console.log(renderRetentionSummary(retention).split("\n").map((l) => `[YTPipeline] ${l}`).join("\n"));
+
+  const chapters = buildChapters(withVisuals, script);
+  const rendered = await renderTimeline(withVisuals, {
+    workDir,
+    resolveBrollPath,
+    resolution: RESOLUTION,
+    openingOverlay: overlayResult.overlay,
+  });
 
   const packaging = await buildPackaging({
     topic: { title: result.selectedTitle, query: result.query, market: result.market, intent: result.intent },
     script,
     chapters,
+    // Only true when a map actually reached the timeline, so the credit line
+    // never claims something the video does not contain.
+    mapsUsed: gen.mapsUsed,
   });
+
+  // ── the thumbnail ─────────────────────────────────────────────────────────
+  // Generated here because the review checklist tells Peter to upload "the
+  // thumbnail" in Studio — and until this block, nothing anywhere produced
+  // one. The checklist pointed at an artifact that did not exist, which is the
+  // silent-gap class: every piece tested, the whole disconnected.
+  //
+  // Non-fatal on purpose. A finished video without a thumbnail file is still
+  // deliverable (Peter sees the gap on the checklist); a finished video thrown
+  // away over its thumbnail is not.
+  let thumb = { hook: null, scores: null };
+  let thumbnailPath = null;
+  try {
+    thumb = await generateThumbnailHook({ title: packaging.title, script });
+    if (thumb.hook) {
+      const png = await fitUnderLimit(
+        await renderThumbnail(thumb.hook, { kicker: result.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
+      );
+      thumbnailPath = join(workDir, "thumbnail.png");
+      writeFileSync(thumbnailPath, png);
+      console.log(
+        `[YTPipeline] thumbnail: "${thumb.hook}" ` +
+          `(curiosity=${thumb.scores?.curiosity} legibility=${thumb.scores?.legibility} emotion=${thumb.scores?.emotional_trigger}` +
+          `${thumb.belowBar ? ", BELOW BAR — best of what survived" : ""}, ${thumb.candidatesConsidered ?? "?"} candidate(s) considered)`
+      );
+    } else {
+      console.log(`::warning::no thumbnail line cleared the gates — Peter makes one in Studio (${thumb.reason || "no usable line"})`);
+    }
+  } catch (err) {
+    console.log(`::warning::thumbnail generation failed — Peter makes one in Studio (${err.message})`);
+  }
 
   const videoId = videoIdFor(record.requestId);
   let nextLog = recordRender(videoLog, {
@@ -461,6 +570,10 @@ async function buildFromRecordings(approvals, record) {
     brollHashes: plan.segments.flatMap((s) => (s.broll || []).map((b) => b.contentHash).filter(Boolean)),
     scriptScores: result.scores,
     packagingScores: packaging.scores,
+    // C3: the chosen thumbnail text rides with the video record, so hook style
+    // can be correlated with CTR once analytics exist.
+    thumbnailText: thumb.hook,
+    thumbnailScores: thumb.scores,
   });
   saveVideoLog(nextLog);
 
@@ -573,7 +686,110 @@ async function handleVideoReview(approvals, review) {
   console.log("[YTPipeline] notes recorded for the rework — nothing was published");
 }
 
+
+/**
+ * The distribution sweep — everything that happens to a video after approval.
+ *
+ * Runs at the top of every scheduled run, over every approved entry whose
+ * distribution is incomplete. Idempotent by construction (yt-distribute.js
+ * checks-before-acting and completed steps are merged into the log), so a cron
+ * hitting it twice costs nothing.
+ *
+ * WHY THE THUMBNAIL IS RE-RENDERED HERE rather than read from disk: the build
+ * wrote it into that run's workDir, which is gone by the time a later cron
+ * sweeps. The render is deterministic from the logged thumbnailText, so the
+ * sweep rebuilds the identical PNG instead of depending on an artifact that no
+ * longer exists — one less piece of state to lose.
+ *
+ * NOTHING HERE PUBLISHES. The comment step inside distributeVideo waits until
+ * it can SEE that Peter made the video public in Studio.
+ */
+async function sweepDistribution() {
+  const videoLog = loadVideoLog();
+  const pending = (videoLog.videos || []).filter(
+    (v) => v.approved && !String(v.requestId || "").startsWith("TEST-") &&
+      !(v.distribution?.thumbnail?.done && v.distribution?.playlist?.done && v.distribution?.comment?.done)
+  );
+  if (pending.length === 0) return;
+
+  let token;
+  try {
+    token = await ytApiToken();
+  } catch (err) {
+    // No YouTube credentials is a configuration gap, not a crash — the build
+    // half of the pipeline must keep working without them.
+    console.log(`::warning::distribution sweep skipped — ${err.message}`);
+    return;
+  }
+
+  let log = videoLog;
+  for (const entry of pending) {
+    // Resolve the real YouTube id from the Metricool post, once, and keep it.
+    if (!entry.youtubeVideoId && entry.metricoolPostId) {
+      const status = await verifyPostStatus(entry.metricoolPostId, entry.blogId || process.env.METRICOOL_BLOG_ID);
+      const resolved = videoIdFromPost(status.raw);
+      if (resolved) {
+        entry.youtubeVideoId = resolved;
+        console.log(`[YTDistribute] ${entry.videoId}: YouTube id resolved to ${resolved}`);
+      } else {
+        // The known unknown: whether a private long-form post carries the id.
+        console.log(`::warning::${entry.videoId}: no YouTube id on the Metricool post yet — distribution waits`);
+        continue;
+      }
+    }
+    if (!entry.youtubeVideoId) continue;
+
+    // The thumbnail, rebuilt from the logged text (see the header).
+    let thumbnailPath = null;
+    if (entry.thumbnailText) {
+      try {
+        const png = await fitUnderLimit(
+          await renderThumbnail(entry.thumbnailText, { kicker: entry.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
+        );
+        thumbnailPath = join(process.env.RUNNER_TEMP || tmpdir(), `thumb-${entry.videoId}.png`);
+        writeFileSync(thumbnailPath, png);
+      } catch (err) {
+        console.log(`::warning::${entry.videoId}: thumbnail re-render failed (${err.message})`);
+      }
+    }
+
+    const report = await distributeVideo(entry, {
+      token,
+      thumbnailPath,
+      pinnedComment: buildPinnedComment(),
+      market: entry.market,
+      intent: entry.intent,
+    });
+
+    for (const [name, r] of Object.entries(report.steps || {})) {
+      if (r.already) continue;
+      if (r.done && r.waiting) console.log(`[YTDistribute] ${entry.videoId}: ${name} — ${r.waiting}`);
+      else if (r.done) console.log(`[YTDistribute] ${entry.videoId}: ${name} done ${r.skipped ? `(${r.skipped})` : ""}`);
+      else console.log(`::warning::${entry.videoId}: ${name} FAILED — ${r.error} (retries next run)`);
+    }
+    if (report.blocked) console.log(`::warning::${entry.videoId}: distribution blocked — ${report.blocked}`);
+
+    const done = completedSteps(report);
+    if (Object.keys(done).length > 0 || entry.youtubeVideoId) {
+      log = {
+        ...log,
+        videos: log.videos.map((v) =>
+          v.videoId === entry.videoId
+            ? { ...v, youtubeVideoId: entry.youtubeVideoId, distribution: { ...(v.distribution || {}), ...done } }
+            : v
+        ),
+      };
+      saveVideoLog(log);
+    }
+  }
+}
+
 async function main() {
+  // Distribution first: it is independent of the stage machine below, and a
+  // video Peter published overnight gets its comment posted on this run rather
+  // than after whatever the stage machine decides to do.
+  await sweepDistribution();
+
   const approvals = loadApprovals();
   const topic = decisionState(approvals, KIND_TOPIC_PICK);
 

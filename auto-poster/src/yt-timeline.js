@@ -154,6 +154,10 @@ export function planTimeline(script, recordings, brollPool = [], { usedRecently 
       seconds: round(seconds),
       text: take.text,
       broll,
+      // Carried through untouched. The writer decided this while writing the
+      // sentence; validating it is yt-visual-intent.js's job and rendering it
+      // is yt-visual-broll.js's, and neither belongs in the planner.
+      visualIntent: take.visualIntent ?? null,
     });
     voiceoverSeconds += seconds;
   }
@@ -171,6 +175,7 @@ export function planTimeline(script, recordings, brollPool = [], { usedRecently 
       onCameraShare: totalSeconds > 0 ? round(onCameraSeconds / totalSeconds) : 0,
       brollClipsUsed: usedInVideo.size,
       estimatedMinutes: round(totalSeconds / 60),
+      visualIntentsRequested: segments.filter((s) => s.visualIntent).length,
     },
   };
 }

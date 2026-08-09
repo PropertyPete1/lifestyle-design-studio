@@ -3,9 +3,11 @@
  *
  * A carousel can survive a mediocre middle because the reader is already
  * swiping. A twelve-minute video cannot: every section boundary is a place
- * where a viewer decides to leave, and there are a dozen of them. So the critic
- * scores three axes here rather than the carousel's four, and the extra one is
- * retention — measured at the boundaries, which is where it is actually lost.
+ * where a viewer decides to leave, and there are a dozen of them. The critic
+ * scores seven axes (SCORE_AXES): the original three — clarity, retention,
+ * authenticity — plus hook_punch (the first six words alone), story (a human
+ * with stakes in every section), loop (planted/sustained/paid), and payoff
+ * (every counted claim in the hook cashed out in the body).
  *
  * Structure the writer produces:
  *
@@ -24,8 +26,9 @@
  *
  * Guards are the existing ones, reused verbatim: the leak scanner and
  * findMonthlyPaymentFigure. A stated monthly payment figure is the one thing
- * that forces a regeneration outright — the whole CTA is built on offering that
- * number in a DM, and a script that gives it away has nothing left to trade.
+ * that forces a regeneration outright — the whole close is built on offering
+ * that number personally (by text — YouTube has no DMs, see yt-cta.js), and a
+ * script that gives it away has nothing left to trade.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -33,6 +36,7 @@ import { stripDashes } from "./sanitize.js";
 import { scanAndStripLeaks } from "./caption.js";
 import { gatedDevelopmentNames } from "./yt-brief.js";
 import { findMonthlyPaymentFigure } from "./caption-validator.js";
+import { findImpossibleCta } from "./yt-cta.js";
 import { findBannedTellsIn, buildVoiceBlock, buildBannedBlock } from "./yt-voice.js";
 import { TAKE_SECONDS_MIN, TAKE_SECONDS_MAX, ON_CAMERA_SHARE, TARGET_MINUTES_MIN, TARGET_MINUTES_MAX, NARRATION_MODE } from "./yt-config.js";
 
@@ -269,9 +273,24 @@ WHO YOU ARE WRITING FOR: someone typing "moving to san antonio", "austin vs san 
 
 STRUCTURE, and every part of it earns its place:
 
-"hook" — the first 15 seconds. Cold open on the single most useful or most contrarian thing you have. No greeting, no name, no "welcome back to the channel", no throat-clearing. Start on the claim. The viewer decided to click on a title; the hook has to prove instantly that they were right to.
+"hook" — the first 15 seconds, and THE FIRST SIX WORDS ARE THE WHOLE FIGHT. Cold open. No greeting, no name, no "welcome back to the channel", no throat-clearing.
+
+THE SURPRISING CLAIM COMES FIRST; THE QUALIFYING CONTEXT COMES AFTER. Never open by defining who the video is for — "If you're a veteran with a hundred percent rating..." spends twenty seconds qualifying the audience before anything surprising happens, and the people it is for already know who they are from the title.
+
+  WEAK:   "If you're a veteran with a hundred percent rating, Texas can knock your property tax bill down to nothing..."
+  STRONG: "Your hundred percent disability exemption doesn't cover this. And most veterans moving to San Antonio don't find out until the first bill shows up."
+
+Structural rule, enforced mechanically: a hook whose first sentence opens with "if", "when", "whether", "for those who", or spends its first clause defining the audience is REJECTED and regenerated. Put the claim in the first six words; qualify it in the second sentence.
+
+CASH OUT EVERY COUNTED CLAIM. If the hook says "two of the three areas", the body must deliver exactly two of exactly three, by name. A number, a named set, or a promise in the hook is a debt, and the critic checks that it is paid in full. Do not put a count in the hook you are not going to land in the body.
+
+THE LONG OPEN LOOP. Inside the first 30 seconds, plant ONE specific promise that is not paid off until the back half of the video — a number you will name, a place you will identify, a mistake you will show. Reference it once mid-video ("that fee I mentioned at the start — it's coming, one more thing first") so it stays alive. Pay it EXPLICITLY, in words that call back to the plant ("that's the line I told you about at the start"). A loop that is planted and never mentioned again is a broken promise, not suspense.
 
 "promise" — one or two sentences. What they will know by the end that they do not know now. Concrete and bounded. "By the end you'll know what a 300k house here actually costs you every month" beats "we'll cover everything you need to know".
+
+STORY BEATS ARE MANDATORY, ONE PER SECTION MINIMUM. Facts do not retain; facts attached to a person do. Every section carries at least one concrete human moment — a client, a buyer, a family — with a DECISION they made and a CONSEQUENCE it had. "A lot of buyers regret this" is not a story; "a family I worked with picked the bigger house on the north side, and eight months in the wife was spending two hours a day on 281 and they listed it" is. Specific beats generic every time: a season, a road, a reason. Never a name, never an address, never an invented number — the person is real-shaped, the details stay general enough to be anyone.
+
+EMOTIONAL STAKES RIDE WITH THE NUMBERS. Every section names at least one emotional cost or relief alongside the financial one — resale regret, kids changing schools mid-year, a commute that grinds someone down, buying fast because orders said so. The channels that win this niche cover what a decision FEELS like a year later, not only what it costs.
 
 "sections" — ONE PER OUTLINE CHAPTER, in the order the outline gives them. If the outline has six chapters, write six sections. Do not add a section the outline does not have, and do not split one chapter across two. Never more than 7 in total.
 Each has:
@@ -279,9 +298,25 @@ Each has:
     "takes"      — the spoken content, split into units of ${TAKE_SECONDS_MIN} to ${TAKE_SECONDS_MAX} seconds
     "boundaryPull" — one sentence at the END of the section giving a concrete reason to stay for the next one. Not "up next we'll talk about schools" — that is a table of contents. Something with a stake in it: "But the number that actually moves your payment isn't the price. It's the one nobody quotes you."
 
-"softCta" — mid-video, placed after the section where you have most earned it. Low friction. One line, no hard sell.
+"openingOverlay" — 4 to 8 words, burned on screen over the first seconds while Peter is talking.
+The video opens on his face and one claim. This line is the claim in text, and it is doing a different job from the words he is saying: he is talking, and this is what somebody scrolling with the sound off reads before deciding to stay.
+- Do NOT restate the hook word for word. If he says "there is no state income tax here, that is the trade", the overlay is not "no state income tax" — it is something like "The trade nobody explains".
+- It should complement, sharpen, or add the stake. Think of the two together as one opening.
+- No period at the end. No quotes. Plain words, 4 to 8 of them.
+- It is read in about one second at the top of a video by somebody who does not know you yet, so it has to earn attention on its own.
 
-"close" — the strong one. Phone number, and the offer of a personalised payment breakdown. Ask for the comment or the text, once, plainly.
+CALL TO ACTION MECHANICS — READ THIS BEFORE WRITING softCta OR close.
+YOUTUBE HAS NO DIRECT MESSAGES. A creator cannot message a viewer here. Never write "comment X and I'll DM you", "I'll send it over", or anything that implies a private message arriving. It is a promise the platform makes impossible to keep, and the viewer this channel is for has used YouTube for years and will notice.
+
+There are exactly four things that work. Use these and nothing else:
+    1. "Comment [KEYWORD] and I'll reply with [the thing]" — the answer appears publicly in the comment thread
+    2. "Text me at [the number on screen]" — he reads and answers these himself
+    3. "Email me" — same
+    4. "Link in the description" — his links page
+
+"softCta" — mid-video, placed after the section where you have most earned it. COMMENT-BASED, because it is the low-friction ask and a comment is worth something to the video itself. One line, no hard sell. Ask for a specific thing that is easy to type — a city, a base, a budget — and say what he will reply with.
+
+"close" — the strong one, and CONTACT-BASED. Someone who watched twelve minutes about where to buy has a real question, and a real question deserves a real channel. Lead with the text number, offer the personalised payment breakdown, and mention the comment as the second, lower-friction option. Ask once, plainly. Never promise a message you cannot send.
 
 TAKES — this is the part people get wrong:
 Each take is ${TAKE_SECONDS_MIN}-${TAKE_SECONDS_MAX} seconds of speech, which is roughly 25 to 80 words. Peter reads it off his phone one take at a time, so it must stand alone: no take may begin with a word that only makes sense if the previous take just played ("So...", "And that's why...", "Which brings me to..."). Each take has:
@@ -289,6 +324,48 @@ Each take is ${TAKE_SECONDS_MIN}-${TAKE_SECONDS_MAX} seconds of speech, which is
     "mode"      — "${ON_CAMERA}" or "${VOICEOVER}"
     "text"      — what he says, verbatim
     "direction" — one short instruction for filming or delivery. Be practical and specific: "walking shot if you can", "energy up, this is the hook", "say this one slower", "look right at the lens for this line". Not "speak clearly".
+    "visualIntent" — OPTIONAL, VOICEOVER takes only. See below. Omit it entirely, or set it to null, for any take that does not need one.
+
+VISUAL INTENT — what the viewer looks at while you talk. EVERY VOICEOVER TAKE GETS ONE.
+This is a teaching video, not a highlight reel. The B-roll library is drone and walkthrough footage cut for 15-second hype clips, and under a twelve-minute explainer that footage is filler — pretty, and doing no work. So the DEFAULT is a graphic that teaches the sentence, and footage is a deliberate choice you make when the point genuinely is what a place looks and feels like.
+
+THE RULE: ask what the viewer needs to SEE to understand this sentence. If the answer is a relationship, a number, a comparison, a sequence, a geography, or a single figure worth the screen — pick that graphic type. If the answer is honestly "what this place looks like" — pick FOOTAGE and say why.
+
+Do not stretch for a graphic you cannot fill. A card with two vague bullets on it teaches nothing and looks like a slide from a bad deck; FOOTAGE is the better answer there and it is a real answer, not a failure.
+
+Use exactly one of these seven types:
+
+"FOOTAGE" — the point IS the place: what a neighborhood feels like to drive through, lot sizes, grown-in trees. Pick it when a graphic would abstract away the thing the viewer wants to see.
+    WRITE IT AS A BARE STRING, not an object: "visualIntent": "FOOTAGE"
+    That shorthand exists to keep your JSON simple. Use it every time you choose footage.
+
+"MAP" — any geography: a route, a boundary, a set of locations, an area.
+    "spec": {"places": ["Stone Oak", "Downtown"], "lines": ["1604", "281"], "title": "short label for the shot"}
+    Give the place and road names as you say them out loud. Only name places and roads in the San Antonio or Austin metro.
+
+"COMPARISON" — two or three things held against each other: neighborhoods, districts, options, before and after.
+    "spec": {"columns": [{"name": "Older inside the loop", "points": ["1970s build", "bigger lot"]}, {"name": "Newer outside", "points": ["2000s build", "more square footage"]}], "title": "..."}
+
+"NUMBER_BREAKDOWN" — one figure decomposed into its parts: a tax bill, a payment, closing costs, a budget.
+    "spec": {"rows": [{"label": "School district", "value": "1.24%"}, {"label": "County", "value": "0.28%"}], "total": "2.1% all in", "title": "..."}
+    Set "struck": true on a row that gets removed or waived, when the point is that it disappears.
+
+"LIST" — enumerated items worth seeing rather than only hearing: documents needed, steps, criteria.
+    "spec": {"items": ["Two years of W2s", "Certificate of Eligibility"], "title": "..."}
+
+"TIMELINE" — a sequence or process over time: a closing timeline, a market cycle, a build schedule.
+    "spec": {"steps": [{"label": "Offer accepted", "when": "day 0"}, {"label": "Option period ends", "when": "day 7"}], "title": "..."}
+
+"CALLOUT" — a single number or phrase that deserves the whole screen: a rate, a deadline, a threshold.
+    "spec": {"value": "41 days", "label": "median time on market", "title": "..."}
+
+VISUAL INTENT RULES:
+- EVERY VOICEOVER take gets a visualIntent. A take with none is a take nobody decided about.
+- NEVER on an ON_CAMERA take. Those show Peter, and there is nothing to replace.
+- Do not put a visualIntent on any take in the first 15 seconds. The video opens on Peter's face and one claim; graphics start after the hook has landed.
+- Every number you put in a spec must be one you already say out loud in that take's text. Do not invent a figure for the graphic, and do not put a monthly payment figure in one — that ban covers visuals too.
+- Keep labels short. Under about 30 characters each; they are read off a screen in a few seconds, not studied.
+- The graphic supports the sentence, it does not repeat it. Do not paste the take's text into the spec.
 
 MODE RULES:
 - ON_CAMERA is for the hook, the section transitions, the soft CTA and the close. It is roughly ${Math.round(ON_CAMERA_SHARE * 100)}% of the runtime — that is the budget, keep to it.
@@ -320,12 +397,13 @@ ${gatedDevelopmentNames().map((n) => `    - ${n}`).join("\n")}
 
 JSON SAFETY — read this twice. Every one of these throws the whole script away.
 1. CLOSE THE SECTIONS ARRAY. After the last section's closing brace you must write "]" before "softCta". This is the single most common failure: the last section ends with } and the next character is a comma and then "softCta", with no ] between them. The shape is  ...}]  ,"softCta":  — never  ...}  ,"softCta": .
+1b. CLOSE EVERY visualIntent. Each one opens two braces — {"type": ..., "spec": {...}} — and both must close before the take's own closing brace. When you choose footage, write the bare string "FOOTAGE" instead; it opens nothing. A run of three unclosed intents is what turns a finished script into an unparseable one.
 2. NEVER put a double quote (") inside any text value. If you need to quote something, use single quotes: 'the north side'. Apostrophes are fine.
 3. No newlines inside a value. Keep every value on one line.
 Before you answer, check that every [ you opened has a matching ].
 
 Return ONLY valid JSON, no preamble and no code fences:
-{"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
+{"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "openingOverlay": "4 to 8 words", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, {"id": "s1t2", "mode": "${VOICEOVER}", "text": "...", "direction": "...", "visualIntent": "FOOTAGE"}, {"id": "s1t3", "mode": "${VOICEOVER}", "text": "...", "direction": "...", "visualIntent": {"type": "CALLOUT", "spec": {"value": "...", "label": "..."}}}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
 
 export function writerSystem({ voiceBlock = "", bannedBlock = buildBannedBlock() } = {}) {
   return buildWriterSystem() + bannedBlock + voiceBlock;
@@ -346,7 +424,7 @@ Use this scale. It is calibrated, not relative — score against these anchors, 
 
 An 8 is a pass, not a prize. If you cannot name a concrete flaw, do not score below 8.
 
-Score three things from 1 to 10.
+Score seven things from 1 to 10.
 
 "clarity" — comprehension, scored across the WHOLE script. Would a distracted viewer understand what is being CLAIMED, first time, without rewinding?
 
@@ -387,10 +465,18 @@ Score 3 or below for any of these, and name the offender:
 
 Score 8 or above only if you could believe a realtor said all of it into his phone without a script in front of him. Contractions, short sentences, and the occasional fragment are GOOD here — do not mark them down as informal. Formality is the failure mode on this axis, not the standard.
 
-Apply the anchors literally. Do not drift the bar upward across the three axes: each is scored on its own against the same scale.
+"hook_punch" — the FIRST SIX WORDS, scored on their own. Cover the rest of the script and read only them: would a stranger scrolling with the sound half-off stop? Six words that open a gap score high ("Your exemption doesn't cover this line"). Six words of setup score low ("If you're a veteran with a..."), however strong the sentence they begin. A hook that spends its first clause qualifying the audience caps this axis at 4 — the title already did that job.
+
+"story" — is there a HUMAN in every section with something at stake? Count them section by section. A qualifying story beat has a person (a client, a buyer, a family), a decision they made, and a consequence it had — and it is SPECIFIC: a road, a season, a reason. "A lot of buyers regret this" is not a beat; it is a statistic wearing a coat. Any section with zero qualifying beats caps this axis at 5. Also score the emotional register: each section should name what a decision FEELS like — resale regret, kids mid-year, a commute that grinds — not only what it costs. All facts and no people caps this at 4 regardless of how good the facts are.
+
+"loop" — the long open loop, scored in three parts: PLANTED (a specific promise inside the first 30 seconds that is not paid immediately), SUSTAINED (referenced at least once mid-video so it stays alive), PAID (explicitly cashed out in the back half, in words that call back to the plant). All three present and specific: 8+. Planted and paid but never sustained: max 6. Planted and never paid: max 3 — that is a broken promise, and worse than no loop. No loop at all: max 5.
+
+"payoff" — every COUNTED OR NAMED claim in the hook and promise, checked against the body. If the hook says "two of the three areas", find the three areas and the two — by name, exactly. If it promises "the number nobody quotes", find the take that delivers that number. List each claim, then verify each is paid IN FULL. One unpaid or miscounted claim caps this axis at 4, because it is the specific lie a viewer notices and remembers.
+
+Apply the anchors literally. Do not drift the bar upward across the axes: each is scored on its own against the same scale.
 
 Return ONLY valid JSON, no preamble and no code fences:
-{"clarity": 0, "retention": 0, "authenticity": 0, "worst_problem": "the single most damaging flaw, one sentence", "worst_boundary": "quote the weakest boundaryPull, or empty string", "fix": "a specific instruction to the writer, one sentence"}`;
+{"clarity": 0, "retention": 0, "authenticity": 0, "hook_punch": 0, "story": 0, "loop": 0, "payoff": 0, "worst_problem": "the single most damaging flaw, one sentence", "worst_boundary": "quote the weakest boundaryPull, or empty string", "fix": "a specific instruction to the writer, one sentence"}`;
 
 export function criticSystem() {
   return CRITIC_SYSTEM;
@@ -398,16 +484,42 @@ export function criticSystem() {
 
 // ─── flattening and guards ──────────────────────────────────────────────────
 
-/** Every spoken line in a script, flattened — what the guards and critic see. */
+/**
+ * Every spoken line in a script, flattened — what the guards and critic see.
+ *
+ * visualIntent CONTENT IS INCLUDED, and it has to be. The guards that run over
+ * this are the leak scanner and findMonthlyPaymentFigure, and both exist to
+ * stop specific strings reaching the audience: a gated development name, or a
+ * monthly payment figure that the entire close is built on withholding. A spec
+ * is not spoken, but it IS rendered onto the screen in 84px gold — so a spec
+ * excluded from this list is a hole straight through both guards, and the
+ * first sign of it would be the number sitting in the finished video.
+ */
 export function allScriptText(script) {
   const parts = [script?.title, script?.hook, script?.promise];
   for (const s of script?.sections || []) {
     parts.push(s.title, s.boundaryPull);
-    for (const t of s.takes || []) parts.push(t.text, t.direction);
+    for (const t of s.takes || []) parts.push(t.text, t.direction, ...visualIntentText(t.visualIntent));
   }
   parts.push(script?.softCta?.text, script?.softCta?.direction);
   parts.push(script?.close?.text, script?.close?.direction);
   return parts.filter((p) => typeof p === "string" && p.trim());
+}
+
+/**
+ * Every string anywhere inside a visualIntent, at any depth.
+ *
+ * Walks rather than reading known keys on purpose: the writer invents spec
+ * shapes, and a guard that only looked at `rows[].label` would miss a banned
+ * name the model put in `total`, `footnote`, or a key nobody anticipated.
+ */
+export function visualIntentText(intent, depth = 0) {
+  if (depth > 6 || intent == null) return [];
+  if (typeof intent === "string") return [intent];
+  if (typeof intent === "number") return [String(intent)];
+  if (Array.isArray(intent)) return intent.flatMap((v) => visualIntentText(v, depth + 1));
+  if (typeof intent === "object") return Object.values(intent).flatMap((v) => visualIntentText(v, depth + 1));
+  return [];
 }
 
 /** Just the spoken takes, in order. Used by the recording kit and the assembler. */
@@ -427,6 +539,54 @@ export function allTakes(script) {
  * Structural validation. Cheap, deterministic, and runs before the critic so a
  * malformed draft costs one model call instead of two.
  */
+/**
+ * A hook whose first sentence qualifies instead of claiming.
+ *
+ * "If you're a veteran with a hundred percent rating, Texas can..." spends its
+ * first twenty seconds defining the audience — which the title already did —
+ * before anything surprising happens. Retention is decided in the first six
+ * words, so this is checked mechanically rather than left to the critic: word
+ * overlap and phrase shape are things a regex answers every time and a model
+ * answers most times.
+ *
+ * Returns the reason, or null when the hook opens on a claim.
+ */
+export function hookOpensQualified(hook) {
+  const text = String(hook || "").trim();
+  if (!text) return null;
+  const firstSentence = (text.split(/(?<=[.!?])\s+/)[0] || text).trim();
+
+  if (/^(?:if|when|whether|unless|suppose|imagine)\b/i.test(firstSentence)) {
+    return `first sentence opens with a conditional ("${firstSentence.split(/\s+/).slice(0, 4).join(" ")}...") — the claim must come first`;
+  }
+  if (/^for\s+(?:those|anyone|people|everyone|buyers|families|veterans|folks)\b/i.test(firstSentence)) {
+    return "first sentence opens by defining the audience — the claim must come first";
+  }
+  // "Are you a veteran who..." / "Do you have..." — a question that qualifies.
+  if (/^(?:are|do|does|have|has)\s+you\b/i.test(firstSentence) && /\byou(?:'re|r| are| have)?\s+(?:a|an|the)\b/i.test(firstSentence)) {
+    return "first sentence is a question qualifying the audience — the claim must come first";
+  }
+  return null;
+}
+
+/**
+ * Greetings, channel names and self-introductions — the preamble ban.
+ *
+ * Checked on the hook AND the first take, because they are what actually
+ * plays first. Deterministic: this is a list of phrases, not a judgement.
+ */
+const PREAMBLE = /^(?:hey|hi|hello|howdy|what's up|welcome(?:\s+back)?|good\s+(?:morning|afternoon|evening)|my name(?:'s|\s+is)|i'm\s+peter|thanks for (?:watching|joining|clicking)|in (?:this|today's)\s+video|today\s+(?:i|we)(?:'m|'re|'ll|\s+am|\s+are|\s+will)?\s)/i;
+
+export function findPreamble(script) {
+  const found = [];
+  const hook = String(script?.hook || "").trim();
+  if (PREAMBLE.test(hook)) found.push(`hook opens with preamble: "${hook.slice(0, 50)}"`);
+  const firstTake = script?.sections?.[0]?.takes?.[0];
+  const text = String(firstTake?.text || "").trim();
+  if (text && PREAMBLE.test(text)) found.push(`first take opens with preamble: "${text.slice(0, 50)}"`);
+  return found;
+}
+
 export function validateScript(script) {
   const failures = [];
   if (!script || typeof script !== "object") return { valid: false, failures: ["not an object"] };
@@ -434,6 +594,10 @@ export function validateScript(script) {
   if (nonEmpty(script.title) && script.title.length > 70) failures.push(`title is ${script.title.length} chars, max 70`);
   if (!nonEmpty(script.hook)) failures.push("missing hook");
   if (!nonEmpty(script.promise)) failures.push("missing promise");
+
+  const qualified = hookOpensQualified(script.hook);
+  if (qualified) failures.push(`hook: ${qualified}`);
+  failures.push(...findPreamble(script));
 
   const sections = script.sections || [];
   if (sections.length < 4) failures.push(`only ${sections.length} sections, need at least 4`);
@@ -472,6 +636,26 @@ function nonEmpty(s) {
  * in place; a payment figure is reported for the caller to regenerate on,
  * because there is no safe way to patch one out of a sentence built around it.
  */
+/**
+ * Apply a string transform to every string in a nested structure.
+ *
+ * Mirrors visualIntentText's walk: the writer invents spec shapes, so scrubbing
+ * a fixed set of known keys would leave a banned term sitting in whichever key
+ * nobody anticipated. `type` is left alone — it is an enum this code chose, not
+ * writer prose, and running it through a leak scanner could only corrupt it.
+ */
+function scrubDeep(value, scrub, depth = 0) {
+  if (depth > 6 || value == null) return value;
+  if (typeof value === "string") return scrub(value);
+  if (Array.isArray(value)) return value.map((v) => scrubDeep(v, scrub, depth + 1));
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, k === "type" ? v : scrubDeep(v, scrub, depth + 1)])
+    );
+  }
+  return value;
+}
+
 export function applyGuards(script) {
   const notes = [];
   const scrub = (text) => {
@@ -488,7 +672,16 @@ export function applyGuards(script) {
     sections: (script.sections || []).map((s) => ({
       ...s,
       boundaryPull: scrub(s.boundaryPull),
-      takes: (s.takes || []).map((t) => ({ ...t, text: scrub(t.text) })),
+      takes: (s.takes || []).map((t) => ({
+        ...t,
+        text: scrub(t.text),
+        // The spec is scrubbed too, and not scrubbing it was a real hole: a
+        // gated development name that appeared ONLY inside a visualIntent was
+        // stripped from nothing, recorded in no leak note, and rendered on
+        // screen in 84px gold. Including the spec in allScriptText made it
+        // VISIBLE to the guards; this is what makes it actually removed.
+        ...(t.visualIntent ? { visualIntent: scrubDeep(t.visualIntent, scrub) } : {}),
+      })),
     })),
     softCta: script.softCta ? { ...script.softCta, text: scrub(script.softCta.text) } : script.softCta,
     close: script.close ? { ...script.close, text: scrub(script.close.text) } : script.close,
@@ -498,11 +691,18 @@ export function applyGuards(script) {
   const payment = findMonthlyPaymentFigure(spoken.join("\n"));
   const bannedTells = findBannedTellsIn(spoken);
 
+  // YouTube has no direct messages, so a take promising one is a promise he
+  // physically cannot keep on camera. Reported like the payment figure rather
+  // than stripped: the sentence is built around the offer, and patching the
+  // words out would leave a CTA that asks for nothing.
+  const impossibleCta = findImpossibleCta(spoken.join("\n"));
+
   return {
     script: scrubbed,
     leaksStripped: notes,
     paymentFigure: payment,
     bannedTells,
+    impossibleCta,
   };
 }
 
@@ -544,6 +744,62 @@ const CONNECTIVE_OPENER_PATTERNS = [
 /** The opening words of a take, stripped of quotes and stage punctuation. */
 function openerOf(text) {
   return String(text ?? "").trim().replace(/^["'“”‘’\-—–(\[]+\s*/, "");
+}
+
+
+/**
+ * Discourse markers a take can lose without losing meaning.
+ *
+ * "So the number that matters is the second one" minus "So" is the same
+ * sentence, standing alone — which is the entire requirement. The back-
+ * reference openers ("Which...", "That's why...") are NOT here: stripping
+ * them leaves a sentence pointing at nothing, and those takes genuinely need
+ * rewriting.
+ */
+const STRIPPABLE_OPENER = /^(so|and|but|or|plus|also|then|anyway|besides|however|meanwhile|therefore|nor)[,\s]+/i;
+
+/**
+ * Strip repairable connective openers instead of regenerating the script.
+ *
+ * THE COST THIS REMOVES, measured on run 31283932043: two of three topics
+ * produced no script at all, and the killing gate was this one — the budget
+ * topic burned attempts on 5, then 1, then 1 connective openers; the schools
+ * topic died the same way. Each rejection threw away a ~700-second generation
+ * over, in the end, ONE take of thirty that began with "Then". Same class as
+ * repairTitle: the most expensive possible response to the cheapest possible
+ * problem.
+ *
+ * The repair is conservative: strip the marker, re-test the opening, and if it
+ * STILL reads as connective (e.g. "And that's why..." -> "that's why..."), put
+ * the original back and let it regenerate — that take really does lean on its
+ * neighbour. A repaired take must also still clear the length floor.
+ */
+export function repairConnectiveOpeners(script) {
+  const repaired = [];
+  const fix = (take) => {
+    const text = String(take?.text || "");
+    if (!STRIPPABLE_OPENER.test(text)) return take;
+
+    const stripped = text.replace(STRIPPABLE_OPENER, "");
+    const recapped = stripped.charAt(0).toUpperCase() + stripped.slice(1);
+
+    // Still connective after the strip, or now too short to be a take — the
+    // repair did not work; hand it back for regeneration untouched.
+    const stillBad = CONNECTIVE_OPENER_PATTERNS.some((re) => re.test(recapped));
+    const words = recapped.split(/\s+/).filter(Boolean).length;
+    if (stillBad || words < 15) return take;
+
+    repaired.push({ id: take.id || null, from: text.slice(0, 40), to: recapped.slice(0, 40) });
+    return { ...take, text: recapped };
+  };
+
+  const out = {
+    ...script,
+    sections: (script.sections || []).map((s) => ({ ...s, takes: (s.takes || []).map(fix) })),
+  };
+  if (script.softCta) out.softCta = fix(script.softCta);
+  if (script.close) out.close = fix(script.close);
+  return { script: out, repaired };
 }
 
 /** Every take that opens with connective tissue, in any mode. */
@@ -597,6 +853,10 @@ export async function scoreScript(script, modelCall = callModel) {
         clarity: clamp(s.clarity),
         retention: clamp(s.retention),
         authenticity: clamp(s.authenticity),
+        hook_punch: clamp(s.hook_punch),
+        story: clamp(s.story),
+        loop: clamp(s.loop),
+        payoff: clamp(s.payoff),
         worst_problem: String(s.worst_problem || ""),
         worst_boundary: String(s.worst_boundary || ""),
         fix: String(s.fix || ""),
@@ -614,8 +874,11 @@ export async function scoreScript(script, modelCall = callModel) {
   };
 }
 
+/** The axes a script must clear, all at PASS_MARK or above. */
+export const SCORE_AXES = ["clarity", "retention", "authenticity", "hook_punch", "story", "loop", "payoff"];
+
 export function scoresPass(scores, mark = PASS_MARK) {
-  return scores.clarity >= mark && scores.retention >= mark && scores.authenticity >= mark;
+  return Boolean(scores) && SCORE_AXES.every((axis) => (scores[axis] ?? 0) >= mark);
 }
 
 const scoreTotal = (s) => s.clarity + s.retention + s.authenticity;
@@ -736,6 +999,18 @@ export async function generateScript({
     // capped authenticity at 6 for it. A rule a regex can check should never
     // depend on the critic noticing: it gets three chances, this catches every
     // one and hands back the exact take ids to fix.
+    // Repair before rejecting: a leading "So," costs one word to fix and a
+    // whole generation to regenerate. Only what the repair cannot fix — the
+    // genuine back-references — still forces the retry.
+    const repair = repairConnectiveOpeners(guarded.script);
+    if (repair.repaired.length > 0) {
+      guarded.script = repair.script;
+      console.log(
+        `[YTScript] attempt ${attempt + 1}: stripped connective openers from ` +
+          `${repair.repaired.map((r) => r.id || "?").join(", ")} — repaired, not regenerated`
+      );
+    }
+
     const connective = findConnectiveOpeners(guarded.script);
     if (connective.length > 0) {
       const list = connective.map((c) => `${c.id || "?"} ("${c.opener}...")`).join(", ");

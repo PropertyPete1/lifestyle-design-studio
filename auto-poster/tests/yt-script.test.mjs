@@ -299,17 +299,17 @@ describe("voice reference — better none than noise", () => {
 
 // ─── the bar ────────────────────────────────────────────────────────────────
 
-describe("scoresPass — all three axes, no averaging", () => {
+describe("scoresPass — every axis, no averaging", () => {
   test("passes only when every axis clears the bar", () => {
-    assert.equal(scoresPass({ clarity: 8, retention: 8, authenticity: 8 }), true);
+    assert.equal(scoresPass({ clarity: 8, retention: 8, authenticity: 8, hook_punch: 8, story: 8, loop: 8, payoff: 8 }), true);
   });
 
   test("a brilliant script that loses people still fails", () => {
-    assert.equal(scoresPass({ clarity: 10, retention: 7, authenticity: 10 }), false);
+    assert.equal(scoresPass({ clarity: 10, retention: 7, authenticity: 10, hook_punch: 10, story: 10, loop: 10, payoff: 10 }), false);
   });
 
   test("a gripping script that sounds like a robot still fails", () => {
-    assert.equal(scoresPass({ clarity: 10, retention: 10, authenticity: 7 }), false);
+    assert.equal(scoresPass({ clarity: 10, retention: 10, authenticity: 7, hook_punch: 10, story: 10, loop: 10, payoff: 10 }), false);
   });
 });
 
@@ -331,8 +331,8 @@ function scriptedModel(responses) {
   return fn;
 }
 
-const goodScores = JSON.stringify({ clarity: 9, retention: 9, authenticity: 9, worst_problem: "", worst_boundary: "", fix: "" });
-const badScores = JSON.stringify({ clarity: 9, retention: 5, authenticity: 9, worst_problem: "boundaries announce", worst_boundary: "Next up, taxes.", fix: "raise the stakes" });
+const goodScores = JSON.stringify({ clarity: 9, retention: 9, authenticity: 9, hook_punch: 9, story: 9, loop: 9, payoff: 9, worst_problem: "", worst_boundary: "", fix: "" });
+const badScores = JSON.stringify({ clarity: 9, retention: 5, authenticity: 9, hook_punch: 9, story: 9, loop: 9, payoff: 9, worst_problem: "boundaries announce", worst_boundary: "Next up, taxes.", fix: "raise the stakes" });
 
 describe("generateScript", () => {
   test("returns a passing script and reports its shape", async () => {
@@ -440,7 +440,7 @@ describe("generateScript", () => {
 
 describe("scoreScript", () => {
   test("clamps out-of-range scores from the model", async () => {
-    const model = scriptedModel([JSON.stringify({ clarity: 99, retention: -4, authenticity: "8" })]);
+    const model = scriptedModel([JSON.stringify({ clarity: 99, retention: -4, authenticity: "8", hook_punch: 9, story: 9, loop: 9, payoff: 9 })]);
     const s = await scoreScript(validScript(), model);
     assert.equal(s.clarity, 10);
     assert.equal(s.retention, 1);

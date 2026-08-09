@@ -27,6 +27,10 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { generateTTS, postProcessVoiceoverAudio } from "./voiceover.js";
 import { RESOLUTION } from "./yt-config.js";
+import { kenBurnsArgs } from "./yt-visual-broll.js";
+import { renderOverlayPng, burnOverlayArgs } from "./yt-opening.js";
+import { pieceArgs } from "./yt-oncamera-edit.js";
+import { pipCompositeArgs } from "./yt-pip.js";
 
 export const CANVAS = {
   "1080p": { w: 1920, h: 1080 },
@@ -269,7 +273,7 @@ export function mediaDuration(path) {
  * @param {string} [opts.resolution]
  * @returns {{ outputPath, seconds, bytes, stages }}
  */
-export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPath = null, resolution = RESOLUTION } = {}) {
+export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPath = null, resolution = RESOLUTION, openingOverlay = null } = {}) {
   if (!plan?.segments?.length) throw new Error("renderTimeline needs a plan with segments");
   if (plan.missingTakes?.length) {
     // Rendering around a missing on-camera take would produce a video with a
@@ -289,6 +293,14 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
     return out;
   };
 
+  // The overlay is rasterised once, up front, because the segment loop below
+  // is synchronous ffmpeg work and sharp is not.
+  let overlayPngPath = null;
+  if (openingOverlay) {
+    overlayPngPath = join(dir, "opening-overlay.png");
+    writeFileSync(overlayPngPath, await renderOverlayPng(openingOverlay, dim));
+  }
+
   // ── 1. each segment becomes one normalised, narrated file ────────────────
   const segmentFiles = [];
   t("segments", () => {
@@ -296,18 +308,56 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       const base = join(dir, `seg${String(i).padStart(3, "0")}`);
 
       if (seg.kind === "on_camera") {
-        // Peter's own clip carries its own audio, so it only needs the canvas.
-        const visual = `${base}_v.mp4`;
-        ffmpeg(normalizeArgs(seg.source, visual, dim, { seconds: seg.seconds }));
-        const withAudio = `${base}.mp4`;
-        ffmpeg([
-          "-y", "-i", visual, "-i", seg.source,
-          "-map", "0:v", "-map", "1:a?",
-          "-t", String(seg.seconds),
-          "-c:v", "copy", ...segmentAudioArgs(),
-          withAudio,
-        ]);
-        rmSync(visual, { force: true });
+        let withAudio = `${base}.mp4`;
+
+        // ── the edited take ──────────────────────────────────────────────
+        // Dead air removed and the framing changed at every resulting seam, so
+        // each cut is covered by a punch-in rather than showing as a jump. The
+        // opening take gets the push instead. See yt-oncamera-edit.js.
+        const edit = seg.editPlan;
+        if (edit && edit.pieces.length > 0) {
+          const pieceFiles = [];
+          edit.pieces.forEach((piece, pi) => {
+            const out = `${base}_e${String(pi).padStart(3, "0")}.mp4`;
+            ffmpeg(pieceArgs(seg.source, out, piece, dim, { fps: FPS }));
+            pieceFiles.push(out);
+          });
+          const listFile = `${base}_edit.txt`;
+          writeFileSync(listFile, pieceFiles.map((p) => `file '${p}'`).join("\n"));
+          ffmpeg(concatArgs(listFile, withAudio));
+          pieceFiles.forEach((p) => rmSync(p, { force: true }));
+          rmSync(listFile, { force: true });
+          console.log(
+            `[Assemble] ${seg.takeId}: ${edit.pieces.length} piece(s), ` +
+              `${edit.removedSeconds}s of dead air removed (${edit.originalSeconds}s -> ${edit.editedSeconds}s)`
+          );
+        } else {
+          // Unedited fallback: the take as recorded, on the canvas.
+          const visual = `${base}_v.mp4`;
+          ffmpeg(normalizeArgs(seg.source, visual, dim, { seconds: seg.seconds }));
+          ffmpeg([
+            "-y", "-i", visual, "-i", seg.source,
+            "-map", "0:v", "-map", "1:a?",
+            "-t", String(seg.seconds),
+            "-c:v", "copy", ...segmentAudioArgs(),
+            withAudio,
+          ]);
+          rmSync(visual, { force: true });
+        }
+
+        // The opening overlay burns onto the FIRST segment only, and only when
+        // that segment is on-camera — which planOpening has already guaranteed.
+        // Burning here rather than after the concat keeps the filter operating
+        // on a 20-second file instead of a twelve-minute one.
+        if (i === 0 && overlayPngPath) {
+          const burned = `${base}_burned.mp4`;
+          ffmpeg(burnOverlayArgs(withAudio, overlayPngPath, burned));
+          rmSync(withAudio, { force: true });
+          segmentFiles.push(burned);
+          console.log(`[Assemble] burned the opening overlay: "${openingOverlay}"`);
+          return;
+        }
+
         segmentFiles.push(withAudio);
         return;
       }
@@ -315,9 +365,21 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       // Voiceover: B-roll for the picture, cloned voice (or his own) for the sound.
       const pieces = [];
       seg.broll.forEach((b, bi) => {
+        const piece = `${base}_b${bi}.mp4`;
+
+        // A generated map or card is a still, so it gets a slow push rather
+        // than the normalise-and-pillarbox path — it is already the right
+        // aspect and the right size, and running it through `scale` would only
+        // cost a resample.
+        if (b.generated) {
+          if (!existsSync(b.sourcePath)) return;
+          ffmpeg(kenBurnsArgs(b.sourcePath, piece, { seconds: b.seconds, dim, fps: FPS }));
+          pieces.push(piece);
+          return;
+        }
+
         const src = resolveBrollPath(b.driveFileId);
         if (!src) return;
-        const piece = `${base}_b${bi}.mp4`;
         // -stream_loop covers a clip shorter than its slot; the -t cut still
         // governs, so a 4s clip filling a 6s slot repeats rather than gapping.
         ffmpeg(normalizeArgs(src, piece, dim, { seconds: b.seconds, loop: true }));
@@ -330,13 +392,27 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       const visual = `${base}_v.mp4`;
       ffmpeg(concatArgs(listFile, visual));
 
+      // ── the floating head ────────────────────────────────────────────────
+      // Composited before the narration is muxed, so the filter runs on a
+      // silent visual and the audio is copied once at the end rather than
+      // re-encoded twice. A segment with no cutout, or one whose matte failed
+      // the quality gate, simply skips this and plays full-screen.
+      let picture = visual;
+      if (seg.pip?.cutoutPath && existsSync(seg.pip.cutoutPath)) {
+        const pipped = `${base}_pip.mp4`;
+        ffmpeg(pipCompositeArgs(visual, seg.pip.cutoutPath, pipped, seg.pip.placement, { seconds: seg.seconds, fps: FPS }));
+        rmSync(visual, { force: true });
+        picture = pipped;
+        console.log(`[Assemble] ${seg.takeId}: PIP in the ${seg.pip.placement.corner} corner`);
+      }
+
       const narration = seg.narrationSource || seg.generatedNarrationPath;
       if (!narration) throw new Error(`voiceover take ${seg.takeId} has no narration audio`);
       const withAudio = `${base}.mp4`;
-      ffmpeg(muxNarrationArgs(visual, narration, withAudio));
+      ffmpeg(muxNarrationArgs(picture, narration, withAudio));
 
       pieces.forEach((p) => rmSync(p, { force: true }));
-      rmSync(visual, { force: true });
+      rmSync(picture, { force: true });
       rmSync(listFile, { force: true });
       segmentFiles.push(withAudio);
     });

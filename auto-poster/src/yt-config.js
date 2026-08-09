@@ -118,3 +118,23 @@ function oneOf(raw, allowed, fallback) {
   const v = String(raw || "").trim().toLowerCase();
   return allowed.includes(v) ? v : fallback;
 }
+
+/**
+ * Whether the floating-head PIP may be composited over visuals.
+ *
+ * Per-video kill switch. Off is always safe: the visual plays full-screen,
+ * which is exactly what it did before the feature existed.
+ */
+export const PIP_ENABLED = process.env.YT_PIP_ENABLED !== "false";
+
+/**
+ * Whether dead air is cut out of on-camera takes.
+ *
+ * Separate from the punch-ins deliberately. If a take ever gets clipped wrong,
+ * this can be turned off without losing the framing changes, which are the
+ * retention edit and carry no risk to the words.
+ */
+export const JUMP_CUTS_ENABLED = process.env.YT_JUMP_CUTS !== "false";
+
+/** Whether on-camera takes get punch-in framing changes. */
+export const PUNCH_INS_ENABLED = process.env.YT_PUNCH_INS !== "false";

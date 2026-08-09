@@ -25,6 +25,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Install ffmpeg
+        # The retention-edit tests synthesize real takes and cut real silences —
+        # deliberately, because the class of bug this repo pays for most is the
+        # one a mock cannot catch (a zoom expression ffmpeg accepts that is
+        # secretly a constant; silencedetect output on the wrong stream). Those
+        # four tests failed with ENOENT here rather than being skipped, which
+        # was correct: a test that silently skips is a test that silently
+        # passes.
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
