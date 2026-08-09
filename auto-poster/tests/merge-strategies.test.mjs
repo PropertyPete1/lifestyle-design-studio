@@ -431,3 +431,53 @@ describe("mergeYtApprovals — a deliberate outline rewrite survives", () => {
     assert.equal(merged.requests[0].payload.candidates[0].outline, "remote", "unchanged tie-break");
   });
 });
+
+describe("mergeYouTubeLog preserves fields it has never heard of", async () => {
+  const { mergeYouTubeLog } = await import("../merge-strategies.mjs");
+  const base = { videoId: "v1", requestId: "r1", createdAt: "2026-08-09T00:00:00Z", title: "t", market: "san_antonio" };
+
+  test("the iteration loop's revision history survives a two-sided merge", () => {
+    // Video 1 lost revision 2 and its rework history exactly here: the runner's
+    // post-build push merged with a moved main, and this function rebuilt the
+    // record from an allowlist that predated those fields.
+    const local = { videos: [{ ...base, uploadedAt: "2026-08-09T20:59:00Z", revision: 2, reworks: [{ revision: 1, rejectedAt: "2026-08-09T20:02:00Z", metricoolPostId: 111 }] }] };
+    const remote = { videos: [{ ...base, thumbnailText: "WRONG STREET WRONG SCHOOL" }] };
+    const m = mergeYouTubeLog(local, remote, () => {}).videos[0];
+    assert.equal(m.revision, 2);
+    assert.equal(m.reworks.length, 1);
+    assert.equal(m.reworks[0].metricoolPostId, 111);
+    assert.equal(m.thumbnailText, "WRONG STREET WRONG SCHOOL");
+    assert.equal(m.uploadedAt, "2026-08-09T20:59:00Z", "the upload group still applies its policy");
+  });
+
+  test("reworks union without duplicating either side's history", () => {
+    const r1 = { revision: 1, rejectedAt: "a" };
+    const r2 = { revision: 2, rejectedAt: "b" };
+    const m = mergeYouTubeLog(
+      { videos: [{ ...base, reworks: [r1, r2] }] },
+      { videos: [{ ...base, reworks: [r1] }] },
+      () => {}
+    ).videos[0];
+    assert.equal(m.reworks.length, 2);
+  });
+
+  test("a completed distribution step is never erased by a stale copy", () => {
+    const m = mergeYouTubeLog(
+      { videos: [{ ...base, distribution: { thumbnail: { done: true, at: "x" } } }] },
+      { videos: [{ ...base, distribution: { thumbnail: { done: false }, playlist: { done: true } } }] },
+      () => {}
+    ).videos[0];
+    assert.equal(m.distribution.thumbnail.done, true, "done wins");
+    assert.equal(m.distribution.playlist.done, true, "the other side's completed step survives too");
+  });
+
+  test("a field invented NEXT month survives without editing the merge", () => {
+    const m = mergeYouTubeLog(
+      { videos: [{ ...base, someFutureField: { a: 1 } }] },
+      { videos: [{ ...base, anotherNewThing: "kept" }] },
+      () => {}
+    ).videos[0];
+    assert.deepEqual(m.someFutureField, { a: 1 });
+    assert.equal(m.anotherNewThing, "kept");
+  });
+});
