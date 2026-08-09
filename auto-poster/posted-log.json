@@ -2892,6 +2892,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1_yGzsi4r0hX4rRo3pgzdFMyJd0Uhvo_y/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-08-09T20:20:19.618Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1yBGALOHPEie5sLOsxVWBNKeCy18AlVeN",
+      "captionSnippet": "this is what new construction is supposed to feel like\n\nNew construction like this doesn't sit long in San Antonio. Star",
+      "mainIgPostedAt": "2026-08-09T20:20:19.618Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
