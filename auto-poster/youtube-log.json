@@ -25,20 +25,12 @@
         "worst_problem": "The description's opening two lines promise a broad price-and-commute comparison including Alamo Heights, Hollywood Park and Shavano Park — none of which appear anywhere in the chapters, which are actually a military/VA-buyer piece about 1604, ISD lines and MUD fees.",
         "fix": "Delete the boilerplate first two description lines and replace them with a summary that matches the chapters (Stone Oak vs Timberwood Park vs the northeast bases, the Northside/Comal ISD line, MUD and PID fees on top of the VA exemption), and put the veteran angle in the title, e.g. \"Moving to North San Antonio: Stone Oak, ISD Lines, and the MUD Fee Your VA Exemption Won't Cover.\""
       },
-      "thumbnailText": "YOUR EXEMPTION MISSES THIS",
-      "thumbnailScores": {
-        "curiosity": 9,
-        "legibility": 8,
-        "emotional_trigger": 10,
-        "worst_problem": "The line promises a tax-exemption mistake while the title delivers a neighborhood/ISD/MUD tour, so the loop it opens is one the video may never close.",
-        "fix": "Anchor the hook to what the video actually covers — e.g. \"YOUR MUD FEE HIDES THIS\" — so the payoff matches the promise."
-      },
-      "approved": false,
       "uploadedAt": "2026-08-09T17:13:16.162Z",
       "privacy": "private",
       "youtubeUrl": "https://static.metricool.com/video/3748462/202608/d8420191a8bc49ac.mp4",
       "metricoolPostId": 359975994,
-      "blogId": "4807109"
+      "blogId": "4807109",
+      "approved": false
     }
   ]
 }
