@@ -210,6 +210,92 @@ export async function renderAnimatedGraphic({
 }
 
 /**
+ * Render a kinetic typography segment to an mp4.
+ *
+ * Same machinery as the graphics — a state sequence, a concat, a push — but the
+ * states come from phrase cards and the unit of reveal is a WORD.
+ *
+ * NO FAILURE PATH. This is the layer everything else falls back TO, so it takes
+ * whatever narration it is given and produces something. An empty text is the
+ * only input it cannot serve, and the caller checks that before choosing it.
+ */
+export async function renderTypographyClip({
+  text,
+  words = null,
+  seconds,
+  eyebrow = null,
+  dir,
+  index = 0,
+  fps = GRAPHIC_FPS,
+  ffmpeg,
+  writeFileSync,
+  renderPng,
+}) {
+  const { planTypography, typographyPng } = await import("./yt-typography-render.js");
+  const render = renderPng || typographyPng;
+
+  const plan = planTypography({ text, words, seconds, eyebrow });
+  if (plan.cards.length === 0) return null;
+
+  // One state per word arrival, plus a settle at the end of each card so the
+  // finished phrase is readable before it is replaced.
+  const states = [];
+  for (const card of plan.cards) {
+    card.times.forEach((t, i) => {
+      states.push({ at: round(t), card, visible: i + 1, current: i, pulse: 1 });
+      states.push({ at: round(t + LAND_SECONDS), card, visible: i + 1, current: i, pulse: 0 });
+    });
+  }
+  states.sort((a, b) => a.at - b.at);
+
+  const merged = [];
+  for (const s of states) {
+    const prev = merged[merged.length - 1];
+    if (prev && Math.abs(prev.at - s.at) < 1 / fps) merged[merged.length - 1] = { ...s, at: prev.at };
+    else merged.push(s);
+  }
+  const seq = merged
+    .map((s, i) => ({ ...s, until: round(i + 1 < merged.length ? merged[i + 1].at : seconds) }))
+    .filter((s) => s.until > s.at && s.at < seconds);
+  if (seq.length === 0) return null;
+
+  // A first state at t>0 would leave the opening moments black. Back the first
+  // card up to zero rather than padding with a blank, which would be the one
+  // thing this layer exists to prevent.
+  if (seq[0].at > 0) seq[0] = { ...seq[0], at: 0 };
+
+  const stem = `typo-${String(index).padStart(3, "0")}`;
+  const framePaths = [];
+  for (let i = 0; i < seq.length; i++) {
+    const png = await render({ words: seq[i].card.words, eyebrow: seq[i].card.eyebrow }, { visible: seq[i].visible, current: seq[i].current, pulse: seq[i].pulse });
+    const p = join(dir, `${stem}-s${String(i).padStart(3, "0")}.png`);
+    writeFileSync(p, png);
+    framePaths.push(p);
+  }
+
+  const listPath = join(dir, `${stem}.txt`);
+  const lines = seq.map((s, i) => `file '${framePaths[i]}'\nduration ${round(s.until - s.at)}`);
+  lines.push(`file '${framePaths[framePaths.length - 1]}'`);
+  writeFileSync(listPath, lines.join("\n"));
+
+  const out = join(dir, `${stem}.mp4`);
+  ffmpeg(concatArgs(listPath, out, { seconds, fps }));
+
+  return {
+    path: out,
+    seconds: round(seconds),
+    cards: plan.cards.map((c) => ({ text: c.words.join(" "), start: c.start, seconds: c.seconds, anchored: c.anchoredCount })),
+    cardCount: plan.cards.length,
+    stateCount: seq.length,
+    synced: plan.synced,
+    source: plan.source,
+    // Every word arrival is a reveal, so the clip-level animation check has the
+    // same anchors to probe as a graphic does.
+    reveals: seq.filter((s) => s.pulse === 1).map((s) => ({ at: s.at, label: s.card.words[s.current] || "" })),
+  };
+}
+
+/**
  * ffmpeg arguments for the state sequence plus the continuous push.
  *
  * `fps` BEFORE zoompan, deliberately. The concat demuxer emits one frame per
