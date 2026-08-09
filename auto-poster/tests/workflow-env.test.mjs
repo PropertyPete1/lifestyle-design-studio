@@ -97,3 +97,22 @@ describe("workflow environment stays consistent", () => {
     assert.equal(modeOf(all["dry-run"]), "peter");
   });
 });
+
+describe("the distribution sweep's credentials reach the job that runs it", () => {
+  test("the pipeline job sets YT_REFRESH_TOKEN", () => {
+    // The sweep runs inside yt-pipeline-main. Its token was set on the PROBE
+    // workflow and not here — so accessToken() threw on every scheduled run,
+    // the sweep skipped itself with a log warning, and distribution would
+    // silently never have happened. Same drift class as YT_NARRATION_MODE.
+    const all = jobs();
+    assert.match(all.pipeline, /YT_REFRESH_TOKEN:/, "the sweep cannot authenticate without it");
+  });
+
+  test("the cron collision is covered: brief and pipeline share a queueing group", () => {
+    const all = jobs();
+    for (const name of ["brief", "pipeline"]) {
+      assert.match(all[name], /group:\s*youtube-longform-approvals/, `${name} must share the approvals group`);
+      assert.match(all[name], /cancel-in-progress:\s*false/, `${name} must queue, not kill a build mid-upload`);
+    }
+  });
+});

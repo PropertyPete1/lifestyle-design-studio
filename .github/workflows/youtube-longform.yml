@@ -114,6 +114,13 @@ jobs:
             echo "success=false" >> $GITHUB_OUTPUT
             exit 1
           fi
+      - name: Notify Peter on failure
+        if: failure()
+        working-directory: auto-poster
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: node scripts/notify-run-failure.mjs brief
       - name: Commit approvals
         if: always()
         working-directory: auto-poster
@@ -179,6 +186,13 @@ jobs:
           METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          # The distribution sweep (thumbnails.set, playlists, the comment)
+          # authenticates with this. It was set on the PROBE workflow and not
+          # here — so on the job that actually runs the sweep, accessToken()
+          # threw, the sweep skipped itself with a log warning nobody reads,
+          # and distribution would silently never have happened. The exact
+          # drift class the YT_NARRATION_MODE incident already demonstrated.
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_TEXT_NUMBER: ${{ secrets.YT_TEXT_NUMBER }}
           YT_LINKS_URL: ${{ secrets.YT_LINKS_URL }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
@@ -202,6 +216,13 @@ jobs:
           path: ${{ runner.temp }}/yt-diagnostics/
           if-no-files-found: ignore
           retention-days: 30
+      - name: Notify Peter on failure
+        if: failure()
+        working-directory: auto-poster
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: node scripts/notify-run-failure.mjs pipeline
       - name: Commit approvals
         if: always()
         working-directory: auto-poster
