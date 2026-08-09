@@ -809,7 +809,13 @@
         "title": "North San Antonio Neighborhoods: Commutes, School Districts, MUD Fees",
         "requestId": "topic_pick-2026-08-07-d5cddf9d"
       },
-      "videoId": "vid-2026-08-07-d5cddf9d"
+      "videoId": "vid-2026-08-07-d5cddf9d",
+      "actedAt": "2026-08-09T21:05:19.555Z",
+      "actedAction": "superseded_by_rebuild",
+      "actedResult": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "notes": "cap graphic holds at 9s — revision 2 broke the ≤10s cadence rule 16 times"
+      }
     }
   ]
 }
