@@ -21,6 +21,7 @@
  */
 
 import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import {
   postApproval, cleanup, testRequestId,
   topicPickPayload, recordingKitPayload, videoReviewPayload, heldBelowBarPayload,
@@ -91,7 +92,26 @@ async function looksLikeAuthGate(page) {
   return /enter studio passcode|sign in|log ?in/i.test(visible) && visible.length < 2000;
 }
 
-test.describe.configure({ mode: "serial" });
+/**
+ * NOT SERIAL — and that is the point.
+ *
+ * This file used to declare `mode: "serial"`, whose one real effect here was to
+ * SKIP EVERY REMAINING TEST after the first failure. On 2026-08-09 the
+ * approval-card check failed and the run reported "3 did not run": Deliveries,
+ * Copy Caption, and the camera screens. A long-form rendering bug made the
+ * entire daily half of the dashboard unreportable, while the summary still read
+ * like a complete result — an accurate red signal answering a different
+ * question than the one being asked.
+ *
+ * Serial mode was buying nothing else. `workers: 1` and `fullyParallel: false`
+ * in playwright.config.mjs already guarantee these run one at a time, in order,
+ * in a single worker, so the TEST- fixtures still cannot interleave and
+ * afterAll still cleans them up exactly once.
+ *
+ * If a future check genuinely depends on a previous one, wrap that pair in its
+ * own `test.describe.serial` — do not restore it file-wide and take the whole
+ * suite's reporting down with it.
+ */
 
 test.afterAll(async () => {
   const removed = await cleanup().catch((e) => [{ error: e.message }]);
@@ -297,6 +317,113 @@ test("deliveries render, and their thumbnails are not broken images", async ({ p
     broken.length ? `${broken.length}/${images.length} broken: ${broken.slice(0, 3).map((b) => b.src).join(", ")}` : `${images.length} loaded`
   );
   expect(broken.map((b) => b.src), `broken images: ${broken.map((b) => b.src).join(", ")}`).toEqual([]);
+});
+
+/**
+ * DATA PARITY — which kind of empty is this?
+ *
+ * "An empty tab over dead data and an empty tab over a rendering bug look
+ * identical to Peter, and I want to know which each one is."
+ *
+ * Every other check here is black-box on purpose. These two are not: they read
+ * the committed logs the pipelines write and ask whether the deployed dashboard
+ * is showing them. That is the only way to tell the two failures apart, and
+ * both happen here — the Trial pipeline produced nothing between 2026-07-26 and
+ * 2026-08-09, so an empty Trial tab was CORRECT for a fortnight while a
+ * rendering bug would have looked exactly the same.
+ *
+ * A tab is only failed when the log has records and the tab demonstrably shows
+ * none of them. No records means an empty tab is the right answer, and the
+ * check says so rather than passing silently.
+ */
+const REPO_LOGS = new URL("../auto-poster/", import.meta.url);
+
+function readLog(name) {
+  try {
+    return JSON.parse(readFileSync(new URL(name, REPO_LOGS), "utf-8"));
+  } catch (err) {
+    return { __unreadable: err.message };
+  }
+}
+
+/** Visible text of a tab, plus whether it is showing an explicit empty state. */
+async function tabText(page, pattern) {
+  const tab = await gotoTab(page, pattern);
+  const text = (await page.locator("body").innerText().catch(() => "")) || "";
+  return { tab, text };
+}
+
+test("the Trial tab shows what trial-variants.json actually contains", async ({ page }) => {
+  await page.goto("/", { waitUntil: "networkidle" });
+  const log = readLog("trial-variants.json");
+  if (log.__unreadable) {
+    note("trial parity", "INFO", `could not read trial-variants.json: ${log.__unreadable}`);
+    return;
+  }
+  const variants = log.variants || [];
+  const { tab, text } = await tabText(page, /trial/i);
+  note("trial tab", tab ? "PASS" : "INFO", tab ? `on "${tab.label}"` : "no Trial tab found");
+
+  if (variants.length === 0) {
+    note("trial parity", "INFO", "trial-variants.json is empty — an empty tab is CORRECT, not a bug");
+    return;
+  }
+
+  // Look for any stable marker of the newest variant. Dates get reformatted and
+  // captions get truncated, so several markers are tried and any one counts.
+  const newest = variants[variants.length - 1];
+  const markers = [newest.sourceFileName, newest.hookAngle, newest.city, newest.date].filter(Boolean);
+  const seen = markers.filter((m) => text.includes(m));
+
+  note(
+    "trial parity",
+    seen.length ? "PASS" : "FAIL",
+    seen.length
+      ? `${variants.length} record(s) in the log; the newest is rendered (matched: ${seen.join(", ")})`
+      : `${variants.length} record(s) in the log (newest ${newest.date} ${newest.hookAngle}) and NONE are on the tab — ` +
+        `this is a RENDERING problem, not dead data`
+  );
+
+  expect(
+    seen.length,
+    `trial-variants.json holds ${variants.length} record(s) but the Trial tab shows none of ` +
+      `[${markers.join(", ")}]. Dead data and a broken tab look the same to a human; this says it is the tab.`
+  ).toBeGreaterThan(0);
+});
+
+test("the Deliveries tab shows what posted-log.json actually contains", async ({ page }) => {
+  await page.goto("/", { waitUntil: "networkidle" });
+  const log = readLog("posted-log.json");
+  if (log.__unreadable) {
+    note("deliveries parity", "INFO", `could not read posted-log.json: ${log.__unreadable}`);
+    return;
+  }
+  const delivered = (log.posts || []).filter((p) => p && p.deliveryDriveLink);
+  const { tab, text } = await tabText(page, /deliver/i);
+
+  if (delivered.length === 0) {
+    note("deliveries parity", "INFO", "no delivered entries in posted-log — an empty tab is CORRECT");
+    return;
+  }
+
+  const newest = delivered[delivered.length - 1];
+  const markers = [newest.fileName, newest.city, (newest.timestamp || "").slice(0, 10)].filter(Boolean);
+  const seen = markers.filter((m) => text.includes(m));
+
+  note(
+    "deliveries parity",
+    seen.length ? "PASS" : "FAIL",
+    seen.length
+      ? `${delivered.length} delivered in the log; the newest is rendered (matched: ${seen.join(", ")})`
+      : `${delivered.length} delivered in the log (newest ${newest.city} ${(newest.timestamp || "").slice(0, 10)}) ` +
+        `and none are on the tab — RENDERING problem, not dead data`
+  );
+
+  expect(
+    seen.length,
+    `posted-log.json holds ${delivered.length} delivered item(s) but the Deliveries tab shows none of ` +
+      `[${markers.join(", ")}].`
+  ).toBeGreaterThan(0);
 });
 
 test("Copy Caption copies the caption, not the internal notes", async ({ page, context }) => {

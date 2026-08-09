@@ -150,9 +150,23 @@ export async function runCarousel({ dateStr, sampleOut = SAMPLE_OUT, dryRun = DR
 }
 
 // Only run when invoked directly, so tests can import the module freely.
+//
+// The carousel has exactly one failure exit, so this is the whole notification
+// surface for it: anything that throws — the model, the renderer, a blank
+// slide, Drive — reaches Peter rather than just reddening the run page.
 if (process.argv[1] && process.argv[1].endsWith("carousel-main.js")) {
-  runCarousel().catch((err) => {
+  runCarousel().catch(async (err) => {
     console.error(`[Carousel] FAILED: ${err.message}`);
+    const { notifyDailyFailure, OUTCOME } = await import("./daily-notify.js");
+    const { remedyFor } = await import("./failure-remedy.js");
+    await notifyDailyFailure({
+      pipeline: "Carousel",
+      label: todayInChicago(),
+      outcome: OUTCOME.FAILED,
+      reason: `The daily carousel did not publish: ${err.message}`,
+      remedy: remedyFor(err),
+      detail: err.stack,
+    });
     process.exit(1);
   });
 }

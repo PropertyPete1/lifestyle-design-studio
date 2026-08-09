@@ -16,6 +16,12 @@ export default defineConfig({
   fullyParallel: false,
   // A smoke suite that retries is a smoke suite that hides a flaky deploy.
   retries: 0,
+  /**
+   * No cap on failures: every check must report, every run. See the note on
+   * serial mode in smoke.spec.mjs for the bug this pairs with — one failing
+   * check used to skip every check after it.
+   */
+  maxFailures: 0,
   timeout: 45_000,
   expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never", outputFolder: "report" }]],

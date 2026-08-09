@@ -12,6 +12,8 @@ import { getAccessToken } from "./drive.js";
 import { deliverToOwner } from "./delivery.js";
 import { loadLog, saveLog, recordPost } from "./state.js";
 import { cleanup } from "./voiceover.js";
+import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
+import { remedyFor } from "./failure-remedy.js";
 import {
   loadTrialHistory,
   saveTrialHistory,
@@ -46,7 +48,10 @@ async function main() {
     const log = loadLog();
     const entry = log.posts.find(p => p.driveFileId === FORCE_SOURCE_ID && p.success && !p.type);
     if (!entry) {
+      // A manual override with a bad id — the operator is at the keyboard and
+      // the run page tells them. No email for a hand-typed mistake.
       console.error(`[TrialVariant] FORCE_SOURCE_VIDEO_ID=${FORCE_SOURCE_ID} not found in posted-log`);
+      console.log(`::error title=Trial variant::FORCE_SOURCE_VIDEO_ID=${FORCE_SOURCE_ID} is not a posted video`);
       process.exit(1);
     }
     const { getNextAngle } = await import("./trial-variant.js");
@@ -64,7 +69,15 @@ async function main() {
   } else {
     source = await pickSourceVideo(history);
     if (!source) {
-      console.error("[TrialVariant] No eligible source video found. Exiting.");
+      const reason = "No eligible source video found — every posted reel has either been used for a trial variant already or has no angle left.";
+      console.error(`[TrialVariant] ${reason}`);
+      await notifyDailyFailure({
+        pipeline: "Trial variant",
+        label: WINDOW,
+        outcome: OUTCOME.NOTHING_TO_POST,
+        reason,
+        remedy: remedyFor("no eligible source"),
+      });
       process.exit(1);
     }
   }
@@ -77,8 +90,18 @@ async function main() {
   try {
     result = await generateVariant(source, angle, DRY_RUN);
   } catch (err) {
+    // THE PATH THAT RAN RED TWICE A DAY FOR FOURTEEN DAYS. Whatever broke here
+    // — TTS, the model, ffmpeg — is now said out loud to a human.
     console.error(`[TrialVariant] Generation failed: ${err.message}`);
     if (err.stack) console.error(err.stack);
+    await notifyDailyFailure({
+      pipeline: "Trial variant",
+      label: `${WINDOW} · ${source.city} · ${angle}`,
+      outcome: OUTCOME.FAILED,
+      reason: `Could not generate the variant: ${err.message}`,
+      remedy: remedyFor(err),
+      detail: err.stack,
+    });
     process.exit(1);
   }
 
@@ -108,7 +131,21 @@ async function main() {
       );
       console.log(`[TrialVariant] ✓ Delivered to Drive + dashboard`);
     } catch (err) {
+      // The variant EXISTS and cost real model and TTS spend, but Peter cannot
+      // see it. It is still recorded below so the angle is not retried, which
+      // means without this alert the work would be silently thrown away.
       console.error(`[TrialVariant] Delivery failed: ${err.message}`);
+      await notifyDailyFailure({
+        pipeline: "Trial variant",
+        label: `${WINDOW} · ${source.city} · ${angle}`,
+        outcome: OUTCOME.DELIVERY_FAILED,
+        reason:
+          `${variantLabel} was generated but could not be delivered: ${err.message}. ` +
+          `The angle is marked used, so this variant will NOT be regenerated.`,
+        remedy: remedyFor(err),
+        detail: err.stack,
+        accessToken,
+      });
       // Still record the variant in history so we don't retry the same angle
     }
   } else {
@@ -167,8 +204,21 @@ async function main() {
   console.log(`[TrialVariant] ═══════════════════════════════════════════════════`);
 }
 
-main().catch(err => {
+/**
+ * The backstop. Anything the steps above did not catch — a dead Google token
+ * before delivery, an unreadable log, a bug — still has to reach Peter, because
+ * "the run went red" is exactly the signal that failed for fourteen days.
+ */
+main().catch(async err => {
   console.error(`[TrialVariant] Fatal error: ${err.message}`);
   console.error(err.stack);
+  await notifyDailyFailure({
+    pipeline: "Trial variant",
+    label: WINDOW,
+    outcome: OUTCOME.FAILED,
+    reason: `Unhandled failure: ${err.message}`,
+    remedy: remedyFor(err),
+    detail: err.stack,
+  });
   process.exit(1);
 });

@@ -4,7 +4,9 @@ import { readFileSync, readdirSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
-const WORKFLOW = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".github", "workflows", "youtube-longform.yml");
+const WF_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".github", "workflows");
+const WORKFLOW = join(WF_DIR, "youtube-longform.yml");
+const DAILY_WORKFLOW = join(WF_DIR, "post.yml");
 
 /**
  * Split the workflow into jobs, keeping each job's raw text.
@@ -13,7 +15,8 @@ const WORKFLOW = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".git
  * one env var, and the question here is textual: does this job's block mention
  * the variable at all.
  */
-function jobs() {
+function jobs(WORKFLOW_PATH = WORKFLOW) {
+  const WORKFLOW = WORKFLOW_PATH;
   const text = readFileSync(WORKFLOW, "utf-8");
   const out = {};
   const re = /\n {2}([a-zA-Z0-9_-]+):\n/g;
@@ -114,6 +117,81 @@ describe("the distribution sweep's credentials reach the job that runs it", () =
       assert.match(all[name], /group:\s*youtube-longform-approvals/, `${name} must share the approvals group`);
       assert.match(all[name], /cancel-in-progress:\s*false/, `${name} must queue, not kill a build mid-upload`);
     }
+  });
+});
+
+/**
+ * THE DAILY WORKFLOW GETS THE SAME GUARD THE LONG-FORM ONE HAS.
+ *
+ * Everything above was written after YT_NARRATION_MODE and YT_REFRESH_TOKEN
+ * drifted, and it was pointed at youtube-longform.yml only. post.yml — which
+ * runs five jobs a day, every day — had no guard at all, and drifted in exactly
+ * the same way: voiceover.js reads ELEVENLABS_VOICE_ID and NOT ONE JOB SET IT.
+ *
+ * The consequence was not theoretical. The unset variable meant the hardcoded
+ * Professional voice was always used; on 2026-07-27 the account lost the tier
+ * that voice requires; and because the override never reached the runtime, the
+ * only available fix was a code change. Fourteen days of failed runs.
+ */
+describe("the daily workflow's credentials reach the jobs that need them", () => {
+  const daily = jobs(DAILY_WORKFLOW);
+
+  const VOICEOVER_JOBS = ["post-san-antonio", "post-austin", "post-dallas", "trial-variant"];
+
+  test("the daily workflow is parseable into its five jobs", () => {
+    for (const j of [...VOICEOVER_JOBS, "post-carousel"]) {
+      assert.ok(daily[j], `no ${j} job found in post.yml`);
+    }
+  });
+
+  test("every job that narrates sets ELEVENLABS_VOICE_ID", () => {
+    const missing = VOICEOVER_JOBS.filter((j) => !/ELEVENLABS_VOICE_ID:/.test(daily[j] || ""));
+    assert.deepEqual(missing, [], `narrating jobs without the voice override: ${missing.join(", ")}`);
+  });
+
+  test("every job that narrates also has the key to call ElevenLabs at all", () => {
+    const missing = VOICEOVER_JOBS.filter((j) => !/ELEVENLABS_API_KEY:/.test(daily[j] || ""));
+    assert.deepEqual(missing, [], `narrating jobs without the API key: ${missing.join(", ")}`);
+  });
+
+  /**
+   * The guard has teeth: it must be pointed at jobs that actually run a script
+   * importing voiceover.js, not at a hand-written list that could rot.
+   */
+  test("the narrating jobs are exactly the jobs that run a voiceover entry point", () => {
+    const VOICEOVER_ENTRIES = ["src/main.js", "src/trial-variant-main.js"];
+    const detected = Object.entries(daily)
+      .filter(([, b]) => VOICEOVER_ENTRIES.some((s) => b.includes(s)))
+      .map(([n]) => n)
+      .sort();
+    assert.deepEqual(detected, [...VOICEOVER_JOBS].sort(), `detected: ${detected.join(", ")}`);
+  });
+
+  /**
+   * The carousel does not narrate, and giving it the voice knob would teach the
+   * next person to paste every secret into every job — which is how the real
+   * drift becomes invisible.
+   */
+  test("the carousel job is NOT given voiceover credentials it never uses", () => {
+    assert.ok(!/ELEVENLABS/.test(daily["post-carousel"] || ""), "the carousel job should not carry ElevenLabs secrets");
+  });
+
+  /**
+   * The live LinkedIn duplicate check reads the posted-log through the GitHub
+   * API. Without a token it fails open — which is precisely the state that let
+   * four days of duplicate posts through.
+   */
+  test("the job that posts LinkedIn can read the live log", () => {
+    assert.match(daily["post-san-antonio"], /GITHUB_TOKEN:/, "the SA job runs the LinkedIn block and needs GITHUB_TOKEN for the live duplicate check");
+  });
+
+  test("every daily job can send its own failure alert", () => {
+    // notifyDailyFailure emails through the Google token. A job without the
+    // OAuth trio can annotate but cannot reach a human inbox.
+    const missing = Object.keys(daily).filter(
+      (j) => !/GOOGLE_REFRESH_TOKEN:/.test(daily[j]) || !/GOOGLE_CLIENT_ID:/.test(daily[j])
+    );
+    assert.deepEqual(missing, [], `jobs that cannot email an alert: ${missing.join(", ")}`);
   });
 });
 

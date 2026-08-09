@@ -324,6 +324,14 @@ export const MAIL_PREFIX = {
   REELS: "[REELS]",
   CAROUSEL: "[CAROUSEL]",
   YT: "[YT PIPELINE]",
+  /**
+   * Something broke and nobody is coming unless Peter does.
+   *
+   * Deliberately NOT one of the above: the reels and carousel prefixes mark mail
+   * he expects daily and skims past, which is exactly how a fortnight of failed
+   * trial runs went unread. An alert has to look unlike the routine.
+   */
+  ALERT: "[DAILY ALERT]",
 };
 
 /**
@@ -368,6 +376,13 @@ export function encodeSubject(subject) {
   // Continuation lines are folded with CRLF + a space, per RFC 5322.
   return words.map((w) => `=?UTF-8?B?${w}?=`).join("\r\n ");
 }
+
+/**
+ * Exported as `sendOwnerEmail` for daily-notify.js, which needs to send a
+ * message that is neither a delivery nor an approval. Kept as one function so
+ * there is exactly one place that knows how to put mail in Peter's inbox.
+ */
+export { sendOwnerEmailViaGmail as sendOwnerEmail };
 
 async function sendOwnerEmailViaGmail(accessToken, { subject, body, prefix = null }) {
   const labelled = prefix ? `${prefix} ${subject}` : subject;

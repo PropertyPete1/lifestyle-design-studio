@@ -123,6 +123,25 @@ export function hasRecentPost(log, city, slot, hoursAgo = 20) {
 }
 
 /**
+ * Has a LinkedIn recruiting post gone out within the last N hours?
+ *
+ * Pure and exported so both callers can share it AND so the rule can be tested
+ * without a network: main.js asks this of its own in-memory log first, then of
+ * the LIVE log fetched from GitHub. The second call is the one that matters —
+ * see checkRemoteLinkedin in main.js for why the in-memory answer is not
+ * trustworthy when the primary and backup crons overlap.
+ *
+ * Duplicates on 2026-08-05 through 08-08 are what this is guarding: same topic,
+ * twice, ~45 minutes apart, on three real LinkedIn accounts.
+ */
+export function hasRecentLinkedinPost(log, hoursAgo = 20) {
+  const cutoff = Date.now() - hoursAgo * 60 * 60 * 1000;
+  return validPosts(log).some(
+    p => p.type === "linkedin" && new Date(p.timestamp).getTime() > cutoff
+  );
+}
+
+/**
  * Record a successful post.
  * Persists all audit fields passed by main.js (voiceover_reason,
  * voiceover_transcript, freshness, mainIgDelivery, deliveryDriveLink, etc.)
