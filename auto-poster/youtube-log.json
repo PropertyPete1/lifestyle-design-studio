@@ -25,13 +25,13 @@
         "worst_problem": "The description's opening two lines promise a broad price-and-commute comparison including Alamo Heights, Hollywood Park and Shavano Park — none of which appear anywhere in the chapters, which are actually a military/VA-buyer piece about 1604, ISD lines and MUD fees.",
         "fix": "Delete the boilerplate first two description lines and replace them with a summary that matches the chapters (Stone Oak vs Timberwood Park vs the northeast bases, the Northside/Comal ISD line, MUD and PID fees on top of the VA exemption), and put the veteran angle in the title, e.g. \"Moving to North San Antonio: Stone Oak, ISD Lines, and the MUD Fee Your VA Exemption Won't Cover.\""
       },
-      "uploadedAt": "2026-08-09T21:49:05.628Z",
+      "uploadedAt": null,
       "privacy": "private",
-      "youtubeUrl": "https://static.metricool.com/video/3748462/202608/fe6ef60759084c87.mp4",
-      "metricoolPostId": 360027454,
+      "youtubeUrl": null,
+      "metricoolPostId": null,
       "blogId": "4807109",
       "approved": false,
-      "revision": 3,
+      "revision": 4,
       "reworks": [
         {
           "revision": 1,
@@ -48,6 +48,14 @@
           "youtubeUrl": "https://static.metricool.com/video/3748462/202608/848252e713dc42f0.mp4",
           "rejectedAt": "2026-08-09T21:04:00.000Z",
           "notes": "cap graphic holds at 9s — revision 2 broke the ≤10s cadence rule 16 times"
+        },
+        {
+          "revision": 3,
+          "uploadedAt": "2026-08-09T21:49:05.628Z",
+          "metricoolPostId": 360027454,
+          "youtubeUrl": "https://static.metricool.com/video/3748462/202608/fe6ef60759084c87.mp4",
+          "rejectedAt": "2026-08-10T02:25:52.095Z",
+          "notes": "revision 3 visual system merged (PR #63/#64) — this card shows the pre-merge render with reels footage in it"
         }
       ],
       "thumbnailText": "THE FEE NOBODY MENTIONS",
