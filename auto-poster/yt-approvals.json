@@ -837,7 +837,13 @@
         "title": "Where to live in North San Antonio: inside or outside Loop 1604",
         "requestId": "topic_pick-2026-08-07-d5cddf9d"
       },
-      "videoId": "vid-2026-08-07-d5cddf9d"
+      "videoId": "vid-2026-08-07-d5cddf9d",
+      "actedAt": "2026-08-10T02:25:52.086Z",
+      "actedAction": "superseded_by_rebuild",
+      "actedResult": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "notes": "revision 3 visual system merged (PR #63/#64) — this card shows the pre-merge render with reels footage in it"
+      }
     }
   ]
 }
