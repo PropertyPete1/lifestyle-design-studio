@@ -519,9 +519,11 @@ async function buildFromRecordings(approvals, record) {
   for (const r of gen.intents.rejections) {
     console.log(`::warning::take ${r.takeId} asked for a ${r.type || "?"} visual and it was rejected — ${r.reason}`);
   }
-  for (const f of gen.failures) console.log(`::warning::visual for take ${f.takeId} fell back to footage — ${f.reason}`);
+  // The old report had a `failures` array and a "falls back to footage" message.
+  // Both are gone: falls are reported above with their layer and reason, and
+  // footage is no longer what a segment falls back TO — typography is.
   if (gen.intents.requested === 0) {
-    console.log("::warning::the writer requested no visuals for this script — every segment is footage");
+    console.log("::warning::the writer requested no graphics for this script — every segment is carried by typography");
   }
 
   // ── the opening ──────────────────────────────────────────────────────────

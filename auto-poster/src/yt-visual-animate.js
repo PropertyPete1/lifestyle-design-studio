@@ -31,7 +31,7 @@
 import { join } from "path";
 import sharp from "sharp";
 
-import { renderCardPng, revealLabels } from "./yt-card-render.js";
+import { renderCardPng, revealLabels, countUp } from "./yt-card-render.js";
 import { frameDifference } from "./yt-visual-qc.js";
 import { planReveals, MAX_STATIC_SECONDS } from "./yt-reveal-timing.js";
 
@@ -79,10 +79,33 @@ export function buildStates({ type, labels, reveals, beats, seconds }) {
     // One continuous value rather than a sequence. The count starts at the
     // reveal and eases into the figure; after that the card holds, and the push
     // is what keeps it alive.
+    //
+    // ONLY STEPS THAT ACTUALLY CHANGE THE FIGURE ARE EMITTED.
+    //
+    // Twelve evenly-spaced steps assumes the figure has twelve distinguishable
+    // values, and a small one does not: "$3" eased over twelve steps rounds to
+    // 1,1,2,2,3,3,3,3,3,3,3,3 — four distinct frames and nine identical pairs.
+    // A value with no digits at all ("Free") is one frame repeated twelve times.
+    //
+    // That is not merely wasteful. The dead-state check compares consecutive
+    // states that should differ and rejects the graphic when they do not, so on
+    // the first live build a perfectly good CALLOUT was thrown away with
+    // "2 reveal state(s) rendered identically" and the segment fell back to
+    // typography. The check was right; the state list was wrong.
+    //
+    // Steps inside the label's fade band are kept regardless, because there the
+    // label opacity is what changes even when the digits have settled.
     const start = reveals[0]?.at ?? 0;
+    const value = labels[0] ?? "";
     push(0, { visible: 1, current: 0, pulse: 0, progress: 0 });
+    let lastShown = countUp(value, 0);
     for (let i = 1; i <= COUNT_STEPS; i++) {
-      push(start + (COUNT_SECONDS * i) / COUNT_STEPS, { visible: 1, current: 0, pulse: 0, progress: i / COUNT_STEPS });
+      const progress = i / COUNT_STEPS;
+      const shown = countUp(value, progress);
+      const inLabelFade = progress > 0.6 && progress < 0.95;
+      if (shown === lastShown && !inLabelFade && i !== COUNT_STEPS) continue;
+      lastShown = shown;
+      push(start + (COUNT_SECONDS * i) / COUNT_STEPS, { visible: 1, current: 0, pulse: 0, progress });
     }
   } else {
     // Open on the empty frame — header and furniture, no content. The first
