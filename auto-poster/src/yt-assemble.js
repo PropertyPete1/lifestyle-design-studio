@@ -268,7 +268,18 @@ function escapeAss(text) {
 
 // ─── execution ──────────────────────────────────────────────────────────────
 
-function ffmpeg(args, timeoutMs = 60 * 60_000) {
+/**
+ * EXPORTED so the visual builder uses this runner and not its own.
+ *
+ * yt-visual-build.js takes ffmpeg as an argument — that is what lets the whole
+ * decision table be tested without encoding anything — and the pipeline has to
+ * hand it something. Handing it a second, locally-defined runner would mean two
+ * timeout policies and two error shapes for the same binary, and the first
+ * attempt at this handed it an identifier that did not exist at all: the build
+ * reached the visual stage after eight minutes of transcription and died on
+ * `ReferenceError: ffmpeg is not defined`.
+ */
+export function ffmpeg(args, timeoutMs = 60 * 60_000) {
   return execFileSync("ffmpeg", args, {
     timeout: timeoutMs,
     stdio: ["pipe", "pipe", "pipe"],
