@@ -31,10 +31,10 @@
 import { join } from "path";
 import sharp from "sharp";
 
-import { renderCardPng, revealLabels, countUp } from "./yt-card-render.js";
-import { renderMapPng, mapRevealLabels, highlightedRoadIds } from "./yt-map-render.js";
+import { renderCardPng, revealLabels, countUp, renderBeatPng } from "./yt-card-render.js";
+import { renderMapPng, mapRevealLabels, mapRevealTargets, highlightedRoadIds } from "./yt-map-render.js";
 import { frameDifference } from "./yt-visual-qc.js";
-import { planReveals, MAX_STATIC_SECONDS } from "./yt-reveal-timing.js";
+import { planReveals, planMapReveals, MAX_STATIC_SECONDS } from "./yt-reveal-timing.js";
 
 /** How long the overshoot on a landing reveal lasts. */
 const LAND_SECONDS = 0.14;
@@ -113,6 +113,9 @@ export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [
     // here animated whichever road happened to be i-th while labelling it with a
     // different name.
     let placeOrder = 0;
+    // Context reveals share at:0 and are one instant, so the running counters
+    // still work — each simply lands in the same state as the ones beside it and
+    // finish() collapses them.
     reveals.forEach((r, i) => {
       // Positional FALLBACK, not zero. planReveals always sets `index`, but
       // defaulting a missing one to 0 made every reveal animate roadIds[0] — one
@@ -316,7 +319,11 @@ export async function renderAnimatedGraphic({
   // MAP reveals in NARRATION order — subject first — because nothing about a map
   // requires its roads to arrive before its places. Cards keep the given order:
   // a table fills top-down whatever sequence its rows are named in.
-  const timing = planReveals({ labels, words, seconds, order: isMap ? "narration" : "given" });
+  // MAP has its own planner: its labels split into things the take names and
+  // things it shows for orientation, and only the first population is a reveal.
+  const timing = isMap
+    ? planMapReveals({ targets: mapRevealTargets(spec), words, seconds })
+    : planReveals({ labels, words, seconds });
 
   // The session's already-drawn roads, and whether this map is even in the same
   // region as the last one.
@@ -786,4 +793,38 @@ function median(xs) {
 
 function round(n) {
   return Math.round(n * 1000) / 1000;
+}
+
+/**
+ * A wordless brand beat, animated.
+ *
+ * Replaces renderTypographyClip as the floor. Same contract — one mp4 of exactly
+ * `seconds` — and deliberately far cheaper: the geometry is a function of phase,
+ * so there is no transcript to read, no phrase to window, and nothing that could
+ * ever contradict the caption underneath it.
+ */
+export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FPS, ffmpeg, writeFileSync, startPhase = 0 }) {
+  const total = Math.max(0.2, Number(seconds) || 0);
+  // One state per ~0.4s: enough that the arcs visibly travel, few enough that a
+  // long beat does not cost more rasterises than a real graphic.
+  const count = Math.max(2, Math.round(total / 0.4));
+  const stem = `beat-${String(index).padStart(3, "0")}`;
+  const framePaths = [];
+
+  for (let i = 0; i < count; i++) {
+    const png = await renderBeatPng(startPhase + i * 37);
+    const p = join(dir, `${stem}-s${String(i).padStart(3, "0")}.png`);
+    writeFileSync(p, png);
+    framePaths.push(p);
+  }
+
+  const listPath = join(dir, `${stem}.txt`);
+  const per = round(total / count);
+  const lines = framePaths.map((f) => `file '${f}'\nduration ${per}`);
+  lines.push(`file '${framePaths[framePaths.length - 1]}'`);
+  writeFileSync(listPath, lines.join("\n"));
+
+  const out = join(dir, `${stem}.mp4`);
+  ffmpeg(concatArgs(listPath, out, { seconds: total, fps }));
+  return { path: out, seconds: round(total), stateCount: count };
 }

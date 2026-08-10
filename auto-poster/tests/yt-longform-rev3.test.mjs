@@ -58,18 +58,25 @@ describe("1. a script with zero visual intents", () => {
     assert.equal(coverage.uncoveredSeconds, 0, "some runtime has no picture");
   });
 
-  test("all of it is typography, and the report says WHY rather than calling it a choice", async () => {
+  test("all of it is the wordless beat, and the report says WHY rather than calling it a choice", async () => {
     const { coverage } = await planVisuals(segments);
-    assert.equal(coverage.byPct.typography, 100);
+    assert.equal(coverage.byPct.beat, 100);
     assert.equal(coverage.fallbackCount, 3);
     for (const f of coverage.fallbacks) assert.equal(f.reason, REASON.NO_INTENT);
   });
 
-  test("a deliberate TYPOGRAPHY intent is NOT counted as a fallback", async () => {
+  test("TYPOGRAPHY is no longer a visual type a script can ask for", async () => {
+    // Removed as a layer entirely: the video burns a caption of every word, so a
+    // sentence slide duplicated the text underneath it — and in card 7 the two
+    // spelled the same sentence differently. A script that still asks for it must
+    // be REJECTED and reported, not quietly honoured.
     const asked = segments.map((s) => ({ ...s, visualIntent: "TYPOGRAPHY" }));
-    const { coverage } = await planVisuals(asked);
-    assert.equal(coverage.byPct.typography, 100);
-    assert.equal(coverage.fallbackCount, 0, "an explicit choice must not read as a failure");
+    const { coverage, intents } = await planVisuals(asked);
+    assert.equal(intents.rejected, asked.length, "every TYPOGRAPHY intent is rejected, not honoured");
+    // The picture is still total — the beat covers what the rejected intent would
+    // have, which is the property that makes removing a layer safe.
+    assert.equal(coverage.byPct.beat, 100);
+    assert.equal(coverage.byPct.typography ?? 0, 0, "nothing sets the narration as prose any more");
   });
 });
 
@@ -107,7 +114,10 @@ describe("2. Pexels is down, or returns garbage", () => {
     });
     const covered = planned[0].visualBlocks.reduce((n, b) => n + b.seconds, 0);
     assert.ok(Math.abs(covered - 10) < 0.05);
-    assert.equal(planned[0].visualPrimary, "typography");
+    // The beat, never a sentence slide — the fallback chain ends in brand
+    // geometry now, so nothing can put words on screen that disagree with the
+    // captions.
+    assert.equal(planned[0].visualPrimary, "beat");
     assert.equal(coverage.fallbacks[0].reason, REASON.STOCK_NO_MATCH, "the fallback must name the cause");
   });
 

@@ -13,22 +13,22 @@
  * things that can serve a segment rather than the substrate all of them sit on.
  * So this module does not "select" visuals against a budget. It COVERS: every
  * voiceover second gets a block, from whichever layer can serve it, and
- * typography is the floor that guarantees the covering is total.
+ * a wordless brand beat is the floor that guarantees the covering is total.
  *
  * THE ORDER OF PREFERENCE, per segment:
  *   1. the writer's graphic intent      — animated, timed to the narration
  *   2. the writer's FOOTAGE intent      — stock, if keywords and a clip survive
  *   3. owned long-form footage          — if Peter has put any in the folder
- *   4. kinetic typography               — always available, therefore the floor
+ *   4. a wordless brand beat            — always available, therefore the floor
  *
  * Every fall from one rung to the next is RECORDED WITH ITS REASON. A video
- * where nine segments quietly became typography because the Pexels key expired
+ * where nine segments quietly became beats because the Pexels key expired
  * looks, in the finished file, exactly like a video where the writer asked for
- * typography nine times. Only one of those is a bug, and the difference has to
+ * a beat nine times. Only one of those is a bug, and the difference has to
  * survive into the build report.
  */
 
-import { GRAPHIC_TYPES, TYPOGRAPHY, FOOTAGE, attachIntents } from "./yt-visual-intent.js";
+import { GRAPHIC_TYPES, FOOTAGE, attachIntents } from "./yt-visual-intent.js";
 import { SCENE_MAX_SECONDS } from "./yt-config.js";
 
 /**
@@ -91,7 +91,7 @@ export const REASON = {
  * Fill `total` seconds by CHAINING sources, none owning more than the scene cap.
  *
  * `sources` is preference order, primary first. Nothing may follow itself, so a
- * long take becomes graphic → typography → stock → typography rather than one
+ * long take becomes graphic → stock → graphic → beat rather than one
  * held shot. Typography is always last in the list and never exhausts, which is
  * what makes the chain always completable and a blank segment still impossible.
  *
@@ -108,7 +108,7 @@ function chainBlocks(total, sources, { sceneMax, startAfter = null }) {
   while (remaining >= MIN_BLOCK_SECONDS) {
     // The first source that is not what just played and still has time in it.
     let pick = sources.find((s) => s.kind !== last && (budget.get(s.kind) ?? 0) >= MIN_BLOCK_SECONDS);
-    // Everything else is spent: typography carries the rest rather than
+    // Everything else is spent: the beat carries the rest rather than
     // repeating a source, and if even that is somehow the last kind we accept the
     // repeat over leaving the screen empty.
     if (!pick) pick = sources.find((s) => (budget.get(s.kind) ?? 0) >= MIN_BLOCK_SECONDS) || sources[sources.length - 1];
@@ -157,7 +157,7 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
   // because a second graphic block re-rendered the same animation from its first
   // state — the table would build, cut away, and build again from nothing. The
   // cost of that cap was the regression it caused: graphic share fell from 63% to
-  // 27% and typography rose to 60%, so a thirty-second take got eight seconds of
+  // 27% and filler rose to 60%, so a thirty-second take got eight seconds of
   // the thing that teaches it and twenty-two seconds of its own words restated.
   //
   // Now each graphic block carries a WINDOW into one continuous render, so
@@ -165,7 +165,14 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
   if (isGraphic && graphicOk) sources.push({ kind: "graphic", seconds: MAX_GRAPHIC_SECONDS, block: { visual: seg.visual, animated: true } });
   if (stockSeconds > 0) sources.push({ kind: "stock", seconds: stockSeconds, block: {} });
   if (ownedSeconds > 0) sources.push({ kind: "owned", seconds: ownedSeconds, block: {} });
-  sources.push({ kind: "typography", seconds: Infinity, block: { reason: REASON.REMAINDER } });
+  // THE FLOOR IS A WORDLESS BEAT, not the narration set as prose.
+  //
+  // Typography-as-filler is removed entirely: the video burns a caption of every
+  // word, so a sentence slide duplicated the text underneath it — and in card 7
+  // the slide and the caption spelled the same sentence differently, which is a
+  // screen disagreeing with itself. Brand geometry holds the frame instead, and
+  // carries no claim that could contradict anything.
+  sources.push({ kind: "beat", seconds: Infinity, block: { reason: REASON.REMAINDER } });
 
   if (isGraphic && graphicOk) {
     const chained = chainBlocks(remaining, sources, { sceneMax, startAfter });
@@ -181,8 +188,6 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
     // a designed fall to a verification failure sends the reader hunting for a
     // bug that is not there.
     reason = graphicReason || REASON.GRAPHIC_FAILED;
-  } else if (seg.visual === TYPOGRAPHY) {
-    primary = "typography";
   } else if (seg.visual === FOOTAGE) {
     if (stockSeconds > 0) {
       const chained = chainBlocks(remaining, sources, { sceneMax, startAfter });
@@ -201,7 +206,7 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
       reason = stockReason || ((seg.visualSpec?.keywords || []).length === 0 ? REASON.NO_KEYWORDS : REASON.STOCK_NO_MATCH);
     }
   } else {
-    // No intent at all. Owned footage if it exists, typography otherwise —
+    // No intent at all. Owned footage if it exists, a beat otherwise —
     // and either way this is a take the writer said nothing about, which is
     // worth reporting even though the picture will be fine.
     fellBack = true;
@@ -216,10 +221,10 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
 
   // THE FLOOR. Whatever is left — the whole segment, or the tail of a graphic
   // that could only carry twenty seconds of a thirty-second take — is
-  // typography. This is the line that makes a blank segment impossible.
+  // a beat. This is the line that makes a blank segment impossible.
   if (remaining >= MIN_BLOCK_SECONDS) {
     // THE FLOOR OBEYS THE CAP TOO — no exceptions, which is the whole point of a
-    // cap. This line used to push the entire remainder as ONE typography block
+    // cap. This line used to push the entire remainder as ONE block
     // and bypass the chain completely, which is how revision 6 shipped a 20.92s
     // scene while reporting an 8s cap. A segment with no graphic and no stock
     // reaches here holding its whole length.
@@ -227,12 +232,12 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
     let n = 0;
     while (left >= MIN_BLOCK_SECONDS) {
       const take = round(Math.min(sceneMax, left));
-      blocks.push({ kind: "typography", seconds: take, reason: primary ? REASON.REMAINDER : reason, phase: n++ });
+      blocks.push({ kind: "beat", seconds: take, reason: primary ? REASON.REMAINDER : reason, phase: n++ });
       left = round(left - take);
     }
     // A stub under one block joins the last scene rather than flashing.
     if (left > 0 && blocks.length > 0) blocks[blocks.length - 1].seconds = round(blocks[blocks.length - 1].seconds + left);
-    if (!primary) primary = "typography";
+    if (!primary) primary = "beat";
     remaining = 0;
   } else if (remaining > 0 && blocks.length > 0) {
     // Too short to be its own block: give it to the last one.
@@ -240,9 +245,9 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
     remaining = 0;
   } else if (remaining > 0) {
     // A segment shorter than MIN_BLOCK_SECONDS with nothing else in it. Still
-    // gets typography — a 1.2s take is a real take and a black 1.2s is a hole.
-    blocks.push({ kind: "typography", seconds: round(remaining), reason });
-    primary = "typography";
+    // gets a beat — a 1.2s take is a real take and a black 1.2s is a hole.
+    blocks.push({ kind: "beat", seconds: round(remaining), reason });
+    primary = "beat";
     remaining = 0;
   }
 
@@ -262,8 +267,8 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
   // without exceptions, so instead of merging past the cap the two share the
   // time — 9s becomes 4.5 + 4.5, both under it and neither a flash.
   //
-  // The second half becomes TYPOGRAPHY when the kind cannot safely repeat. A
-  // graphic splits into phases and typography re-windows its phrases, but stock
+  // The second half becomes a BEAT when the kind cannot safely repeat. A
+  // graphic splits into phases and a beat walks its geometry, but stock
   // and owned footage point at one clip, so two adjacent blocks would replay it
   // from the start — the very loop phases were built to stop.
   for (let i = 0; i < blocks.length; i++) {
@@ -272,10 +277,10 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
     const half = round(b.seconds / 2);
     const rest = round(b.seconds - half);
     b.seconds = half;
-    const repeatable = b.kind === "graphic" || b.kind === "typography";
+    const repeatable = b.kind === "graphic" || b.kind === "beat";
     blocks.splice(i + 1, 0, repeatable
       ? { ...b, seconds: rest }
-      : { kind: "typography", seconds: rest, reason: REASON.REMAINDER });
+      : { kind: "beat", seconds: rest, reason: REASON.REMAINDER });
   }
 
   let at = 0;
@@ -312,11 +317,11 @@ function pushFootageBlocks(blocks, seconds) {
  *
  * This is what Peter reads instead of scrubbing a twelve-minute file: how much
  * of the runtime each layer carried, and every fall with its reason. The
- * per-layer seconds are the answer to "is this a graphics video or a typography
+ * per-layer seconds are the answer to "is this a graphics video or a beat
  * video", which is the judgement revision 3 is actually asking him to make.
  */
 export function coverageReport(planned) {
-  const bySource = { graphic: 0, typography: 0, stock: 0, owned: 0 };
+  const bySource = { graphic: 0, beat: 0, stock: 0, owned: 0 };
   const fallbacks = [];
   let voiceoverSeconds = 0;
   let uncovered = 0;
@@ -350,7 +355,7 @@ export function coverageReport(planned) {
     bySource,
     byPct: {
       graphic: pct(bySource.graphic),
-      typography: pct(bySource.typography),
+      beat: pct(bySource.beat),
       stock: pct(bySource.stock),
       owned: pct(bySource.owned),
     },

@@ -347,3 +347,75 @@ export function findEmphasisWords(words, { minGap = 2.0, limit = 12 } = {}) {
 function round(n) {
   return Math.round(n * 1000) / 1000;
 }
+
+/**
+ * Reveal schedule for a MAP, which has two populations of label and only one of
+ * them is a reveal at all.
+ *
+ * MEASURED ON CARD 7. Of 44 map reveals, 25 name something the take actually says
+ * and 19 do not — and the 19 are not failures. A map of Shavano Park labels Castle
+ * Hills and Downtown so the viewer knows WHERE Shavano Park is; those labels are
+ * orientation, and the take never names them because the sentence is not about
+ * them. Even-pacing them through the take made the frame keep sprouting
+ * neighbourhoods nobody had mentioned, at arbitrary moments.
+ *
+ * So they arrive WITH THE BASE, immediately, as the setting the subject lands in.
+ *
+ * This deviates from "anchor them to the nearest semantically-related phrase",
+ * and deliberately: for orientation labels there is no related phrase to find —
+ * the sentence is about somewhere else entirely — and guessing one would put a
+ * neighbourhood on screen at a moment chosen by a similarity score. Arriving with
+ * the base is what orientation is FOR, and it makes the sync number honest by
+ * measuring only the labels that could ever have synced.
+ *
+ * @param {Array} targets  [{kind,id,label,aliases}] from mapRevealTargets
+ * @returns {{ reveals, spokenCount, syncedCount, contextCount, source }}
+ */
+export function planMapReveals({ targets = [], words = null, seconds = 0, leadIn = 0.4 } = {}) {
+  const total = Math.max(0, Number(seconds) || 0);
+  if (targets.length === 0 || total <= 0) {
+    return { reveals: [], spokenCount: 0, syncedCount: 0, contextCount: 0, source: "none" };
+  }
+
+  const first = Math.min(leadIn, total * 0.15);
+  // Later than a card's 0.82. A map's base persists, so a label landing at 92% of
+  // the take is still readable in the frame it arrives in — and cutting it off
+  // would send a genuinely-spoken label back to the context pile.
+  const last = Math.max(first, total * 0.92);
+  const usable = Array.isArray(words) && words.length > 0;
+
+  const timed = targets.map((t, index) => {
+    if (!usable) return { index, target: t, at: null, spoken: false };
+    // Longest alias first, so "interstate 35" beats a bare "35" when both appear.
+    for (const alias of t.aliases || [t.label]) {
+      const found = findWordTime(words, alias, { after: 0 });
+      if (found !== null && found <= last) return { index, target: t, at: found, spoken: true, via: alias };
+    }
+    return { index, target: t, at: null, spoken: false };
+  });
+
+  const context = timed.filter((t) => !t.spoken);
+  const spoken = timed.filter((t) => t.spoken).sort((a, b) => a.at - b.at);
+
+  const reveals = [
+    // Orientation, all at the base. They are one moment, not a sequence.
+    ...context.map((t) => ({ index: t.index, label: t.target.label, at: 0, synced: false, context: true })),
+    ...spoken.map((t) => ({ index: t.index, label: t.target.label, at: round(Math.min(Math.max(t.at, first), last)), synced: true, via: t.via })),
+  ];
+
+  // Only the spoken ones may collide with each other; the context block is a
+  // single instant by design and must not be spread by the gap rule.
+  for (let i = context.length + 1; i < reveals.length; i++) {
+    const min = reveals[i - 1].at + MIN_REVEAL_GAP;
+    if (reveals[i].at < min) reveals[i] = { ...reveals[i], at: round(Math.min(min, last)), nudged: true };
+  }
+
+  return {
+    reveals,
+    spokenCount: spoken.length,
+    syncedCount: spoken.length,
+    contextCount: context.length,
+    source: usable ? (spoken.length > 0 ? "word-timing" : "even-pacing") : "even-pacing",
+    beats: motionBeats(reveals, total),
+  };
+}

@@ -203,10 +203,71 @@ export function partialPathFor(feature, project, progress) {
  * the other would mean matching a road by its display text, which is the sort of
  * join that breaks the day a label gains a suffix.
  */
+/**
+ * The reveal set with everything the matcher needs: what to draw, and every way
+ * the narration might name it.
+ *
+ * Parallel to mapRevealLabels rather than replacing it, because the plain label
+ * list is what the renderer titles things with and what the existing tests and
+ * probes read.
+ */
+export function mapRevealTargets(spec) {
+  const { roads, places } = loadMarket(spec.market || "san_antonio");
+  const highlight = new Set(spec.highlight || []);
+  const labelIds = new Set(spec.labels || []);
+  return [
+    ...roads.features.filter((f) => highlight.has(f.properties.id)).map((f) => ({
+      kind: "road",
+      id: f.properties.id,
+      label: f.properties.label,
+      aliases: roadAliases(f.properties.id, f.properties.label),
+    })),
+    ...places.filter((p) => labelIds.has(p.id)).map((p) => ({
+      kind: "place",
+      id: p.id,
+      label: p.label,
+      // A place is said by its name; no alias table earns its keep here.
+      aliases: [p.label],
+    })),
+  ];
+}
+
 export function highlightedRoadIds(spec) {
   const { roads } = loadMarket(spec.market || "san_antonio");
   const highlight = new Set(spec.highlight || []);
   return roads.features.filter((f) => highlight.has(f.properties.id)).map((f) => f.properties.id);
+}
+
+/**
+ * The ways a script actually says each road's name.
+ *
+ * MEASURED, NOT GUESSED. Card 7 synced 14 of 44 map reveals, and classifying every
+ * miss against the real take text showed the largest fixable class was not timing
+ * at all — it was vocabulary. The spec says "I-35"; Peter says "Interstate 35" in
+ * s4t2 and just "35" in s5t3. normaliseWord turns the label into "i35", which
+ * matches neither, and the digits path refuses two-digit numbers because "35"
+ * collides with every other number in a script full of them.
+ *
+ * So the label carries its spoken forms. "Loop 410" is said as "410" and as "the
+ * loop"; 1604 is said bare far more often than as "Loop 1604".
+ *
+ * Ordered longest-first so the most specific phrase wins: "interstate 35" is
+ * better evidence than "35" and should be preferred when both are present.
+ */
+export const ROAD_ALIASES = {
+  loop410: ["loop 410", "interstate 410", "410 loop", "410"],
+  loop1604: ["loop 1604", "highway 1604", "1604"],
+  us281: ["highway 281", "us 281", "281"],
+  i35: ["interstate 35", "i 35", "ih 35", "i-35", "35"],
+  i10: ["interstate 10", "i 10", "ih 10", "i-10", "10"],
+  i37: ["interstate 37", "i 37", "ih 37", "i-37", "37"],
+};
+
+/** Every spoken form of a road, longest first, or just its label. */
+export function roadAliases(id, label) {
+  const list = ROAD_ALIASES[id] || [];
+  const all = [label, ...list].filter(Boolean);
+  return [...new Set(all.map((x) => String(x)))].sort((a, b) => b.length - a.length);
 }
 
 export function mapRevealLabels(spec) {

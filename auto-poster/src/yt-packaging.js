@@ -93,7 +93,12 @@ const SEO_OPENER_SYSTEM = `You write the first two lines of a YouTube descriptio
 RULES:
 - Exactly two lines, separated by a newline.
 - The first line must naturally contain the target search phrase (or all its meaningful words). Not stuffed — a sentence a person would write.
-- The second line says concretely what the video delivers.
+- The second line says concretely what the video delivers, AND EVERY SPECIFIC IT
+  NAMES MUST APPEAR IN THE CHAPTER LIST YOU ARE GIVEN. Do not name a
+  neighbourhood, district, fee, or comparison the chapters do not cover. If the
+  chapters are about Stone Oak and Timberwood Park, do not write "Alamo Heights
+  and Hollywood Park" because they sound like they belong — that is a promise the
+  video breaks in its first two lines.
 - No hype words, no emoji, no "in this video". Under 140 characters per line.
 - Never promise a DM or "sending" anything without naming text/email/description.
 
@@ -101,16 +106,55 @@ Return ONLY valid JSON, no preamble and no code fences:
 {"line1": "...", "line2": "..."}`;
 
 /**
+ * Proper-noun specifics the opener claims that the video never mentions.
+ *
+ * Deliberately narrow: capitalised multi-word phrases, which is what a
+ * neighbourhood, district or highway name looks like, and the class of thing that
+ * turns an opener into a broken promise. Single capitalised words are skipped —
+ * they are sentence starts and common nouns far more often than places, and a
+ * guard that fires on "Your" would be turned off within a week.
+ */
+export function inventedSpecifics(opener, { chapters = [], title = "" } = {}) {
+  const haystack = `${chapters.map((c) => c.title).join(" ")} ${title}`.toLowerCase();
+  const claims = String(opener).match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b/g) || [];
+  const out = [];
+  for (const c of claims) {
+    const norm = c.toLowerCase();
+    // A phrase counts as delivered when the chapters name it, or name every
+    // meaningful word in it — "Stone Oak vs Timberwood" covers "Stone Oak".
+    if (haystack.includes(norm)) continue;
+    const words = norm.split(/\s+/).filter((w) => w.length > 3);
+    if (words.length > 0 && words.every((w) => haystack.includes(w))) continue;
+    if (!out.includes(c)) out.push(c);
+  }
+  return out;
+}
+
+/**
  * Generate the opener, or null — the description falls back to leading with
  * the hook, which is what it did before this existed. Never throws.
  */
-export async function generateSeoOpener(topic, modelCall = callModel) {
+export async function generateSeoOpener(topic, modelCall = callModel, { chapters = [] } = {}) {
   try {
+    // THE CHAPTERS ARE THE POINT OF THIS ARGUMENT.
+    //
+    // Without them the opener was written from the search phrase alone, so it
+    // invented specifics that sounded right for the topic and were not in the
+    // video. Card 7's own packaging critic scored promise_match 5 and named it:
+    // the description opened promising Alamo Heights, Hollywood Park and Shavano
+    // Park comparisons, and the chapters are a military/VA piece about 1604, ISD
+    // lines and MUD fees. A publish candidate cannot break its promise in the
+    // first two lines, and the model could not have known better — it was never
+    // shown what the video contains.
+    const chapterList = chapters.map((c) => `- ${c.title}`).join("\n");
     const raw = await modelCall(
       SEO_OPENER_SYSTEM,
       `TARGET SEARCH PHRASE: ${topic.query}
 VIDEO TITLE: ${topic.title}
 MARKET: ${topic.market === "austin" ? "Austin" : "San Antonio"}, Texas
+
+WHAT THE VIDEO ACTUALLY COVERS, chapter by chapter:
+${chapterList || "(no chapters — describe only what the title claims)"}
 
 Write the two lines.`
     );
@@ -120,6 +164,16 @@ Write the two lines.`
     if (!line1 || !line2) return null;
     if (line1.length > 140 || line2.length > 140) return null;
     const opener = `${line1}\n${line2}`;
+    // THE GUARD, because a prompt instruction is not a constraint.
+    //
+    // Any capitalised multi-word place the opener names must appear in the
+    // chapters or the title. This is the check that would have caught card 7's
+    // opener; the instruction above would not have, on its own.
+    const invented = inventedSpecifics(opener, { chapters, title: topic.title });
+    if (invented.length > 0) {
+      console.warn(`[YTPackaging] SEO opener named ${invented.map((x) => `"${x}"`).join(", ")} which the chapters never cover — falling back to the hook`);
+      return null;
+    }
     if (!openerCarriesQuery(opener, topic.query)) {
       console.warn(`[YTPackaging] SEO opener dropped the query terms — falling back to the hook`);
       return null;
@@ -581,9 +635,11 @@ export async function buildPackaging({
 
   // D5/D6 run once, outside the retry loop — retries are about the TITLE, and
   // burning opener/chapter calls on each retitle would triple their cost.
-  const seoOpener = await generateSeoOpener(topic, modelCall);
+  // Chapters FIRST, so the opener can be written against what the video actually
+  // covers rather than against the search phrase alone.
   const chapterResult = await curiosityChapters(chapters, modelCall);
   chapters = chapterResult.chapters;
+  const seoOpener = await generateSeoOpener(topic, modelCall, { chapters });
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const { text: description, missing } = buildDescription({

@@ -46,7 +46,7 @@ export function phaseArgs(input, output, from, seconds) {
     output,
   ];
 }
-import { renderAnimatedGraphic, renderTypographyClip, assertAnimated } from "./yt-visual-animate.js";
+import { renderAnimatedGraphic, renderBeatClip, assertAnimated } from "./yt-visual-animate.js";
 import { fetchStockClip, stockEnabled } from "./yt-stock.js";
 import { MAP } from "./yt-visual-intent.js";
 import { mapSpecForIntent, MapSession } from "./yt-map-render.js";
@@ -104,6 +104,8 @@ export async function buildVisuals(plan, {
   const graphicTimings = [];
   // ONE session per video, so map two knows what map one drew.
   const mapSession = new MapSession();
+  // Walks so consecutive beats differ, video-wide.
+  let beatPhase = 0;
 
   const renderGraphic = async (seg) => {
     const i = index++;
@@ -251,8 +253,25 @@ export async function buildVisuals(plan, {
         continue;
       }
       if (block.kind === "stock" && seg.stockClip) {
-        broll.push({ generated: true, preRendered: true, kind: "stock", sourcePath: seg.stockClip, seconds: block.seconds, contentHash: seg.stockContentHash, fileName: "stock.mp4" });
-        if (seg.stockCredit) stockCredits.push(seg.stockCredit);
+        // EACH STOCK BLOCK GETS ITS OWN WINDOW, for the same reason each graphic
+        // phase does. Card 7 ran stock -> beat -> stock inside one take with both
+        // stock blocks pointing at the same file and no offset, so the viewer saw
+        // the identical eight seconds twice. 11 uses mapped to 7 unique clips.
+        const from = round2((block.phase || 0) * block.seconds);
+        let path = seg.stockClip;
+        if ((block.phase || 0) > 0) {
+          path = join(dir, `stock-${seg.takeId}-${block.phase}.mp4`);
+          try {
+            ffmpeg(phaseArgs(seg.stockClip, path, from, block.seconds));
+          } catch (err) {
+            animationFailures.push({ takeId: seg.takeId, type: "STOCK", reason: `window ${block.phase} failed (${err.message}) — plays from the start` });
+            path = seg.stockClip;
+          }
+        }
+        broll.push({ generated: true, preRendered: true, kind: "stock", sourcePath: path, seconds: block.seconds, contentHash: seg.stockContentHash, window: from, fileName: "stock.mp4" });
+        // Credit once per CLIP, not once per window — the same footage used twice
+        // is one photographer to thank, and creditsBlock dedupes anyway.
+        if (seg.stockCredit && (block.phase || 0) === 0) stockCredits.push(seg.stockCredit);
         continue;
       }
       if (block.kind === "owned") {
@@ -268,38 +287,31 @@ export async function buildVisuals(plan, {
         block.reason = REASON.NO_OWNED_FOOTAGE;
       }
 
-      // TYPOGRAPHY, and anything that fell through to it.
-      const i = index++;
-      // Only the words spoken while THIS block is on screen, retimed to start at
-      // zero. Handing every block the whole take made each one set the same
-      // phrases, which was invisible while a segment held one typography block
-      // and would have repeated itself three times over under the scene cap.
-      const allWords = timings.get(seg.takeId);
-      const from = block.startAt ?? 0;
-      const to = from + block.seconds;
-      const windowed = Array.isArray(allWords)
-        ? allWords.filter((w) => w.start >= from && w.start < to).map((w) => ({ ...w, start: round2(w.start - from), end: round2(w.end - from) }))
-        : null;
-      const clip = await renderTypographyClip({
-        // Fall back to the whole take only when the window caught nothing, which
-        // means this block sits in a silence — better the wrong phrases than a
-        // blank scene.
-        text: windowed && windowed.length > 0 ? windowed.map((w) => w.word).join(" ") : seg.text,
-        words: windowed && windowed.length > 0 ? windowed : null,
-        seconds: block.seconds,
-        eyebrow: seg.visualSpec?.eyebrow || null,
-        dir,
-        index: i,
-        ffmpeg,
-        writeFileSync,
-      });
-      if (clip) {
-        broll.push({ generated: true, preRendered: true, kind: "typography", sourcePath: clip.path, seconds: block.seconds, fileName: "typography.mp4" });
-      } else {
-        // Only reachable with empty narration, which the script validator
-        // already rejects. Reported rather than silently short.
-        animationFailures.push({ takeId: seg.takeId, type: "TYPOGRAPHY", reason: "no narration text to set" });
+      // BEAT — the wordless floor, and anything that fell through to it.
+      if (block.kind === "beat") {
+        const bi = index++;
+        try {
+          const beat = await renderBeatClip({
+            seconds: block.seconds, dir, index: bi, ffmpeg, writeFileSync,
+            // Phase carries across the video so two beats are never the same
+            // geometry, the way two stock blocks are never the same window.
+            startPhase: beatPhase,
+          });
+          beatPhase += 313;
+          broll.push({ generated: true, preRendered: true, kind: "beat", sourcePath: beat.path, seconds: block.seconds, fileName: "beat.mp4" });
+        } catch (err) {
+          animationFailures.push({ takeId: seg.takeId, type: "BEAT", reason: err.message });
+        }
+        continue;
       }
+
+      // NOTHING ELSE SETS THE NARRATION AS PROSE.
+      //
+      // The typography branch lived here and is gone. Every block kind is handled
+      // above, and the plan's floor is a beat, so reaching this line means the
+      // planner emitted a kind the builder does not know — which is a wiring bug
+      // and must be loud rather than silently leaving the segment short.
+      animationFailures.push({ takeId: seg.takeId, type: String(block.kind || "?").toUpperCase(), reason: `no builder for block kind "${block.kind}"` });
     }
 
     segments.push({ ...seg, broll });
