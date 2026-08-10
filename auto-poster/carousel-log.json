@@ -946,6 +946,189 @@
         "anyFailed": false,
         "pendingRecheck": true
       }
+    },
+    {
+      "date": "2026-08-10",
+      "timestamp": "2026-08-10T14:51:02.760Z",
+      "pillar": "real_estate_education",
+      "topic": "Builder contracts strip five buyer protections",
+      "hook": "Signing a builder's contract in Texas quietly removes five protections you think you already have.",
+      "closeType": "dm",
+      "keyword": "LIST",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Builder contracts strip five buyer protections",
+        "hook": "Signing a builder's contract in Texas quietly removes five protections you think you already have.",
+        "map": [
+          "The vanishing option period",
+          "Earnest money at risk",
+          "No appraisal safety net",
+          "Closing dates that move",
+          "The buried fifth clause"
+        ],
+        "points": [
+          {
+            "title": "Your Option Period Shrinks",
+            "body": [
+              "The standard Texas contract buys you days to inspect and walk away for a small fee.",
+              "Builder contracts often give you a short review window and no exit at all."
+            ],
+            "loop": "The deposit part is worse."
+          },
+          {
+            "title": "Earnest Money Gets Big",
+            "body": [
+              "Resale deals usually run about 1 percent down at signing.",
+              "Builders often want 5 percent or more, and it goes nonrefundable much sooner."
+            ],
+            "loop": "Appraisals are where it stings."
+          },
+          {
+            "title": "No Appraisal Protection",
+            "body": [
+              "If the house appraises under your contract price, you cover that gap in cash.",
+              "Walk away instead and the builder usually keeps what you put down."
+            ],
+            "loop": "Your closing date isn't yours either."
+          },
+          {
+            "title": "Closing Date Is Theirs",
+            "body": [
+              "Most builder contracts let them push the finish date back, sometimes by months.",
+              "Your rate lock expires and your lease ends. Neither of those is their problem."
+            ],
+            "loop": "There's a fifth one buried."
+          },
+          {
+            "title": "The Clause In The Back",
+            "body": [
+              "Nearly every builder contract sends disputes to arbitration instead of a courtroom.",
+              "Their own warranty replaces what you'd normally get, and most of it runs out fast."
+            ],
+            "loop": "One kind of home flips this."
+          }
+        ],
+        "cta": {
+          "payoff": "the current new builds list with the already-finished homes flagged"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 7,
+        "loops": 8,
+        "cta": 8,
+        "worst_problem": "The map slide immediately names all five items the hook withheld, deflating the curiosity gap the hook just opened and leaving only 'the buried fifth clause' as real pull.",
+        "fix": "Rewrite the map so at least three entries are consequence-framed teases rather than plain labels (e.g. 'The 5% you can't get back'), so the reader still has to swipe to learn what each protection actually is."
+      },
+      "attemptsUsed": 2,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 360327799,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-10T14:54:03.410Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7672415639990029581"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 360327804,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-10T14:54:03.545Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492593619779100672"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 360327858,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-10T14:54:03.682Z",
+          "publicUrl": "https://www.instagram.com/p/Db3Rdu9CKQk/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 360327899,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-10T14:54:03.811Z",
+          "publicUrl": "https://www.instagram.com/p/Db3RdE8CLul/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 360327904,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-10T14:54:03.953Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492593618201784320"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 360327942,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-10T14:54:04.090Z",
+          "publicUrl": "https://www.instagram.com/p/Db3RYaoDRhX/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 360327945,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-10T14:54:04.222Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122112875223400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 360327947,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-10T14:54:04.350Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492593621041516545"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-10T14:54:04.351Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
