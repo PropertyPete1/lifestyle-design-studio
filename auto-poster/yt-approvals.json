@@ -972,8 +972,16 @@
       },
       "videoId": "vid-2026-08-07-d5cddf9d",
       "decision": "reject",
+      "notes": "Superseded — rebuild as revision 8 with the merged PR #77 work (music, micro-punches, per-window stock, SFX). Same takes.",
       "decidedAt": "2026-08-10T23:00:18.226Z",
-      "notes": "Superseded — rebuild as revision 8 with the merged PR #77 work (music, micro-punches, per-window stock, SFX). Same takes."
+      "actedAt": "2026-08-10T23:21:09.832Z",
+      "actedAction": "review_recorded",
+      "actedResult": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "approved": false,
+        "notes": "Superseded — rebuild as revision 8 with the merged PR #77 work (music, micro-punches, per-window stock, SFX). Same takes.",
+        "reworkQueued": true
+      }
     }
   ]
 }

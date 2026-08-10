@@ -31,7 +31,7 @@
       "metricoolPostId": 360495222,
       "blogId": "4807109",
       "approved": false,
-      "revision": 7,
+      "revision": 8,
       "reworks": [
         {
           "revision": 1,
@@ -80,6 +80,14 @@
           "youtubeUrl": "https://static.metricool.com/video/3748462/202608/70ec9f6d18ce4332.mp4",
           "rejectedAt": "2026-08-10T19:57:06.068Z",
           "notes": "revision 7 (PR #74): graphic phases, cap with no exceptions, named credits"
+        },
+        {
+          "revision": 7,
+          "uploadedAt": "2026-08-10T21:05:42.164Z",
+          "metricoolPostId": 360495222,
+          "youtubeUrl": "https://static.metricool.com/video/3748462/202608/e769951901614f7d.mp4",
+          "rejectedAt": "2026-08-10T23:21:09.831Z",
+          "notes": "Superseded — rebuild as revision 8 with the merged PR #77 work (music, micro-punches, per-window stock, SFX). Same takes."
         }
       ],
       "thumbnailText": "THE FEE NOBODY MENTIONS",
