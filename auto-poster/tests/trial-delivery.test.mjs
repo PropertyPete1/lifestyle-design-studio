@@ -324,6 +324,27 @@ describe("every trial outcome reaches a human", () => {
     );
   });
 
+  test("trial-variants is newest-first — the order the Trial tab check depends on", async () => {
+    // The dashboard-smoke Trial parity check picks "the newest" record and asks
+    // whether the tab shows it. It used to index from the END of the array,
+    // which is the OLDEST here, so it validated a July record on a day with a
+    // fresh variant and would have passed with nothing rendered since. That
+    // check now picks by generatedAt; this pins the ordering either way, so a
+    // flipped sort surfaces here rather than as a silently useless smoke test.
+    const { mergeTrialVariants } = await import("../merge-strategies.mjs");
+    const merged = mergeTrialVariants(
+      { variants: [{ date: "2026-08-10", window: "pm", generatedAt: "2026-08-10T15:00:00Z" }] },
+      { variants: [{ date: "2026-07-26", window: "am", generatedAt: "2026-07-26T20:00:00Z" }] },
+      () => {}
+    );
+    assert.equal(merged.variants[0].date, "2026-08-10", "trial-variants must stay newest-first");
+    assert.equal(
+      merged.variants[merged.variants.length - 1].date,
+      "2026-07-26",
+      "indexing from the end of this log yields the OLDEST record"
+    );
+  });
+
   test("the success path actually calls the notifier", () => {
     const text = readFileSync(join(SRC, "trial-variant-main.js"), "utf-8");
     const tail = text.slice(text.lastIndexOf("✓ DONE"));
