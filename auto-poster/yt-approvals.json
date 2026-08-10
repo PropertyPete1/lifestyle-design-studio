@@ -960,6 +960,17 @@
         "videoId": "vid-2026-08-07-d5cddf9d",
         "notes": "revision 7 (PR #74): graphic phases, cap with no exceptions, named credits"
       }
+    },
+    {
+      "requestId": "video_review-2026-08-10-5d1a880a",
+      "kind": "video_review",
+      "requestedAt": "2026-08-10T21:05:51.492Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "Best North San Antonio Neighborhoods for Veterans, Compared",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
