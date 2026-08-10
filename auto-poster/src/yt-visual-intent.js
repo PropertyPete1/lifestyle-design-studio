@@ -77,9 +77,16 @@ export const GRAPHIC_TYPES = [MAP, COMPARISON, NUMBER_BREAKDOWN, LIST, TIMELINE,
  * (a word, not a row) — so it is listed separately rather than folded into
  * GRAPHIC_TYPES, which several callers use to mean "goes through yt-card-render".
  */
-export const DRAWN_TYPES = [...GRAPHIC_TYPES, TYPOGRAPHY];
+export const DRAWN_TYPES = [...GRAPHIC_TYPES];
 
-export const VISUAL_TYPES = [...GRAPHIC_TYPES, TYPOGRAPHY, FOOTAGE];
+/**
+ * TYPOGRAPHY IS NOT IN THIS LIST ANY MORE, so a script asking for it is rejected
+ * as an unknown type and reported — the same as any other intent the renderers
+ * cannot satisfy. The constant is kept exported because the rejection path and
+ * the report both name it, and because a script written before this change should
+ * fail loudly rather than throw on a missing symbol.
+ */
+export const VISUAL_TYPES = [...GRAPHIC_TYPES, FOOTAGE];
 
 /** Why an intent was dropped. Reported, never thrown. */
 export const REJECTED = {

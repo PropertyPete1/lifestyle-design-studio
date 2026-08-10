@@ -515,3 +515,56 @@ export async function renderCardPng(type, spec, reveal) {
 }
 
 export const CARD_TYPES = Object.keys(LAYOUTS);
+
+/**
+ * BRAND BEAT — the wordless floor.
+ *
+ * Typography-as-filler is gone: the video already burns a caption of every word,
+ * so a full-sentence slide duplicated the text underneath it, and in card 7 the
+ * slide and the caption spelled the same sentence differently, which is a screen
+ * disagreeing with itself. Nothing may now set the narration as on-screen prose.
+ *
+ * But a scene window still has to hold a picture when a graphic is not due and
+ * Pexels has nothing to give, and black is not a picture. So: brand geometry with
+ * NO WORDS — concentric arcs and a travelling rule, gold on black, drawn from the
+ * same palette as the cards. It reads as the channel's identity rather than as
+ * content, which is exactly right for a beat whose job is to hold the frame
+ * without competing with what is being said.
+ *
+ * `phase` walks the geometry so consecutive beats are not the same still.
+ */
+export function beatSvg({ phase = 0 } = {}) {
+  const cx = CARD_WIDTH / 2;
+  const cy = CARD_HEIGHT / 2;
+  const t = ((Number(phase) || 0) % 1000) / 1000;
+
+  const arcs = [0, 1, 2, 3].map((i) => {
+    const r = 180 + i * 165;
+    // Each ring rotates at its own rate, so the figure never repeats a pose.
+    const rot = (t * 360 * (i % 2 === 0 ? 1 : -1)) / (i + 1.5);
+    const span = 120 + i * 22;
+    const a0 = (rot * Math.PI) / 180;
+    const a1 = ((rot + span) * Math.PI) / 180;
+    const p0 = [cx + r * Math.cos(a0), cy + r * Math.sin(a0)];
+    const p1 = [cx + r * Math.cos(a1), cy + r * Math.sin(a1)];
+    const large = span > 180 ? 1 : 0;
+    return `<path d="M${p0[0].toFixed(1)},${p0[1].toFixed(1)} A${r},${r} 0 ${large} 1 ${p1[0].toFixed(1)},${p1[1].toFixed(1)}" fill="none" stroke="${ACCENT}" stroke-opacity="${(0.5 - i * 0.08).toFixed(2)}" stroke-width="${(9 - i * 1.4).toFixed(1)}" stroke-linecap="round"/>`;
+  }).join("\n  ");
+
+  // A travelling rule across the lower third, the same device the cards use for
+  // a title underline, so the beat belongs to the same system.
+  const ruleW = CONTENT_W * 0.42;
+  const ruleX = MARGIN + (CONTENT_W - ruleW) * ((Math.sin(t * Math.PI * 2) + 1) / 2);
+  const dot = 26 + Math.sin(t * Math.PI * 4) * 8;
+
+  return frame(`
+  ${arcs}
+  <circle cx="${cx}" cy="${cy}" r="${dot.toFixed(1)}" fill="${ACCENT}" fill-opacity="0.85"/>
+  <circle cx="${cx}" cy="${cy}" r="${(dot * 2.6).toFixed(1)}" fill="none" stroke="${ACCENT}" stroke-opacity="0.22" stroke-width="3"/>
+  ${rule(ruleX, CARD_HEIGHT - 300, ruleW, ACCENT_DIM, 5)}
+`);
+}
+
+export async function renderBeatPng(phase = 0) {
+  return sharp(Buffer.from(beatSvg({ phase }))).png({ compressionLevel: 9 }).toBuffer();
+}
