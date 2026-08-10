@@ -943,6 +943,17 @@
         "videoId": "vid-2026-08-07-d5cddf9d",
         "notes": "revision 6 (PRs #71, #72): scene cap, subject-first maps, map memory, variety across cuts, Pexels link, CALLOUT beat fix"
       }
+    },
+    {
+      "requestId": "video_review-2026-08-10-32c6d411",
+      "kind": "video_review",
+      "requestedAt": "2026-08-10T18:43:27.296Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "North San Antonio Neighborhoods: 281 Traffic, School Lines, MUD Fees",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
