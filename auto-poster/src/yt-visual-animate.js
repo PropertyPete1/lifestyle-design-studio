@@ -32,6 +32,7 @@ import { join } from "path";
 import sharp from "sharp";
 
 import { renderCardPng, revealLabels, countUp } from "./yt-card-render.js";
+import { renderMapPng, mapRevealLabels, highlightedRoadIds } from "./yt-map-render.js";
 import { frameDifference } from "./yt-visual-qc.js";
 import { planReveals, MAX_STATIC_SECONDS } from "./yt-reveal-timing.js";
 
@@ -60,6 +61,18 @@ export const GRAPHIC_FPS = 30;
  */
 const PUSH_TRAVEL = 0.045;
 
+/**
+ * How long a road takes to draw itself, and in how many states.
+ *
+ * 0.7s is about the length of a spoken road name ("Loop sixteen-oh-four"), which
+ * is the point: the road finishes arriving as Peter finishes naming it. Five
+ * states is the fewest that reads as drawing rather than as growing in jumps —
+ * measured against the 1604 ring, which is the longest geometry here at 351
+ * points and therefore the least forgiving.
+ */
+const ROAD_DRAW_SECONDS = 0.7;
+const ROAD_DRAW_STEPS = 5;
+
 /** CALLOUT counts up over this long, in this many steps. */
 const COUNT_SECONDS = 1.6;
 const COUNT_STEPS = 12;
@@ -71,9 +84,70 @@ const COUNT_STEPS = 12;
  * without re-deriving durations, and so a state that would render for zero
  * frames can be dropped here rather than becoming a silent ffmpeg no-op.
  */
-export function buildStates({ type, labels, reveals, beats, seconds }) {
+export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [], spec = null }) {
   const states = [];
   const push = (at, s) => states.push({ at: round(Math.max(0, Math.min(seconds, at))), ...s });
+
+  if (type === "MAP") {
+    // A MAP reveals in two currencies. A road ARRIVES over time — it draws
+    // itself along its own length — so one reveal becomes several states. A
+    // place LANDS instantly, marker and label together.
+    //
+    // roadIds is the highlighted roads in the order mapRevealLabels emitted
+    // them, so reveal i < roadIds.length is a road and the rest are places.
+    // Roads that have finished stay finished: progress accumulates rather than
+    // being recomputed, or an earlier road would vanish as the next one drew.
+    const drawn = {};
+    for (const id of roadIds) drawn[id] = 0;
+    let placesShown = 0;
+
+    push(0, { roadProgress: { ...drawn }, places: 0, visible: 0, pulse: 0 });
+
+    reveals.forEach((r, i) => {
+      if (i < roadIds.length) {
+        const id = roadIds[i];
+        for (let k = 1; k <= ROAD_DRAW_STEPS; k++) {
+          const t = k / ROAD_DRAW_STEPS;
+          drawn[id] = t;
+          // Eased so the tip decelerates into place instead of stopping dead.
+          push(r.at + (ROAD_DRAW_SECONDS * k) / ROAD_DRAW_STEPS, {
+            roadProgress: { ...drawn },
+            places: placesShown,
+            visible: i + 1,
+            pulse: k === ROAD_DRAW_STEPS ? 1 : 0,
+          });
+        }
+      } else {
+        placesShown++;
+        push(r.at, { roadProgress: { ...drawn }, places: placesShown, visible: i + 1, pulse: 1 });
+        push(r.at + LAND_SECONDS, { roadProgress: { ...drawn }, places: placesShown, visible: i + 1, pulse: 0 });
+      }
+    });
+
+    // Motion beats. The narration dwells on a map more than on a card — "and
+    // everything north of that line is Comal ISD" is four seconds with nothing
+    // new to draw — so the halo re-blooms on the last landed place rather than
+    // the frame going still. Nothing is invented: the emphasis moves, the
+    // content does not.
+    for (const b of beats) {
+      const landedRoads = Math.min(roadIds.length, reveals.filter((r, i) => i < roadIds.length && r.at + ROAD_DRAW_SECONDS <= b.at).length);
+      const landedPlaces = reveals.filter((r, i) => i >= roadIds.length && r.at <= b.at).length;
+      if (landedRoads === 0 && landedPlaces === 0) continue;
+      const at = {};
+      roadIds.forEach((id, i) => { at[id] = i < landedRoads ? 1 : (drawn[id] ?? 0); });
+      push(b.at, { roadProgress: at, places: landedPlaces, visible: landedRoads + landedPlaces, pulse: 0.6, beat: true });
+      push(b.at + LAND_SECONDS, { roadProgress: at, places: landedPlaces, visible: landedRoads + landedPlaces, pulse: 0, beat: true });
+    }
+
+    // Settle on the finished map: every road complete, every label placed, no
+    // halo left glowing on whichever place happened to be last.
+    const settleAt = Math.max(0, seconds - Math.max(0.5, seconds * 0.08));
+    const allDrawn = {};
+    for (const id of roadIds) allDrawn[id] = 1;
+    push(settleAt, { roadProgress: allDrawn, places: labels.length - roadIds.length, visible: Infinity, pulse: 0, settle: true });
+
+    return finish(states, seconds);
+  }
 
   if (type === "CALLOUT") {
     // One continuous value rather than a sequence. The count starts at the
@@ -97,12 +171,46 @@ export function buildStates({ type, labels, reveals, beats, seconds }) {
     // label opacity is what changes even when the digits have settled.
     const start = reveals[0]?.at ?? 0;
     const value = labels[0] ?? "";
+    // Keeping steps in the label's fade band only helps if there IS a label.
+    // Without one those steps render identically — nothing in the frame reads
+    // `progress` once the digits have settled — and the dead-state check
+    // rejected the graphic for it, which is how revision 4 lost a CALLOUT to
+    // typography a second time after the first dedupe fix.
+    const hasLabel = Boolean(String(spec?.label ?? "").trim());
+
+    // A FIGURE WITH NO DIGITS CANNOT COUNT, so it arrives instead.
+    //
+    // "Free", "N/A", "Exempt" are legitimate CALLOUT values and countUp returns
+    // them unchanged at every progress. Counting them produces a first and last
+    // state that rasterise identically — and with no label there is nothing else
+    // in the frame reading progress, so the dead-state check rejects the graphic
+    // and the segment loses its visual. Revision 4 lost a CALLOUT this way, and
+    // the first fix for it (deduping the count) did not help: deduping a
+    // sequence whose every entry is the same leaves the two endpoints, which are
+    // still the same. The reveal has to change KIND, not resolution.
+    //
+    // So: an empty frame, then the figure landing on it. Measured at 0.12 mean
+    // absolute difference, six times the dead-state floor.
+    if (!/\d/.test(value)) {
+      push(0, { visible: 0, current: -1, pulse: 0, progress: 0 });
+      push(start, { visible: 1, current: 0, pulse: 1, progress: 1 });
+      push(start + LAND_SECONDS, { visible: 1, current: 0, pulse: 0, progress: 1 });
+      for (const b of beats) {
+        if (b.at <= start) continue;
+        push(b.at, { visible: 1, current: 0, pulse: 0.6, progress: 1, beat: true });
+        push(b.at + LAND_SECONDS, { visible: 1, current: 0, pulse: 0, progress: 1, beat: true });
+      }
+      const settleAt = Math.max(0, seconds - Math.max(0.5, seconds * 0.08));
+      push(settleAt, { visible: Infinity, current: -1, pulse: 0, progress: 1, settle: true });
+      return finish(states, seconds);
+    }
+
     push(0, { visible: 1, current: 0, pulse: 0, progress: 0 });
     let lastShown = countUp(value, 0);
     for (let i = 1; i <= COUNT_STEPS; i++) {
       const progress = i / COUNT_STEPS;
       const shown = countUp(value, progress);
-      const inLabelFade = progress > 0.6 && progress < 0.95;
+      const inLabelFade = hasLabel && progress > 0.6 && progress < 0.95;
       if (shown === lastShown && !inLabelFade && i !== COUNT_STEPS) continue;
       lastShown = shown;
       push(start + (COUNT_SECONDS * i) / COUNT_STEPS, { visible: 1, current: 0, pulse: 0, progress });
@@ -134,6 +242,17 @@ export function buildStates({ type, labels, reveals, beats, seconds }) {
   const settleAt = Math.max(0, seconds - Math.max(0.5, seconds * 0.08));
   push(settleAt, { visible: Infinity, current: -1, pulse: 0, progress: 1, settle: true });
 
+  return finish(states, seconds);
+}
+
+/**
+ * Sort, collapse coincident states, and give each one its hold.
+ *
+ * Shared by the card path and the map path because the concat list has the same
+ * requirements either way: strictly increasing starts, and no state that would
+ * render for zero frames.
+ */
+function finish(states, seconds) {
   states.sort((a, b) => a.at - b.at);
 
   // Collapse states that begin at the same moment (a beat landing on a reveal,
@@ -169,14 +288,20 @@ export async function renderAnimatedGraphic({
   writeFileSync,
   renderPng = renderCardPng,
 }) {
-  const labels = revealLabels(type, spec);
+  // MAP is the one type whose renderer and label set live elsewhere: its reveal
+  // unit is geometry, not a row of text, so both come from yt-map-render.js.
+  const isMap = type === "MAP";
+  const roadIds = isMap ? highlightedRoadIds(spec) : [];
+  const labels = isMap ? mapRevealLabels(spec) : revealLabels(type, spec);
+  const draw = isMap ? (t, sp, st) => renderMapPng(sp, st) : renderPng;
+
   const timing = planReveals({ labels, words, seconds });
-  const states = buildStates({ type, labels, reveals: timing.reveals, beats: timing.beats, seconds });
+  const states = buildStates({ type, labels, reveals: timing.reveals, beats: timing.beats, seconds, roadIds, spec });
 
   const stem = `anim-${String(index).padStart(3, "0")}-${String(type).toLowerCase()}`;
   const framePaths = [];
   for (let i = 0; i < states.length; i++) {
-    const png = await renderPng(type, spec, states[i]);
+    const png = await draw(type, spec, states[i]);
     const p = join(dir, `${stem}-s${String(i).padStart(3, "0")}.png`);
     writeFileSync(p, png);
     framePaths.push(p);
@@ -205,11 +330,28 @@ export async function renderAnimatedGraphic({
   // beat that happens to rasterise identically is harmless; demanding a visible
   // change there reported two dead states on a graphic where every reveal drew
   // correctly, because `progress` moves for beats on a type that never reads it.
+  // What MUST move the pixels, per type. For a card it is the number of items
+  // drawn; for CALLOUT the counting figure; for a MAP either a road advancing or
+  // a place landing, which `mapMotion` folds into one comparable number.
   const readsProgress = type === "CALLOUT";
+  const mapMotion = (st) =>
+    `${Object.values(st.roadProgress || {}).map((v) => v.toFixed(2)).join(",")}|${st.places ?? 0}`;
   const stateDiffs = [];
   for (let i = 1; i < framePaths.length; i++) {
-    const mustChange = states[i].visible !== states[i - 1].visible
-      || (readsProgress && states[i].progress !== states[i - 1].progress);
+    // THE SETTLE IS EXEMPT. It exists to clear a pulse and undim anything held
+    // back, so on a card whose previous state was already unpulsed and fully
+    // visible it is legitimately identical — and demanding a change there
+    // rejected sound graphics for finishing tidily.
+    if (states[i].settle) continue;
+    const mustChange = isMap
+      ? mapMotion(states[i]) !== mapMotion(states[i - 1])
+      : states[i].visible !== states[i - 1].visible
+        // FIGURE, not progress. Comparing progress asserted that two moments
+        // showing the identical figure must nonetheless differ in pixels — true
+        // of any small value, which reaches its final digits early and then
+        // holds. That demanded motion the design never promised and rejected
+        // sound CALLOUTs for it.
+        || (readsProgress && states[i].figure !== states[i - 1].figure);
     if (!mustChange) continue;
     const d = await frameDifference(framePaths[i - 1], framePaths[i]);
     stateDiffs.push({ from: i - 1, to: i, visible: states[i].visible, diff: round(d) });

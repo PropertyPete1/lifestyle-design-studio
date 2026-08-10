@@ -66,7 +66,9 @@ export const REASON = {
   // A DESIGNED decline, not a failure. MAP's reveal unit is a route drawing,
   // which the card reveal model does not express, so it is not animated and
   // says so rather than fake-animating. Approved by Peter, 2026-08-10.
-  MAP_NOT_ANIMATED: "MAP is not animated yet — no map was rendered",
+  // A MAP whose spec named nothing at all. Distinct from "named things we have
+  // no geometry for", which reports the names so the gap is actionable.
+  MAP_EMPTY_SPEC: "MAP intent named no places or roads",
 };
 
 /**

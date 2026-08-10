@@ -120,6 +120,105 @@ function pathFor(feature, project) {
     .join(" ");
 }
 
+/**
+ * The same road, drawn only `progress` of the way along itself.
+ *
+ * THIS IS THE MAP'S REVEAL UNIT. A card reveals by showing one more row; a map
+ * reveals by a road ARRIVING — 1604 drawing itself around the north side while
+ * Peter names it. That is the thing revision 2 was praised for and the reason
+ * MAP could not stay a fallback.
+ *
+ * Done by truncating the projected polyline rather than with
+ * stroke-dasharray/dashoffset. The dash approach needs the path's rendered
+ * length, which means either asking a DOM for getTotalLength (there isn't one)
+ * or estimating it — and an estimate that is 5% long leaves every road stopping
+ * short of where it should, on every state, invisibly. Truncating the point list
+ * is exact, needs no measurement, and renders identically in librsvg.
+ *
+ * MULTI-PART GEOMETRY DRAWS IN ORDER. Loop 1604 is a MultiLineString of several
+ * TIGER segments; the length budget is spent across them in sequence, so the
+ * ring draws as one continuous gesture instead of every fragment growing at
+ * once, which reads as static noise resolving rather than a road being traced.
+ */
+export function partialPathFor(feature, project, progress) {
+  // Non-finite progress means FINISHED, not blank. `?? 1` does not catch NaN —
+  // only null and undefined — so a NaN arriving from arithmetic upstream used to
+  // make the length budget NaN and return an empty path: the road silently
+  // disappeared for that state, with no error. Failing toward drawing the whole
+  // road keeps a bad number visible as a timing glitch instead of a missing road.
+  const raw = Number(progress);
+  const p = Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : 1;
+  if (p >= 1) return pathFor(feature, project);
+  if (p <= 0) return "";
+
+  const lines = feature.geometry.type === "MultiLineString" ? feature.geometry.coordinates : [feature.geometry.coordinates];
+  const projected = lines.map((line) => line.map(([lon, lat]) => project(lon, lat)));
+
+  const segLen = ([ax, ay], [bx, by]) => Math.hypot(bx - ax, by - ay);
+  let total = 0;
+  for (const line of projected) for (let i = 1; i < line.length; i++) total += segLen(line[i - 1], line[i]);
+  if (total <= 0) return "";
+
+  let budget = total * p;
+  const parts = [];
+  for (const line of projected) {
+    if (budget <= 0) break;
+    const pts = [line[0]];
+    for (let i = 1; i < line.length && budget > 0; i++) {
+      const l = segLen(line[i - 1], line[i]);
+      if (l <= budget) {
+        pts.push(line[i]);
+        budget -= l;
+      } else {
+        // Land mid-segment so the tip advances smoothly between states rather
+        // than snapping from vertex to vertex — TIGER vertices are far enough
+        // apart on the rings that snapping is visible.
+        const t = budget / l;
+        const [ax, ay] = line[i - 1];
+        const [bx, by] = line[i];
+        pts.push([Math.round((ax + (bx - ax) * t) * 10) / 10, Math.round((ay + (by - ay) * t) * 10) / 10]);
+        budget = 0;
+      }
+    }
+    if (pts.length > 1) parts.push(pts.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.join(",")}`).join(""));
+  }
+  return parts.join(" ");
+}
+
+/**
+ * The ordered things a map reveals, as the words that would name them.
+ *
+ * Roads first, then places. Not arbitrary: a map establishes its skeleton and
+ * then hangs neighbourhoods off it, and a script describes it in that order
+ * because that is the order it makes sense in. planReveals matches each of these
+ * against the narration, so a script that happens to name Stone Oak before 1604
+ * still gets its reveals in the spoken order — the list is the candidate set,
+ * not the schedule.
+ */
+/**
+ * The highlighted roads, in the order mapRevealLabels emits them.
+ *
+ * Separate from mapRevealLabels because the animator needs the IDS to key
+ * progress by, and the LABELS to match against narration — and deriving one from
+ * the other would mean matching a road by its display text, which is the sort of
+ * join that breaks the day a label gains a suffix.
+ */
+export function highlightedRoadIds(spec) {
+  const { roads } = loadMarket(spec.market || "san_antonio");
+  const highlight = new Set(spec.highlight || []);
+  return roads.features.filter((f) => highlight.has(f.properties.id)).map((f) => f.properties.id);
+}
+
+export function mapRevealLabels(spec) {
+  const { roads, places } = loadMarket(spec.market || "san_antonio");
+  const highlight = new Set(spec.highlight || []);
+  const labelIds = new Set(spec.labels || []);
+  return [
+    ...roads.features.filter((f) => highlight.has(f.properties.id)).map((f) => f.properties.label),
+    ...places.filter((p) => labelIds.has(p.id)).map((p) => p.label),
+  ];
+}
+
 // ─── chrome ─────────────────────────────────────────────────────────────────
 
 function esc(s) {
@@ -218,12 +317,33 @@ function leader(x, y, anchorY) {
  * @param {string} [spec.title]      the claim the map is making
  * @param {string} [spec.eyebrow]    small label above the title
  */
-export function renderMapSvg(spec) {
+/**
+ * Render the map, optionally part-way through its reveal.
+ *
+ * `state` absent means the finished map — every road drawn, every label placed —
+ * which is what the still probes and the sample generator want. With a state the
+ * same layout is drawn part-way through: roads truncated to their own progress,
+ * places revealed up to a count.
+ *
+ * THE LAYOUT IS COMPUTED FROM THE SPEC, NEVER FROM THE STATE. Framing, bounds,
+ * projection and label de-confliction all run over the FULL set of roads and
+ * places on every state. If they were computed from what is currently visible,
+ * the projection would change as roads arrived and the whole map would drift and
+ * rescale under the reveals — every previously-drawn road sliding to a new
+ * position, which reads as a bug and would defeat the reveal check by making
+ * every state differ everywhere.
+ */
+export function renderMapSvg(spec, state = null) {
   const { roads, places } = loadMarket(spec.market || "san_antonio");
   const highlight = new Set(spec.highlight || []);
   const labelIds = new Set(spec.labels || []);
 
   const labelled = places.filter((p) => labelIds.has(p.id));
+
+  // How much of each highlighted road is drawn, and how many places have landed.
+  // No state means the finished map.
+  const roadProgress = state?.roadProgress || null;
+  const placesShown = state ? (state.places ?? labelled.length) : labelled.length;
 
   // Frame on the highlighted roads when there are any — a map of the two rings
   // should fill the screen with the two rings, not with the whole county
@@ -241,21 +361,37 @@ export function renderMapSvg(spec) {
   const subject = roads.features
     .filter((f) => highlight.has(f.properties.id))
     .map((f) => {
-      const d = pathFor(f, project);
+      const p = roadProgress ? (roadProgress[f.properties.id] ?? 0) : 1;
+      if (p <= 0) return "";
+      const d = partialPathFor(f, project, p);
+      if (!d) return "";
       // Drawn twice: a wide, faint pass reads as a glow at 1080p without
       // needing an SVG filter, which librsvg renders inconsistently.
       return `<path d="${d}" fill="none" stroke="${ACCENT}" stroke-width="${HIGHLIGHT_WIDTH * 3.2}" stroke-opacity="0.13" stroke-linejoin="round" stroke-linecap="round"/>
   <path d="${d}" fill="none" stroke="${ACCENT}" stroke-width="${HIGHLIGHT_WIDTH}" stroke-linejoin="round" stroke-linecap="round"/>`;
     })
+    .filter(Boolean)
     .join("\n  ");
 
   const markerParts = [];
   const rawLabels = [];
-  for (const p of labelled) {
+  labelled.forEach((p, i) => {
+    if (i >= placesShown) return;
     const [x, y] = project(p.lon, p.lat);
+    // The MOST RECENTLY landed place carries the emphasis halo. This is the
+    // closest honest equivalent to the "area fill" the brief asked for: the
+    // vendored TIGER extract has no place POLYGONS, only points, so a filled
+    // boundary would be a shape this data cannot support and a claim about where
+    // a neighbourhood ends that we are in no position to make. A soft radial
+    // around the point reads as "around here", which is true.
+    const justLanded = state && i === placesShown - 1;
+    if (justLanded) {
+      markerParts.push(`<circle cx="${x}" cy="${y}" r="86" fill="${ACCENT}" fill-opacity="0.07"/>
+  <circle cx="${x}" cy="${y}" r="52" fill="${ACCENT}" fill-opacity="0.10"/>`);
+    }
     markerParts.push(marker(x, y, { emphasis: p.kind === "base" || p.kind === "landmark" }));
     rawLabels.push({ x: x + 24, y: y + 11, text: p.label, kind: p.kind });
-  }
+  });
 
   // Road badges join the SAME collision pass as the place labels. Placed
   // independently they landed on top of them — the "1604" badge sat under
@@ -263,6 +399,9 @@ export function renderMapSvg(spec) {
   // number the shot exists to communicate.
   for (const f of roads.features) {
     if (!highlight.has(f.properties.id)) continue;
+    // The badge waits until the road it names has essentially finished drawing.
+    // A "1604" plate floating beside a quarter-drawn line labels nothing.
+    if (roadProgress && (roadProgress[f.properties.id] ?? 0) < 0.92) continue;
     const anchor = badgeAnchor(f, project);
     if (anchor) rawLabels.push({ x: anchor[0], y: anchor[1], text: f.properties.label, kind: "road" });
   }
@@ -344,8 +483,8 @@ function expandForPlaces(bounds, places, margin = 0.02) {
   return out;
 }
 
-export async function renderMapPng(spec) {
-  return sharp(Buffer.from(renderMapSvg(spec))).png({ compressionLevel: 9 }).toBuffer();
+export async function renderMapPng(spec, state = null) {
+  return sharp(Buffer.from(renderMapSvg(spec, state))).png({ compressionLevel: 9 }).toBuffer();
 }
 
 /** Loose match: "Stone Oak", "stone oak", "stone_oak" and "Stone Oak area" all hit. */

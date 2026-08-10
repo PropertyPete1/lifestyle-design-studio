@@ -468,6 +468,14 @@ export function calloutSvg({ eyebrow, value, label, footnote }, reveal) {
   const valueW = Math.min(measure(v.lines[0], v.size, BOLD_SERIF), CONTENT_W);
   const shown = countUp(v.lines[0], progress);
 
+  // visible: 0 means the figure HAS NOT ARRIVED YET, and the frame shows only
+  // its header. Every other card type reveals by drawing one more item; a
+  // CALLOUT has exactly one, so without this it has no "before" state at all and
+  // a value that cannot count — "Free", "Exempt", "N/A" — animates by literally
+  // nothing changing. A null state (the still path) is unaffected: rs() reports
+  // Infinity there, not 0.
+  const arrived = state.visible !== 0;
+
   // The label lands after the figure has finished counting — it names what the
   // number was, and naming it before it settles gives the answer away.
   const labelOpacity = Math.max(0, Math.min(1, (progress - 0.6) / 0.3));
@@ -477,9 +485,9 @@ export function calloutSvg({ eyebrow, value, label, footnote }, reveal) {
 
   return frame(`
   ${head.svg}
-  ${text(CARD_WIDTH / 2, top, shown, { size: v.size, family: SERIF, weight: "bold", fill: ACCENT, anchor: "middle" })}
-  ${rule(CARD_WIDTH / 2 - valueW / 2, top + 42, valueW * Math.max(0.05, progress), ACCENT_DIM, 4)}
-  ${labelLines}
+  ${arrived ? text(CARD_WIDTH / 2, top, shown, { size: v.size, family: SERIF, weight: "bold", fill: ACCENT, anchor: "middle" }) : ""}
+  ${arrived ? rule(CARD_WIDTH / 2 - valueW / 2, top + 42, valueW * Math.max(0.05, progress), ACCENT_DIM, 4) : ""}
+  ${arrived ? labelLines : ""}
   ${footnoteSvg(footnote)}
 `);
 }

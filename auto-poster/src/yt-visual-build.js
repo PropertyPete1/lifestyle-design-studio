@@ -21,6 +21,7 @@ import { planVisuals, REASON } from "./yt-visual-plan.js";
 import { renderAnimatedGraphic, renderTypographyClip, assertAnimated } from "./yt-visual-animate.js";
 import { fetchStockClip, stockEnabled } from "./yt-stock.js";
 import { MAP } from "./yt-visual-intent.js";
+import { mapSpecForIntent } from "./yt-map-render.js";
 
 /**
  * Transcribe one take's narration, or return null.
@@ -72,18 +73,34 @@ export async function buildVisuals(plan, {
   }
 
   let index = 0;
+  const graphicTimings = [];
 
   const renderGraphic = async (seg) => {
     const i = index++;
     try {
-      // MAP has its own renderer and is not a card, so it keeps the still path
-      // for now: its reveal unit is a route drawing, which the card reveal
-      // model does not express. It still gets the push, which is what it had.
-      if (seg.visual === MAP) return { ok: false, reason: REASON.MAP_NOT_ANIMATED };
+      // MAP resolves its spec against the vendored geometry BEFORE anything is
+      // rendered. The writer names places and roads in prose ("just past 1604",
+      // "Timberwood Park") and this is where those become ids we actually hold
+      // geometry for. A script can legitimately name a suburb the TIGER extract
+      // does not include, and when nothing resolves there is no map to draw —
+      // that is a content gap, not a bug, and it falls to typography with a
+      // reason that says which names failed rather than a bare null.
+      let spec = seg.visualSpec;
+      if (seg.visual === MAP) {
+        spec = mapSpecForIntent(seg.visualSpec, { market });
+        if (!spec) {
+          const named = [...(seg.visualSpec?.places || []), ...(seg.visualSpec?.lines || [])];
+          const reason = named.length
+            ? `no vendored geometry for ${named.slice(0, 4).map((n) => `"${n}"`).join(", ")}`
+            : REASON.MAP_EMPTY_SPEC;
+          animationFailures.push({ takeId: seg.takeId, type: MAP, reason });
+          return { ok: false, reason };
+        }
+      }
 
       const r = await renderAnimatedGraphic({
         type: seg.visual,
-        spec: seg.visualSpec,
+        spec,
         seconds: Math.min(seg.seconds, 22),
         words: timings.get(seg.takeId),
         dir,
@@ -103,6 +120,7 @@ export async function buildVisuals(plan, {
         return { ok: false, reason: verdict.failures.join("; ") };
       }
 
+      graphicTimings.push({ type: seg.visual, takeId: seg.takeId, syncedCount: r.syncedCount, revealCount: r.reveals.length, source: r.source });
       return {
         ok: true,
         path: r.path,
@@ -233,6 +251,32 @@ export async function buildVisuals(plan, {
       takes: timings.size,
       withTiming: [...timings.values()].filter(Boolean).length,
     },
+    // REVEAL SYNC, the number Peter kept asking for and the build kept not
+    // printing. Per-graphic sync was collected from the start and only ever
+    // returned, never logged, so the report said "24/24 takes transcribed" —
+    // which is about AVAILABILITY of timing — and left "how many reveals
+    // actually landed on a spoken word" invisible. They are different numbers
+    // and the second one is the one that says whether the animation is doing
+    // what it claims.
+    revealSync: (() => {
+      const g = graphicTimings.filter(Boolean);
+      const reveals = g.reduce((n, t) => n + (t.revealCount || 0), 0);
+      const synced = g.reduce((n, t) => n + (t.syncedCount || 0), 0);
+      return {
+        graphics: g.length,
+        reveals,
+        synced,
+        pct: reveals > 0 ? Math.round((synced / reveals) * 100) : 0,
+        evenPaced: g.filter((t) => t.source !== "word-timing").length,
+        byType: g.reduce((acc, t) => {
+          const k = t.type || "?";
+          acc[k] = acc[k] || { reveals: 0, synced: 0 };
+          acc[k].reveals += t.revealCount || 0;
+          acc[k].synced += t.syncedCount || 0;
+          return acc;
+        }, {}),
+      };
+    })(),
   };
 
   return { plan: { ...plan, segments, visuals: report }, report };
