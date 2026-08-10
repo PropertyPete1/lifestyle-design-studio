@@ -919,7 +919,13 @@
         "title": "Best North San Antonio Neighborhoods for Veterans, Compared",
         "requestId": "topic_pick-2026-08-07-d5cddf9d"
       },
-      "videoId": "vid-2026-08-07-d5cddf9d"
+      "videoId": "vid-2026-08-07-d5cddf9d",
+      "actedAt": "2026-08-10T15:01:47.108Z",
+      "actedAction": "superseded_by_rebuild",
+      "actedResult": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "notes": "revision 5 merged (PR #68): MAP animated, emphasis pulses connected, CALLOUT fixed, FOOTAGE keywords retrofitted — card 4 shows none of it"
+      }
     }
   ]
 }
