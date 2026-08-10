@@ -114,7 +114,7 @@ export function findWordTime(words, label, { after = 0 } = {}) {
  * that a slow stretch of narration never leaves a frozen frame, and they are
  * what the ~2s rule turns into at render time.
  */
-export function planReveals({ labels = [], words = null, seconds = 0, leadIn = 0.4 } = {}) {
+export function planReveals({ labels = [], words = null, seconds = 0, leadIn = 0.4, order = "given" } = {}) {
   const n = labels.length;
   const total = Math.max(0, Number(seconds) || 0);
   if (n === 0 || total <= 0) {
@@ -144,8 +144,70 @@ export function planReveals({ labels = [], words = null, seconds = 0, leadIn = 0
     reveals = even();
     source = "even-pacing";
   } else {
-    // Anchor each label to its word, walking forward so reveals stay in order.
     const evenly = even();
+
+    // ── narration order ──────────────────────────────────────────────────────
+    //
+    // SUBJECT FIRST, and the reason this mode exists at all.
+    //
+    // The default walks labels in GIVEN order, searching forward from the last
+    // match so reveals cannot cross. That is right for a table — rows fill
+    // top-down whatever order they are named in — and actively wrong for a map,
+    // where nothing says the roads must arrive before the places.
+    //
+    // Measured on card 5's Castle Hills map: mapRevealLabels lists roads first,
+    // Peter says "Castle Hills" as the FIRST WORD of the take (0.4s), and the
+    // forward-only cursor had already advanced past it matching "Loop 410" at
+    // 2.1s. So the subject of the sentence could never match, fell to even
+    // pacing, and landed at 9.4s — the "map spends its opening on the rings and
+    // the dot arrives ten seconds in" complaint, exactly, and 35 of the 44 map
+    // reveals that missed their word.
+    //
+    // Here each label is matched INDEPENDENTLY and the reveals are then sorted by
+    // when they are actually spoken. Whatever he names first animates first,
+    // which is the ordering rule stated as a consequence rather than imposed as
+    // one.
+    if (order === "narration") {
+      const timed = labels.map((label, i) => ({ index: i, label, found: findWordTime(words, label, { after: 0 }) }));
+      const spoken = timed
+        .filter((t) => t.found !== null && t.found <= last)
+        .sort((a, b) => a.found - b.found);
+      const silent = timed.filter((t) => t.found === null || t.found > last);
+
+      syncedCount = spoken.length;
+      reveals = [
+        ...spoken.map((t) => ({ index: t.index, label: t.label, at: round(Math.min(Math.max(t.found, first), last)), synced: true })),
+        // Never spoken, so there is no right moment — they follow the ones that
+        // were, in the order the spec gave them, rather than being dropped.
+        ...silent.map((t) => ({ index: t.index, label: t.label, at: null, synced: false })),
+      ];
+
+      // Place the unspoken ones after the last spoken reveal, spread to the tail.
+      const anchored = reveals.filter((r) => r.at !== null);
+      let cursorAt = anchored.length ? anchored[anchored.length - 1].at : first;
+      const gaps = reveals.filter((r) => r.at === null).length;
+      let k = 1;
+      reveals = reveals.map((r) => {
+        if (r.at !== null) return r;
+        const step = gaps > 0 ? (last - cursorAt) / (gaps + 1) : 0;
+        return { ...r, at: round(Math.min(cursorAt + step * k++, last)) };
+      });
+
+      source = syncedCount > 0 ? "word-timing" : "even-pacing";
+      for (let i = 1; i < reveals.length; i++) {
+        const min = reveals[i - 1].at + MIN_REVEAL_GAP;
+        if (reveals[i].at < min) reveals[i] = { ...reveals[i], at: round(Math.min(min, last)), nudged: true };
+      }
+      return {
+        reveals,
+        synced: syncedCount > 0,
+        syncedCount,
+        source,
+        beats: motionBeats(reveals, total),
+      };
+    }
+
+    // Anchor each label to its word, walking forward so reveals stay in order.
     let cursor = 0;
     reveals = labels.map((label, i) => {
       const found = findWordTime(words, label, { after: cursor });

@@ -511,6 +511,16 @@ async function buildFromRecordings(approvals, record) {
     console.log("[YTPipeline] stock: no clips used this build");
   }
 
+  const sc = gen.scenes;
+  console.log(
+    `[YTPipeline] scenes: ${sc.count} visual(s), average ${sc.averageSeconds}s, longest ${sc.longestSeconds}s ` +
+      `(cap ${sc.cap}s)` + (sc.overCap > 0 ? ` — ${sc.overCap} over cap` : "") +
+      (sc.sameKindRuns > 0 ? `; ${sc.sameKindRuns} same-kind adjacency` : "")
+  );
+  if (sc.overCap > 0) {
+    console.log(`::warning::${sc.overCap} scene(s) exceed YT_SCENE_MAX_SECONDS — one visual is holding the screen`);
+  }
+
   const rs = gen.revealSync;
   console.log(
     `[YTPipeline] reveal sync: ${rs.synced}/${rs.reveals} reveals landed on a spoken word (${rs.pct}%) ` +

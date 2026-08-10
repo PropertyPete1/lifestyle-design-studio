@@ -84,7 +84,7 @@ const COUNT_STEPS = 12;
  * without re-deriving durations, and so a state that would render for zero
  * frames can be dropped here rather than becoming a silent ffmpeg no-op.
  */
-export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [], spec = null }) {
+export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [], spec = null, established = new Set() }) {
   const states = [];
   const push = (at, s) => states.push({ at: round(Math.max(0, Math.min(seconds, at))), ...s });
 
@@ -97,15 +97,31 @@ export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [
     // them, so reveal i < roadIds.length is a road and the rest are places.
     // Roads that have finished stay finished: progress accumulates rather than
     // being recomputed, or an earlier road would vanish as the next one drew.
+    // BASE ROADS ARE ALREADY ON SCREEN when a previous map in this video
+    // established them. `established` is the session's memory: the second map of
+    // a video does not re-perform the rings, it starts from them.
     const drawn = {};
-    for (const id of roadIds) drawn[id] = 0;
+    for (const id of roadIds) drawn[id] = established.has(id) ? 1 : 0;
     let placesShown = 0;
+    let revealed = 0;
 
     push(0, { roadProgress: { ...drawn }, places: 0, visible: 0, pulse: 0 });
 
+    // KEYED BY r.index, NOT BY POSITION. With narration ordering the reveals no
+    // longer arrive in label order — that is the whole point of it — so the
+    // position in this list says nothing about WHAT is being revealed. Using `i`
+    // here animated whichever road happened to be i-th while labelling it with a
+    // different name.
+    let placeOrder = 0;
     reveals.forEach((r, i) => {
-      if (i < roadIds.length) {
-        const id = roadIds[i];
+      // Positional FALLBACK, not zero. planReveals always sets `index`, but
+      // defaulting a missing one to 0 made every reveal animate roadIds[0] — one
+      // road drawn three times, and its progress running backwards on each pass.
+      const idx = r.index ?? i;
+      if (idx < roadIds.length) {
+        const id = roadIds[idx];
+        // Already established by an earlier map: nothing to draw, so no states.
+        if (established.has(id)) return;
         for (let k = 1; k <= ROAD_DRAW_STEPS; k++) {
           const t = k / ROAD_DRAW_STEPS;
           drawn[id] = t;
@@ -113,14 +129,15 @@ export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [
           push(r.at + (ROAD_DRAW_SECONDS * k) / ROAD_DRAW_STEPS, {
             roadProgress: { ...drawn },
             places: placesShown,
-            visible: i + 1,
+            visible: ++revealed,
             pulse: k === ROAD_DRAW_STEPS ? 1 : 0,
           });
         }
       } else {
         placesShown++;
-        push(r.at, { roadProgress: { ...drawn }, places: placesShown, visible: i + 1, pulse: 1 });
-        push(r.at + LAND_SECONDS, { roadProgress: { ...drawn }, places: placesShown, visible: i + 1, pulse: 0 });
+        placeOrder++;
+        push(r.at, { roadProgress: { ...drawn }, places: placesShown, visible: ++revealed, pulse: 1 });
+        push(r.at + LAND_SECONDS, { roadProgress: { ...drawn }, places: placesShown, visible: revealed, pulse: 0 });
       }
     });
 
@@ -287,6 +304,7 @@ export async function renderAnimatedGraphic({
   ffmpeg,
   writeFileSync,
   renderPng = renderCardPng,
+  session = null,
 }) {
   // MAP is the one type whose renderer and label set live elsewhere: its reveal
   // unit is geometry, not a row of text, so both come from yt-map-render.js.
@@ -295,8 +313,16 @@ export async function renderAnimatedGraphic({
   const labels = isMap ? mapRevealLabels(spec) : revealLabels(type, spec);
   const draw = isMap ? (t, sp, st) => renderMapPng(sp, st) : renderPng;
 
-  const timing = planReveals({ labels, words, seconds });
-  const states = buildStates({ type, labels, reveals: timing.reveals, beats: timing.beats, seconds, roadIds, spec });
+  // MAP reveals in NARRATION order — subject first — because nothing about a map
+  // requires its roads to arrive before its places. Cards keep the given order:
+  // a table fills top-down whatever sequence its rows are named in.
+  const timing = planReveals({ labels, words, seconds, order: isMap ? "narration" : "given" });
+
+  // The session's already-drawn roads, and whether this map is even in the same
+  // region as the last one.
+  const established = isMap && session ? session.establishedFor(spec) : new Set();
+  const states = buildStates({ type, labels, reveals: timing.reveals, beats: timing.beats, seconds, roadIds, spec, established });
+  if (isMap && session) session.record(spec);
 
   const stem = `anim-${String(index).padStart(3, "0")}-${String(type).toLowerCase()}`;
   const framePaths = [];
@@ -378,6 +404,7 @@ export async function renderAnimatedGraphic({
     deadStates,
     stateCount: states.length,
     reveals: timing.reveals,
+    baseRoadsReused: established.size,
     syncedCount: timing.syncedCount,
     source: timing.source,
     beats: timing.beats,

@@ -197,3 +197,16 @@ export const ONCAM_BG_ZOOM = clampFloat(process.env.YT_ONCAM_BG_ZOOM, 1.1, 1.0, 
  * the centered foreground). Set to 0 to disable.
  */
 export const ONCAM_VIGNETTE = clampFloat(process.env.YT_ONCAM_VIGNETTE, 0.35, 0, 1);
+
+/**
+ * The longest one visual may own the screen, in seconds.
+ *
+ * A 30-second narration used to sit on a single stock clip or a single graphic
+ * for its whole length. Nothing was frozen — the graphic animated, the clip
+ * moved — and it still read as one shot held far too long, because the SCENE
+ * never changed. In-graphic motion and a scene change are different things and
+ * only the second one resets attention.
+ *
+ * 8s by default, a knob because the right number is a review-round answer.
+ */
+export const SCENE_MAX_SECONDS = clampFloat(process.env.YT_SCENE_MAX_SECONDS, 8, 3, 20);

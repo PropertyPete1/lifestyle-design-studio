@@ -29,6 +29,7 @@
  */
 
 import { GRAPHIC_TYPES, TYPOGRAPHY, FOOTAGE, attachIntents } from "./yt-visual-intent.js";
+import { SCENE_MAX_SECONDS } from "./yt-config.js";
 
 /**
  * The longest a single animated graphic should carry alone.
@@ -86,7 +87,53 @@ export const REASON = {
  * @param {number}  available.ownedSeconds seconds of owned footage the allocator gave us
  * @returns {{ blocks, primary, fellBack, reason }}
  */
-export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, ownedSeconds = 0, stockReason = null, graphicReason = null } = {}) {
+/**
+ * Fill `total` seconds by CHAINING sources, none owning more than the scene cap.
+ *
+ * `sources` is preference order, primary first. Nothing may follow itself, so a
+ * long take becomes graphic → typography → stock → typography rather than one
+ * held shot. Typography is always last in the list and never exhausts, which is
+ * what makes the chain always completable and a blank segment still impossible.
+ *
+ * `startAfter` is the kind that ended the PREVIOUS segment, so the no-repeat rule
+ * holds across take boundaries too — a stock clip ending one take and opening the
+ * next is the same visual owning the screen through a cut nobody sees.
+ */
+function chainBlocks(total, sources, { sceneMax, startAfter = null }) {
+  const budget = new Map(sources.map((s) => [s.kind, s.seconds]));
+  const blocks = [];
+  let remaining = round(total);
+  let last = startAfter;
+
+  while (remaining >= MIN_BLOCK_SECONDS) {
+    // The first source that is not what just played and still has time in it.
+    let pick = sources.find((s) => s.kind !== last && (budget.get(s.kind) ?? 0) >= MIN_BLOCK_SECONDS);
+    // Everything else is spent: typography carries the rest rather than
+    // repeating a source, and if even that is somehow the last kind we accept the
+    // repeat over leaving the screen empty.
+    if (!pick) pick = sources.find((s) => (budget.get(s.kind) ?? 0) >= MIN_BLOCK_SECONDS) || sources[sources.length - 1];
+
+    const available = budget.get(pick.kind) ?? Infinity;
+    const take = round(Math.min(sceneMax, remaining, available));
+    if (take < MIN_BLOCK_SECONDS) break;
+
+    blocks.push({ ...pick.block, kind: pick.kind, seconds: take });
+    if (Number.isFinite(available)) budget.set(pick.kind, round(available - take));
+    remaining = round(remaining - take);
+    last = pick.kind;
+  }
+
+  // A stub too short to be its own scene joins the last block. It cannot push
+  // that block past the cap by more than MIN_BLOCK_SECONDS, which is under a
+  // fifth of the default and not a held shot.
+  if (remaining > 0 && blocks.length > 0) {
+    blocks[blocks.length - 1].seconds = round(blocks[blocks.length - 1].seconds + remaining);
+    remaining = 0;
+  }
+  return { blocks, remaining };
+}
+
+export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, ownedSeconds = 0, stockReason = null, graphicReason = null, sceneMax = SCENE_MAX_SECONDS, startAfter = null } = {}) {
   const total = Math.max(0, seg.seconds || 0);
   if (total <= 0) return { blocks: [], primary: null, fellBack: false, reason: "segment has no duration" };
 
@@ -98,10 +145,28 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
 
   const isGraphic = GRAPHIC_TYPES.includes(seg.visual);
 
+  // The chain, in preference order. Whatever the writer asked for leads; the rest
+  // are what the scene cap hands the screen to when the lead has had its 8
+  // seconds. Typography is always present and never runs out.
+  const sources = [];
+  // ONE graphic scene per take, not several.
+  //
+  // The brief asked for "graphic phase 1 → typography beat → graphic phase 2",
+  // and that is the right shape — but a second graphic BLOCK re-renders the same
+  // animation from its first state, so the viewer sees the table build, cut away,
+  // and build again from nothing. A visible loop is worse than a single scene.
+  // True phases mean rendering one clip across the whole graphic budget and
+  // slicing it into the block slots so the animation RESUMES; that is assembler
+  // work and is not in this change. Budget is one scene until it exists.
+  if (isGraphic && graphicOk) sources.push({ kind: "graphic", seconds: Math.min(sceneMax, MAX_GRAPHIC_SECONDS), block: { visual: seg.visual, animated: true } });
+  if (stockSeconds > 0) sources.push({ kind: "stock", seconds: stockSeconds, block: {} });
+  if (ownedSeconds > 0) sources.push({ kind: "owned", seconds: ownedSeconds, block: {} });
+  sources.push({ kind: "typography", seconds: Infinity, block: { reason: REASON.REMAINDER } });
+
   if (isGraphic && graphicOk) {
-    const take = Math.min(MAX_GRAPHIC_SECONDS, remaining);
-    blocks.push({ kind: "graphic", visual: seg.visual, seconds: round(take), animated: true });
-    remaining = round(remaining - take);
+    const chained = chainBlocks(remaining, sources, { sceneMax, startAfter });
+    blocks.push(...chained.blocks);
+    remaining = chained.remaining;
     primary = "graphic";
   } else if (isGraphic && !graphicOk) {
     fellBack = true;
@@ -116,9 +181,9 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
     primary = "typography";
   } else if (seg.visual === FOOTAGE) {
     if (stockSeconds > 0) {
-      const take = Math.min(stockSeconds, remaining);
-      blocks.push({ kind: "stock", seconds: round(take) });
-      remaining = round(remaining - take);
+      const chained = chainBlocks(remaining, sources, { sceneMax, startAfter });
+      blocks.push(...chained.blocks);
+      remaining = chained.remaining;
       primary = "stock";
     } else if (ownedSeconds > 0) {
       // Owned footage is cut into readable shots rather than held whole, the
@@ -162,6 +227,20 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
     blocks.push({ kind: "typography", seconds: round(remaining), reason });
     primary = "typography";
     remaining = 0;
+  }
+
+  // EVERY BLOCK LEARNS WHERE IT SITS INSIDE THE TAKE.
+  //
+  // Needed the moment a segment can hold more than one block of the same kind.
+  // Typography sets phrases FROM THE NARRATION, and every block used to be handed
+  // the whole take — which was harmless while there was at most one, and would
+  // have shown a 30-second take the same phrases three times over once the scene
+  // cap started chaining them. `startAt` is what lets each block set only the
+  // words spoken while it is on screen.
+  let at = 0;
+  for (const b of blocks) {
+    b.startAt = round(at);
+    at = round(at + b.seconds);
   }
 
   return { blocks, primary, fellBack, reason: fellBack ? reason : REASON.REQUESTED };
@@ -251,6 +330,8 @@ export async function planVisuals(segments, {
   const stockCredits = [];
   const stockAttempts = [];
 
+  // The source kind that closed the previous segment, for the no-repeat rule.
+  let lastKind = null;
   for (const seg of withIntents) {
     if (seg.kind !== "voiceover") { out.push(seg); continue; }
 
@@ -284,7 +365,16 @@ export async function planVisuals(segments, {
     }
 
     const ownedSeconds = ownedFor(seg) || 0;
-    const coverage = planSegmentCoverage(seg, { graphicOk, stockSeconds, ownedSeconds, stockReason, graphicReason: seg.graphicFailure || null });
+    // VARIETY ACROSS THE CUT. The kind that closed the previous segment is handed
+    // forward, so a stock clip ending one take cannot open the next — from the
+    // viewer's side that is one visual owning the screen through a boundary they
+    // never see, which is the thing the scene cap exists to prevent.
+    const coverage = planSegmentCoverage(seg, {
+      graphicOk, stockSeconds, ownedSeconds, stockReason,
+      graphicReason: seg.graphicFailure || null,
+      startAfter: lastKind,
+    });
+    if (coverage.blocks.length > 0) lastKind = coverage.blocks[coverage.blocks.length - 1].kind;
 
     out.push({
       ...seg,

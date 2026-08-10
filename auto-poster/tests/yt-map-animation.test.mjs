@@ -127,7 +127,9 @@ test("roads draw before places land, and finished roads stay finished", () => {
     type: "MAP",
     labels: ["1604", "281", "Stone Oak"],
     roadIds,
-    reveals: [{ at: 1 }, { at: 3 }, { at: 5 }],
+    // Indexed the way planReveals emits them — position no longer implies which
+    // item a reveal is about, because narration order reorders them.
+    reveals: [{ at: 1, index: 0 }, { at: 3, index: 1 }, { at: 5, index: 2 }],
     beats: [],
     seconds: 9,
   });
@@ -169,7 +171,7 @@ test("motion beats re-emphasise without inventing content", () => {
     type: "MAP",
     labels: ["1604", "Stone Oak"],
     roadIds,
-    reveals: [{ at: 0.5 }, { at: 2 }],
+    reveals: [{ at: 0.5, index: 0 }, { at: 2, index: 1 }],
     beats: [{ at: 6 }],
     seconds: 12,
   });
