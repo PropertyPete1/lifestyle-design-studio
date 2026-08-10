@@ -3009,6 +3009,13 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1BaeurSH_N7x7JOQKRFLZ94D7CvhXmHMp/view"
+    },
+    {
+      "type": "linkedin",
+      "status": "claimed",
+      "timestamp": "2026-08-10T19:15:33.051Z",
+      "runId": "31422264976",
+      "success": false
     }
   ],
   "lastTemplateIndex": -1
