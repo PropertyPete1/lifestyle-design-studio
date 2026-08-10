@@ -3030,6 +3030,31 @@
       "timestamp": "2026-08-10T19:15:33.051Z",
       "runId": "31422264976",
       "success": true
+    },
+    {
+      "driveFileId": "19imODcsbuOvx8EufDTlXSw024peR1PIq",
+      "fileName": "11E5D83D-74AE-4335-BD92-7D5B99BC674C.mp4",
+      "city": "san_antonio",
+      "caption": "This might be the best new construction finishes I've toured in San Antonio this month.\n\nNew builds at this price point typically don't sit long, especially with current builder incentives on the tabl",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-10T19:15:32.876Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "lyrics_override_add_voiceover",
+      "voiceover_transcript": "pero fui En Outside doy ya, letto пол san",
+      "voiceover_persona": "deadpan_comedian",
+      "content_hash": "ffff3900003f3f3f:ffff070d000c1fff:ff250000ffffff00:ffffff7ffcc00000:809fffdfdf898000",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1cLDr3kk1GCNqUVRwTUaKq_Qp-5OA0QXF/view"
     }
   ],
   "lastTemplateIndex": -1

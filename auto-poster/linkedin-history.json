@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "team_wins",
-      "body": "Our team just closed back-to-back deals that looked impossible three weeks ago. Multiple offers fell through, financing issues, appraisal gaps. Every one of them. We solved them together. That's the momentum we've built here. When you're part of a team that doesn't quit, deals close.",
-      "format": "short_punchy",
-      "ending": "dm_cta",
-      "date": "2026-08-03"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We've got more buyer and lease leads than we can actually work right now. New construction in San Antonio and Austin. Out-of-state relocations. The leads are warm. People are actively looking or actively moving. But most of them aren't ready to close today. They need vetting. They need consistent follow-up. They need someone who understands pipeline work instead of chasing the quick commission. I know most agents see that and move on. They want deals closing next month, not relationships closing next quarter. If you're different. If you know how to stay in touch, answer questions, and be the expert when someone's actually ready to move. Then you've got real work here.\n\nIf this sounds like something you'd take on, send me a DM.",
       "format": "story",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "dm_cta",
       "date": "2026-08-09"
+    },
+    {
+      "topic": "time_to_level_up",
+      "body": "You're producing solid numbers but your brokerage treats you like a production unit, not a person.\n\nWhen was the last time your broker knew what you were actually struggling with. Not your closing count. Your struggle. When was the last time someone showed you a better way to work instead of just expecting you to figure it out. When did your wins get celebrated beyond a number on a board. Most agents don't leave because the market got harder. They leave because they realized they're grinding alone while their broker optimizes for volume, not growth. You've outgrown the idea that a commission split is enough. You want to work somewhere the infrastructure actually supports what you're building.\n\nThat's what we're building at Lifestyle Design Realty.",
+      "format": "bold_statement",
+      "ending": "strong_close",
+      "date": "2026-08-10"
     }
   ]
 }
