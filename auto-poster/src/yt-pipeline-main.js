@@ -506,7 +506,11 @@ async function buildFromRecordings(approvals, record) {
   // and persisted now: an obligation you cannot audit is one you cannot show you
   // met.
   if (gen.stockCredits.length > 0) {
-    console.log(`[YTPipeline] stock: ${gen.stockCredits.length} Pexels clip(s) used — ${gen.stockCredits.join(" | ")}`);
+    // `.line`, not the object. A credit is {photographer, urls, line} and joining
+    // the objects printed "[object Object]" nine times — the description was
+    // always correct (creditsBlock maps .line), but the build report named
+    // nothing, which is the one thing this log exists to do.
+    console.log(`[YTPipeline] stock: ${gen.stockCredits.length} Pexels clip(s) used — ${gen.stockCredits.map((c) => c?.line || String(c)).join(" | ")}`);
   } else if (gen.stockConfigured) {
     console.log("[YTPipeline] stock: no clips used this build");
   }
