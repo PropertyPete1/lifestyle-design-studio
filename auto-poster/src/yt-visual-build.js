@@ -116,6 +116,18 @@ export async function buildVisuals(plan, {
 
   const fetchStock = async (seg) => {
     const i = index++;
+    // NO VERIFIER MEANS NO FETCH.
+    //
+    // The vision check fails closed, so without a client every clip would be
+    // rejected — after being searched for, downloaded and graded. That spends
+    // Pexels quota (200/hour) and runner bandwidth to reach a foregone
+    // conclusion, and reports it as "no stock clip passed the vision check",
+    // which reads like the clips were bad rather than like the checker was
+    // absent. Reachable on any job that has PEXELS_API_KEY and no
+    // ANTHROPIC_API_KEY — the dry-run job is exactly that shape.
+    if (!visionClient) {
+      return { clip: null, attempts: [{ stage: "config", reason: "no vision client, so stock cannot be verified and is not fetched" }] };
+    }
     try {
       return await fetchStockClip({
         keywords: seg.visualSpec?.keywords || [],

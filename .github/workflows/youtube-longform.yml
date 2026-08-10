@@ -177,6 +177,20 @@ jobs:
           # render — which is what makes the disclosure unnecessary.
           YT_NARRATION_MODE: peter
           YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
+          # The ONLY folder long-form footage may come from. Not a secret — a
+          # Drive folder id, the same class of value as the city ids in drive.js.
+          #
+          # It is EMPTY and that is the designed steady state, not a setup step
+          # anyone forgot: footage appears in long-form only when Peter puts
+          # something here, and until then every segment is carried by an
+          # animated graphic, kinetic typography or licensed stock. The reels
+          # city folders are unreachable from this pipeline by construction —
+          # their clips carry burned-in price and rate copy.
+          YT_LONGFORM_BROLL_FOLDER: 18wMxgDnPm1HS10k9DTIc-1EijZXhq8RD
+          # The stock layer. Without it searchPexels returns nothing, every
+          # FOOTAGE intent falls to typography, and the build says so — a
+          # degraded video, never a dead job.
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
@@ -299,6 +313,13 @@ jobs:
           # describes this exact disagreement happening once already.
           YT_NARRATION_MODE: peter
           YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
+          # MUST match the pipeline job, for the reason stated twice above and
+          # demonstrated twice in production. The dry run exists to predict what
+          # the build will do, and the visual mix is now the main thing worth
+          # predicting: without these two the dry run reports a
+          # typography-only video and the build then produces something else.
+          YT_LONGFORM_BROLL_FOLDER: 18wMxgDnPm1HS10k9DTIc-1EijZXhq8RD
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
