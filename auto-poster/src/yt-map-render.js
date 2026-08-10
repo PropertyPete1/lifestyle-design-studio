@@ -565,3 +565,77 @@ export function mapSpecForIntent(spec, { market = "san_antonio", maxLabels = 6 }
     eyebrow: spec.eyebrow || null,
   };
 }
+
+/**
+ * One video's running memory of what its maps have already drawn.
+ *
+ * THE PROBLEM THIS SOLVES is not performance, it is that re-performing an
+ * establishing shot reads as a stutter. Card 5 drew the 410/1604 rings from
+ * scratch on all nine of its maps: by the third one the audience knows where the
+ * rings are, and spending the opening of every map re-tracing them delays the
+ * only new information in the shot — which was the other half of the same
+ * complaint.
+ *
+ * So a road drawn once stays drawn for the rest of the video, and later maps open
+ * from the established base and animate only their subject.
+ *
+ * REGION CHANGE RESETS IT. "Already on screen" is a claim about continuity, and
+ * it stops being true when the map jumps somewhere else — a map of New Braunfels
+ * shares no geometry with a map of the medical center, so opening it mid-draw
+ * with roads inherited from a different frame would show roads at positions the
+ * viewer has never seen. Overlap is measured on the projected bounds; below the
+ * threshold the base is re-established from nothing.
+ */
+export class MapSession {
+  constructor({ overlapThreshold = 0.5 } = {}) {
+    this.established = new Set();
+    this.lastBounds = null;
+    this.overlapThreshold = overlapThreshold;
+    this.regionChanges = 0;
+    this.mapCount = 0;
+  }
+
+  /** Bounds of everything a spec will draw, for region comparison. */
+  static boundsFor(spec) {
+    const { roads, places } = loadMarket(spec.market || "san_antonio");
+    const highlight = new Set(spec.highlight || []);
+    const framing = roads.features.filter((f) => highlight.has(f.properties.id));
+    const labelled = places.filter((p) => new Set(spec.labels || []).has(p.id));
+    return expandForPlaces(boundsOf(framing.length ? framing : roads.features), labelled);
+  }
+
+  /** Fraction of the smaller box that the two boxes share. */
+  static overlap(a, b) {
+    if (!a || !b) return 0;
+    const w = Math.max(0, Math.min(a.maxLon, b.maxLon) - Math.max(a.minLon, b.minLon));
+    const h = Math.max(0, Math.min(a.maxLat, b.maxLat) - Math.max(a.minLat, b.minLat));
+    const inter = w * h;
+    const areaA = (a.maxLon - a.minLon) * (a.maxLat - a.minLat);
+    const areaB = (b.maxLon - b.minLon) * (b.maxLat - b.minLat);
+    const smaller = Math.min(areaA, areaB);
+    return smaller > 0 ? inter / smaller : 0;
+  }
+
+  /**
+   * Which of this spec's roads are already on screen.
+   *
+   * Returns an empty set for the first map, and for any map that has moved to a
+   * different region — both of which must draw their own base.
+   */
+  establishedFor(spec) {
+    const bounds = MapSession.boundsFor(spec);
+    if (this.lastBounds && MapSession.overlap(bounds, this.lastBounds) < this.overlapThreshold) {
+      this.established = new Set();
+      this.regionChanges++;
+      return new Set();
+    }
+    return new Set([...this.established].filter((id) => (spec.highlight || []).includes(id)));
+  }
+
+  /** Remember what this map drew, so the next one can start from it. */
+  record(spec) {
+    for (const id of spec.highlight || []) this.established.add(id);
+    this.lastBounds = MapSession.boundsFor(spec);
+    this.mapCount++;
+  }
+}

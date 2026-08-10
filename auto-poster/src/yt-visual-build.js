@@ -18,10 +18,11 @@ import { join } from "path";
 import { existsSync, writeFileSync } from "fs";
 
 import { planVisuals, REASON } from "./yt-visual-plan.js";
+import { SCENE_MAX_SECONDS } from "./yt-config.js";
 import { renderAnimatedGraphic, renderTypographyClip, assertAnimated } from "./yt-visual-animate.js";
 import { fetchStockClip, stockEnabled } from "./yt-stock.js";
 import { MAP } from "./yt-visual-intent.js";
-import { mapSpecForIntent } from "./yt-map-render.js";
+import { mapSpecForIntent, MapSession } from "./yt-map-render.js";
 
 /**
  * Transcribe one take's narration, or return null.
@@ -74,6 +75,8 @@ export async function buildVisuals(plan, {
 
   let index = 0;
   const graphicTimings = [];
+  // ONE session per video, so map two knows what map one drew.
+  const mapSession = new MapSession();
 
   const renderGraphic = async (seg) => {
     const i = index++;
@@ -99,6 +102,7 @@ export async function buildVisuals(plan, {
       }
 
       const r = await renderAnimatedGraphic({
+        session: mapSession,
         type: seg.visual,
         spec,
         seconds: Math.min(seg.seconds, 22),
@@ -213,9 +217,22 @@ export async function buildVisuals(plan, {
 
       // TYPOGRAPHY, and anything that fell through to it.
       const i = index++;
+      // Only the words spoken while THIS block is on screen, retimed to start at
+      // zero. Handing every block the whole take made each one set the same
+      // phrases, which was invisible while a segment held one typography block
+      // and would have repeated itself three times over under the scene cap.
+      const allWords = timings.get(seg.takeId);
+      const from = block.startAt ?? 0;
+      const to = from + block.seconds;
+      const windowed = Array.isArray(allWords)
+        ? allWords.filter((w) => w.start >= from && w.start < to).map((w) => ({ ...w, start: round2(w.start - from), end: round2(w.end - from) }))
+        : null;
       const clip = await renderTypographyClip({
-        text: seg.text,
-        words: timings.get(seg.takeId),
+        // Fall back to the whole take only when the window caught nothing, which
+        // means this block sits in a silence — better the wrong phrases than a
+        // blank scene.
+        text: windowed && windowed.length > 0 ? windowed.map((w) => w.word).join(" ") : seg.text,
+        words: windowed && windowed.length > 0 ? windowed : null,
         seconds: block.seconds,
         eyebrow: seg.visualSpec?.eyebrow || null,
         dir,
@@ -258,6 +275,22 @@ export async function buildVisuals(plan, {
     // actually landed on a spoken word" invisible. They are different numbers
     // and the second one is the one that says whether the animation is doing
     // what it claims.
+    // SCENE STATS. The cadence audit measures motion INSIDE a visual; this
+    // measures how often the visual itself changes, which is the thing card 5
+    // got wrong while passing every in-graphic check.
+    scenes: (() => {
+      const all = segments.flatMap((sg) => (sg.broll || []).filter((b) => b.seconds > 0).map((b) => ({ kind: b.kind || (b.generated ? "generated" : "footage"), seconds: b.seconds })));
+      const lengths = all.map((b) => b.seconds);
+      const runs = all.reduce((n, b, i) => (i > 0 && b.kind === all[i - 1].kind ? n + 1 : n), 0);
+      return {
+        count: all.length,
+        averageSeconds: lengths.length ? round2(lengths.reduce((a, b) => a + b, 0) / lengths.length) : 0,
+        longestSeconds: lengths.length ? round2(Math.max(...lengths)) : 0,
+        overCap: lengths.filter((l) => l > SCENE_MAX_SECONDS + 1.6).length,
+        sameKindRuns: runs,
+        cap: SCENE_MAX_SECONDS,
+      };
+    })(),
     revealSync: (() => {
       const g = graphicTimings.filter(Boolean);
       const reveals = g.reduce((n, t) => n + (t.revealCount || 0), 0);
@@ -280,4 +313,9 @@ export async function buildVisuals(plan, {
   };
 
   return { plan: { ...plan, segments, visuals: report }, report };
+}
+
+/** Milliseconds are enough for a word boundary; more just makes noisy diffs. */
+function round2(n) {
+  return Math.round(n * 1000) / 1000;
 }
