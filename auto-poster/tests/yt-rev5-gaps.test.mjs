@@ -143,3 +143,49 @@ test("a CALLOUT with a label keeps its fade states", () => {
     "a label is something that can fade, so it earns the extra states an unlabelled figure does not"
   );
 });
+
+// ─── the beat that was called dead ─────────────────────────────────────────
+
+test("beat and settle states are never required to change the picture", () => {
+  // A beat is emphasis over content that has not changed, and a settle only
+  // clears a pulse. Neither promises new pixels. The dead-state predicate said
+  // so in a comment while comparing `figure`, which beat states do not carry —
+  // so a beat compared as different from the real figure before it and a sound
+  // CALLOUT was rejected on the revision-5 build.
+  const states = buildStates({
+    type: "CALLOUT",
+    labels: ["Tuesday, 7:15 AM"],
+    spec: { value: "Tuesday, 7:15 AM", label: "drive the 281 commute before you sign" },
+    reveals: [{ at: 0.4 }],
+    beats: [{ at: 6 }, { at: 9 }],
+    seconds: 14,
+  });
+
+  const beats = states.filter((s) => s.beat);
+  assert.ok(beats.length > 0, "a 14s callout with dwell gets beats");
+  // Whatever a beat carries, it must not be the thing that forces a diff check:
+  // exemption is by flag, so the flag has to survive onto the emitted state.
+  for (const b of beats) assert.equal(b.beat, true);
+  assert.equal(states.filter((s) => s.settle).length, 1, "exactly one settle, and it is flagged");
+});
+
+// ─── the attribution the API guidelines actually require ───────────────────
+
+test("a description carrying stock credits carries a link to Pexels, not just the word", async () => {
+  const { buildDescription, PEXELS_URL } = await import("../src/yt-packaging.js");
+  const { text } = buildDescription({
+    hook: "h", promise: "p", chapters: [],
+    stockCredits: "Video by Jane Doe on Pexels\nVideo by Sam Roe on Pexels",
+  });
+  // The content licence needs no attribution; the API guidelines need a
+  // "prominent link to Pexels". Revision 5 shipped photographer names and no URL
+  // anywhere, which met the first and not the second.
+  assert.ok(text.includes(PEXELS_URL), "the description must contain the Pexels URL");
+  assert.ok(text.includes("Jane Doe") && text.includes("Sam Roe"), "photographers are credited by name");
+});
+
+test("a video with no stock footage mentions Pexels nowhere", async () => {
+  const { buildDescription } = await import("../src/yt-packaging.js");
+  const { text } = buildDescription({ hook: "h", promise: "p", chapters: [] });
+  assert.ok(!/pexels/i.test(text), "no dangling attribution header on a video that uses no stock");
+});
