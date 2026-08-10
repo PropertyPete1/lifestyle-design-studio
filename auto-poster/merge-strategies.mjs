@@ -357,32 +357,79 @@ function mergeVideoRecord(x, y) {
     if (v !== undefined) out[f] = v;
   }
 
-  // upload — never dropped, or the next run re-uploads 320MB.
-  const up = groupWinner(x.uploadedAt, y.uploadedAt, x.uploadedAt, y.uploadedAt);
-  if (up !== "neither") {
-    const u = up === "a" ? x : y;
-    out.uploadedAt = u.uploadedAt;
-    out.privacy = u.privacy ?? null;
-    out.youtubeUrl = u.youtubeUrl ?? null;
-    out.metricoolPostId = u.metricoolPostId ?? null;
-    out.blogId = u.blogId ?? null;
+  // A HIGHER REVISION IS A NEWER GENERATION, NOT A STALE COPY.
+  //
+  // This distinction did not exist, and its absence made rework unable to ever
+  // rebuild. `recordRework` reopens the build gate by CLEARING `uploadedAt`,
+  // and the rules below are written so that an upload is never erased — a
+  // sound rule against a stale concurrent writer, and exactly wrong against a
+  // deliberate one. The merge kept `revision: 8` from the local side and
+  // `uploadedAt` from the remote, producing a record that says both "queued for
+  // rework" and "already uploaded". The build gate reads the second half and
+  // exits with "review already recorded — nothing further", forever.
+  //
+  // Verified on revision 8 of video 1: two dispatches, each finishing in three
+  // minutes without building anything.
+  //
+  // The fix is to say what the invariant actually meant. "Never erase an
+  // upload" protects against a copy that has not heard about the upload yet —
+  // one at the SAME revision or older. A side carrying a higher revision has
+  // heard, and has superseded it. So every field scoped to one generation of
+  // the video — the upload, the review, the approval, the distribution — comes
+  // wholesale from the newer generation, nulls included.
+  const xRev = Number(x.revision) || 0;
+  const yRev = Number(y.revision) || 0;
+  const newer = xRev > yRev ? x : yRev > xRev ? y : null;
+
+  // upload — never dropped by a SAME-generation copy, or the next run
+  // re-uploads 320MB.
+  if (newer) {
+    out.uploadedAt = newer.uploadedAt ?? null;
+    out.privacy = newer.privacy ?? null;
+    out.youtubeUrl = newer.youtubeUrl ?? null;
+    out.metricoolPostId = newer.metricoolPostId ?? null;
+    out.blogId = newer.blogId ?? null;
+  } else {
+    const up = groupWinner(x.uploadedAt, y.uploadedAt, x.uploadedAt, y.uploadedAt);
+    if (up !== "neither") {
+      const u = up === "a" ? x : y;
+      out.uploadedAt = u.uploadedAt;
+      out.privacy = u.privacy ?? null;
+      out.youtubeUrl = u.youtubeUrl ?? null;
+      out.metricoolPostId = u.metricoolPostId ?? null;
+      out.blogId = u.blogId ?? null;
+    }
   }
 
-  // review — asymmetric. An approval is never downgraded by a stale copy.
-  const rev = groupWinner(x.reviewedAt, y.reviewedAt, x.reviewedAt, y.reviewedAt);
-  if (rev !== "neither") {
-    const r = rev === "a" ? x : y;
-    out.reviewedAt = r.reviewedAt;
-    out.reviewNotes = r.reviewNotes ?? null;
+  // review — asymmetric within a generation. An approval is never downgraded by
+  // a stale copy; it IS cleared by a rework, because the approval belonged to
+  // the revision that was just superseded and carrying it forward would mark an
+  // unbuilt video as approved.
+  if (newer) {
+    out.reviewedAt = newer.reviewedAt ?? null;
+    out.reviewNotes = newer.reviewNotes ?? null;
+    out.approved = newer.approved === true;
+  } else {
+    const rev = groupWinner(x.reviewedAt, y.reviewedAt, x.reviewedAt, y.reviewedAt);
+    if (rev !== "neither") {
+      const r = rev === "a" ? x : y;
+      out.reviewedAt = r.reviewedAt;
+      out.reviewNotes = r.reviewNotes ?? null;
+    }
+    out.approved = x.approved === true || y.approved === true;
   }
-  out.approved = x.approved === true || y.approved === true;
 
-  // shorts — cut once.
-  const sh = groupWinner(x.shortsCutAt, y.shortsCutAt, x.shortsCutAt, y.shortsCutAt);
-  if (sh !== "neither") {
-    const s = sh === "a" ? x : y;
-    out.shortsCutAt = s.shortsCutAt;
-    out.shorts = s.shorts ?? [];
+  // shorts — cut once per generation.
+  if (newer) {
+    out.shortsCutAt = newer.shortsCutAt ?? null;
+    out.shorts = newer.shorts ?? [];
+  } else {
+    const sh = groupWinner(x.shortsCutAt, y.shortsCutAt, x.shortsCutAt, y.shortsCutAt);
+    if (sh !== "neither") {
+      const s = sh === "a" ? x : y;
+      out.shortsCutAt = s.shortsCutAt;
+      out.shorts = s.shorts ?? [];
+    }
   }
 
   // revision history — the iteration loop's memory. Max revision wins;
@@ -396,9 +443,15 @@ function mergeVideoRecord(x, y) {
   }
   if (reworks.size > 0) out.reworks = [...reworks.values()].sort((a, b) => (a.revision || 0) - (b.revision || 0));
 
-  // distribution — per-step done-wins, like approved. A completed
-  // thumbnails.set that a stale copy erases would re-run against YouTube.
-  if (x.distribution || y.distribution) {
+  // distribution — belongs to the generation that was distributed. A rework
+  // nulls it deliberately: the steps that ran, ran against an upload that no
+  // longer exists, and carrying them forward would mark the new one as already
+  // distributed.
+  if (newer) {
+    out.distribution = newer.distribution ?? null;
+  } else if (x.distribution || y.distribution) {
+    // Within one generation: per-step done-wins, like approved. A completed
+    // thumbnails.set that a stale copy erases would re-run against YouTube.
     out.distribution = { ...(y.distribution || {}), ...(x.distribution || {}) };
     for (const step of new Set([...Object.keys(x.distribution || {}), ...Object.keys(y.distribution || {})])) {
       const xa = x.distribution?.[step];
