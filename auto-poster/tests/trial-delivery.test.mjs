@@ -283,6 +283,47 @@ describe("every trial outcome reaches a human", () => {
     assert.match(joined, /::error title=Trial variant/, "a bad outcome must be an error annotation");
   });
 
+  test("a skip is escalated only when the cron re-served its own window", async () => {
+    const { shouldEscalateSkip } = await import("../src/trial-variant.js");
+
+    // The fault: the cron filled this window and the cron is back. A replay, or
+    // a window computation stuck on a slot it already served.
+    assert.equal(
+      shouldEscalateSkip({ scheduled: true, existing: { trigger: "schedule" } }),
+      true,
+      "a cron re-serving its own window is the permanent-no-op shape"
+    );
+
+    // Benign: a human ran the slot early. The cron finding it filled is correct,
+    // and mailing about it is how an alert channel gets muted.
+    assert.equal(
+      shouldEscalateSkip({ scheduled: true, existing: { trigger: "manual" } }),
+      false,
+      "a human filling the window early is not a fault"
+    );
+
+    // A manual re-run always expects to find something.
+    assert.equal(shouldEscalateSkip({ scheduled: false, existing: { trigger: "schedule" } }), false);
+    assert.equal(shouldEscalateSkip({ scheduled: false, existing: { trigger: "manual" } }), false);
+
+    // Legacy records predate the field; read them the cautious way.
+    assert.equal(
+      shouldEscalateSkip({ scheduled: true, existing: { date: "2026-08-10" } }),
+      true,
+      "a record with no trigger must be read as cron-filled"
+    );
+    assert.equal(shouldEscalateSkip({ scheduled: true, existing: undefined }), true);
+  });
+
+  test("the variant record states what filled the window", () => {
+    const text = readFileSync(join(SRC, "trial-variant-main.js"), "utf-8");
+    assert.match(
+      text,
+      /trigger: process\.env\.GITHUB_EVENT_NAME === "schedule" \? "schedule" : "manual"/,
+      "without this field the skip rule cannot tell a replay from a human"
+    );
+  });
+
   test("the success path actually calls the notifier", () => {
     const text = readFileSync(join(SRC, "trial-variant-main.js"), "utf-8");
     const tail = text.slice(text.lastIndexOf("✓ DONE"));
