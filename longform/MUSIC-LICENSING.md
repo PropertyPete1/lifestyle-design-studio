@@ -58,9 +58,37 @@ twelve-minute runtime IS lengthening or chopping, and the pipeline does exactly
 that. So the credit line states the track is used as an edited background bed
 rather than implying the recording is presented whole.
 
+## Pixabay — no attribution required. PREFERRED.
+
+https://pixabay.com/service/license-summary/
+
+> Use Content without having to attribute the author (although giving credit is
+> always appreciated by our community!)
+
+Prohibited, and neither applies to a background bed inside an explainer:
+
+> sell or distribute Content (either in digital or physical form) on a Standalone
+> basis
+
+> in a misleading or deceptive way
+
+**Preferred over Incompetech**, on the reasoning already recorded below: no
+attribution means no attribution failure mode, and no modification clause to
+satisfy when the bed is trimmed to a runtime. Incompetech stays as the CC-BY
+fallback when Pixabay has no track that fits.
+
+Caveat, stated by the licensor: the summary page says
+
+> only the full Content License is legally binding
+
+so the summary above is orientation and the full terms govern. Re-read them
+before a track goes in the folder, not after.
+
 ## What is NOT settled
 
-**YouTube's Content ID.** A CC-BY track can still be claimed by an aggregator
+**YouTube's Content ID — and NEITHER source addresses it.** Pixabay's licence
+summary is silent on Content ID and copyright claims, and so is Incompetech's
+FAQ. A CC-BY track can still be claimed by an aggregator
 who registered it, and a claim is not a licence dispute we would win quickly —
 it is a monetization hold on a video that is otherwise fine. This is a real risk
 with widely-used free music and it is the strongest argument for CC0 and for
