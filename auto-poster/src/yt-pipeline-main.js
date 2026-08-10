@@ -58,7 +58,7 @@ import {
 import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
 import { generateNarration, renderTimeline, syntheticNarrationUsed, canvasFor, ffmpeg } from "./yt-assemble.js";
-import { applyRetentionStage, renderRetentionSummary } from "./yt-retention-stage.js";
+import { applyRetentionStage, renderRetentionSummary, attachEmphasis } from "./yt-retention-stage.js";
 import { buildVisuals } from "./yt-visual-build.js";
 import { listLongformFootage } from "./yt-footage-source.js";
 import { creditsBlock } from "./yt-stock.js";
@@ -495,6 +495,17 @@ async function buildFromRecordings(approvals, record) {
     `[YTPipeline] word timing: ${gen.wordTimingCoverage.withTiming}/${gen.wordTimingCoverage.takes} takes transcribed ` +
       `— the rest use even pacing`
   );
+  // Availability of timing and USE of timing are different numbers, and only the
+  // second one says whether the reveals actually landed on the words. The build
+  // collected it from the first animated graphic and never printed it, so every
+  // report so far has answered a question nobody asked.
+  const rs = gen.revealSync;
+  console.log(
+    `[YTPipeline] reveal sync: ${rs.synced}/${rs.reveals} reveals landed on a spoken word (${rs.pct}%) ` +
+      `across ${rs.graphics} animated graphic(s)` +
+      (rs.evenPaced > 0 ? `; ${rs.evenPaced} fell back to even pacing` : "") +
+      (rs.reveals > 0 ? ` — ${Object.entries(rs.byType).map(([k, v]) => `${k} ${v.synced}/${v.reveals}`).join(", ")}` : "")
+  );
   for (const f of gen.fallbacks) {
     console.log(`::warning::take ${f.takeId} asked for ${f.asked} and got ${f.got} — ${f.reason}`);
   }
@@ -550,6 +561,9 @@ async function buildFromRecordings(approvals, record) {
   // and captions timed against the unedited lengths would drift for twelve
   // minutes. planOpening above already guaranteed segment 0 is his face, so
   // the stage's isOpening flag lands on the right take.
+  // The zoom pulses need word timing on the ON-CAMERA takes, which is I/O, so it
+  // happens here rather than inside the (synchronous) retention stage.
+  await attachEmphasis(withVisuals, { getWordTimestamps });
   const retention = applyRetentionStage(withVisuals, { workDir, dim: canvasFor(RESOLUTION) });
   console.log(renderRetentionSummary(retention).split("\n").map((l) => `[YTPipeline] ${l}`).join("\n"));
 

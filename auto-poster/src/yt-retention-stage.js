@@ -28,8 +28,9 @@
  */
 
 import { join } from "path";
-import { mkdirSync } from "fs";
+import { mkdirSync, existsSync } from "fs";
 import { detectSilences, buildEditList } from "./yt-oncamera-edit.js";
+import { findEmphasisWords } from "./yt-reveal-timing.js";
 import { planPip, segmentTake, pipPlacement, segmentationAvailable } from "./yt-pip.js";
 import { auditCadence } from "./yt-cadence.js";
 import { mediaDuration } from "./yt-assemble.js";
@@ -43,6 +44,50 @@ import { JUMP_CUTS_ENABLED, PUNCH_INS_ENABLED, PIP_ENABLED } from "./yt-config.j
  * @param {object} [opts.flags]   overrides for the three config flags (tests)
  * @returns {{ edit, pip, cadence }} the per-video report Peter reads
  */
+/**
+ * Work out which words in each on-camera take deserve a zoom pulse.
+ *
+ * SEPARATE FROM applyRetentionStage, AND ASYNC, ON PURPOSE. Word timing means
+ * running Whisper over the take's audio, which is I/O; the retention stage is
+ * synchronous, pure apart from ffmpeg, and is tested by arguing with its edit
+ * lists rather than by transcribing anything. Making it async to fetch this
+ * would have spread `await` through every caller and every test for one input.
+ *
+ * So the timing is fetched here, once, and left on the segments as `emphasis`.
+ * applyRetentionStage stays a function you can reason about.
+ *
+ * A take with no timing gets an empty list, which means the punch cadence still
+ * runs and only the pulses are missing — the degradation is the feature being
+ * absent, never the edit being wrong.
+ */
+export async function attachEmphasis(plan, { getWordTimestamps, existsSync: exists = existsSync } = {}) {
+  let withTiming = 0;
+  let without = 0;
+
+  for (const seg of plan.segments || []) {
+    if (seg.kind !== "on_camera") continue;
+    const audio = seg.source;
+    if (!audio || !exists(audio) || typeof getWordTimestamps !== "function") {
+      seg.emphasis = [];
+      without++;
+      continue;
+    }
+    try {
+      const words = await getWordTimestamps(audio);
+      seg.emphasis = Array.isArray(words) && words.length ? findEmphasisWords(words) : [];
+      if (seg.emphasis.length) withTiming++;
+      else without++;
+    } catch (err) {
+      console.warn(`[Retention] no word timing for ${seg.takeId}: ${err.message} — no zoom pulses on this take`);
+      seg.emphasis = [];
+      without++;
+    }
+  }
+
+  console.log(`[Retention] emphasis words found on ${withTiming} on-camera take(s); ${without} take(s) get cadence only`);
+  return { withTiming, without };
+}
+
 export function applyRetentionStage(plan, { workDir, dim, flags = {} } = {}) {
   // The cutouts land here, and ffmpeg does NOT create parent directories — it
   // exits instantly and the segmenter reports a broken pipe. That is exactly
@@ -81,6 +126,12 @@ export function applyRetentionStage(plan, { workDir, dim, flags = {} } = {}) {
         minKeep: 0,
         seed: onCamIndex++,
         punchIns,
+        // THE PULSES. Built and proven, and for one revision not connected to
+        // anything: the mechanism assigned pulses correctly whenever it was
+        // handed emphasis words, and nothing ever handed it any, so revision 4
+        // shipped with the opening beat as its only pulse. attachEmphasis fills
+        // this in before we get here.
+        emphasis: seg.emphasis || [],
       });
 
       seg.editPlan = listPlan;
@@ -91,8 +142,11 @@ export function applyRetentionStage(plan, { workDir, dim, flags = {} } = {}) {
         seg.seconds = listPlan.editedSeconds;
       }
 
+      edit.pulsesAssigned = (edit.pulsesAssigned || 0) + (listPlan.cadence?.pulsesAssigned || 0);
+      edit.pulsesDropped = (edit.pulsesDropped || 0) + (listPlan.cadence?.pulsesDropped?.length || 0);
       edit.takes.push({
         takeId: seg.takeId,
+        pulsesAssigned: listPlan.cadence?.pulsesAssigned || 0,
         originalSeconds: listPlan.originalSeconds,
         editedSeconds: listPlan.editedSeconds,
         removedSeconds: listPlan.removedSeconds,
