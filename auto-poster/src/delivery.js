@@ -20,7 +20,14 @@ import { basename } from "path";
 const READY_TO_POST_FOLDER_NAME = "Ready to Post";
 const OWNER_EMAIL = "peter@lifestyledesignrealty.com";
 const MAX_RETRIES = 3;
-const BACKOFF_BASE_MS = 2000; // 2s, 4s, 8s
+/**
+ * 2s, 4s, 8s in production.
+ *
+ * Overridable so the tests that exercise a channel failing all three attempts
+ * do not spend fourteen real seconds each doing it. Never set in any workflow —
+ * a retry that does not wait is not a retry.
+ */
+const BACKOFF_BASE_MS = Number(process.env.DELIVERY_BACKOFF_BASE_MS) || 2000;
 
 let readyToPostFolderId = null;
 
@@ -335,6 +342,21 @@ export const MAIL_PREFIX = {
 };
 
 /**
+ * Marks an artifact produced by a test run so real surfaces can filter it out.
+ *
+ * Same literal the YouTube approvals path uses for `TEST-` request ids. It is
+ * duplicated rather than imported because that module belongs to the long-form
+ * pipeline, and a delivery-time constant should not drag it into every trial and
+ * city run.
+ */
+export const TEST_PREFIX = "TEST-";
+
+/** True for any artifact name carrying the test marker. */
+export function isTestArtifact(name) {
+  return String(name ?? "").startsWith(TEST_PREFIX);
+}
+
+/**
  * RFC 2047 encoded-word for a MIME header.
  *
  * A header is ASCII-only by RFC 5322. `Subject: ${subject}` wrote raw UTF-8
@@ -567,9 +589,14 @@ export async function deliverToOwner(accessToken, videoPath, city, caption, opti
 
   // If this is a trial variant, call the trial webhook instead of the normal one
   if (options.isTrial) {
-    const trialResult = await notifyTrialDashboard({
+    // A test run must be identifiable from the payload alone, because the Trial
+    // tab renders whatever it is sent. Same `TEST-` convention the YouTube
+    // approvals path uses, so one filter rule covers both.
+    const trialFileName = options.isTest ? `${TEST_PREFIX}${upload.fileName}` : upload.fileName;
+
+    const ch1 = await notifyTrialDashboard({
       sourceVideoId: options.sourceVideoId || upload.fileId,
-      sourceFileName: upload.fileName,
+      sourceFileName: trialFileName,
       city,
       hookAngle: options.trialAngle,
       variantNumber: options.trialVariantNumber || 1,
@@ -578,13 +605,58 @@ export async function deliverToOwner(accessToken, videoPath, city, caption, opti
       driveLink: upload.webViewLink,
       driveFileId: upload.fileId,
       sourceViews: options.sourceViews || 0,
+      isTest: Boolean(options.isTest),
     });
+
+    // Channel 2. The trial path used to have exactly one channel and no way to
+    // report losing it: on a failed webhook it still returned delivered:true, so
+    // the run went green with the variant reachable only by knowing the Drive
+    // link existed. Trials get the same two-channel contract as city reels.
+    const ch2 = await sendEmailBackup(accessToken, {
+      city: options.trialLabel || `${city} (trial)`,
+      caption,
+      driveLink: upload.webViewLink,
+      fileName: trialFileName,
+    });
+
+    if (!ch1.ok && !ch2.ok) {
+      console.error("[Delivery] ⚠️ BOTH trial notification channels failed!");
+      console.error(`[Delivery] Trial webhook: ${ch1.lastError?.message}`);
+      console.error(`[Delivery] Email backup:  ${ch2.lastError?.message}`);
+
+      await writeManifestFile(accessToken, {
+        city,
+        caption,
+        driveLink: upload.webViewLink,
+        fileName: trialFileName,
+        fileId: upload.fileId,
+      });
+
+      throw new Error(
+        `Both trial notification channels failed after retries. ` +
+        `Webhook: ${ch1.lastError?.message || "unknown"}. ` +
+        `Email: ${ch2.lastError?.message || "unknown"}. ` +
+        `Variant uploaded to Drive (${upload.webViewLink}) and manifest written.`
+      );
+    }
+
+    const trialChannels = [];
+    if (ch1.ok) trialChannels.push("trial-dashboard");
+    if (ch2.ok) trialChannels.push("email");
+    console.log(`[Delivery] ✓ Trial delivery complete via: ${trialChannels.join(" + ")}`);
+
     return {
       delivered: true,
-      channels: trialResult.ok ? ["trial-dashboard"] : [],
+      channels: trialChannels,
+      // The Trial tab is the surface Peter actually looks at. Whether the card
+      // reached it is a separate fact from "something was delivered", and the
+      // caller verifies against this one.
+      dashboardOk: ch1.ok,
+      dashboardError: ch1.ok ? null : ch1.lastError?.message || "unknown",
       driveLink: upload.webViewLink,
       driveFileId: upload.fileId,
-      fileName: upload.fileName,
+      fileName: trialFileName,
+      isTest: Boolean(options.isTest),
     };
   }
 

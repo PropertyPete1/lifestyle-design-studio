@@ -48,7 +48,26 @@ export const OUTCOME = {
   UNVERIFIED: "unverified",
   /** The work is done but could not be handed to Peter. */
   DELIVERY_FAILED: "delivery_failed",
+  /** The run did the thing it exists to do, and it landed. */
+  SUCCEEDED: "succeeded",
+  /** The run deliberately did nothing, and that was correct. */
+  SKIPPED: "skipped",
 };
+
+/**
+ * The outcomes that mean something is wrong. These get the `[DAILY ALERT]`
+ * inbox treatment; the rest are reported on the run page only.
+ *
+ * The split exists because the fourteen-day outage was not a missing message —
+ * GitHub sent one every time — it was a message indistinguishable from the
+ * twenty routine ones a day. Emailing every success would rebuild exactly that.
+ */
+export const ALERT_OUTCOMES = new Set([
+  OUTCOME.FAILED,
+  OUTCOME.NOTHING_TO_POST,
+  OUTCOME.UNVERIFIED,
+  OUTCOME.DELIVERY_FAILED,
+]);
 
 /** Human-readable one-liners, so a subject line reads like a sentence. */
 const HEADLINE = {
@@ -56,6 +75,8 @@ const HEADLINE = {
   [OUTCOME.NOTHING_TO_POST]: "posted NOTHING",
   [OUTCOME.UNVERIFIED]: "posted but NOT VERIFIED",
   [OUTCOME.DELIVERY_FAILED]: "made it but COULD NOT DELIVER",
+  [OUTCOME.SUCCEEDED]: "OK",
+  [OUTCOME.SKIPPED]: "SKIPPED",
 };
 
 /** The Actions run page, when we are running in Actions. */
@@ -147,6 +168,64 @@ export async function notifyDailyFailure({
       `This run page is the only record.`
     );
   }
+  console.log(`[Alert] ${pipeline} ${outcome} — sent via: ${channels.join(" + ")}`);
+  return { notified: channels.includes("email"), channels, errors };
+}
+
+/**
+ * Report ANY terminal outcome — good or bad.
+ *
+ * This is the entry point a pipeline should call, because it is total: there is
+ * no outcome value it declines to report. Bad outcomes get the full alert path
+ * (annotation + `[DAILY ALERT]` mail); good ones get a `::notice::` on the run
+ * page, so "the run said nothing" stops being a state the system can occupy.
+ *
+ * `forceEmail` promotes a normally-quiet outcome to the inbox. A trial slot that
+ * skips on a *scheduled* run is the case that matters: the cron should never
+ * meet an already-filled window, so that skip is evidence, not routine.
+ *
+ * NEVER THROWS, for the same reason notifyDailyFailure never throws.
+ */
+export async function notifyDailyOutcome({
+  pipeline,
+  label = null,
+  outcome,
+  reason,
+  remedy = null,
+  detail = null,
+  accessToken = undefined,
+  forceEmail = false,
+}) {
+  if (ALERT_OUTCOMES.has(outcome)) {
+    return notifyDailyFailure({ pipeline, label, outcome, reason, remedy, detail, accessToken });
+  }
+
+  // Good news still has to be said out loud, or a pipeline that silently stops
+  // doing anything looks exactly like one that is working.
+  console.log(`::notice title=${pipeline} ${HEADLINE[outcome] || outcome}::${oneLine(reason)}`);
+  const channels = ["annotation"];
+  const errors = [];
+
+  if (forceEmail) {
+    const subject = alertSubject({ pipeline, label, outcome });
+    const body = alertBody({ pipeline, label, outcome, reason, remedy, url: runUrl(), detail });
+    try {
+      const token = accessToken === undefined ? await getAccessToken() : accessToken;
+      if (!token) throw new Error("no Google access token available");
+      const sent = await sendOwnerEmail(token, { subject, body, prefix: MAIL_PREFIX.ALERT });
+      if (sent?.ok) channels.push("email");
+      else errors.push(`email: ${sent?.lastError?.message || "unknown failure"}`);
+    } catch (err) {
+      errors.push(`email: ${err.message}`);
+    }
+    if (!channels.includes("email")) {
+      console.log(
+        `::error title=ALERTING DEGRADED::Could not email the ${pipeline} ${outcome} notice ` +
+        `(${errors.join("; ")}). This run page is the only record.`
+      );
+    }
+  }
+
   console.log(`[Alert] ${pipeline} ${outcome} — sent via: ${channels.join(" + ")}`);
   return { notified: channels.includes("email"), channels, errors };
 }

@@ -166,7 +166,12 @@ describe("no daily pipeline can exit without a human hearing about it", () => {
       { match: /Could not resolve file\. Aborting/, why: "manual FORCE_VIDEO_ID typo; the operator is watching the run" },
     ],
     "trial-variant-main.js": [
-      { match: /Already generated for today/, why: "idempotency guard — expected on the second cron" },
+      // The idempotency skip used to live here, exempted as "expected on the
+      // second cron". It no longer needs an exemption: it reports SKIPPED every
+      // time, and escalates to mail when it happens on the cron, where a
+      // pre-filled window means a replay or broken window logic rather than
+      // routine. An exemption that covers a real no-op is how a pipeline
+      // no-ops forever behind a green tick.
       { match: /is not a posted video/, why: "manual FORCE_SOURCE_VIDEO_ID typo; operator is watching" },
     ],
     "carousel-main.js": [],
@@ -201,7 +206,9 @@ describe("no daily pipeline can exit without a human hearing about it", () => {
       const unexplained = [];
 
       for (const ex of exitWindows(text)) {
-        if (/notifyDailyFailure\(/.test(ex.window)) continue;
+        // Either notifier counts: both always emit a run-page annotation before
+        // returning, which is the property this guard is really asserting.
+        if (/notifyDaily(Failure|Outcome)\(/.test(ex.window)) continue;
         if ((ALLOWED_SILENT[file] || []).some((a) => a.match.test(ex.window))) continue;
         unexplained.push(`${file}:${ex.line}  ${ex.source}`);
       }
