@@ -354,7 +354,16 @@
                   "mode": "VOICEOVER",
                   "text": "Oak Hills sits just south and west of that hospital cluster. It's about as close as you can live without being in a parking lot. Houses from the sixties and seventies, mostly one story, real grown trees. The drive over to Floyd Curl is short on a normal morning. Some days it's five minutes.",
                   "direction": "Drive-by B-roll, hospital towers in the background if you have it.",
-                  "visualIntent": "FOOTAGE"
+                  "visualIntent": {
+                    "type": "FOOTAGE",
+                    "spec": {
+                      "keywords": [
+                        "mature trees residential street aerial",
+                        "established suburban neighborhood tree canopy",
+                        "quiet suburban street morning light"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s2t3",
@@ -381,7 +390,15 @@
                   "mode": "VOICEOVER",
                   "text": "Deerfield is the newest of the three inside that ring. Mostly eighties and nineties, sitting up near 1604 off Lockhill Selma, one of the north-south roads inside the loop. Bigger floor plans than Oak Hills, tile roofs on some streets, straight shot down to the hospitals. It's what people pick when they want space but don't want the highway drive.",
                   "direction": "Wider street shots, show the size difference.",
-                  "visualIntent": "FOOTAGE"
+                  "visualIntent": {
+                    "type": "FOOTAGE",
+                    "spec": {
+                      "keywords": [
+                        "aerial suburban cul de sac homes",
+                        "suburban neighborhood aerial texas"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s2t5",
@@ -419,7 +436,15 @@
                   "mode": "VOICEOVER",
                   "text": "Stone Oak is the big one. It starts just north of 1604 and climbs up the hill from there. Two story homes, mostly two thousands and newer, gated pockets, grocery stores and urgent cares everywhere. If you want a house that already looks like the photos you've been saving at eleven at night, this is that area.",
                   "direction": "Newer construction B-roll, gated entrances, retail.",
-                  "visualIntent": "FOOTAGE"
+                  "visualIntent": {
+                    "type": "FOOTAGE",
+                    "spec": {
+                      "keywords": [
+                        "aerial suburban neighborhood texas hill country",
+                        "large suburban homes aerial drone"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s3t3",
@@ -445,7 +470,15 @@
                   "mode": "VOICEOVER",
                   "text": "Timberwood Park is further north, past Stone Oak, and it's a different animal. Half acre and acre lots. Some homes on well water and septic. It's unincorporated Bexar County, which means no city property tax line on your bill. That's real money every year. It also means county sheriff instead of city police, and a longer drive to everything.",
                   "direction": "Big lot and open land B-roll.",
-                  "visualIntent": "FOOTAGE"
+                  "visualIntent": {
+                    "type": "FOOTAGE",
+                    "spec": {
+                      "keywords": [
+                        "texas hill country homes acreage aerial",
+                        "rural homes oak trees aerial"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s3t5",
@@ -504,14 +537,30 @@
                   "mode": "VOICEOVER",
                   "text": "Universal City is the closest thing to Randolph's front gate. The town grew up around the base and it still feels that way. Modest houses, older, priced under most of what you'll see up north. If you want a short drive and a smaller payment, and you don't need brand new construction, that's the value play on this side of the map.",
                   "direction": "Calm, honest tone. Older ranch home B-roll.",
-                  "visualIntent": "FOOTAGE"
+                  "visualIntent": {
+                    "type": "FOOTAGE",
+                    "spec": {
+                      "keywords": [
+                        "small town residential street aerial",
+                        "modest suburban homes street daytime"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s4t4",
                   "mode": "VOICEOVER",
                   "text": "Schertz and Cibolo are the next two out, heading up 35 toward New Braunfels. This is where the new construction lives on the northeast side. Bigger homes, more yard, and a much easier drive to Randolph than anybody sitting up on 281 gets. They've grown fast, and that growth is exactly why the school district question matters here.",
                   "direction": "New construction B-roll, wide streets.",
-                  "visualIntent": "FOOTAGE"
+                  "visualIntent": {
+                    "type": "FOOTAGE",
+                    "spec": {
+                      "keywords": [
+                        "new construction suburban development aerial",
+                        "new homes under construction neighborhood"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s4t5",
@@ -635,7 +684,15 @@
                   "mode": "VOICEOVER",
                   "text": "This matters even if your kids are grown, or you don't have kids at all. Resale. The next buyer is going to look it up, and if your house sits on the wrong side of that line for the neighborhood's reputation, you eat the difference when you sell. Especially on a house you might only hold three or four years on orders.",
                   "direction": "Bring it back to money. Steady pace.",
-                  "visualIntent": "FOOTAGE"
+                  "visualIntent": {
+                    "type": "FOOTAGE",
+                    "spec": {
+                      "keywords": [
+                        "suburban family home exterior daytime",
+                        "residential street houses sunny"
+                      ]
+                    }
+                  }
                 }
               ],
               "boundaryPull": "And there's one more line on a north side tax bill that your veteran exemption does not touch at all. That's the one I care about most."
@@ -684,7 +741,15 @@
                   "mode": "VOICEOVER",
                   "text": "That charge shows up on the same statement, in the same envelope, looking exactly like a tax. It isn't one. It's an assessment. Your exemption wipes out the school line and the county line, and that assessment just sits there, unchanged, year after year, usually for a couple of decades.",
                   "direction": "Flat and clear. Let the last line hang.",
-                  "visualIntent": "FOOTAGE"
+                  "visualIntent": {
+                    "type": "FOOTAGE",
+                    "spec": {
+                      "keywords": [
+                        "water tower suburban neighborhood",
+                        "municipal water infrastructure aerial"
+                      ]
+                    }
+                  }
                 },
                 {
                   "id": "s6t4",
