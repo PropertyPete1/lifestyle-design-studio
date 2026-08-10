@@ -136,4 +136,73 @@ export async function getFileMetadata(fileId) {
   return res.json();
 }
 
+/**
+ * Find one file by name inside a folder. Returns its id, or null.
+ *
+ * Exact-name lookup rather than a listing, because the callers are caches: they
+ * know the filename they wrote and only want to know whether it is still there.
+ * The name is quoted into a Drive query, so an apostrophe in it would break the
+ * query — escaped rather than trusted, since cache keys are built from track and
+ * clip titles that come from other people's catalogues.
+ */
+export async function findInFolder(folderId, name) {
+  const token = await getAccessToken();
+  const safe = String(name).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  const params = new URLSearchParams({
+    q: `'${folderId}' in parents and name = '${safe}' and trashed = false`,
+    fields: "files(id,name,size)",
+    pageSize: "1",
+  });
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Drive lookup failed (${res.status})`);
+  const data = await res.json();
+  return data.files?.[0]?.id || null;
+}
+
+/** Download any file by id. Returns a Buffer. */
+export async function downloadFileById(fileId) {
+  const token = await getAccessToken();
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Drive download failed (${res.status})`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+/**
+ * Upload a buffer into a folder, as a multipart create.
+ *
+ * The boundary is a fixed string rather than a random one — the payloads here
+ * are binary audio and a random boundary that happened to occur inside the
+ * bytes would corrupt the upload. A fixed improbable string has the same
+ * collision odds and is reproducible when one goes wrong.
+ */
+export async function uploadToFolder(folderId, name, buffer, mimeType = "application/octet-stream") {
+  const token = await getAccessToken();
+  const boundary = "-----ldr-drive-boundary-9f3a2c";
+  const meta = JSON.stringify({ name, parents: [folderId] });
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n`),
+    Buffer.from(`--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`),
+    buffer,
+    Buffer.from(`\r\n--${boundary}--`),
+  ]);
+
+  const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": `multipart/related; boundary=${boundary}`,
+    },
+    body,
+  });
+  if (!res.ok) {
+    const err = await res.text().then((t) => t.slice(0, 200));
+    throw new Error(`Drive upload failed (${res.status}): ${err}`);
+  }
+  return res.json();
+}
+
 export { CITY_FOLDER_IDS, getAccessToken };

@@ -62,6 +62,9 @@ import { applyRetentionStage, renderRetentionSummary, attachEmphasis } from "./y
 import { buildVisuals } from "./yt-visual-build.js";
 import { listLongformFootage } from "./yt-footage-source.js";
 import { creditsBlock } from "./yt-stock.js";
+import { selectPunches, captionTextFor } from "./yt-punch.js";
+import { pickTrack, fetchMusicBed, musicReport, musicCreditsBlock, cacheKey as musicCacheKey, MUSIC_FOLDER } from "./yt-music.js";
+import { findInFolder, downloadFileById, uploadToFolder } from "./drive.js";
 import { getWordTimestamps } from "./burned-captions.js";
 import { generateOpeningOverlay, planOpening } from "./yt-opening.js";
 import { generateThumbnailHook } from "./yt-thumbnail-hook.js";
@@ -482,14 +485,43 @@ async function buildFromRecordings(approvals, record) {
   // THE COVERAGE SPLIT. Every voiceover second is carried by exactly one layer,
   // and this is the number that says which kind of video this turned out to be.
   console.log(
-    `[YTPipeline] visual coverage: ${gen.byPct.graphic}% graphic / ${gen.byPct.typography}% typography / ` +
+    `[YTPipeline] visual coverage: ${gen.byPct.graphic}% graphic / ${gen.byPct.beat}% beat / ` +
       `${gen.byPct.stock}% stock / ${gen.byPct.owned}% owned footage ` +
       `(${gen.voiceoverSeconds}s of voiceover)`
   );
   if (gen.uncoveredSeconds > 0) {
-    // Should be impossible — typography is the floor. If it ever fires, the
-    // floor has a hole in it and that is worth stopping for.
-    throw new Error(`${gen.uncoveredSeconds}s of voiceover has no picture — the typography fallback did not cover it`);
+    // Should be impossible — the beat is the floor. If it ever fires, the floor
+    // has a hole in it and that is worth stopping for.
+    throw new Error(`${gen.uncoveredSeconds}s of voiceover has no picture — the beat fallback did not cover it`);
+  }
+
+  // ── what each stock window was asked for, and what it got ────────────────
+  // The per-window keywords are the revision 8 change most likely to be argued
+  // with, so the build prints the evidence rather than a summary: the phrase
+  // spoken in the window, the concept derived from it, and every proper noun
+  // dropped on the way. A place name reaching a search would be visible here.
+  for (const w of gen.stockWindows || []) {
+    console.log(
+      `[YTPipeline] stock window ${w.takeId}#${w.phase} ${w.startAt}s+${w.seconds}s: ` +
+        `"${String(w.phrase).slice(0, 60)}" -> [${w.keywords.join(", ") || "nothing searchable"}]` +
+        (w.dropped.length ? ` (dropped: ${w.dropped.join(", ")})` : "") +
+        ` -> ${w.matched ? "matched" : "no clip"}`
+    );
+  }
+  const windowsMatched = (gen.stockWindows || []).filter((w) => w.matched).length;
+  if ((gen.stockWindows || []).length > 0) {
+    console.log(`[YTPipeline] stock windows: ${windowsMatched}/${gen.stockWindows.length} matched a clip`);
+  }
+  // The property the whole classification exists to guarantee, asserted rather
+  // than assumed: no proper noun the script named may appear in a search query.
+  const leaked = (gen.stockWindows || []).filter((w) =>
+    (w.dropped || []).some((d) => w.keywords.join(" ").toLowerCase().includes(String(d).toLowerCase()))
+  );
+  for (const w of leaked) {
+    console.log(`::error::stock window ${w.takeId}#${w.phase} searched for a proper noun (${w.dropped.join(", ")})`);
+  }
+  if (leaked.length > 0) {
+    throw new Error(`${leaked.length} stock window(s) put a proper noun into a search — a clip could be presented as a specific place`);
   }
   console.log(
     `[YTPipeline] word timing: ${gen.wordTimingCoverage.withTiming}/${gen.wordTimingCoverage.takes} takes transcribed ` +
@@ -594,11 +626,70 @@ async function buildFromRecordings(approvals, record) {
   console.log(renderRetentionSummary(retention).split("\n").map((l) => `[YTPipeline] ${l}`).join("\n"));
 
   const chapters = buildChapters(withVisuals, script);
+
+  // ── the micro-punches ────────────────────────────────────────────────────
+  // Chosen AFTER the retention edit, because that edit changes on-camera segment
+  // lengths and a punch timed against the unedited timeline would drift exactly
+  // as the captions would. Both are laid out from the same `seg.seconds`, which
+  // is what keeps a punch on screen while its own words are.
+  const punchPlan = selectPunches(withVisuals);
+  console.log(
+    `[YTPipeline] micro-punches: ${punchPlan.punches.length} of ${punchPlan.considered} candidate(s) — ` +
+      (punchPlan.punches.map((p) => `"${p.text}" @${p.at}s`).join(", ") || "none")
+  );
+  // THE CARD 7 CHECK, RUN ON THE BUILD RATHER THAN LEFT TO THE TEST SUITE. The
+  // suite proves the construction is sound; this proves it on the actual script
+  // being shipped, which is where "middle of the screen disagrees with the
+  // captions" would actually have happened.
+  const captionText = new Map(
+    (withVisuals.segments || []).map((s) => [s.takeId, captionTextFor(s)])
+  );
+  const mismatched = punchPlan.punches.filter((p) => !(captionText.get(p.takeId) || "").includes(p.text));
+  for (const p of mismatched) {
+    console.log(`::error::micro-punch "${p.text}" does not appear verbatim in take ${p.takeId}'s captions`);
+  }
+  if (mismatched.length > 0) {
+    throw new Error(`${mismatched.length} micro-punch(es) would put words on screen the captions do not say`);
+  }
+
+  // ── the music bed ────────────────────────────────────────────────────────
+  // Fetched here rather than inside the renderer so a licensing or network
+  // failure is reported before twelve minutes of encoding, not after.
+  // The Drive side of the bed cache. Both halves swallow their errors: a cache
+  // that cannot be read costs one download, and a cache that cannot be written
+  // costs one download next build. Neither is worth failing a video over, and
+  // neither is silent — they warn, so a folder whose permissions changed shows
+  // up as a repeated fetch with a reason rather than as mysterious slowness.
+  const musicDriveGet = async (name) => {
+    try {
+      const id = await findInFolder(MUSIC_FOLDER, name);
+      return id ? await downloadFileById(id) : null;
+    } catch (err) {
+      console.log(`::warning::music cache read failed (${err.message}) — fetching from source`);
+      return null;
+    }
+  };
+  const musicDrivePut = async (name, buf) => {
+    await uploadToFolder(MUSIC_FOLDER, name, buf, "audio/mpeg");
+    console.log(`[YTPipeline] cached ${name} to the Longform Music folder`);
+  };
+
+  const track = pickTrack(result.selectedTitle || result.query || "");
+  const bed = await fetchMusicBed({ track, dir: workDir, driveGet: musicDriveGet, drivePut: musicDrivePut });
+  const music = musicReport(bed);
+  if (music.used) {
+    console.log(`[YTPipeline] music: "${music.track.title}" (${music.source}) — ${music.credit}`);
+  } else {
+    console.log(`::warning::no music bed (${music.reason}) — the video ships with narration only`);
+  }
+
   const rendered = await renderTimeline(withVisuals, {
     workDir,
     resolveBrollPath,
     resolution: RESOLUTION,
     openingOverlay: overlayResult.overlay,
+    musicPath: bed.path,
+    punches: punchPlan.punches,
   });
 
   const packaging = await buildPackaging({
@@ -612,6 +703,9 @@ async function buildFromRecordings(approvals, record) {
     // the timeline — empty when none did, so a graphics-and-typography video
     // carries no stock credit block at all.
     stockCredits: creditsBlock(gen.stockCredits),
+    // Empty when no bed was fetched, so a narration-only video carries no music
+    // credit for music it does not contain.
+    musicCredits: musicCreditsBlock(music.used ? bed.track : null),
   });
 
   // ── the thumbnail ─────────────────────────────────────────────────────────

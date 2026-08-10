@@ -199,6 +199,76 @@ export const ONCAM_BG_ZOOM = clampFloat(process.env.YT_ONCAM_BG_ZOOM, 1.1, 1.0, 
 export const ONCAM_VIGNETTE = clampFloat(process.env.YT_ONCAM_VIGNETTE, 0.35, 0, 1);
 
 /**
+ * Whether the video carries a music bed at all.
+ *
+ * Off is always safe: renderTimeline treats a missing bed as an ordinary state
+ * and ships narration only, which is what every revision before this one did.
+ */
+export const MUSIC_ENABLED = process.env.YT_MUSIC !== "false";
+
+/**
+ * Where the bed sits under the narration, in dB.
+ *
+ * A KNOB IN dB RATHER THAN THE OLD LINEAR CONSTANT because this is the number
+ * Peter will actually want to move after watching, and "make the music quieter"
+ * is a sentence about decibels. -14 dB is a hard duck before the sidechain
+ * compressor has done anything; the compressor then pulls it further down on
+ * every syllable, so the bed is audible between sentences and nearly gone
+ * underneath them.
+ *
+ * The bounds stop the two failures that are not worth allowing: a bed loud
+ * enough to compete with speech, and a bed so quiet it is only in the file to
+ * satisfy a checklist.
+ */
+export const MUSIC_DB = clampFloat(process.env.YT_MUSIC_DB, -14, -40, -3);
+
+/**
+ * How much the bed lifts under the hook and the close, in dB above MUSIC_DB.
+ *
+ * The energy change is the point — a bed at one level for twelve minutes is
+ * wallpaper. +5 dB is a little under double the perceived loudness, which reads
+ * as the music leaning in rather than as a level jump.
+ */
+export const MUSIC_LIFT_DB = clampFloat(process.env.YT_MUSIC_LIFT_DB, 5, 0, 12);
+
+/**
+ * Whether single-word micro-punches slam over the visual on emphasis beats.
+ *
+ * Separate knob from the punch-in framing changes despite the shared word: those
+ * are camera moves on an on-camera take, these are text over any visual. Turning
+ * one off must not cost the other.
+ */
+export const MICRO_PUNCHES_ENABLED = process.env.YT_MICRO_PUNCHES !== "false";
+
+/**
+ * The most micro-punches one video may carry.
+ *
+ * A ceiling rather than a target. The device works because it is rare — the
+ * fifth one is punctuation and the fifteenth is a style, and a style that puts a
+ * word on screen every forty seconds is competing with the captions it is
+ * supposed to be emphasising.
+ */
+export const MICRO_PUNCH_MAX = clampInt(process.env.YT_MICRO_PUNCH_MAX, 6, 0, 12);
+
+/** How long one punch holds the frame. Long enough to read, short enough to hit. */
+export const MICRO_PUNCH_SECONDS = clampFloat(process.env.YT_MICRO_PUNCH_SECONDS, 1.2, 0.6, 2.5);
+
+/**
+ * Whether punches and punch-in cuts carry a sound.
+ *
+ * SYNTHESISED, NOT LICENSED. The standing decision was to ship revision 8
+ * without SFX rather than stretch the licensing bar if clean sources came back
+ * thin — and they did: the sources with usable terms either have no API for
+ * audio or gate downloads behind OAuth. Generating the impact and the whoosh
+ * from ffmpeg's own oscillators sidesteps the question rather than compromising
+ * on it, because a tone we synthesise is a tone we own. See yt-sfx.js.
+ */
+export const PUNCH_SFX_ENABLED = process.env.YT_PUNCH_SFX !== "false";
+
+/** How loud the synthesised hits sit, in dB. Under the bed, not over it. */
+export const PUNCH_SFX_DB = clampFloat(process.env.YT_PUNCH_SFX_DB, -20, -40, -6);
+
+/**
  * The longest one visual may own the screen, in seconds.
  *
  * A 30-second narration used to sit on a single stock clip or a single graphic

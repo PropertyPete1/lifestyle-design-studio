@@ -31,6 +31,9 @@ import { kenBurnsArgs } from "./yt-visual-broll.js";
 import { renderOverlayPng, burnOverlayArgs } from "./yt-opening.js";
 import { pieceArgs } from "./yt-oncamera-edit.js";
 import { pipCompositeArgs } from "./yt-pip.js";
+import { renderPunchPng } from "./yt-punch.js";
+import { bedEnvelope } from "./yt-music.js";
+import { ensureSfxKit, mixSfxArgs, punchSfxTimeline } from "./yt-sfx.js";
 
 export const CANVAS = {
   "1080p": { w: 1920, h: 1080 },
@@ -66,8 +69,15 @@ export function segmentAudioArgs() {
   return ["-c:a", "aac", "-b:a", AUDIO_BITRATE, "-ar", AUDIO_RATE, "-ac", AUDIO_CHANNELS];
 }
 
-/** How far under the narration the music bed sits. */
-const MUSIC_BED_VOLUME = 0.25;
+/**
+ * How far under the narration the music bed sits.
+ *
+ * WAS a linear 0.25 constant. IS `YT_MUSIC_DB`, because "the music is too loud"
+ * is the most likely note to come back from a review round and it should cost a
+ * workflow edit rather than a code change. The envelope that rides on top of it
+ * — up under the hook, back for the body, up for the close — lives in
+ * yt-music.js with the rest of the bed's decisions.
+ */
 
 export function canvasFor(resolution = RESOLUTION) {
   return CANVAS[resolution] || CANVAS["1080p"];
@@ -153,17 +163,33 @@ export function concatArgs(listFile, output) {
 }
 
 /**
- * Duck a music bed under the narration.
+ * Duck a music bed under the narration, riding an energy envelope.
  *
- * sidechaincompress keyed off the narration itself, so the bed drops when he
- * speaks and comes back when he does not — rather than sitting at one low
+ * TWO MECHANISMS, DOING DIFFERENT JOBS, and conflating them is how a bed ends up
+ * either inaudible or in the way.
+ *
+ * The SIDECHAIN is per-syllable. Keyed off the narration itself, so the bed
+ * drops when he speaks and returns in the gaps — rather than sitting at one low
  * volume for twelve minutes, which sounds like a mistake.
+ *
+ * The ENVELOPE is per-section. The bed comes up under the hook, settles for the
+ * body, and comes up again for the close, on the ramps yt-music.js computes.
+ * `eval=frame` is what makes the expression a curve rather than a value sampled
+ * once at filter-init — without it ffmpeg evaluates `t` at zero and the whole
+ * video plays at the hook's level.
+ *
+ * The envelope is applied BEFORE the compressor so the compressor sees the level
+ * the viewer will hear. Ducking a signal and then raising it afterwards would
+ * hand the loud sections back exactly the headroom the duck just took away.
  */
-export function duckArgs(videoIn, musicIn, output) {
+export function duckArgs(videoIn, musicIn, output, { envelope = null } = {}) {
+  const level = envelope?.expr
+    ? `volume=eval=frame:volume='${envelope.expr}'`
+    : `volume=${envelope?.body ?? 0.25}`;
   return [
     "-y", "-i", videoIn, "-i", musicIn,
     "-filter_complex",
-    `[1:a]volume=${MUSIC_BED_VOLUME}[bed];` +
+    `[1:a]${level}[bed];` +
       `[0:a]asplit=2[vo1][vo2];` +
       `[bed][vo1]sidechaincompress=threshold=0.05:ratio=12:attack=20:release=400[ducked];` +
       `[vo2][ducked]amix=inputs=2:duration=first:dropout_transition=0[aout]`,
@@ -174,11 +200,67 @@ export function duckArgs(videoIn, musicIn, output) {
   ];
 }
 
-/** Burn the caption track. A full re-encode — the second most expensive stage. */
-export function burnArgs(videoIn, assPath, output) {
+/**
+ * Burn the caption track, and the micro-punches with it.
+ *
+ * ONE PASS FOR BOTH, and that is the reason the punches composite here rather
+ * than in a stage of their own. This is a full re-encode of a twelve-minute
+ * file — the second most expensive thing the pipeline does — and a separate
+ * overlay pass would double it to put six words on screen. Folded in, the
+ * punches cost a handful of PNG inputs on an encode that was already happening.
+ *
+ * Each punch is a still gated to its own window by `enable`, the pattern
+ * burnHookArgs already proved on the opening. There is no fade IN: an instant
+ * appearance is what makes it a slam rather than a dissolve, which is the whole
+ * point of the device. The fade OUT is short enough to feel like a release and
+ * long enough not to click.
+ */
+export function burnArgs(videoIn, assPath, output, { punches = [] } = {}) {
+  const usable = (punches || []).filter((p) => p && p.pngPath);
+  if (usable.length === 0) {
+    return [
+      "-y", "-i", videoIn,
+      "-vf", `ass=${assPath}`,
+      "-c:v", "libx264", "-preset", PRESET, "-crf", String(CRF), "-pix_fmt", "yuv420p",
+      "-c:a", "copy", "-movflags", "+faststart",
+      output,
+    ];
+  }
+
+  const inputs = [];
+  for (const p of usable) inputs.push("-loop", "1", "-t", String(p.seconds), "-i", p.pngPath);
+
+  // The captions burn FIRST so a punch sits over them rather than under them.
+  // A caption drawn on top of the plate would be the card 7 picture exactly:
+  // two pieces of text fighting in the middle of the frame.
+  const chains = [`[0:v]ass=${assPath}[cap]`];
+  let last = "[cap]";
+  usable.forEach((p, i) => {
+    const fade = Math.min(0.2, p.seconds / 4);
+    // `setpts` IS LOAD-BEARING AND WAS NOT OBVIOUS. A PNG input has its own
+    // timeline starting at zero, so `fade=t=out:st=1.0` fades one second into
+    // the OVERLAY, not one second into the video — the plate finished fading
+    // long before its `enable` window opened, and the punch rendered as nothing
+    // at all. Verified against extracted frames: without the shift, zero gold
+    // pixels inside the window; with it, the plate is solid through the hold and
+    // gone after the release.
+    chains.push(
+      `[${i + 1}:v]format=rgba,fade=t=out:st=${(p.seconds - fade).toFixed(2)}:d=${fade.toFixed(2)}:alpha=1,` +
+        `setpts=PTS-STARTPTS+${p.at.toFixed(3)}/TB[pv${i}]`
+    );
+    const out = i === usable.length - 1 ? "[v]" : `[pc${i}]`;
+    // `eof_action=pass` so the main video continues after a plate's frames run
+    // out, rather than the graph holding the last one or stalling.
+    chains.push(
+      `${last}[pv${i}]overlay=0:0:eof_action=pass:enable='between(t,${p.at.toFixed(3)},${(p.at + p.seconds).toFixed(3)})'${out}`
+    );
+    last = `[pc${i}]`;
+  });
+
   return [
-    "-y", "-i", videoIn,
-    "-vf", `ass=${assPath}`,
+    "-y", "-i", videoIn, ...inputs,
+    "-filter_complex", chains.join(";"),
+    "-map", "[v]", "-map", "0:a?",
     "-c:v", "libx264", "-preset", PRESET, "-crf", String(CRF), "-pix_fmt", "yuv420p",
     "-c:a", "copy", "-movflags", "+faststart",
     output,
@@ -314,7 +396,7 @@ export function mediaDuration(path) {
  * @param {string} [opts.resolution]
  * @returns {{ outputPath, seconds, bytes, stages }}
  */
-export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPath = null, resolution = RESOLUTION, openingOverlay = null } = {}) {
+export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPath = null, resolution = RESOLUTION, openingOverlay = null, punches = [] } = {}) {
   if (!plan?.segments?.length) throw new Error("renderTimeline needs a plan with segments");
   if (plan.missingTakes?.length) {
     // Rendering around a missing on-camera take would produce a video with a
@@ -477,29 +559,64 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
   const joined = join(dir, "joined.mp4");
   t("concat", () => ffmpeg(concatArgs(concatList, joined)));
 
-  // ── 3. music bed, if there is one ────────────────────────────────────────
-  let mixed = joined;
+  // ── 3. the sound: punches, then the bed ──────────────────────────────────
+  // The synthesised hits go in BEFORE the bed so the sidechain compressor sees
+  // them as part of the programme it is ducking under, rather than sitting on
+  // top of a mix that was already balanced without them.
+  let scored = joined;
+  const sfxTimeline = punchSfxTimeline(plan, punches);
+  if (sfxTimeline.length > 0) {
+    const kit = ensureSfxKit(dir, ffmpeg);
+    if (kit) {
+      const withSfx = join(dir, "sfx.mp4");
+      try {
+        t("sfx", () => ffmpeg(mixSfxArgs(joined, sfxTimeline, kit, withSfx)));
+        scored = withSfx;
+        console.log(`[Assemble] mixed ${sfxTimeline.length} synthesised hit(s)`);
+      } catch (err) {
+        // A failed SFX mix costs the sound, never the video.
+        console.log(`::warning::the SFX mix failed (${err.message}) — the video ships without them`);
+      }
+    }
+  }
+
+  let mixed = scored;
   if (musicPath && existsSync(musicPath)) {
     mixed = join(dir, "mixed.mp4");
-    t("duck", () => ffmpeg(duckArgs(joined, musicPath, mixed)));
+    const envelope = bedEnvelope({ seconds: mediaDuration(scored) || plannedSeconds(plan) });
+    t("duck", () => ffmpeg(duckArgs(scored, musicPath, mixed, { envelope })));
+    console.log(
+      `[Assemble] music bed at ${envelope.body} ` +
+        (envelope.shaped ? `lifting to ${envelope.lift} under the hook and from ${envelope.closeAt}s` : "(flat — too short to shape)")
+    );
   } else {
     console.log("[Assemble] no music bed supplied — narration only");
   }
 
-  // ── 4. captions ──────────────────────────────────────────────────────────
+  // ── 4. captions, and the micro-punches in the same pass ──────────────────
   const assPath = join(dir, "captions.ass");
   const chunks = buildCaptionChunks(plan);
   writeFileSync(assPath, buildAssFile(chunks, dim));
+
+  // Rasterise the plates before the encode, for the same reason the opening
+  // overlay is: sharp is async and the render loop is not.
+  const plates = [];
+  for (const [i, p] of (punches || []).entries()) {
+    const pngPath = join(dir, `punch-${String(i).padStart(2, "0")}.png`);
+    writeFileSync(pngPath, await renderPunchPng(p.text, dim, { hold: p.seconds }));
+    plates.push({ ...p, pngPath });
+  }
+
   const finalPath = join(dir, "final.mp4");
-  t("captions", () => ffmpeg(burnArgs(mixed, assPath, finalPath)));
+  t("captions", () => ffmpeg(burnArgs(mixed, assPath, finalPath, { punches: plates })));
 
   const seconds = mediaDuration(finalPath);
   const bytes = statSync(finalPath).size;
   console.log(
     `[Assemble] done: ${(seconds / 60).toFixed(1)} min, ${(bytes / 1024 / 1024).toFixed(1)} MB, ` +
-    `${chunks.length} caption chunks`
+    `${chunks.length} caption chunks, ${plates.length} micro-punch(es)`
   );
-  return { outputPath: finalPath, seconds, bytes, chunkCount: chunks.length, stages };
+  return { outputPath: finalPath, seconds, bytes, chunkCount: chunks.length, punches: plates, stages };
 }
 
 /**
@@ -543,6 +660,17 @@ export async function generateNarration(plan) {
   }
   console.log(`[Assemble] narrated ${generated} voiceover take(s) with the cloned voice`);
   return plan;
+}
+
+/**
+ * The timeline's length from the plan alone.
+ *
+ * A fallback for the envelope when ffprobe cannot read the joined file — the
+ * bed's shape needs to know where the close begins, and a probe that returned 0
+ * would put the close at a negative offset and flatten the envelope silently.
+ */
+export function plannedSeconds(plan) {
+  return round((plan?.segments || []).reduce((n, s) => n + (s.seconds || 0), 0));
 }
 
 function round(n) {
