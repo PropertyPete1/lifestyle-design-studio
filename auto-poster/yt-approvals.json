@@ -953,7 +953,13 @@
         "title": "North San Antonio Neighborhoods: 281 Traffic, School Lines, MUD Fees",
         "requestId": "topic_pick-2026-08-07-d5cddf9d"
       },
-      "videoId": "vid-2026-08-07-d5cddf9d"
+      "videoId": "vid-2026-08-07-d5cddf9d",
+      "actedAt": "2026-08-10T19:57:06.065Z",
+      "actedAction": "superseded_by_rebuild",
+      "actedResult": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "notes": "revision 7 (PR #74): graphic phases, cap with no exceptions, named credits"
+      }
     }
   ]
 }
