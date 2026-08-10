@@ -450,6 +450,55 @@ describe("mergeYouTubeLog preserves fields it has never heard of", async () => {
     assert.equal(m.uploadedAt, "2026-08-09T20:59:00Z", "the upload group still applies its policy");
   });
 
+  test("a REWORK clears the upload, so the next run can actually rebuild", async () => {
+    // THE BUG THIS EXISTS TO KILL, found on revision 8 of video 1. recordRework
+    // reopens the build gate by nulling `uploadedAt`; the upload group's "never
+    // erase an upload" rule then restored it from the remote, and the merged
+    // record said both "revision 8, queued for rework" and "already uploaded".
+    // The gate reads the second half, so two pipeline dispatches each exited in
+    // three minutes with "review already recorded — nothing further" and the
+    // rebuild could never start.
+    const { recordRework } = await import("../src/yt-log.js");
+    const remote = { videos: [{ ...base, revision: 7, uploadedAt: "2026-08-10T21:05:42Z", metricoolPostId: 360495222, youtubeUrl: "https://x/y.mp4", approved: true, distribution: { thumbnail: { done: true } } }] };
+    const local = recordRework(JSON.parse(JSON.stringify(remote)), "v1", { notes: "rebuild as revision 8" });
+
+    for (const [label, m] of [
+      ["rework local", mergeYouTubeLog(local, remote, () => {}).videos[0]],
+      ["rework remote", mergeYouTubeLog(remote, local, () => {}).videos[0]],
+    ]) {
+      assert.equal(m.revision, 8, label);
+      assert.equal(m.uploadedAt, null, `${label}: the upload marker must not come back`);
+      assert.equal(m.metricoolPostId, null, label);
+      assert.equal(m.youtubeUrl, null, label);
+      // The approval belonged to the superseded revision. Carrying it forward
+      // would mark a video that has not been built yet as approved.
+      assert.equal(m.approved, false, `${label}: the old approval does not survive the rework`);
+      assert.equal(m.distribution, null, `${label}: the old distribution does not survive either`);
+      assert.equal(m.reworks.length, 1, `${label}: and the history is kept`);
+    }
+  });
+
+  test("at the SAME revision an upload is still never erased", () => {
+    // The invariant the fix above must not cost: a copy that simply has not
+    // heard about the upload yet cannot delete it, or the next run pushes
+    // another 320MB to YouTube.
+    const m = mergeYouTubeLog(
+      { videos: [{ ...base, revision: 7, uploadedAt: null }] },
+      { videos: [{ ...base, revision: 7, uploadedAt: "2026-08-10T21:05:42Z" }] },
+      () => {}
+    ).videos[0];
+    assert.equal(m.uploadedAt, "2026-08-10T21:05:42Z");
+  });
+
+  test("at the SAME revision an approval is still never downgraded", () => {
+    const m = mergeYouTubeLog(
+      { videos: [{ ...base, revision: 7, approved: false }] },
+      { videos: [{ ...base, revision: 7, approved: true }] },
+      () => {}
+    ).videos[0];
+    assert.equal(m.approved, true);
+  });
+
   test("reworks union without duplicating either side's history", () => {
     const r1 = { revision: 1, rejectedAt: "a" };
     const r2 = { revision: 2, rejectedAt: "b" };
