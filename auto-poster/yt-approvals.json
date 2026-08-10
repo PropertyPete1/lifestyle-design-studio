@@ -970,7 +970,10 @@
         "title": "Best North San Antonio Neighborhoods for Veterans, Compared",
         "requestId": "topic_pick-2026-08-07-d5cddf9d"
       },
-      "videoId": "vid-2026-08-07-d5cddf9d"
+      "videoId": "vid-2026-08-07-d5cddf9d",
+      "decision": "reject",
+      "decidedAt": "2026-08-10T23:00:18.226Z",
+      "notes": "Superseded — rebuild as revision 8 with the merged PR #77 work (music, micro-punches, per-window stock, SFX). Same takes."
     }
   ]
 }
