@@ -63,6 +63,10 @@ export const REASON = {
   STOCK_NO_MATCH: "no stock clip passed the vision check",
   NO_OWNED_FOOTAGE: "the long-form footage folder is empty",
   REMAINDER: "filling the rest of the take",
+  // A DESIGNED decline, not a failure. MAP's reveal unit is a route drawing,
+  // which the card reveal model does not express, so it is not animated and
+  // says so rather than fake-animating. Approved by Peter, 2026-08-10.
+  MAP_NOT_ANIMATED: "MAP is not animated yet — no map was rendered",
 };
 
 /**
@@ -80,7 +84,7 @@ export const REASON = {
  * @param {number}  available.ownedSeconds seconds of owned footage the allocator gave us
  * @returns {{ blocks, primary, fellBack, reason }}
  */
-export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, ownedSeconds = 0, stockReason = null } = {}) {
+export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, ownedSeconds = 0, stockReason = null, graphicReason = null } = {}) {
   const total = Math.max(0, seg.seconds || 0);
   if (total <= 0) return { blocks: [], primary: null, fellBack: false, reason: "segment has no duration" };
 
@@ -99,7 +103,13 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
     primary = "graphic";
   } else if (isGraphic && !graphicOk) {
     fellBack = true;
-    reason = REASON.GRAPHIC_FAILED;
+    // The SPECIFIC reason when the renderer gave one. Collapsing everything to
+    // GRAPHIC_FAILED told the first live build that nine MAP takes had
+    // "rendered but failed verification" when no map was ever rendered — they
+    // are not animated yet and decline immediately. A report that misattributes
+    // a designed fall to a verification failure sends the reader hunting for a
+    // bug that is not there.
+    reason = graphicReason || REASON.GRAPHIC_FAILED;
   } else if (seg.visual === TYPOGRAPHY) {
     primary = "typography";
   } else if (seg.visual === FOOTAGE) {
@@ -272,7 +282,7 @@ export async function planVisuals(segments, {
     }
 
     const ownedSeconds = ownedFor(seg) || 0;
-    const coverage = planSegmentCoverage(seg, { graphicOk, stockSeconds, ownedSeconds, stockReason });
+    const coverage = planSegmentCoverage(seg, { graphicOk, stockSeconds, ownedSeconds, stockReason, graphicReason: seg.graphicFailure || null });
 
     out.push({
       ...seg,

@@ -79,7 +79,7 @@ export async function buildVisuals(plan, {
       // MAP has its own renderer and is not a card, so it keeps the still path
       // for now: its reveal unit is a route drawing, which the card reveal
       // model does not express. It still gets the push, which is what it had.
-      if (seg.visual === MAP) return { ok: false, reason: "MAP is not animated yet — falls back to the layer below" };
+      if (seg.visual === MAP) return { ok: false, reason: REASON.MAP_NOT_ANIMATED };
 
       const r = await renderAnimatedGraphic({
         type: seg.visual,
