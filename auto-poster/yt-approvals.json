@@ -844,6 +844,17 @@
         "videoId": "vid-2026-08-07-d5cddf9d",
         "notes": "revision 3 visual system merged (PR #63/#64) — this card shows the pre-merge render with reels footage in it"
       }
+    },
+    {
+      "requestId": "video_review-2026-08-10-195be4a7",
+      "kind": "video_review",
+      "requestedAt": "2026-08-10T03:59:13.711Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "Best North San Antonio Neighborhoods for Veterans, Compared",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
