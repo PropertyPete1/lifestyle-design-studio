@@ -29,9 +29,9 @@ test("no single visual owns the screen for much longer than the cap", () => {
   for (const [seg, opts] of cases) {
     const { blocks } = planSegmentCoverage(seg, opts);
     const longest = Math.max(...blocks.map((b) => b.seconds));
-    // The cap plus one stub-merge: a leftover under MIN_BLOCK_SECONDS joins the
-    // last block rather than becoming a flash frame of its own.
-    assert.ok(longest <= SCENE_MAX_SECONDS + 1.6, `longest scene ${longest}s exceeds the cap meaningfully`);
+    // NO EXCEPTIONS. The stub merge used to push a 9s take to a single 9s scene;
+    // over-cap blocks now split and share the time instead.
+    assert.ok(longest <= SCENE_MAX_SECONDS + 0.001, `longest scene ${longest}s exceeds the cap`);
     assert.ok(blocks.length > 1, "a long take must be chained, not held");
   }
 });
@@ -41,11 +41,33 @@ test("the cap does not chop a take that is already short enough", () => {
   assert.equal(blocks.length, 1, "a 7s take is one scene");
 });
 
-test("a graphic gets exactly one scene, never a replayed second one", () => {
-  // A second graphic block re-renders the same animation from its first state,
-  // which reads as a loop. Until phases exist the budget is one scene.
+test("a long take gets several graphic phases, each a distinct window", () => {
+  // Revision 6 capped this at ONE scene because a second graphic block replayed
+  // the animation from its first state. Phases exist now: the blocks are windows
+  // into one continuous render, so more than one is correct — provided their
+  // windows do not overlap, which is what makes phase 2 a continuation.
   const { blocks } = planSegmentCoverage({ kind: "voiceover", visual: "LIST", seconds: 40 }, { graphicOk: true, stockSeconds: 20 });
-  assert.equal(blocks.filter((b) => b.kind === "graphic").length, 1);
+  const phases = blocks.filter((b) => b.kind === "graphic");
+  assert.ok(phases.length > 1, "a 40s take is worth more than one graphic phase");
+
+  phases.forEach((p, i) => {
+    assert.equal(p.phase, i, "phases are numbered in play order");
+    assert.equal(p.phaseOf, phases.length, "and each knows how many there are");
+  });
+  for (let i = 1; i < phases.length; i++) {
+    const prevEnd = phases[i - 1].startAt + phases[i - 1].seconds;
+    assert.ok(phases[i].startAt >= prevEnd, `phase ${i} must open at or after the previous one closed, not replay it`);
+  }
+});
+
+test("a graphic phase never asks for time the render does not contain", () => {
+  // startAt is measured in SEGMENT time and the render is capped, so on a long
+  // take the last phase can sit past the end of the clip. The slice clamps; this
+  // asserts the plan does not produce a window that starts beyond a 40s render.
+  const { blocks } = planSegmentCoverage({ kind: "voiceover", visual: "LIST", seconds: 60 }, { graphicOk: true });
+  for (const b of blocks.filter((x) => x.kind === "graphic")) {
+    assert.ok(b.startAt < 40, `phase at ${b.startAt}s would start past the rendered clip`);
+  }
 });
 
 test("every block knows where it sits inside the take", () => {

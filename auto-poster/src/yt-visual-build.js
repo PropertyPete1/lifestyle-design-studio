@@ -19,6 +19,33 @@ import { existsSync, writeFileSync } from "fs";
 
 import { planVisuals, REASON } from "./yt-visual-plan.js";
 import { SCENE_MAX_SECONDS } from "./yt-config.js";
+
+/**
+ * The longest graphic animation we will render for one take.
+ *
+ * Spans the whole segment so reveals stay on the narration's clock, bounded only
+ * so a pathological take cannot ask for hundreds of rasterises.
+ */
+const GRAPHIC_RENDER_MAX_SECONDS = 40;
+
+/**
+ * Trim one phase window out of a rendered graphic.
+ *
+ * `-ss` AFTER `-i` and a re-encode, both deliberate. Seeking before the input
+ * lands on the nearest keyframe, which for a graphic whose reveals are ~0.14s
+ * apart can drop a phase onto the wrong state; and `-c copy` cuts on keyframes
+ * for the same reason. A phase that starts a third of a second late is a reveal
+ * that has already happened off-screen.
+ */
+export function phaseArgs(input, output, from, seconds) {
+  return [
+    "-y", "-i", input,
+    "-ss", String(Math.max(0, from)), "-t", String(Math.max(0.1, seconds)),
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+    "-an", "-fps_mode", "cfr",
+    output,
+  ];
+}
 import { renderAnimatedGraphic, renderTypographyClip, assertAnimated } from "./yt-visual-animate.js";
 import { fetchStockClip, stockEnabled } from "./yt-stock.js";
 import { MAP } from "./yt-visual-intent.js";
@@ -105,7 +132,15 @@ export async function buildVisuals(plan, {
         session: mapSession,
         type: seg.visual,
         spec,
-        seconds: Math.min(seg.seconds, 22),
+        // THE WHOLE SEGMENT, not a 22s slice of it.
+        //
+        // The reveals are timed against this take's words, so the animation has to
+        // span the same timeline the narration does. Each graphic block then shows
+        // its own WINDOW of that one continuous render — phase 2 opens where the
+        // clock says it should, which is what makes it resume rather than restart,
+        // and every reveal still lands on the word it was anchored to whenever the
+        // graphic is the thing on screen.
+        seconds: Math.min(seg.seconds, GRAPHIC_RENDER_MAX_SECONDS),
         words: timings.get(seg.takeId),
         dir,
         index: i,
@@ -128,6 +163,7 @@ export async function buildVisuals(plan, {
       return {
         ok: true,
         path: r.path,
+        renderedSeconds: r.seconds,
         timing: { syncedCount: r.syncedCount, revealCount: r.reveals.length, source: r.source, stateCount: r.stateCount },
       };
     } catch (err) {
@@ -194,7 +230,24 @@ export async function buildVisuals(plan, {
     const broll = [];
     for (const block of seg.visualBlocks) {
       if (block.kind === "graphic" && seg.graphicClip) {
-        broll.push({ generated: true, preRendered: true, kind: "graphic", visual: seg.visual, sourcePath: seg.graphicClip, seconds: block.seconds, fileName: `${seg.visual}.mp4` });
+        // Slice this phase's window out of the one render. Without this every
+        // phase points at the same file and plays it from zero — the build/cut/
+        // rebuild loop that made revision 6 cap the graphic at a single scene.
+        const from = Math.min(block.startAt ?? 0, Math.max(0, (seg.graphicSeconds || 0) - 0.1));
+        const dur = Math.min(block.seconds, Math.max(0.1, (seg.graphicSeconds || block.seconds) - from));
+        let phasePath = seg.graphicClip;
+        if ((block.phaseOf || 1) > 1) {
+          phasePath = join(dir, `phase-${seg.takeId}-${block.phase}.mp4`);
+          try {
+            ffmpeg(phaseArgs(seg.graphicClip, phasePath, from, dur));
+          } catch (err) {
+            // A failed slice must not cost the segment its picture: fall back to
+            // the whole clip, which is the pre-phase behaviour, and say so.
+            animationFailures.push({ takeId: seg.takeId, type: seg.visual, reason: `phase ${block.phase} slice failed (${err.message}) — phase plays from the start` });
+            phasePath = seg.graphicClip;
+          }
+        }
+        broll.push({ generated: true, preRendered: true, kind: "graphic", visual: seg.visual, sourcePath: phasePath, seconds: block.seconds, phase: block.phase, fileName: `${seg.visual}.mp4` });
         continue;
       }
       if (block.kind === "stock" && seg.stockClip) {

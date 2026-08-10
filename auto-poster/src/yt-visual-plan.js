@@ -149,16 +149,20 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
   // are what the scene cap hands the screen to when the lead has had its 8
   // seconds. Typography is always present and never runs out.
   const sources = [];
-  // ONE graphic scene per take, not several.
+  // GRAPHIC PHASES. The budget is the whole graphic allowance, spent across
+  // several blocks of at most one scene each.
   //
-  // The brief asked for "graphic phase 1 → typography beat → graphic phase 2",
-  // and that is the right shape — but a second graphic BLOCK re-renders the same
-  // animation from its first state, so the viewer sees the table build, cut away,
-  // and build again from nothing. A visible loop is worse than a single scene.
-  // True phases mean rendering one clip across the whole graphic budget and
-  // slicing it into the block slots so the animation RESUMES; that is assembler
-  // work and is not in this change. Budget is one scene until it exists.
-  if (isGraphic && graphicOk) sources.push({ kind: "graphic", seconds: Math.min(sceneMax, MAX_GRAPHIC_SECONDS), block: { visual: seg.visual, animated: true } });
+  // This only became safe once the renderer started SLICING one clip instead of
+  // replaying it. Revision 6 capped the graphic at a single scene precisely
+  // because a second graphic block re-rendered the same animation from its first
+  // state — the table would build, cut away, and build again from nothing. The
+  // cost of that cap was the regression it caused: graphic share fell from 63% to
+  // 27% and typography rose to 60%, so a thirty-second take got eight seconds of
+  // the thing that teaches it and twenty-two seconds of its own words restated.
+  //
+  // Now each graphic block carries a WINDOW into one continuous render, so
+  // phase 2 resumes where phase 1 stopped.
+  if (isGraphic && graphicOk) sources.push({ kind: "graphic", seconds: MAX_GRAPHIC_SECONDS, block: { visual: seg.visual, animated: true } });
   if (stockSeconds > 0) sources.push({ kind: "stock", seconds: stockSeconds, block: {} });
   if (ownedSeconds > 0) sources.push({ kind: "owned", seconds: ownedSeconds, block: {} });
   sources.push({ kind: "typography", seconds: Infinity, block: { reason: REASON.REMAINDER } });
@@ -214,7 +218,20 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
   // that could only carry twenty seconds of a thirty-second take — is
   // typography. This is the line that makes a blank segment impossible.
   if (remaining >= MIN_BLOCK_SECONDS) {
-    blocks.push({ kind: "typography", seconds: round(remaining), reason: primary ? REASON.REMAINDER : reason });
+    // THE FLOOR OBEYS THE CAP TOO — no exceptions, which is the whole point of a
+    // cap. This line used to push the entire remainder as ONE typography block
+    // and bypass the chain completely, which is how revision 6 shipped a 20.92s
+    // scene while reporting an 8s cap. A segment with no graphic and no stock
+    // reaches here holding its whole length.
+    let left = round(remaining);
+    let n = 0;
+    while (left >= MIN_BLOCK_SECONDS) {
+      const take = round(Math.min(sceneMax, left));
+      blocks.push({ kind: "typography", seconds: take, reason: primary ? REASON.REMAINDER : reason, phase: n++ });
+      left = round(left - take);
+    }
+    // A stub under one block joins the last scene rather than flashing.
+    if (left > 0 && blocks.length > 0) blocks[blocks.length - 1].seconds = round(blocks[blocks.length - 1].seconds + left);
     if (!primary) primary = "typography";
     remaining = 0;
   } else if (remaining > 0 && blocks.length > 0) {
@@ -237,11 +254,41 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
   // have shown a 30-second take the same phrases three times over once the scene
   // cap started chaining them. `startAt` is what lets each block set only the
   // words spoken while it is on screen.
+  // NO SCENE OVER THE CAP, INCLUDING THE STUB MERGE.
+  //
+  // A leftover shorter than one block joins the previous scene rather than
+  // flashing, which on a 9s take produced a single 9s scene: 8 plus a 1s stub
+  // that was too short to stand alone. That is a real exception to a rule stated
+  // without exceptions, so instead of merging past the cap the two share the
+  // time — 9s becomes 4.5 + 4.5, both under it and neither a flash.
+  //
+  // The second half becomes TYPOGRAPHY when the kind cannot safely repeat. A
+  // graphic splits into phases and typography re-windows its phrases, but stock
+  // and owned footage point at one clip, so two adjacent blocks would replay it
+  // from the start — the very loop phases were built to stop.
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (b.seconds <= sceneMax) continue;
+    const half = round(b.seconds / 2);
+    const rest = round(b.seconds - half);
+    b.seconds = half;
+    const repeatable = b.kind === "graphic" || b.kind === "typography";
+    blocks.splice(i + 1, 0, repeatable
+      ? { ...b, seconds: rest }
+      : { kind: "typography", seconds: rest, reason: REASON.REMAINDER });
+  }
+
   let at = 0;
+  const phaseCount = {};
   for (const b of blocks) {
     b.startAt = round(at);
+    // Phase index per kind, so the renderer can slice a graphic's second window
+    // out of the same clip its first window came from.
+    b.phase = phaseCount[b.kind] = (phaseCount[b.kind] ?? -1) + 1;
     at = round(at + b.seconds);
   }
+  const graphicBlocks = blocks.filter((b) => b.kind === "graphic");
+  for (const b of graphicBlocks) b.phaseOf = graphicBlocks.length;
 
   return { blocks, primary, fellBack, reason: fellBack ? reason : REASON.REQUESTED };
 }
@@ -383,6 +430,9 @@ export async function planVisuals(segments, {
       visualFellBack: coverage.fellBack,
       visualReason: coverage.reason,
       graphicClip: graphic?.path || null,
+      // How long the one render actually is, so a phase window can be clamped to
+      // it rather than asking ffmpeg for time that does not exist.
+      graphicSeconds: graphic?.renderedSeconds || 0,
       graphicTiming: graphic?.timing || null,
       stockClip: stock?.path || null,
       stockCredit: stock?.credit || null,
