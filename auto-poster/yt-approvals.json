@@ -926,6 +926,17 @@
         "videoId": "vid-2026-08-07-d5cddf9d",
         "notes": "revision 5 merged (PR #68): MAP animated, emphasis pulses connected, CALLOUT fixed, FOOTAGE keywords retrofitted — card 4 shows none of it"
       }
+    },
+    {
+      "requestId": "video_review-2026-08-10-9ad03899",
+      "kind": "video_review",
+      "requestedAt": "2026-08-10T16:09:06.031Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "Best neighborhoods in North San Antonio: 281 vs the northeast side",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
