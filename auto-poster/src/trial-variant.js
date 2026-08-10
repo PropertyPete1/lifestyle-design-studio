@@ -51,6 +51,27 @@ export function hasGeneratedToday(history, window) {
 }
 
 /**
+ * Does this skip deserve Peter's inbox, or only the run page?
+ *
+ * A skip must always be reported — a silent no-op is how a pipeline stops
+ * working without anyone noticing. But "the cron skipped" is not by itself
+ * evidence of a fault: a human running the slot early fills the window
+ * legitimately, and the cron then finding it filled is correct behaviour.
+ *
+ * The genuine fault is the cron finding a window the CRON already filled. That
+ * is a replayed run, or a window/date computation stuck on an already-served
+ * slot — the shape a permanent silent no-op would take.
+ *
+ * Records written before `trigger` existed are read as cron-filled, which is
+ * the cautious direction: a false alert is recoverable, a missed one is what
+ * this whole module exists to prevent.
+ */
+export function shouldEscalateSkip({ scheduled, existing }) {
+  if (!scheduled) return false;
+  return (existing?.trigger || "schedule") === "schedule";
+}
+
+/**
  * Get the next hook angle for a source video that hasn't been used yet.
  * Returns null if all angles are exhausted for this video.
  */

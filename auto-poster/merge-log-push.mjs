@@ -150,7 +150,17 @@ async function main() {
       console.log(`[MergePush] Committed: ${commitMsg}`);
 
       // Push — success is determined by EXIT STATUS, never by grepping output.
-      const push = runStatus("git push origin main");
+      //
+      // `HEAD:main`, not `main`: a workflow_dispatch on a branch checks out only
+      // that branch, so there is no local `main` ref and `git push origin main`
+      // dies on "src refspec main does not match any" — five times, then
+      // "log entry is LOST. Double-post risk!". A real trial variant was
+      // generated, delivered and then forgotten exactly this way.
+      //
+      // Pushing HEAD is still safe from a branch: the reset above put this
+      // commit directly on top of origin/main with only merge-managed JSON
+      // changed, so no branch code can ride along.
+      const push = runStatus("git push origin HEAD:main");
       if (push.ok) {
         // Verify the remote actually advanced to our commit before declaring victory.
         const localSha = run("git rev-parse HEAD").trim();

@@ -371,7 +371,16 @@ test("the Trial tab shows what trial-variants.json actually contains", async ({ 
 
   // Look for any stable marker of the newest variant. Dates get reformatted and
   // captions get truncated, so several markers are tried and any one counts.
-  const newest = variants[variants.length - 1];
+  //
+  // Picked by generatedAt, NOT by array position. This read `variants[length-1]`
+  // and mergeTrialVariants sorts NEWEST FIRST, so it was checking the OLDEST
+  // record while reporting "the newest is rendered" — it matched a 2026-07-26
+  // record on a day with a fresh variant, and would have passed just the same if
+  // nothing had rendered since July. posted-log.json is ordered the other way,
+  // which is why the sibling check below is right to index from the end.
+  const newest = variants.reduce((a, b) =>
+    String(b.generatedAt || "") > String(a.generatedAt || "") ? b : a
+  );
   const markers = [newest.sourceFileName, newest.hookAngle, newest.city, newest.date].filter(Boolean);
   const seen = markers.filter((m) => text.includes(m));
 
