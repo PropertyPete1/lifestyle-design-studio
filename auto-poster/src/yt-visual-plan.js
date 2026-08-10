@@ -372,15 +372,31 @@ export function coverageReport(planned) {
  * network, an API key, or ffmpeg — the scenario matrix drives all of it through
  * these two functions.
  */
+/**
+ * STOCK IS PLANNED BEFORE IT IS FETCHED, which is a reversal.
+ *
+ * It used to be fetched here: one clip per take, and the coverage was planned
+ * around how many seconds of it survived. That ordering is what forced every
+ * window of a take to share one clip, because by the time the windows existed
+ * the fetch had already happened and there was only one result to slice.
+ *
+ * Now the planner asks only whether stock is AVAILABLE and lays out the windows;
+ * the builder then fetches one clip per window against that window's own words.
+ * A window whose fetch fails is downgraded to a beat there, and the coverage
+ * report is recomputed afterwards — which is why `coverageReport` is exported
+ * and called twice rather than being folded into this function's return.
+ *
+ * The NO_KEYWORDS fall is gone as a consequence, and its absence is the point:
+ * a FOOTAGE take whose writer supplied no keywords is no longer skipped, because
+ * each window now derives its own from the transcript.
+ */
 export async function planVisuals(segments, {
   renderGraphic = async () => ({ ok: false }),
-  fetchStock = async () => ({ clip: null, attempts: [] }),
+  stockAvailable = () => 0,
   ownedFor = () => 0,
 } = {}) {
   const { segments: withIntents, report: intentReport } = attachIntents(segments || []);
   const out = [];
-  const stockCredits = [];
-  const stockAttempts = [];
 
   // The source kind that closed the previous segment, for the no-repeat rule.
   let lastKind = null;
@@ -397,23 +413,10 @@ export async function planVisuals(segments, {
     }
 
     let stockSeconds = 0;
-    let stock = null;
     let stockReason = null;
     if (seg.visual === FOOTAGE && !graphicOk) {
-      const keywords = seg.visualSpec?.keywords || [];
-      if (keywords.length === 0) {
-        stockReason = REASON.NO_KEYWORDS;
-      } else {
-        const r = await fetchStock(seg);
-        if (r?.clip) {
-          stock = r.clip;
-          stockSeconds = r.clip.seconds || seg.seconds;
-          stockCredits.push(r.clip.credit);
-        } else {
-          stockReason = REASON.STOCK_NO_MATCH;
-        }
-        if (r?.attempts?.length) stockAttempts.push({ takeId: seg.takeId, attempts: r.attempts });
-      }
+      stockSeconds = (await stockAvailable(seg)) || 0;
+      if (!stockSeconds) stockReason = REASON.STOCK_UNAVAILABLE;
     }
 
     const ownedSeconds = ownedFor(seg) || 0;
@@ -439,9 +442,6 @@ export async function planVisuals(segments, {
       // it rather than asking ffmpeg for time that does not exist.
       graphicSeconds: graphic?.renderedSeconds || 0,
       graphicTiming: graphic?.timing || null,
-      stockClip: stock?.path || null,
-      stockCredit: stock?.credit || null,
-      stockContentHash: stock?.contentHash || null,
     });
   }
 
@@ -449,8 +449,6 @@ export async function planVisuals(segments, {
     segments: out,
     intents: intentReport,
     coverage: coverageReport(out),
-    stockCredits,
-    stockAttempts,
   };
 }
 

@@ -17,8 +17,9 @@
 import { join } from "path";
 import { existsSync, writeFileSync } from "fs";
 
-import { planVisuals, REASON } from "./yt-visual-plan.js";
+import { planVisuals, REASON, coverageReport } from "./yt-visual-plan.js";
 import { SCENE_MAX_SECONDS } from "./yt-config.js";
+import { documentFrequencies, properLexicon, keywordsForWindow } from "./yt-scene-keywords.js";
 
 /**
  * The longest graphic animation we will render for one take.
@@ -174,38 +175,24 @@ export async function buildVisuals(plan, {
     }
   };
 
-  const fetchStock = async (seg) => {
-    const i = index++;
-    // NO VERIFIER MEANS NO FETCH.
-    //
-    // The vision check fails closed, so without a client every clip would be
-    // rejected — after being searched for, downloaded and graded. That spends
-    // Pexels quota (200/hour) and runner bandwidth to reach a foregone
-    // conclusion, and reports it as "no stock clip passed the vision check",
-    // which reads like the clips were bad rather than like the checker was
-    // absent. Reachable on any job that has PEXELS_API_KEY and no
-    // ANTHROPIC_API_KEY — the dry-run job is exactly that shape.
-    if (!visionClient) {
-      return { clip: null, attempts: [{ stage: "config", reason: "no vision client, so stock cannot be verified and is not fetched" }] };
-    }
-    try {
-      return await fetchStockClip({
-        keywords: seg.visualSpec?.keywords || [],
-        seconds: seg.seconds,
-        subject: (seg.visualSpec?.keywords || [])[0] || seg.text?.slice(0, 80),
-        dir,
-        index: i,
-        orientation: seg.visualSpec?.orientation || "landscape",
-        usedHashes,
-        client: visionClient,
-        ffmpeg,
-        driveGet,
-        drivePut,
-      });
-    } catch (err) {
-      console.warn(`[Visuals] stock lookup threw for ${seg.takeId}: ${err.message}`);
-      return { clip: null, attempts: [{ stage: "error", reason: err.message }] };
-    }
+  /**
+   * Can this take have stock at all?
+   *
+   * NO VERIFIER MEANS NO FETCH. The vision check fails closed, so without a
+   * client every clip would be rejected — after being searched for, downloaded
+   * and graded. That spends Pexels quota (200/hour) and runner bandwidth to
+   * reach a foregone conclusion, and reports it as "no stock clip passed the
+   * vision check", which reads like the clips were bad rather than like the
+   * checker was absent. Reachable on any job that has PEXELS_API_KEY and no
+   * ANTHROPIC_API_KEY — the dry-run job is exactly that shape.
+   *
+   * Answering with the take's whole length is what lets the planner lay out as
+   * many stock windows as the scene cap allows; each one is then fetched
+   * separately below, and any that comes back empty becomes a beat.
+   */
+  const stockAvailable = (seg) => {
+    if (!stockEnabled() || !visionClient) return 0;
+    return seg.seconds || 0;
   };
 
   // Owned footage is allocated from whatever is in the long-form folder — which
@@ -222,7 +209,17 @@ export async function buildVisuals(plan, {
     return available;
   };
 
-  const planned = await planVisuals(plan.segments || [], { renderGraphic, fetchStock, ownedFor });
+  const planned = await planVisuals(plan.segments || [], { renderGraphic, stockAvailable, ownedFor });
+
+  // Rarity is measured across the WHOLE script, so it has to be computed once
+  // over every segment before any single window is looked at.
+  const frequencies = documentFrequencies(planned.segments);
+  // Capitalisation is only evidence when read across the whole script — see
+  // properLexicon. Built once here so a window opening on a place name cannot
+  // mistake it for a common noun.
+  const lexicon = properLexicon(planned.segments);
+  const stockAttempts = [];
+  const stockWindows = [];
 
   // ── turn the coverage blocks into broll entries the renderer understands ──
   const segments = [];
@@ -252,27 +249,84 @@ export async function buildVisuals(plan, {
         broll.push({ generated: true, preRendered: true, kind: "graphic", visual: seg.visual, sourcePath: phasePath, seconds: block.seconds, phase: block.phase, fileName: `${seg.visual}.mp4` });
         continue;
       }
-      if (block.kind === "stock" && seg.stockClip) {
-        // EACH STOCK BLOCK GETS ITS OWN WINDOW, for the same reason each graphic
-        // phase does. Card 7 ran stock -> beat -> stock inside one take with both
-        // stock blocks pointing at the same file and no offset, so the viewer saw
-        // the identical eight seconds twice. 11 uses mapped to 7 unique clips.
-        const from = round2((block.phase || 0) * block.seconds);
-        let path = seg.stockClip;
-        if ((block.phase || 0) > 0) {
-          path = join(dir, `stock-${seg.takeId}-${block.phase}.mp4`);
+      if (block.kind === "stock") {
+        // EACH WINDOW IS ITS OWN SEARCH, AGAINST ITS OWN SENTENCE.
+        //
+        // Card 7 fetched one clip per take and sliced it, so a take that moved
+        // from a hospital to houses from the eighties showed the hospital
+        // throughout. Now the window's words choose the window's footage:
+        // "Audie Murphy VA hospital" searches for a hospital campus and the
+        // proper noun is dropped before the query is built, so the clip is never
+        // presented as that specific place.
+        const win = keywordsForWindow(seg, block, {
+          frequencies,
+          lexicon,
+          fallbackKeywords: seg.visualSpec?.keywords || [],
+        });
+        const wi = index++;
+        let clip = null;
+        let attempts = [{ stage: "keywords", reason: "no searchable concept in this window" }];
+
+        if (win.keywords.length > 0) {
           try {
-            ffmpeg(phaseArgs(seg.stockClip, path, from, block.seconds));
+            const r = await fetchStockClip({
+              keywords: win.keywords,
+              seconds: block.seconds,
+              subject: win.subject,
+              dir,
+              index: wi,
+              orientation: seg.visualSpec?.orientation || "landscape",
+              usedHashes,
+              client: visionClient,
+              ffmpeg,
+              driveGet,
+              drivePut,
+            });
+            clip = r?.clip || null;
+            attempts = r?.attempts || [];
           } catch (err) {
-            animationFailures.push({ takeId: seg.takeId, type: "STOCK", reason: `window ${block.phase} failed (${err.message}) — plays from the start` });
-            path = seg.stockClip;
+            console.warn(`[Visuals] stock lookup threw for ${seg.takeId} window ${block.phase}: ${err.message}`);
+            attempts = [{ stage: "error", reason: err.message }];
           }
         }
-        broll.push({ generated: true, preRendered: true, kind: "stock", sourcePath: path, seconds: block.seconds, contentHash: seg.stockContentHash, window: from, fileName: "stock.mp4" });
-        // Credit once per CLIP, not once per window — the same footage used twice
-        // is one photographer to thank, and creditsBlock dedupes anyway.
-        if (seg.stockCredit && (block.phase || 0) === 0) stockCredits.push(seg.stockCredit);
-        continue;
+
+        stockWindows.push({
+          takeId: seg.takeId,
+          phase: block.phase ?? 0,
+          startAt: block.startAt ?? 0,
+          seconds: block.seconds,
+          phrase: win.phrase,
+          keywords: win.keywords,
+          subject: win.subject,
+          dropped: win.dropped,
+          source: win.source,
+          matched: Boolean(clip),
+          contentHash: clip?.contentHash || null,
+          query: clip?.query || null,
+        });
+        if (attempts.length) stockAttempts.push({ takeId: seg.takeId, phase: block.phase ?? 0, attempts });
+
+        if (clip) {
+          // NO CLIP TWICE IN ONE VIDEO. `usedHashes` arrives holding what recent
+          // videos used and was only ever READ — nothing added to it during a
+          // build, so two windows could independently pick the same clip and the
+          // no-repeat rule silently covered only the history. Adding here is what
+          // makes it hold within this video as well.
+          usedHashes.add(clip.contentHash);
+          stockCredits.push(clip.credit);
+          broll.push({
+            generated: true, preRendered: true, kind: "stock",
+            sourcePath: clip.path, seconds: block.seconds,
+            contentHash: clip.contentHash, query: clip.query, fileName: "stock.mp4",
+          });
+          continue;
+        }
+
+        // Nothing survived for this window. The beat carries it, and the reason
+        // is recorded per window rather than per take — "take 4 got no stock" was
+        // true of four windows for four different reasons.
+        block.kind = "beat";
+        block.reason = win.keywords.length === 0 ? REASON.NO_KEYWORDS : REASON.STOCK_NO_MATCH;
       }
       if (block.kind === "owned") {
         const owned = ownedSeconds.get(seg.takeId);
@@ -314,19 +368,38 @@ export async function buildVisuals(plan, {
       animationFailures.push({ takeId: seg.takeId, type: String(block.kind || "?").toUpperCase(), reason: `no builder for block kind "${block.kind}"` });
     }
 
+    // A take PLANNED for stock whose every window came back empty is a fall, and
+    // it did not used to look like one. The planner set `visualPrimary: "stock"`
+    // before any fetch happened, so a take carried entirely by beats still
+    // reported stock as its primary layer and never appeared in the fallback
+    // list — the coverage split said "beat" and the fallback list said nothing,
+    // which is the reporting gap the whole per-window change would otherwise
+    // have opened.
+    if (seg.visualPrimary === "stock" && !broll.some((b) => b.kind === "stock")) {
+      seg.visualPrimary = "beat";
+      seg.visualFellBack = true;
+      seg.visualReason = REASON.STOCK_NO_MATCH;
+    }
+
     segments.push({ ...seg, broll });
   }
 
   const report = {
-    ...planned.coverage,
+    // RECOMPUTED, not the planner's. Windows that failed their fetch became
+    // beats a moment ago, and the coverage split has to describe what the video
+    // contains rather than what the plan hoped for — reporting the pre-fetch
+    // numbers would overstate stock by exactly the windows that failed, which is
+    // the one direction the number must never be wrong in.
+    ...coverageReport(segments),
     intents: planned.intents,
+    stockWindows,
     // Drives the map attribution line in the description. Computed from what
     // actually reached the timeline rather than from what was requested: a MAP
     // intent that fell back to typography must not credit a map source for a
     // map the video does not contain.
     mapsUsed: segments.some((s) => (s.broll || []).some((b) => b.visual === MAP)),
     animationFailures,
-    stockAttempts: planned.stockAttempts,
+    stockAttempts,
     stockCredits,
     stockConfigured: stockEnabled(),
     wordTimingCoverage: {

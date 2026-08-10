@@ -105,26 +105,36 @@ describe("2. Pexels is down, or returns garbage", () => {
     assert.deepEqual(await searchPexels("anything"), []);
   });
 
-  test("a FOOTAGE take whose stock fails still gets a full picture", async () => {
+  test("a FOOTAGE take with no stock available still gets a full picture", async () => {
     const seg = voiceover("t1", "Aerial over a new subdivision at golden hour, streets still empty.", 10, {
       type: "FOOTAGE", spec: { keywords: ["aerial suburban neighborhood texas"] },
     });
-    const { segments: planned, coverage } = await planVisuals([seg], {
-      fetchStock: async () => ({ clip: null, attempts: [{ stage: "search", reason: "no results" }] }),
-    });
+    // Revision 8 moved the FETCH out of the planner: it now asks only whether
+    // stock is available, and each window is fetched separately afterwards. So
+    // the planner's stock failure is "there is none to be had", and the
+    // per-window failures are the builder's to report.
+    const { segments: planned, coverage } = await planVisuals([seg], { stockAvailable: () => 0 });
     const covered = planned[0].visualBlocks.reduce((n, b) => n + b.seconds, 0);
     assert.ok(Math.abs(covered - 10) < 0.05);
     // The beat, never a sentence slide — the fallback chain ends in brand
     // geometry now, so nothing can put words on screen that disagree with the
     // captions.
     assert.equal(planned[0].visualPrimary, "beat");
-    assert.equal(coverage.fallbacks[0].reason, REASON.STOCK_NO_MATCH, "the fallback must name the cause");
+    assert.equal(coverage.fallbacks[0].reason, REASON.STOCK_UNAVAILABLE, "the fallback must name the cause");
   });
 
-  test("a FOOTAGE intent with no keywords is reported differently from one that found nothing", async () => {
-    const seg = voiceover("t1", "Show the place.", 8, "FOOTAGE");
-    const { coverage } = await planVisuals([seg]);
-    assert.equal(coverage.fallbacks[0].reason, REASON.NO_KEYWORDS);
+  test("a FOOTAGE intent with no writer keywords is no longer skipped", async () => {
+    // THIS TEST ASSERTED THE OPPOSITE UNTIL REVISION 8, and the reversal is the
+    // point. A take whose writer supplied no keywords used to fall straight to
+    // the floor with NO_KEYWORDS, because the take's keywords were the only
+    // thing a search could be built from. Windows now derive their own terms
+    // from the words spoken while they are on screen, so an empty visualSpec
+    // costs nothing — the take gets its stock windows like any other.
+    const seg = voiceover("t1", "Look at what the older neighborhoods actually cost to maintain.", 8, "FOOTAGE");
+    const { segments: planned, coverage } = await planVisuals([seg], { stockAvailable: (s) => s.seconds });
+    assert.equal(planned[0].visualPrimary, "stock");
+    assert.ok(planned[0].visualBlocks.some((b) => b.kind === "stock"), "the take is planned for stock anyway");
+    assert.deepEqual(coverage.fallbacks, [], "and nothing is reported as a fall");
   });
 });
 

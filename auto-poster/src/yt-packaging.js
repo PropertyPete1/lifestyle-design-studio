@@ -261,7 +261,7 @@ export const MAP_CREDITS = {
 /** The prominent link the Pexels API guidelines require. */
 export const PEXELS_URL = "https://www.pexels.com";
 
-export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig(), mapsUsed = false, mapSource = "tiger", seoOpener = null, stockCredits = "" }) {
+export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig(), mapsUsed = false, mapSource = "tiger", seoOpener = null, stockCredits = "", musicCredits = "" }) {
   const missing = [];
   const parts = [];
 
@@ -344,6 +344,25 @@ export function buildDescription({ hook, promise, chapters = [], keyword = DEFAU
       // is a licence breach, so it is a missing-item rather than a silent skip.
       missing.push("Pexels attribution for stock footage used in this video");
     }
+  }
+
+  // MUSIC CREDIT. Two obligations in one block, and the second is the one that
+  // will actually be felt.
+  //
+  // The licence is CC-BY 4.0, so attribution is required outright — and
+  // incompetech's terms ask that the credit make clear which parts are the
+  // licensor's and which are ours, which matters because the pipeline trims the
+  // track to the runtime. That wording is built in yt-music.js next to the code
+  // that does the trimming.
+  //
+  // The second obligation is procedural. His current Content ID page says false
+  // claims are getting harder to challenge, and the instruction is to place the
+  // credit BEFORE disputing one. A missing credit here is therefore not a
+  // paperwork slip: it is the difference between a claim released in 72 hours
+  // and a monetisation hold on a video that is otherwise fine.
+  if (String(musicCredits || "").trim()) {
+    parts.push("");
+    parts.push(String(musicCredits).trim());
   }
 
   return { text: parts.join("\n").trim(), missing };
@@ -625,6 +644,7 @@ export async function buildPackaging({
   modelCall = callModel,
   mapsUsed = false,
   stockCredits = "",
+  musicCredits = "",
   mapSource = "tiger",
 } = {}) {
   if (!topic?.title) throw new Error("buildPackaging requires a topic with a title");
@@ -649,6 +669,7 @@ export async function buildPackaging({
       keyword,
       mapsUsed,
       stockCredits,
+      musicCredits,
       mapSource,
       seoOpener,
     });
