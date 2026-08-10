@@ -204,6 +204,9 @@ export const MAP_CREDITS = {
   osm: "Maps in this video contain data from OpenStreetMap, © OpenStreetMap contributors, available under the Open Database License. https://www.openstreetmap.org/copyright",
 };
 
+/** The prominent link the Pexels API guidelines require. */
+export const PEXELS_URL = "https://www.pexels.com";
+
 export function buildDescription({ hook, promise, chapters = [], keyword = DEFAULT_KEYWORD, cta = ctaConfig(), mapsUsed = false, mapSource = "tiger", seoOpener = null, stockCredits = "" }) {
   const missing = [];
   const parts = [];
@@ -273,6 +276,14 @@ export function buildDescription({ hook, promise, chapters = [], keyword = DEFAU
     const block = String(stockCredits).trim();
     if (block) {
       parts.push("");
+      // A LINK, not just the word "Pexels". The API guidelines require a
+      // "prominent link to Pexels", and naming the site in prose is not one —
+      // this shipped on the revision-5 build crediting eight photographers with
+      // no URL anywhere in the description, which satisfies the content licence
+      // and not the terms the clips were obtained under. The photographer lines
+      // follow it, which is the part the guidelines only ask for "when possible"
+      // and which we can always do.
+      parts.push(`Stock footage via Pexels — ${PEXELS_URL}`);
       parts.push(block);
     } else {
       // Stock reached the timeline but produced no credit text. Publishing that

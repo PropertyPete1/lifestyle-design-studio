@@ -499,6 +499,18 @@ async function buildFromRecordings(approvals, record) {
   // second one says whether the reveals actually landed on the words. The build
   // collected it from the first animated graphic and never printed it, so every
   // report so far has answered a question nobody asked.
+  // THE STOCK CREDITS, NAMED. The description carries them because the Pexels API
+  // guidelines require a prominent link and photographer credit (see
+  // longform/STOCK-LICENSING.md) — but nothing logged WHICH clips were used, so a
+  // licensing question had no answer and the report could not name them. Logged
+  // and persisted now: an obligation you cannot audit is one you cannot show you
+  // met.
+  if (gen.stockCredits.length > 0) {
+    console.log(`[YTPipeline] stock: ${gen.stockCredits.length} Pexels clip(s) used — ${gen.stockCredits.join(" | ")}`);
+  } else if (gen.stockConfigured) {
+    console.log("[YTPipeline] stock: no clips used this build");
+  }
+
   const rs = gen.revealSync;
   console.log(
     `[YTPipeline] reveal sync: ${rs.synced}/${rs.reveals} reveals landed on a spoken word (${rs.pct}%) ` +
@@ -634,6 +646,9 @@ async function buildFromRecordings(approvals, record) {
     bytes: rendered.bytes,
     resolution: RESOLUTION,
     brollHashes: plan.segments.flatMap((s) => (s.broll || []).map((b) => b.contentHash).filter(Boolean)),
+    // A durable record of what licensed material this video contains, so the
+    // question "where did that clip come from" is answerable years later.
+    stockCredits: gen.stockCredits,
     scriptScores: result.scores,
     packagingScores: packaging.scores,
     // C3: the chosen thumbnail text rides with the video record, so hook style

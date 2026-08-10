@@ -338,11 +338,18 @@ export async function renderAnimatedGraphic({
     `${Object.values(st.roadProgress || {}).map((v) => v.toFixed(2)).join(",")}|${st.places ?? 0}`;
   const stateDiffs = [];
   for (let i = 1; i < framePaths.length; i++) {
-    // THE SETTLE IS EXEMPT. It exists to clear a pulse and undim anything held
-    // back, so on a card whose previous state was already unpulsed and fully
-    // visible it is legitimately identical — and demanding a change there
-    // rejected sound graphics for finishing tidily.
-    if (states[i].settle) continue;
+    // SETTLE AND BEAT STATES ARE EXEMPT, and this is what the predicate below
+    // has always meant to say.
+    //
+    // A settle exists to clear a pulse and undim anything held back, so on a card
+    // whose previous state was already unpulsed and fully visible it is
+    // legitimately identical. A beat is emphasis garnish over content that has
+    // not changed — the header of this check said so in words while the code
+    // demanded otherwise, because beat states carry no `figure` and so compared
+    // as different from the real figure preceding them. That cost s3t5 its
+    // CALLOUT on the revision-5 build: every count state was fine and a beat two
+    // thirds of the way through was called dead.
+    if (states[i].settle || states[i].beat) continue;
     const mustChange = isMap
       ? mapMotion(states[i]) !== mapMotion(states[i - 1])
       : states[i].visible !== states[i - 1].visible
