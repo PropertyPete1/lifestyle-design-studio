@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   parseSilenceLog, normaliseSilences, buildEditList, splitForPunchIns, pieceArgs,
   MIN_SILENCE_SECONDS, KEEP_SILENCE_SECONDS, PUNCH_MIN_TAKE_SECONDS,
-  PUNCH_INTERVAL_MAX, FRAMING_WIDE, FRAMING_TIGHT, MIN_PIECE_SECONDS,
+  PUNCH_INTERVAL_MAX, PUNCH_INTERVAL_MIN, FRAMING_WIDE, FRAMING_TIGHT, MIN_PIECE_SECONDS,
 } from "../src/yt-oncamera-edit.js";
 import { buildStateTimeline, auditCadence, MAX_STATIC_SECONDS } from "../src/yt-cadence.js";
 import {
@@ -178,9 +178,39 @@ describe("punch-in splitting", () => {
     assert.ok(new Set(lengths).size > 1, `all identical: ${lengths.join(",")}`);
   });
 
-  test("a short remainder joins the previous piece", () => {
-    const out = splitForPunchIns({ start: 0, end: 7.2 });
-    assert.equal(out.length, 1, "7.2s should stay whole");
+  test("a span inside the interval stays whole", () => {
+    // Under the max there is nothing to break up. The fixture is derived from
+    // the configured bounds rather than hard-coded: at the old 7-9s cadence
+    // this test used 7.2s, which stopped meaning anything the moment the
+    // interval moved to 3 — it was asserting "does not split" against a value
+    // that no longer sits below the threshold.
+    const out = splitForPunchIns({ start: 0, end: PUNCH_INTERVAL_MAX - 0.2 });
+    assert.equal(out.length, 1, `${PUNCH_INTERVAL_MAX - 0.2}s should stay whole`);
+  });
+
+  test("a short remainder joins the previous piece rather than becoming a stub", () => {
+    // Lengths chosen to leave a tail well under MIN_PIECE_SECONDS. The tail
+    // must be absorbed: a 0.2s flash frame at the end of a take reads as a
+    // decode error, not as a cut.
+    for (const extra of [0.05, 0.15, 0.3]) {
+      const end = PUNCH_INTERVAL_MAX * 3 + extra;
+      const out = splitForPunchIns({ start: 0, end });
+      assert.ok(
+        out.every((s) => s.end - s.start >= MIN_PIECE_SECONDS),
+        `stub piece at end=${end}: ${JSON.stringify(out.map((s) => +(s.end - s.start).toFixed(3)))}`
+      );
+      assert.ok(Math.abs(out[out.length - 1].end - end) < 1e-9, "the span must still be fully covered");
+    }
+  });
+
+  test("the cadence follows the configured interval", () => {
+    const out = splitForPunchIns({ start: 0, end: 30 });
+    const lengths = out.slice(0, -1).map((s) => s.end - s.start);
+    for (const l of lengths) {
+      assert.ok(l >= PUNCH_INTERVAL_MIN - 0.01 && l <= PUNCH_INTERVAL_MAX + 0.01, `piece of ${l}s is outside the bounds`);
+    }
+    // At a 3s cadence a 30-second span is roughly ten cuts, not three.
+    assert.ok(out.length >= 8, `expected a tight cadence, got ${out.length} pieces`);
   });
 
   test("disabled means one span", () => {

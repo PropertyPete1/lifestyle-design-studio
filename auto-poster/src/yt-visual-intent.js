@@ -48,10 +48,38 @@ export const CALLOUT = "CALLOUT";
  */
 export const FOOTAGE = "FOOTAGE";
 
+/**
+ * TYPOGRAPHY — the narration itself, set in the brand system, arriving word by
+ * word on the beat it is spoken.
+ *
+ * TWO ROLES, and the second one is why it exists.
+ *
+ * The writer can ASK for it, for the lines where the words are the point: the
+ * assertion, the reframe, the "here is what that actually costs you". Those
+ * sentences have no table in them and no place to point a camera at.
+ *
+ * And it is the FLOOR. Every other layer is allowed to decline — a graphic
+ * needs a spec that survives validation, stock needs a keyword and a clip that
+ * passes inspection, owned footage needs Peter to have filmed something. When
+ * all of them decline, revision 2 had a segment with no picture, and
+ * `renderTimeline` threw. Typography cannot decline, because its input is the
+ * narration and there is always narration. That is what makes "no segment ever
+ * falls back to nothing" a property of the system rather than a hope.
+ */
+export const TYPOGRAPHY = "TYPOGRAPHY";
+
 /** Types that produce a rendered graphic. FOOTAGE deliberately is not one. */
 export const GRAPHIC_TYPES = [MAP, COMPARISON, NUMBER_BREAKDOWN, LIST, TIMELINE, CALLOUT];
 
-export const VISUAL_TYPES = [...GRAPHIC_TYPES, FOOTAGE];
+/**
+ * Types the generated-visual renderer can produce. TYPOGRAPHY is drawn like a
+ * graphic but is not a CARD — it has its own renderer and its own reveal unit
+ * (a word, not a row) — so it is listed separately rather than folded into
+ * GRAPHIC_TYPES, which several callers use to mean "goes through yt-card-render".
+ */
+export const DRAWN_TYPES = [...GRAPHIC_TYPES, TYPOGRAPHY];
+
+export const VISUAL_TYPES = [...GRAPHIC_TYPES, TYPOGRAPHY, FOOTAGE];
 
 /** Why an intent was dropped. Reported, never thrown. */
 export const REJECTED = {
@@ -195,19 +223,58 @@ function normaliseCallout(spec) {
 }
 
 /**
- * FOOTAGE takes any spec, including none.
+ * FOOTAGE now carries SEARCH KEYWORDS, and that is the whole change.
  *
- * There is nothing to validate — the renderer is the B-roll allocator, which
- * already ran. `note` is carried through only so the build summary can say WHY
- * the writer wanted footage here, which is the difference between a reviewable
- * decision and an unexplained one.
+ * It used to mean "play whatever the allocator has", which was fine when the
+ * library was a folder of city clips and is meaningless now that the long-form
+ * folder starts empty. A FOOTAGE intent is a request for a specific picture of
+ * the real world — "aerial suburban neighborhood texas", "family moving boxes
+ * into house" — and the keywords are what makes it satisfiable from stock.
+ *
+ * STILL VALID WITH NO KEYWORDS. A bare {"type":"FOOTAGE"} means "show the
+ * place" with nothing to search on: owned footage can serve it, stock cannot,
+ * and typography catches it if neither does. Rejecting it would turn an
+ * editorial choice into an error, and the writer has been told for two
+ * revisions that the bare form is legal.
  */
 function normaliseFootage(spec) {
-  return { ok: true, spec: { note: str(spec?.note) || str(spec?.reason) || null } };
+  const keywords = stringList(spec?.keywords ?? spec?.search ?? spec?.query ?? spec?.terms, {
+    labelKeys: ["term", "text", "query"],
+  });
+  return {
+    ok: true,
+    spec: {
+      note: str(spec?.note) || str(spec?.reason) || null,
+      // Joined into one query per entry; the stock layer tries them in order.
+      keywords: keywords.slice(0, 4),
+      orientation: str(spec?.orientation) || "landscape",
+    },
+  };
+}
+
+/**
+ * TYPOGRAPHY validates almost nothing, on purpose.
+ *
+ * The default source of the words is the narration for that take, which the
+ * renderer already has and which is always present. A writer who wants to
+ * override it can pass `phrases`, but the common case — and the fallback case,
+ * which is the important one — supplies no spec at all. A normaliser that could
+ * reject would put a hole back in the floor.
+ */
+function normaliseTypography(spec) {
+  const phrases = stringList(spec?.phrases ?? spec?.lines ?? spec?.text, { labelKeys: ["text", "line", "phrase"] });
+  return {
+    ok: true,
+    spec: {
+      phrases: phrases.slice(0, 8),
+      eyebrow: str(spec?.eyebrow) || null,
+    },
+  };
 }
 
 const NORMALISERS = {
   [FOOTAGE]: normaliseFootage,
+  [TYPOGRAPHY]: normaliseTypography,
   [MAP]: normaliseMap,
   [COMPARISON]: normaliseComparison,
   [NUMBER_BREAKDOWN]: normaliseBreakdown,
@@ -234,9 +301,13 @@ export function normaliseIntent(intent) {
     const bare = intent.trim().toUpperCase().replace(/[\s-]+/g, "_");
     if (!bare) return { ok: false, reason: REJECTED.NONE };
     if (!VISUAL_TYPES.includes(bare)) return { ok: false, reason: REJECTED.UNKNOWN_TYPE, type: intent };
-    // Only FOOTAGE is meaningful without a spec; the rest have nothing to draw.
-    if (bare !== FOOTAGE) return { ok: false, reason: REJECTED.EMPTY, type: bare };
-    return { ok: true, type: FOOTAGE, spec: { note: null } };
+    // FOOTAGE and TYPOGRAPHY are the two types that mean something with no spec
+    // at all: one says "show the place", the other says "put the words up", and
+    // both have everything they need without the writer describing it. The card
+    // types have nothing to draw and are rejected.
+    if (bare === FOOTAGE) return { ok: true, type: FOOTAGE, spec: { note: null, keywords: [], orientation: "landscape" } };
+    if (bare === TYPOGRAPHY) return { ok: true, type: TYPOGRAPHY, spec: { phrases: [], eyebrow: null } };
+    return { ok: false, reason: REJECTED.EMPTY, type: bare };
   }
 
   if (!intent || typeof intent !== "object") return { ok: false, reason: REJECTED.NONE };
@@ -247,9 +318,9 @@ export function normaliseIntent(intent) {
   if (!VISUAL_TYPES.includes(type)) return { ok: false, reason: REJECTED.UNKNOWN_TYPE, type: intent.type || null };
 
   const spec = intent.spec;
-  // FOOTAGE is the one type with nothing to describe, so a bare
+  // FOOTAGE and TYPOGRAPHY have nothing that must be described, so a bare
   // {"type":"FOOTAGE"} is valid and is what the writer will usually send.
-  if (type !== FOOTAGE && (!spec || typeof spec !== "object" || Array.isArray(spec))) {
+  if (type !== FOOTAGE && type !== TYPOGRAPHY && (!spec || typeof spec !== "object" || Array.isArray(spec))) {
     return { ok: false, reason: REJECTED.MALFORMED, type };
   }
 
@@ -283,12 +354,18 @@ export function attachIntents(segments) {
   const voiceover = out.filter((s) => s.kind === "voiceover");
   const graphics = voiceover.filter((s) => GRAPHIC_TYPES.includes(s.visual));
   const chosenFootage = voiceover.filter((s) => s.visual === FOOTAGE);
+  const chosenTypography = voiceover.filter((s) => s.visual === TYPOGRAPHY);
   const silent = voiceover.filter((s) => !s.visual);
 
   return {
     segments: out,
     report: {
       requested: graphics.length,
+      // A take the writer explicitly set to TYPOGRAPHY and a take that fell
+      // back to it are the same picture and completely different signals. This
+      // counts only the deliberate ones; the fallbacks are counted where they
+      // happen, in the visual planner.
+      typographyTakes: chosenTypography.length,
       // Three distinct populations, and collapsing any two of them hides
       // something worth seeing: a graphic, a deliberate "show the place", and a
       // take the writer said nothing about. The last one is the prompt failing.

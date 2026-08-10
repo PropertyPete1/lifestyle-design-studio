@@ -103,6 +103,36 @@ export function normalizeArgs(input, output, dim, { seconds = null, startAt = 0,
   return args;
 }
 
+/**
+ * Conform an already-finished clip for concatenation.
+ *
+ * For revision 3's generated visuals, which arrive as mp4s at the delivery size
+ * with their motion already baked in. This does the minimum concat requires —
+ * exact size, rate, pixel format and SAR — and adds no move of its own.
+ *
+ * `-stream_loop -1` with `-t` rather than a pad: a clip that came back a
+ * fraction short of its slot repeats instead of leaving a black tail, which is
+ * the same rule owned footage follows. The loop is bounded by `-t`, so a clip
+ * longer than its slot is simply cut.
+ */
+export function conformArgs(input, output, dim, { seconds, fps = FPS } = {}) {
+  return [
+    "-y",
+    "-stream_loop", "-1",
+    "-i", input,
+    "-t", String(seconds),
+    "-vf",
+    `scale=${dim.w}:${dim.h}:force_original_aspect_ratio=decrease,` +
+      `pad=${dim.w}:${dim.h}:(ow-iw)/2:(oh-ih)/2:color=black,fps=${fps},setsar=1`,
+    "-c:v", "libx264",
+    "-preset", PRESET,
+    "-crf", String(CRF),
+    "-pix_fmt", "yuv420p",
+    "-an",
+    output,
+  ];
+}
+
 /** Mux one narration track onto a silent visual segment. */
 export function muxNarrationArgs(videoIn, audioIn, output) {
   return [
@@ -371,6 +401,18 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
         // than the normalise-and-pillarbox path — it is already the right
         // aspect and the right size, and running it through `scale` would only
         // cost a resample.
+        // Revision 3: animated graphics, kinetic typography and graded stock
+        // arrive as finished CLIPS rather than stills. They are already the
+        // right size, rate and length, so they are conformed for concat and
+        // nothing else — pushing a clip that already moves would be a second
+        // camera move fighting the first.
+        if (b.preRendered) {
+          if (!existsSync(b.sourcePath)) return;
+          ffmpeg(conformArgs(b.sourcePath, piece, dim, { seconds: b.seconds, fps: FPS }));
+          pieces.push(piece);
+          return;
+        }
+
         if (b.generated) {
           if (!existsSync(b.sourcePath)) return;
           ffmpeg(kenBurnsArgs(b.sourcePath, piece, { seconds: b.seconds, dim, fps: FPS }));

@@ -31,7 +31,10 @@
  */
 
 import { spawnSync } from "child_process";
-import { ONCAM_TREATMENT, ONCAM_BG_BLUR, ONCAM_BG_DARKEN, ONCAM_BG_ZOOM, ONCAM_VIGNETTE } from "./yt-config.js";
+import {
+  ONCAM_TREATMENT, ONCAM_BG_BLUR, ONCAM_BG_DARKEN, ONCAM_BG_ZOOM, ONCAM_VIGNETTE,
+  PUNCH_INTERVAL, ZOOM_PULSES_ENABLED, ZOOM_PULSE_STRENGTH,
+} from "./yt-config.js";
 
 /** Silence shorter than this is breath and rhythm — cutting it sounds clipped. */
 export const MIN_SILENCE_SECONDS = 0.4;
@@ -42,12 +45,60 @@ export const KEEP_SILENCE_SECONDS = 0.15;
 /** Below this, ffmpeg calls it silence. Room tone on a phone sits well under. */
 export const SILENCE_DB = -35;
 
-/** A take shorter than this gets no punch-ins — there is nothing to break up. */
-export const PUNCH_MIN_TAKE_SECONDS = 8;
+/**
+ * A take shorter than this gets no punch-ins — there is nothing to break up.
+ *
+ * Derived from the interval rather than fixed, because the two moved together:
+ * at a 3s cadence an 8-second floor would leave 4-7 second takes uncut, which
+ * is precisely the length that most needs a cut. A take must be able to hold
+ * two pieces to be worth splitting at all.
+ */
+export function punchMinTakeSeconds(interval = PUNCH_INTERVAL) {
+  return Math.max(2 * MIN_PIECE_SECONDS, interval * 1.6);
+}
 
-/** How often the framing changes when nothing else forces a boundary. */
-export const PUNCH_INTERVAL_MIN = 7;
-export const PUNCH_INTERVAL_MAX = 9;
+/**
+ * How often the framing changes when nothing else forces a boundary.
+ *
+ * The interval WALKS between these bounds rather than sitting on one number, so
+ * the rhythm does not become metronomic — a cut landing on exactly the same
+ * beat forever is as invisible as no cut at all. The spread is proportional to
+ * the interval so it stays a spread and not a rounding error at 3 seconds.
+ */
+export function punchBounds(interval = PUNCH_INTERVAL) {
+  const spread = Math.max(0.4, interval * 0.22);
+  return { min: Math.max(0.8, interval - spread), max: interval + spread };
+}
+
+// The constant forms of the above are declared further down, after
+// MIN_PIECE_SECONDS — they call these functions, and the functions read it.
+
+/**
+ * How long a zoom pulse lasts, in and back out.
+ *
+ * Short. A pulse is a punctuation mark on a word, not a move — past about a
+ * third of a second it stops reading as emphasis and starts reading as a slow
+ * zoom that changed its mind.
+ */
+export const PULSE_SECONDS = 0.28;
+
+/**
+ * How far from a cut a pulse must stay.
+ *
+ * A pulse landing on a framing change is two things happening at once, and the
+ * viewer reads the louder one — so the pulse is wasted and the cut looks like a
+ * glitch. Half a second either side is enough for each to be its own event.
+ */
+export const PULSE_CUT_CLEARANCE = 0.5;
+
+/**
+ * When the opening beat lands.
+ *
+ * Not at zero. A pulse on the very first frame is over before the viewer's eye
+ * has settled on the picture, so it reads as a decode glitch rather than as
+ * emphasis. A fifth of a second in, it reads as the shot arriving with force.
+ */
+export const OPENING_PULSE_AT = 0.2;
 
 /** The two framings. Wide is the recorded frame; tight is a crop into it. */
 export const FRAMING_WIDE = 1.0;
@@ -74,6 +125,20 @@ export const MIN_PIECE_SECONDS = 0.45;
  * catches it when one is not, which is every take the caller has not measured.
  */
 export const MIN_RETAINED_SHARE = 0.35;
+
+/**
+ * The bounds and the floor at the CONFIGURED interval.
+ *
+ * Exported as constants as well as functions because callers that do not
+ * parameterise the interval should not have to call a function to learn what
+ * the pipeline is actually doing. Declared HERE rather than beside the
+ * functions because they call `punchMinTakeSeconds`, which reads
+ * MIN_PIECE_SECONDS — evaluating them earlier hits the temporal dead zone and
+ * throws on import.
+ */
+export const PUNCH_MIN_TAKE_SECONDS = punchMinTakeSeconds();
+export const PUNCH_INTERVAL_MIN = punchBounds().min;
+export const PUNCH_INTERVAL_MAX = punchBounds().max;
 
 // ─── silence detection ──────────────────────────────────────────────────────
 
@@ -149,7 +214,16 @@ export function parseSilenceLog(log, { duration = null } = {}) {
  * @param {number}  opts.minKeep     narration floor — see below
  * @returns {{ pieces, removedSeconds, originalSeconds, editedSeconds, warnings }}
  */
-export function buildEditList(duration, silences = [], { isOpening = false, minKeep = 0, seed = 0, punchIns = true } = {}) {
+export function buildEditList(duration, silences = [], {
+  isOpening = false,
+  minKeep = 0,
+  seed = 0,
+  punchIns = true,
+  interval = PUNCH_INTERVAL,
+  emphasis = [],
+  pulses = ZOOM_PULSES_ENABLED,
+  pulseStrength = ZOOM_PULSE_STRENGTH,
+} = {}) {
   const warnings = [];
   const total = Math.max(0, Number(duration) || 0);
   if (total <= 0) return { pieces: [], removedSeconds: 0, originalSeconds: 0, editedSeconds: 0, warnings: ["take has no duration"] };
@@ -202,12 +276,13 @@ export function buildEditList(duration, silences = [], { isOpening = false, minK
   }
 
   // ── 3. framing ───────────────────────────────────────────────────────────
+  const minTake = punchMinTakeSeconds(interval);
   const pieces = [];
   let framingIndex = seed;
   for (const span of spans) {
     // Every span boundary is already a cut, so the framing flips there — that
     // is what hides the removed pause.
-    const sub = splitForPunchIns(span, { enabled: punchIns && !isOpening && total >= PUNCH_MIN_TAKE_SECONDS });
+    const sub = splitForPunchIns(span, { enabled: punchIns && !isOpening && total >= minTake, interval });
     for (const piece of sub) {
       pieces.push({
         srcStart: round(piece.start),
@@ -216,12 +291,35 @@ export function buildEditList(duration, silences = [], { isOpening = false, minK
         scale: isOpening ? PUSH_FROM : framingIndex % 2 === 0 ? FRAMING_WIDE : FRAMING_TIGHT,
         // The opening is the one animated move in the file.
         push: isOpening && pieces.length === 0 ? { from: PUSH_FROM, to: PUSH_TO, seconds: Math.min(PUSH_SECONDS, piece.end - piece.start) } : null,
+        pulses: [],
       });
       framingIndex++;
     }
   }
 
-  if (punchIns && !isOpening && total >= PUNCH_MIN_TAKE_SECONDS && pieces.length === 1) {
+  // ── 4. emphasis pulses ───────────────────────────────────────────────────
+  const pulsePlan = pulses ? assignPulses(pieces, emphasis, { strength: pulseStrength }) : { assigned: 0, dropped: [] };
+
+  // THE OPENING BEAT. Peter's note: the static talking face opener dies.
+  //
+  // Added explicitly rather than left to emphasis detection, because the first
+  // beat has to hit whether or not the opening sentence happens to contain a
+  // figure or a place name — and it usually does not, since a good hook opens
+  // on a question. It rides ON TOP of the slow push (both are terms in one zoom
+  // expression), so the frame arrives already moving and then keeps moving.
+  if (pulses && isOpening && pieces.length > 0 && pieces[0].seconds > OPENING_PULSE_AT + PULSE_SECONDS + 0.1) {
+    pieces[0].pulses.push({
+      at: OPENING_PULSE_AT,
+      seconds: PULSE_SECONDS,
+      // Harder than an emphasis pulse. This one is a punch, not a nudge.
+      strength: Math.min(0.12, pulseStrength * 1.8),
+      word: "(opening beat)",
+      kind: "opening",
+    });
+    pulsePlan.assigned++;
+  }
+
+  if (punchIns && !isOpening && total >= minTake && pieces.length === 1) {
     warnings.push("take is long enough for a punch-in but produced a single piece");
   }
 
@@ -231,7 +329,70 @@ export function buildEditList(duration, silences = [], { isOpening = false, minK
     editedSeconds: round(editedSeconds),
     removedSeconds: round(total - editedSeconds),
     warnings,
+    cadence: {
+      interval,
+      pieceCount: pieces.length,
+      averagePieceSeconds: pieces.length ? round(editedSeconds / pieces.length) : 0,
+      pulsesAssigned: pulsePlan.assigned,
+      pulsesDropped: pulsePlan.dropped,
+    },
   };
+}
+
+/**
+ * Put a zoom pulse on each emphasis word that has room for one.
+ *
+ * Emphasis times are in SOURCE time — where the word sits in the original
+ * recording — because that is what the transcript gives us. Pieces carry their
+ * source range, so finding the piece is a lookup and the offset within the
+ * piece is a subtraction. Doing this in edited time would need the cumulative
+ * trim at every point and would silently drift by however much silence was cut
+ * before it.
+ *
+ * THREE WAYS A PULSE IS DROPPED, and all three are collisions:
+ *   - it falls in a gap that was trimmed out, so the word is not in the video
+ *   - it lands within PULSE_CUT_CLEARANCE of a cut, where the framing change
+ *     already owns the moment
+ *   - it lands during the opening push, which is a deliberate slow move that a
+ *     pulse would fight
+ *
+ * Dropped pulses are returned rather than discarded: a take where every pulse
+ * was dropped is worth seeing in the report, because it usually means the
+ * cadence and the speech are fighting.
+ */
+export function assignPulses(pieces, emphasis = [], { strength = ZOOM_PULSE_STRENGTH, clearance = PULSE_CUT_CLEARANCE } = {}) {
+  const dropped = [];
+  let assigned = 0;
+
+  for (const e of emphasis || []) {
+    const at = Number(e?.at);
+    if (!Number.isFinite(at)) continue;
+
+    const piece = pieces.find((p) => at >= p.srcStart && at <= p.srcEnd);
+    if (!piece) {
+      dropped.push({ at, word: e.word, why: "the word was trimmed out of the take" });
+      continue;
+    }
+    if (piece.push) {
+      dropped.push({ at, word: e.word, why: "lands during the opening push" });
+      continue;
+    }
+    const offset = at - piece.srcStart;
+    if (offset < clearance || piece.seconds - offset < clearance + PULSE_SECONDS) {
+      dropped.push({ at, word: e.word, why: "too close to a cut" });
+      continue;
+    }
+    // Two pulses inside one 3-second piece is a wobble, not emphasis.
+    if (piece.pulses.some((p) => Math.abs(p.at - offset) < PULSE_SECONDS * 2.5)) {
+      dropped.push({ at, word: e.word, why: "another pulse is already on this beat" });
+      continue;
+    }
+
+    piece.pulses.push({ at: round(offset), seconds: PULSE_SECONDS, strength, word: e.word, kind: e.kind });
+    assigned++;
+  }
+
+  return { assigned, dropped };
 }
 
 /**
@@ -264,15 +425,20 @@ export function normaliseSilences(silences, total) {
  * walks between the bounds rather than sitting at one number so the rhythm does
  * not become metronomic.
  */
-export function splitForPunchIns(span, { enabled = true } = {}) {
+export function splitForPunchIns(span, { enabled = true, interval = PUNCH_INTERVAL } = {}) {
+  const { min, max } = punchBounds(interval);
   const length = span.end - span.start;
-  if (!enabled || length <= PUNCH_INTERVAL_MAX) return [span];
+  if (!enabled || length <= max) return [span];
 
   const out = [];
   let at = span.start;
   let i = 0;
-  while (span.end - at > PUNCH_INTERVAL_MAX) {
-    const step = PUNCH_INTERVAL_MIN + (i % (PUNCH_INTERVAL_MAX - PUNCH_INTERVAL_MIN + 1));
+  while (span.end - at > max) {
+    // Walk min -> max -> min across successive cuts. The old version stepped in
+    // whole seconds, which at a 3-second interval would have been a 33% swing
+    // between consecutive cuts — audible as a limp rather than a rhythm.
+    const t = (i % 4) / 3;
+    const step = min + (max - min) * (t > 1 ? 2 - t : t);
     out.push({ start: at, end: at + step });
     at += step;
     i++;
@@ -334,16 +500,48 @@ export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = nul
   }
 
   let tail = "[comp]";
+
+  // ── the zoom expression ──────────────────────────────────────────────────
+  //
+  // ONE zoompan, whatever moves are on this piece. The opening push and the
+  // emphasis pulses are both zooms, and the opening now wants BOTH: Peter's
+  // note is a pulse on the first beat over the top of the slow push. Chaining
+  // two zoompans would rasterise the frame twice and visibly soften it, and
+  // running them as alternatives — which is what the first version did — makes
+  // the opening pulse impossible to express at all.
+  //
+  // So the terms SUM into a single expression. The push is an eased ramp that
+  // settles at its target; each pulse is a half-sine gated to its own window by
+  // `between()`, so it contributes exactly zero outside it. Between pulses on a
+  // non-opening piece the expression is exactly 1.0 and the frame is untouched.
+  //
+  // `on` is the output frame index. A zoom expression that does not reference
+  // it is a constant, which ffmpeg accepts and renders as a perfectly still
+  // "zoom" — this codebase has shipped that bug once already, and the tests
+  // assert the expression is a function of the frame counter for that reason.
+  // The base is where the frame sits with nothing happening: the push's start
+  // scale, or 1.0. Every term below ADDS to it, so a piece with no moves is
+  // exactly 1.0 and a piece with both is the sum — and the emitted string stays
+  // the one a reader expects, "1+0.08*sin(...)", rather than "1+0+0.08*sin(...)".
+  const base = piece.push ? piece.push.from : 1;
+  const terms = [];
   if (piece.push) {
-    // The one animated move: an eased push over the opening seconds, applied
-    // to the COMPOSED frame so foreground and background travel together —
-    // which is what a real camera push does. `on` is the output frame index;
-    // a constant here produces a still zoom, a mistake made once already.
     const frames = Math.max(1, Math.round(piece.push.seconds * fps));
     const travel = round(piece.push.to - piece.push.from);
-    const z = `${piece.push.from}+${travel}*sin(min(on/${frames}\\,1)*PI/2)`;
-    graph += `;[comp]scale=${dim.w * 2}:${dim.h * 2},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${dim.w}x${dim.h}:fps=${fps}[pushed]`;
-    tail = "[pushed]";
+    terms.push(`${travel}*sin(min(on/${frames}\\,1)*PI/2)`);
+  }
+  for (const p of piece.pulses || []) {
+    const startF = Math.max(0, Math.round(p.at * fps));
+    const lenF = Math.max(1, Math.round(p.seconds * fps));
+    terms.push(`${p.strength.toFixed(3)}*between(on\\,${startF}\\,${startF + lenF})*sin((on-${startF})/${lenF}*PI)`);
+  }
+
+  if (terms.length > 0) {
+    const z = `${base}+${terms.join("+")}`;
+    // Upscaled before zoompan so the move lives inside real pixels rather than
+    // resampling the delivery frame.
+    graph += `;[comp]scale=${dim.w * 2}:${dim.h * 2},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${dim.w}x${dim.h}:fps=${fps}[zoomed]`;
+    tail = "[zoomed]";
   }
   graph += `;${tail}fps=${fps},setsar=1[v]`;
 

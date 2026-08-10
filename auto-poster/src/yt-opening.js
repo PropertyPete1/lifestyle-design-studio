@@ -74,6 +74,20 @@ export const MAX_SHARED_RUN = 4;
  */
 
 /** When the overlay appears and how long it holds. */
+/** How fast the hook's words land, one after another. */
+export const HOOK_WORD_SECONDS = 0.22;
+
+/**
+ * The hook is fully on screen by here, and something other than the face is
+ * moving by here.
+ *
+ * Peter's note names second 3 specifically. It is the number the whole opening
+ * treatment is built around: the beat lands at 0.2s, the words slam in from
+ * 0.4s, and a graphic or typography element teases in by 3s. Nothing in the
+ * first three seconds is allowed to be a static talking face.
+ */
+export const HOOK_COMPLETE_BY = 3.0;
+
 export const OVERLAY_START = 0.4;
 export const OVERLAY_HOLD = 3.6;
 export const OVERLAY_FADE = 0.4;
@@ -242,7 +256,7 @@ export async function generateOpeningOverlay({ hook, candidate = null, maxRetrie
  * the most-watched three seconds of the video. Rendering through the same sharp
  * path as every other card means it either looks right or fails the QC check.
  */
-export function overlaySvg(text, { width = 1920, height = 1080 } = {}) {
+export function overlaySvg(text, { width = 1920, height = 1080, visibleWords = null } = {}) {
   const C = BRAND.colors;
   const accent = BRAND.accentRotation[0];
   const maxWidth = width * 0.76;
@@ -270,8 +284,31 @@ export function overlaySvg(text, { width = 1920, height = 1080 } = {}) {
   const boxW = widest + padX * 2;
   const boxX = (width - boxW) / 2;
 
+  // WORD-BY-WORD, when a reveal state is supplied.
+  //
+  // The plate used to fade in whole, which is a title card — it arrives, it
+  // sits, and the opening is a talking face with a caption under it. Slamming
+  // the words in one at a time gives the first three seconds their own motion,
+  // independent of whatever the face is doing.
+  //
+  // Hidden words are drawn at zero opacity rather than omitted, for the same
+  // reason the kinetic typography does it: a centred line that only holds the
+  // words so far re-centres on every word, and the hook crawls sideways under
+  // his chin. The PLATE is measured from the full text too, so it does not grow.
+  let wordIndex = 0;
   const body = lines
-    .map((l, i) => `<text x="${width / 2}" y="${(top + i * lineHeight).toFixed(1)}" font-family="${SERIF}" font-size="${size}" font-weight="bold" fill="${C.ink}" text-anchor="middle">${esc(l)}</text>`)
+    .map((l, i) => {
+      const y = top + i * lineHeight;
+      const lineWords = l.split(/\s+/).filter(Boolean);
+      const spans = lineWords.map((w, wi) => {
+        const idx = wordIndex++;
+        const shown = visibleWords === null || idx < visibleWords;
+        const isLast = visibleWords !== null && idx === visibleWords - 1;
+        const tail = wi < lineWords.length - 1 ? " " : "";
+        return `<tspan xml:space="preserve" fill="${isLast ? accent : C.ink}" fill-opacity="${shown ? 1 : 0}">${esc(w)}${tail}</tspan>`;
+      }).join("");
+      return `<text x="${width / 2}" y="${y.toFixed(1)}" font-family="${SERIF}" font-size="${size}" font-weight="bold" text-anchor="middle">${spans}</text>`;
+    })
     .join("\n  ");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -289,6 +326,153 @@ function esc(s) {
 
 export async function renderOverlayPng(text, dim) {
   return sharp(Buffer.from(overlaySvg(text, dim))).png({ compressionLevel: 9 }).toBuffer();
+}
+
+/**
+ * The hook overlay as a sequence of word-reveal states.
+ *
+ * @returns {Array<{ png, at, visibleWords }>} in order, `at` in seconds
+ */
+export async function renderHookStates(text, dim, { start = OVERLAY_START, perWord = HOOK_WORD_SECONDS } = {}) {
+  const words = String(text || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  // The whole hook must be up by second 3 — that is the note. If the line is
+  // long enough that one word every `perWord` would run past it, the words
+  // arrive faster rather than the hook finishing late.
+  const budget = Math.max(0.6, HOOK_COMPLETE_BY - start);
+  const step = Math.min(perWord, budget / words.length);
+
+  const states = [];
+  for (let i = 1; i <= words.length; i++) {
+    states.push({
+      png: await sharp(Buffer.from(overlaySvg(text, { ...dim, visibleWords: i })))
+        .png({ compressionLevel: 9 })
+        .toBuffer(),
+      at: round(start + step * (i - 1)),
+      visibleWords: i,
+    });
+  }
+  return states;
+}
+
+/**
+ * Burn a word-by-word hook onto the opening segment.
+ *
+ * One overlay input per state, each gated to its own window by `enable`. That
+ * is more inputs than the single-plate version used, but the alternative — an
+ * alpha-channel overlay VIDEO — means either a codec with alpha support in the
+ * delivery chain or a pre-composite pass, and both cost more than a handful of
+ * PNG inputs on a seven-word line.
+ *
+ * The final state carries the fade-out, so the hook leaves the way it used to.
+ */
+export function burnHookArgs(videoIn, statePaths, output, { times, hold = OVERLAY_HOLD, fade = OVERLAY_FADE, start = OVERLAY_START }) {
+  const end = start + hold;
+  const inputs = [];
+  for (const p of statePaths) inputs.push("-i", p);
+
+  const chains = [];
+  let last = "[0:v]";
+  statePaths.forEach((_, i) => {
+    const from = times[i];
+    const to = i + 1 < times.length ? times[i + 1] : end;
+    const isFinal = i === statePaths.length - 1;
+    // Only the last state fades; the intermediate ones are hard cuts, which is
+    // what makes the words SLAM rather than dissolve into each other.
+    const prep = isFinal
+      ? `[${i + 1}:v]format=rgba,fade=t=out:st=${(end - fade).toFixed(2)}:d=${fade}:alpha=1[ov${i}]`
+      : `[${i + 1}:v]format=rgba[ov${i}]`;
+    chains.push(prep);
+    const out = isFinal ? "[v]" : `[c${i}]`;
+    chains.push(`${last}[ov${i}]overlay=0:0:enable='between(t,${from.toFixed(3)},${to.toFixed(3)})'${out}`);
+    last = `[c${i}]`;
+  });
+
+  return [
+    "-y", "-i", videoIn, ...inputs,
+    "-filter_complex", chains.join(";"),
+    "-map", "[v]", "-map", "0:a?",
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+    "-c:a", "copy",
+    output,
+  ];
+}
+
+/**
+ * When the teaser element arrives.
+ *
+ * DERIVED FROM THE HOOK, not fixed at second 3, and the audit is what forced
+ * that. A five-word hook slamming in at 0.22s per word is finished at 1.28s; a
+ * teaser pinned to 2.6s then leaves 1.3 seconds in the middle of the opening
+ * where the only thing on screen is a face holding still. That is the precise
+ * thing revision 3's opening note exists to kill, and it was invisible until
+ * the gap check was written.
+ *
+ * So the teaser follows the hook by a beat, and second 3 becomes the LATEST it
+ * may arrive rather than when it does.
+ */
+export function openingTeaserAt(hookStates, { completeBy = HOOK_COMPLETE_BY, gap = 0.6 } = {}) {
+  const last = hookStates?.length ? hookStates[hookStates.length - 1].at : OVERLAY_START;
+  return round(Math.min(completeBy, last + gap));
+}
+
+/**
+ * Everything that moves in the opening three seconds, and whether that is enough.
+ *
+ * PURE, AND IT FAILS. The note behind revision 3's opening is "the static
+ * talking face opener dies", and a note like that quietly stops being true the
+ * first time someone turns a knob off — YT_ZOOM_PULSES=false, an overlay the
+ * critic rejected, an opening take too short for the hook to finish. Each of
+ * those is individually reasonable and together they put the old opener back
+ * without anyone deciding to.
+ *
+ * So the requirement is checked rather than assumed: there must be motion in
+ * the first beat, the hook must be complete by second 3, and something that is
+ * not his face must be on screen by then.
+ *
+ * @returns {{ ok, failures, events }}
+ */
+export function auditOpeningMotion({ piece = null, hookStates = [], teaserAt = null, completeBy = HOOK_COMPLETE_BY } = {}) {
+  const failures = [];
+  const events = [];
+
+  const pulses = piece?.pulses || [];
+  const openingPulse = pulses.find((p) => p.at <= 0.6);
+  if (openingPulse) events.push({ at: openingPulse.at, what: "zoom pulse on the first beat" });
+  else failures.push("nothing moves on the first beat — the opening pulse is missing");
+
+  if (piece?.push) events.push({ at: 0, what: `push ${piece.push.from}->${piece.push.to} over ${piece.push.seconds}s` });
+
+  if (hookStates.length === 0) {
+    failures.push("the hook does not animate — no word states were rendered");
+  } else {
+    const last = hookStates[hookStates.length - 1];
+    events.push({ at: hookStates[0].at, what: `hook begins, ${hookStates.length} words` });
+    events.push({ at: last.at, what: "hook complete" });
+    if (last.at > completeBy) {
+      failures.push(`the hook is not fully on screen until ${last.at}s, past the ${completeBy}s mark`);
+    }
+  }
+
+  if (teaserAt !== null) {
+    events.push({ at: teaserAt, what: "brand element teases in" });
+    if (teaserAt > completeBy) failures.push(`the teaser element arrives at ${teaserAt}s, past the ${completeBy}s mark`);
+  } else {
+    failures.push(`no graphic or typography element by ${completeBy}s`);
+  }
+
+  events.sort((a, b) => a.at - b.at);
+
+  // The real question is not "did each box get ticked" but "was there ever a
+  // gap where the frame was just a face". Anything over a second qualifies.
+  let previous = 0;
+  for (const e of events) {
+    if (e.at - previous > 1.0) failures.push(`nothing happens between ${round(previous)}s and ${e.at}s`);
+    previous = Math.max(previous, e.at);
+  }
+
+  return { ok: failures.length === 0, failures, events };
 }
 
 /**
