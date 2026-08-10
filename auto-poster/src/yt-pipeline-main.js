@@ -57,7 +57,7 @@ import {
 } from "./yt-approvals.js";
 import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
-import { generateNarration, renderTimeline, syntheticNarrationUsed, canvasFor } from "./yt-assemble.js";
+import { generateNarration, renderTimeline, syntheticNarrationUsed, canvasFor, ffmpeg } from "./yt-assemble.js";
 import { applyRetentionStage, renderRetentionSummary } from "./yt-retention-stage.js";
 import { buildVisuals } from "./yt-visual-build.js";
 import { listLongformFootage } from "./yt-footage-source.js";
@@ -443,8 +443,16 @@ async function buildFromRecordings(approvals, record) {
     console.log(`::warning::plan is missing ${plan.missingTakes.length} on-camera take(s) — not rendering`);
     return;
   }
-  if (plan.brollExhausted) {
-    console.log("::warning::the B-roll library ran short for this video — some clips are reused");
+  // "Ran short" only means something when there was a library to run short OF.
+  //
+  // With the long-form folder empty — the designed steady state — the allocator
+  // reports exhausted on every take, and the first live run of revision 3 duly
+  // raised a CI warning saying clips were being reused when zero clips existed.
+  // A warning that fires on the normal case is a warning that gets filtered out,
+  // and this one needs to still mean something on the day Peter does put footage
+  // in the folder and it genuinely runs thin.
+  if (plan.brollExhausted && brollPool.length > 0) {
+    console.log(`::warning::the long-form footage library ran short (${brollPool.length} clip(s)) — some are reused`);
   }
 
   const resolveBrollPath = await downloadPlannedBroll(plan, brollPool, workDir);

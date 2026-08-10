@@ -37,6 +37,13 @@ jobs:
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
+      # BEFORE the suite, because it is a second and it catches a class the
+      # suite structurally cannot: an identifier that does not exist at a call
+      # site only production reaches. See auto-poster/eslint.config.mjs — one
+      # rule, no style opinions, currently zero findings.
+      - name: Lint for undefined identifiers
+        working-directory: auto-poster
+        run: npm run lint
       - name: Run test suite
         working-directory: auto-poster
         run: npm test
