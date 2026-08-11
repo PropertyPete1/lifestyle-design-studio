@@ -81,6 +81,8 @@ function sandbox({ checkoutBranch }) {
   for (const f of ["merge-log-push.mjs", "merge-strategies.mjs"]) {
     cpSync(join(AUTOPOSTER, f), join(repoDir, f));
   }
+  // …and the telemetry writer it publishes status/ with, from src/.
+  cpSync(join(AUTOPOSTER, "src", "social-telemetry.js"), join(repoDir, "src", "social-telemetry.js"));
 
   return { root, remote, work, repoDir };
 }
