@@ -982,6 +982,17 @@
         "notes": "Superseded — rebuild as revision 8 with the merged PR #77 work (music, micro-punches, per-window stock, SFX). Same takes.",
         "reworkQueued": true
       }
+    },
+    {
+      "requestId": "video_review-2026-08-11-a3efbfed",
+      "kind": "video_review",
+      "requestedAt": "2026-08-11T00:39:11.570Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "Best North San Antonio Neighborhoods: MUD Fees the VA Exemption Skips",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
