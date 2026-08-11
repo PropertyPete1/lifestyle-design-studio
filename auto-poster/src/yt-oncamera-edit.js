@@ -74,6 +74,15 @@ export function punchBounds(interval = PUNCH_INTERVAL) {
 // MIN_PIECE_SECONDS — they call these functions, and the functions read it.
 
 /**
+ * The declick fade at each end of every rendered piece, in seconds.
+ *
+ * Not a taste value. A concat join splices two waveforms at whatever amplitude
+ * each happened to be at, and that step is what a viewer hears as a click or a
+ * pop on a cut. 15ms takes any step to zero and is far shorter than a syllable.
+ */
+export const PIECE_DECLICK_SECONDS = 0.015;
+
+/**
  * How long a zoom pulse lasts, in and back out.
  *
  * Short. A pulse is a punctuation mark on a word, not a move — past about a
@@ -283,11 +292,26 @@ export function buildEditList(duration, silences = [], {
     // Every span boundary is already a cut, so the framing flips there — that
     // is what hides the removed pause.
     const sub = splitForPunchIns(span, { enabled: punchIns && !isOpening && total >= minTake, interval });
-    for (const piece of sub) {
+    for (const [subIndex, piece] of sub.entries()) {
       pieces.push({
         srcStart: round(piece.start),
         srcEnd: round(piece.end),
         seconds: round(piece.end - piece.start),
+        // WHAT KIND OF JOIN OPENS THIS PIECE, and the distinction is audible.
+        //
+        // A span boundary is a DEAD-SPACE join: silence was removed and the two
+        // halves of a sentence were pushed together. Nothing happened there
+        // editorially — the viewer is not supposed to notice it at all.
+        //
+        // A boundary INSIDE a span is a deliberate cadence punch-in: the framing
+        // changes on purpose, and that is the beat a sound can sit on.
+        //
+        // Revision 8 shipped a whoosh on every seam because the SFX layer could
+        // only see "a piece boundary", so the removed pauses each got a sound
+        // announcing the edit that was supposed to be invisible. That is the
+        // "weird noise on cuts" note, and it is fixed by telling the two apart
+        // here rather than by turning the effect off.
+        joinKind: pieces.length === 0 ? null : subIndex === 0 ? "dead-space" : "punch-in",
         scale: isOpening ? PUSH_FROM : framingIndex % 2 === 0 ? FRAMING_WIDE : FRAMING_TIGHT,
         // The opening is the one animated move in the file.
         push: isOpening && pieces.length === 0 ? { from: PUSH_FROM, to: PUSH_TO, seconds: Math.min(PUSH_SECONDS, piece.end - piece.start) } : null,
@@ -545,9 +569,36 @@ export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = nul
   }
   graph += `;${tail}fps=${fps},setsar=1[v]`;
 
+  // A DECLICK AT BOTH EDGES OF EVERY PIECE.
+  //
+  // The pieces are cut at arbitrary sample positions and then concatenated, so
+  // each join splices two waveforms that are almost never at the same amplitude.
+  // That step is a discontinuity, and a discontinuity is a click — which is the
+  // other half of the "weird noise on cuts" note, and the half that survives
+  // even after the whoosh is restricted to deliberate punch-ins.
+  //
+  // 15ms is short enough to be inaudible as a fade on speech (a syllable is
+  // 80-200ms) and long enough to take any step down to zero.
+  //
+  // EDGE FADES RATHER THAN A TRUE CROSSFADE, deliberately. `acrossfade` overlaps
+  // its inputs, so every join would shorten the take by the fade length — and
+  // the captions, the micro-punches and the graphic reveals are all timed
+  // against these durations, so a silent 15ms of drift per cut would walk the
+  // whole video out of sync with its own words. Fading each edge to zero
+  // preserves the timing exactly and removes the same discontinuity.
+  const fade = round(PIECE_DECLICK_SECONDS);
+  const pieceSeconds = Math.max(0, round(piece.srcEnd - piece.srcStart));
+  // A piece shorter than two fades would be all fade. It gets none: a very short
+  // piece is quiet at both ends anyway, and halving it would be worse than the
+  // click.
+  const audio = pieceSeconds > fade * 3
+    ? ["-af", `afade=t=in:st=0:d=${fade},afade=t=out:st=${round(pieceSeconds - fade)}:d=${fade}`]
+    : [];
+
   args.push(
     "-filter_complex", graph,
     "-map", "[v]", "-map", "0:a?",
+    ...audio,
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
     "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
     output

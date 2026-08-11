@@ -48,6 +48,7 @@ import sharp from "sharp";
 import { BRAND, SANS } from "./carousel-render.js";
 import { MICRO_PUNCHES_ENABLED, MICRO_PUNCH_MAX, MICRO_PUNCH_SECONDS } from "./yt-config.js";
 import { PROTECTED_SECONDS } from "./yt-opening.js";
+import { FUNCTION_WORDS } from "./yt-scene-keywords.js";
 
 /** Must match buildCaptionChunks, and is imported nowhere so it cannot drift silently. */
 const WORDS_PER_CHUNK = 4;
@@ -137,6 +138,22 @@ export function punchCandidatesFor(seg) {
     if (
       next &&
       /^[a-z]{3,10}$/.test(t) &&
+      // THE LEAD MUST CARRY MEANING, and revision 8 shipped six punches that
+      // proved it does not follow from being lower-case. "the three", "other
+      // two", "and eleven", "mostly one" — and "against 1604", which put a road
+      // number mid-screen in gold. Every one matched "a lowercase word followed
+      // by a figure", and not one of them was an emphasis beat.
+      //
+      // A counted noun is a NOUN and a count: "month nine", "day one". The same
+      // closed-class list the stock layer uses decides it, so there is one
+      // answer in the codebase to "is this word carrying meaning".
+      !FUNCTION_WORDS.has(t.toLowerCase()) &&
+      // An -ly adverb is not a counted noun either. "mostly one" got through a
+      // closed-class list because "mostly" is open-class — there is always
+      // another adverb, so this is a rule rather than another word. Nothing is
+      // lost: English does not count in adverbs, so no real "<adverb> <number>"
+      // phrase is an emphasis beat.
+      !/ly$/.test(t.toLowerCase()) &&
       (FIGURE.test(next) || NUMBER_WORD.test(next))
     ) {
       out.push({ text: `${t} ${next}`, index: i, span: 2, klass: PUNCH_CLASS.COUNTED, score: 2 });

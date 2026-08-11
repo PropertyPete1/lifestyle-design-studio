@@ -269,6 +269,63 @@ export const PUNCH_SFX_ENABLED = process.env.YT_PUNCH_SFX !== "false";
 export const PUNCH_SFX_DB = clampFloat(process.env.YT_PUNCH_SFX_DB, -20, -40, -6);
 
 /**
+ * Whether the whoosh plays on punch-in cuts. OFF.
+ *
+ * Revision 8 put one on every seam, including the joins where dead air was
+ * removed — so the edit that is supposed to be invisible announced itself
+ * dozens of times, which is what "weird noise on cuts" was. The seam
+ * classification that fixes it lives in yt-oncamera-edit.js, and the whoosh is
+ * now restricted to deliberate cadence punch-ins.
+ *
+ * It still defaults OFF, because the note was about the sound being there at
+ * all and a fix for the wrong-place problem is not evidence that the
+ * right-place version is wanted. The impacts on micro-punches stay on. Turn
+ * this on to judge it.
+ */
+export const PUNCH_WHOOSH_ENABLED = process.env.YT_PUNCH_WHOOSH === "true";
+
+/**
+ * The frame rate the animated graphics actually move at.
+ *
+ * NOT a new encode rate — the clips were always encoded at 30fps. This is how
+ * often the DRAWING changes, which is a different number and was the one that
+ * mattered: a road drew in 5 steps over 0.7s (~7fps), a counter in 12 over 1.6s
+ * (~7.5fps), and the wordless beat advanced once every 0.4s (2.5fps) across
+ * more than half the runtime. Encoded at 30fps, held for four frames each. That
+ * is what "the whole video feels laggy" was.
+ *
+ * Tied to the delivery rate by default so motion is smooth by construction. It
+ * is a knob because rasterising is the expensive part of a build and a long
+ * beat at full rate is real minutes.
+ */
+export const GRAPHIC_TWEEN_FPS = clampInt(process.env.YT_GRAPHIC_TWEEN_FPS, 30, 8, 60);
+
+/**
+ * The most frames one wordless beat may rasterise.
+ *
+ * A bound on the one thing that could make a build much slower. At 30fps this
+ * is three seconds, which is more than the beat is now allowed to hold anyway
+ * (see BEAT_BRIDGE_MAX_SECONDS) — so in practice it never binds, and it is here
+ * so that a regression in the fallback chain costs a slightly steppier beat
+ * rather than twenty minutes of rasterising.
+ */
+export const BEAT_MAX_FRAMES = clampInt(process.env.YT_BEAT_MAX_FRAMES, 90, 8, 900);
+
+/**
+ * The longest the wordless beat may hold the screen.
+ *
+ * THE BEAT IS A BRIDGE, NOT A LAYER. Revision 8 gave it 56% of the runtime, and
+ * abstract gold arcs played through the passages naming actual neighbourhoods —
+ * the video's core content covered by the one visual that says nothing. That is
+ * the worst available fallback, and it happened because the beat was an
+ * unbounded floor rather than a last resort.
+ *
+ * Two seconds is a breath between scenes. Anything longer and the neighbouring
+ * scene is extended instead.
+ */
+export const BEAT_BRIDGE_MAX_SECONDS = clampFloat(process.env.YT_BEAT_BRIDGE_MAX_SECONDS, 2, 0.5, 8);
+
+/**
  * The longest one visual may own the screen, in seconds.
  *
  * A 30-second narration used to sit on a single stock clip or a single graphic

@@ -654,6 +654,21 @@ export class MapSession {
     this.overlapThreshold = overlapThreshold;
     this.regionChanges = 0;
     this.mapCount = 0;
+    // Which PLACES this video has already put on a map.
+    //
+    // Roads were already remembered (`established`) so a second map does not
+    // re-perform the rings. Places were not, because until revision 9 a map was
+    // only ever made from a writer's MAP intent and the writer does not repeat
+    // themselves. Now a window that is nothing but a place name can ask for a
+    // map of its own, and without this the same neighbourhood would be
+    // introduced three times in one video.
+    this.placesShown = new Set();
+  }
+
+  /** Has every place in this spec already been drawn in this video? */
+  coversPlaces(spec) {
+    const labels = (spec?.labels || []).map((l) => String(l).toLowerCase());
+    return labels.length > 0 && labels.every((l) => this.placesShown.has(l));
   }
 
   /** Bounds of everything a spec will draw, for region comparison. */
@@ -696,6 +711,7 @@ export class MapSession {
   /** Remember what this map drew, so the next one can start from it. */
   record(spec) {
     for (const id of spec.highlight || []) this.established.add(id);
+    for (const l of spec.labels || []) this.placesShown.add(String(l).toLowerCase());
     this.lastBounds = MapSession.boundsFor(spec);
     this.mapCount++;
   }

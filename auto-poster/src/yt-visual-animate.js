@@ -8,13 +8,24 @@
  * described — the row strikes as it is named, the figure counts, the spine
  * grows.
  *
- * HOW IT WORKS, AND WHY IT IS STEPPED RATHER THAN INTERPOLATED
- * Each reveal state is a full rasterise of the card at 2560x1440, which costs
- * real time. Rendering every frame of a 9-second clip is 270 rasterises and
- * minutes per graphic, on a runner that has a dozen of them to build. So the
- * animation is a small number of KEY STATES held for their natural duration,
- * with two frames of overshoot on each reveal so it lands with weight instead of
- * popping, and a single continuous camera push underneath the whole thing.
+ * HOW IT WORKS: MOTION IS INTERPOLATED, STILLNESS IS NOT
+ * Each state is a full rasterise of the card at 2560x1440, which costs real time
+ * — 137ms for a map — so rendering every frame of every clip would be minutes
+ * per graphic on a runner that has a dozen to build. The resolution is that only
+ * the passages where something MOVES are expanded to the delivery frame rate: a
+ * road drawing, a figure counting, the beat's arcs travelling. A card holding
+ * still between two reveals is one rasterise however long it holds, because a
+ * still frame repeated is still a still frame.
+ *
+ * That distinction was missing until revision 9. Motion was rendered at five to
+ * twelve states per transition — about 7fps — and the wordless beat advanced
+ * 2.5 times a second across more than half the runtime. Encoded at 30fps and
+ * held for four frames each, which is exactly what "the whole video feels laggy"
+ * described.
+ *
+ * Reveals still LAND rather than tween: an arrival is a cut, and two frames of
+ * overshoot give it weight. A single continuous camera push runs underneath all
+ * of it in the encoder, where it has always been per-frame and smooth.
  *
  * The push matters more than it looks. It is what keeps the frame alive between
  * reveals when the narration dwells, and it is the reason the ~2s static rule
@@ -35,12 +46,14 @@ import { renderCardPng, revealLabels, countUp, renderBeatPng } from "./yt-card-r
 import { renderMapPng, mapRevealLabels, mapRevealTargets, highlightedRoadIds } from "./yt-map-render.js";
 import { frameDifference } from "./yt-visual-qc.js";
 import { planReveals, planMapReveals, MAX_STATIC_SECONDS } from "./yt-reveal-timing.js";
+import { GRAPHIC_TWEEN_FPS, BEAT_MAX_FRAMES } from "./yt-config.js";
 
 /** How long the overshoot on a landing reveal lasts. */
 const LAND_SECONDS = 0.14;
 
 /** Frames per second for generated graphic clips. Matches the timeline. */
 export const GRAPHIC_FPS = 30;
+
 
 /**
  * How far the continuous push travels across the whole graphic.
@@ -62,20 +75,55 @@ export const GRAPHIC_FPS = 30;
 const PUSH_TRAVEL = 0.045;
 
 /**
- * How long a road takes to draw itself, and in how many states.
+ * How fast the beat's geometry travels, in phase units per second.
+ *
+ * 92.5 is exactly what the old code did — 37 units per state at one state every
+ * 0.4 seconds — kept so the beat looks the same as the one Peter has been
+ * reviewing and only its smoothness changes.
+ */
+const BEAT_PHASE_PER_SECOND = 92.5;
+
+/**
+ * How long a road takes to draw itself.
  *
  * 0.7s is about the length of a spoken road name ("Loop sixteen-oh-four"), which
- * is the point: the road finishes arriving as Peter finishes naming it. Five
- * states is the fewest that reads as drawing rather than as growing in jumps —
- * measured against the 1604 ring, which is the longest geometry here at 351
- * points and therefore the least forgiving.
+ * is the point: the road finishes arriving as Peter finishes naming it.
  */
 const ROAD_DRAW_SECONDS = 0.7;
-const ROAD_DRAW_STEPS = 5;
 
-/** CALLOUT counts up over this long, in this many steps. */
+/**
+ * THE STEP COUNTS ARE DERIVED FROM THE FRAME RATE NOW, NOT CHOSEN.
+ *
+ * They were 5 and 12. A road drew in 5 states across 0.7s and a counter ran 12
+ * across 1.6s, which is motion at about 7 frames a second — encoded into a 30fps
+ * clip, so every drawing was held for four frames and then jumped. That is what
+ * "the whole video feels laggy" was: not the encode rate, which was always 30,
+ * but the rate at which the PICTURE changed.
+ *
+ * Tying them to the delivery rate makes stepping impossible by construction: one
+ * new drawing per output frame, so there is nothing left to hold. The cost is
+ * rasterising — measured at 137ms for a map frame — which is why only the
+ * MOVING passages are expanded. A road drawing for 0.7s costs 21 frames instead
+ * of 5, about three seconds of extra work; the still holds between reveals stay
+ * one frame each however long they last.
+ */
+const ROAD_DRAW_STEPS = Math.max(5, Math.round(ROAD_DRAW_SECONDS * GRAPHIC_TWEEN_FPS));
+
+/** CALLOUT counts up over this long, at the same rate everything else moves. */
 const COUNT_SECONDS = 1.6;
-const COUNT_STEPS = 12;
+const COUNT_STEPS = Math.max(12, Math.round(COUNT_SECONDS * GRAPHIC_TWEEN_FPS));
+
+/**
+ * Ease-out for a drawing tip, so it decelerates into place.
+ *
+ * The old comment claimed the road was "eased so the tip decelerates into place
+ * instead of stopping dead" and the code stepped it linearly — at five steps the
+ * difference was invisible, so the claim went unchallenged. At twenty-one it is
+ * plainly visible, and the easing the comment always described is now real.
+ */
+function easeOut(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
 
 /**
  * The sequence of states to rasterise, with when each begins.
@@ -86,7 +134,13 @@ const COUNT_STEPS = 12;
  */
 export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [], spec = null, established = new Set() }) {
   const states = [];
-  const push = (at, s) => states.push({ at: round(Math.max(0, Math.min(seconds, at))), ...s });
+  // MILLISECONDS, NOT CENTISECONDS. State times used to round to 0.01s while the
+  // collapse below discards anything closer together than a frame (0.0333s at
+  // 30fps). A tween frame is spaced exactly one frame apart, so rounding walked
+  // successive states to 0.03 and 0.04 gaps and the 0.03 ones were eaten as
+  // "coincident" — roughly every other frame of every draw. Measured: a draw
+  // asking for 30 drawings a second delivered 18.
+  const push = (at, s) => states.push({ at: roundTime(Math.max(0, Math.min(seconds, at))), ...s });
 
   if (type === "MAP") {
     // A MAP reveals in two currencies. A road ARRIVES over time — it draws
@@ -127,13 +181,23 @@ export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [
         if (established.has(id)) return;
         for (let k = 1; k <= ROAD_DRAW_STEPS; k++) {
           const t = k / ROAD_DRAW_STEPS;
-          drawn[id] = t;
+          drawn[id] = easeOut(t);
           // Eased so the tip decelerates into place instead of stopping dead.
           push(r.at + (ROAD_DRAW_SECONDS * k) / ROAD_DRAW_STEPS, {
             roadProgress: { ...drawn },
             places: placesShown,
             visible: ++revealed,
             pulse: k === ROAD_DRAW_STEPS ? 1 : 0,
+            // EVERY FRAME OF THE DRAW EXCEPT THE LAST IS A TWEEN.
+            //
+            // The dead-state check asks whether a state that must differ from
+            // its predecessor actually rasterised differently. Adjacent frames
+            // of a 21-step eased draw differ by a fraction of a road — and under
+            // easeOut the final frames move least of all — so comparing them
+            // pairwise would report a correct, smooth draw as a wall of dead
+            // states and reject the graphic. The check compares KEY states, and
+            // the key here is the finished road.
+            tween: k < ROAD_DRAW_STEPS,
           });
         }
       } else {
@@ -281,13 +345,16 @@ function finish(states, seconds) {
   const merged = [];
   for (const s of states) {
     const prev = merged[merged.length - 1];
-    if (prev && Math.abs(prev.at - s.at) < 1 / GRAPHIC_FPS) merged[merged.length - 1] = { ...s, at: prev.at };
+    // HALF A FRAME, not a whole one. Two states a full frame apart are two
+    // frames and must both survive; only states closer than half a frame are
+    // genuinely the same instant (a beat landing on a reveal).
+    if (prev && Math.abs(prev.at - s.at) < 0.5 / GRAPHIC_FPS) merged[merged.length - 1] = { ...s, at: prev.at };
     else merged.push(s);
   }
 
   return merged.map((s, i) => ({
     ...s,
-    until: round(i + 1 < merged.length ? merged[i + 1].at : seconds),
+    until: roundTime(i + 1 < merged.length ? merged[i + 1].at : seconds),
   })).filter((s) => s.until > s.at);
 }
 
@@ -308,6 +375,7 @@ export async function renderAnimatedGraphic({
   writeFileSync,
   renderPng = renderCardPng,
   session = null,
+  push = true,
 }) {
   // MAP is the one type whose renderer and label set live elsewhere: its reveal
   // unit is geometry, not a row of text, so both come from yt-map-render.js.
@@ -370,7 +438,15 @@ export async function renderAnimatedGraphic({
   const mapMotion = (st) =>
     `${Object.values(st.roadProgress || {}).map((v) => v.toFixed(2)).join(",")}|${st.places ?? 0}`;
   const stateDiffs = [];
+  // The index of the last state that was NOT a tween, so a motion is compared
+  // across its whole travel rather than frame to frame.
+  let lastKey = 0;
   for (let i = 1; i < framePaths.length; i++) {
+    // A TWEEN IS NOT A CLAIM ABOUT PIXELS. It is one frame of a motion that is
+    // asserted at its endpoints, and two adjacent frames of a 21-step eased draw
+    // legitimately differ by almost nothing. Checking them pairwise would reject
+    // every smooth animation in the file for being smooth.
+    if (states[i].tween) continue;
     // SETTLE AND BEAT STATES ARE EXEMPT, and this is what the predicate below
     // has always meant to say.
     //
@@ -382,24 +458,26 @@ export async function renderAnimatedGraphic({
     // as different from the real figure preceding them. That cost s3t5 its
     // CALLOUT on the revision-5 build: every count state was fine and a beat two
     // thirds of the way through was called dead.
-    if (states[i].settle || states[i].beat) continue;
+    if (states[i].settle || states[i].beat) { lastKey = i; continue; }
+    const prev = lastKey;
     const mustChange = isMap
-      ? mapMotion(states[i]) !== mapMotion(states[i - 1])
-      : states[i].visible !== states[i - 1].visible
+      ? mapMotion(states[i]) !== mapMotion(states[prev])
+      : states[i].visible !== states[prev].visible
         // FIGURE, not progress. Comparing progress asserted that two moments
         // showing the identical figure must nonetheless differ in pixels — true
         // of any small value, which reaches its final digits early and then
         // holds. That demanded motion the design never promised and rejected
         // sound CALLOUTs for it.
-        || (readsProgress && states[i].figure !== states[i - 1].figure);
-    if (!mustChange) continue;
-    const d = await frameDifference(framePaths[i - 1], framePaths[i]);
-    stateDiffs.push({ from: i - 1, to: i, visible: states[i].visible, diff: round(d) });
+        || (readsProgress && states[i].figure !== states[prev].figure);
+    if (!mustChange) { lastKey = i; continue; }
+    const d = await frameDifference(framePaths[prev], framePaths[i]);
+    stateDiffs.push({ from: prev, to: i, visible: states[i].visible, diff: round(d) });
+    lastKey = i;
   }
   const deadStates = stateDiffs.filter((d) => d.diff < 0.02);
 
   const out = join(dir, `${stem}.mp4`);
-  ffmpeg(concatArgs(listPath, out, { seconds, fps }));
+  ffmpeg(concatArgs(listPath, out, { seconds, fps, push }));
 
   return {
     path: out,
@@ -514,14 +592,29 @@ export async function renderTypographyClip({
  * counter the whole push depends on — advances about six times across nine
  * seconds. The clip renders, is the right length, and the push is a staircase.
  */
-export function concatArgs(listPath, output, { seconds, fps = GRAPHIC_FPS }) {
+export function concatArgs(listPath, output, { seconds, fps = GRAPHIC_FPS, push = true }) {
   const frames = Math.max(1, Math.round(seconds * fps));
   const z = `1+${PUSH_TRAVEL}*on/${frames}`;
+  // `push: false` RENDERS THE SAME STATES THROUGH THE SAME ENCODE, WITHOUT THE
+  // CAMERA. It exists for measurement and is never used by a build.
+  //
+  // The push moves every pixel a little on every frame, which is the point of it
+  // — and it means a frame-to-frame difference is never zero even when the
+  // CONTENT is a held still. The first artifact-level motion check was defeated
+  // by exactly that: it reported a 2.5fps slideshow as "0.0% held" and passed
+  // its own negative control, because the drifting camera answered the question
+  // instead of the drawing.
+  //
+  // With the camera off, a held still is bit-identical to the one before it and
+  // stepping becomes unambiguous rather than statistical. Same state list, same
+  // concat, same encoder — one variable removed.
+  const vf = push
+    ? `fps=${fps},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1920x1080:fps=${fps},format=yuv420p,setsar=1`
+    : `fps=${fps},scale=1920:1080,format=yuv420p,setsar=1`;
   return [
     "-y",
     "-f", "concat", "-safe", "0", "-i", listPath,
-    "-vf",
-    `fps=${fps},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1920x1080:fps=${fps},format=yuv420p,setsar=1`,
+    "-vf", vf,
     "-t", String(seconds),
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
     "-an",
@@ -791,6 +884,11 @@ function median(xs) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+/** State times are frame-accurate, so they round to milliseconds. */
+function roundTime(n) {
+  return Math.round(n * 1000) / 1000;
+}
+
 function round(n) {
   return Math.round(n * 1000) / 1000;
 }
@@ -803,16 +901,35 @@ function round(n) {
  * so there is no transcript to read, no phrase to window, and nothing that could
  * ever contradict the caption underneath it.
  */
-export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FPS, ffmpeg, writeFileSync, startPhase = 0 }) {
+export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FPS, ffmpeg, writeFileSync, startPhase = 0, push = true }) {
   const total = Math.max(0.2, Number(seconds) || 0);
-  // One state per ~0.4s: enough that the arcs visibly travel, few enough that a
-  // long beat does not cost more rasterises than a real graphic.
-  const count = Math.max(2, Math.round(total / 0.4));
+  // THE BEAT MOVED AT 2.5 FRAMES A SECOND, and it carried more than half the
+  // runtime. One state per 0.4s was chosen so "a long beat does not cost more
+  // rasterises than a real graphic" — a sound instinct about cost applied to
+  // the one layer that was on screen most, so the video's dominant visual was
+  // also its jerkiest. Four arcs each rotating at their own rate, advancing
+  // twice a second, is the largest single contributor to "the whole video feels
+  // laggy".
+  //
+  // Now it moves at the delivery rate like everything else. The cost is bounded
+  // from the other end instead: the beat is a BRIDGE now, capped at a couple of
+  // seconds by the fallback chain, so full-rate motion is affordable precisely
+  // because there is not much of it. BEAT_MAX_FRAMES is the backstop if that
+  // ever regresses — a steppier beat is a much cheaper failure than twenty
+  // minutes of rasterising.
+  const wanted = Math.max(2, Math.round(total * GRAPHIC_TWEEN_FPS));
+  const count = Math.min(wanted, BEAT_MAX_FRAMES);
   const stem = `beat-${String(index).padStart(3, "0")}`;
   const framePaths = [];
 
+  // PHASE ADVANCES PER SECOND, NOT PER FRAME, and this is the line that makes
+  // raising the frame rate a smoothness change instead of a speed change. It was
+  // `i * 37` — 37 units per state at one state per 0.4s, so 92.5 units a second.
+  // Left alone at 30fps the same expression would spin the arcs twelve times
+  // faster, which is not a smoother beat, it is a different and much worse one.
+  const perFrame = (BEAT_PHASE_PER_SECOND * total) / count;
   for (let i = 0; i < count; i++) {
-    const png = await renderBeatPng(startPhase + i * 37);
+    const png = await renderBeatPng(startPhase + i * perFrame);
     const p = join(dir, `${stem}-s${String(i).padStart(3, "0")}.png`);
     writeFileSync(p, png);
     framePaths.push(p);
@@ -825,6 +942,6 @@ export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FP
   writeFileSync(listPath, lines.join("\n"));
 
   const out = join(dir, `${stem}.mp4`);
-  ffmpeg(concatArgs(listPath, out, { seconds: total, fps }));
+  ffmpeg(concatArgs(listPath, out, { seconds: total, fps, push }));
   return { path: out, seconds: round(total), stateCount: count };
 }

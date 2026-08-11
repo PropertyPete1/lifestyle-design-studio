@@ -400,21 +400,41 @@ describe("4. SFX are generated, not licensed", () => {
     assert.match(whooshArgs("w.wav").join(" "), /volume=4\.5,/);
   });
 
-  test("one impact per punch, whooshes on the seams", () => {
+  test("a DEAD-SPACE join is silent; only a deliberate punch-in may sound", () => {
+    // THE "WEIRD NOISE ON CUTS" NOTE. Every piece boundary used to get a whoosh,
+    // including the joins where a breath was removed — so an edit whose entire
+    // purpose is to be unnoticeable announced itself at every seam. A removed
+    // pause is not an event; a framing change is.
     const plan = { segments: [
-      { kind: "on_camera", takeId: "oc", seconds: 30, editPlan: { pieces: [{ seconds: 10 }, { seconds: 10 }, { seconds: 10 }] } },
+      { kind: "on_camera", takeId: "oc", seconds: 30, editPlan: { pieces: [
+        { seconds: 10, joinKind: null },
+        { seconds: 10, joinKind: "dead-space" },
+        { seconds: 10, joinKind: "punch-in" },
+      ] } },
       { kind: "voiceover", takeId: "vo", seconds: 30 },
     ] };
-    const events = punchSfxTimeline(plan, [{ at: 40 }], { enabled: true });
+    const events = punchSfxTimeline(plan, [{ at: 40 }], { enabled: true, whoosh: true });
     assert.equal(events.filter((e) => e.kind === "impact").length, 1);
-    assert.equal(events.filter((e) => e.kind === "whoosh").length, 2, "two interior seams in a three-piece take");
+    const whooshes = events.filter((e) => e.kind === "whoosh");
+    assert.equal(whooshes.length, 1, "the dead-space join must stay silent");
+    assert.equal(whooshes[0].at, 20, "and the sound belongs to the punch-in at 20s");
     assert.deepEqual(events.map((e) => e.at), [...events].sort((a, b) => a.at - b.at).map((e) => e.at));
   });
 
+  test("whooshes are OFF by default — impacts are not", () => {
+    const plan = { segments: [{ kind: "on_camera", takeId: "oc", seconds: 30, editPlan: { pieces: [
+      { seconds: 10, joinKind: null }, { seconds: 10, joinKind: "punch-in" },
+    ] } }] };
+    // The default path: no `whoosh` argument at all.
+    const events = punchSfxTimeline(plan, [{ at: 5 }], { enabled: true });
+    assert.equal(events.filter((e) => e.kind === "whoosh").length, 0);
+    assert.equal(events.filter((e) => e.kind === "impact").length, 1, "the punch impacts stay");
+  });
+
   test("a heavily cut video thins its whooshes instead of front-loading them", () => {
-    const pieces = Array.from({ length: 200 }, () => ({ seconds: 3 }));
+    const pieces = Array.from({ length: 200 }, (_, i) => ({ seconds: 3, joinKind: i === 0 ? null : "punch-in" }));
     const plan = { segments: [{ kind: "on_camera", takeId: "oc", seconds: 600, editPlan: { pieces } }] };
-    const events = punchSfxTimeline(plan, [], { max: 20, enabled: true });
+    const events = punchSfxTimeline(plan, [], { max: 20, enabled: true, whoosh: true });
     assert.ok(events.length <= 20);
     // Taking the first twenty would put every whoosh in the first minute and
     // none afterwards, which sounds like the effect broke halfway through.

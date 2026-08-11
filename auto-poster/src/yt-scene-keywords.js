@@ -51,7 +51,7 @@
  * the moment a content word appears in this list, the module has an opinion
  * about subject matter and stops being universal.
  */
-const FUNCTION_WORDS = new Set(
+export const FUNCTION_WORDS = new Set(
   ("a an the and or but nor so yet for of in on at to from by with without within into onto upon over under " +
    "about above across after against along among around before behind below beneath beside between beyond during " +
    "except inside near off out outside past since through throughout till until up down toward towards " +
@@ -113,6 +113,20 @@ export const MAX_KEYWORDS = 2;
 
 function bare(token) {
   return String(token || "").replace(EDGE_PUNCT, "");
+}
+
+/**
+ * The comparable form of a token.
+ *
+ * APOSTROPHES COME OUT, and that is the whole reason this exists. "it's"
+ * lower-cased is still "it's", which does not match "its" in the function-word
+ * list — so every contraction in the script survived as a CONTENT word. It
+ * inflated the content count (which is what decides whether a window is about a
+ * place) and it competed for slots in the search query, where "it's" is worth
+ * nothing at all.
+ */
+function normalise(token) {
+  return bare(token).toLowerCase().replace(/[\u2019']/g, "").replace(/[^a-z0-9-]/g, "");
 }
 
 /**
@@ -210,7 +224,7 @@ export function classifyTokens(tokens, { lexicon = new Set(), startsSentence = (
     if (DECADE.test(t)) { common.push({ word: t.toLowerCase(), nounCue: false }); return; }
     if (FIGURE.test(t)) return;
 
-    const lower = t.toLowerCase().replace(/[^a-z0-9’'-]/g, "");
+    const lower = normalise(raw);
     const capitalised = /^[A-Z][a-z’']/.test(t);
     const nextCapitalised = /^[A-Z]/.test(bare(tokens[i + 1] || ""));
 
@@ -231,7 +245,20 @@ export function classifyTokens(tokens, { lexicon = new Set(), startsSentence = (
     if (lower.length < 3) return;
     common.push({ word: lower, nounCue: DETERMINERS.has(bare(tokens[i - 1] || "").toLowerCase()) });
   });
-  return { proper, common: common.map((c) => c.word), cues: common };
+  // ADJACENT PROPER TOKENS ARE ONE NAME. "Stone Oak" arrives as two tokens and
+  // is one place; asking the map for geometry called "Stone" finds nothing. The
+  // runs are rebuilt here so the map path has real names to resolve and the
+  // report has readable ones to print.
+  const phrases = [];
+  let run = [];
+  tokens.forEach((raw) => {
+    const t = bare(raw);
+    if (t && proper.includes(t)) run.push(t);
+    else if (run.length) { phrases.push(run.join(" ")); run = []; }
+  });
+  if (run.length) phrases.push(run.join(" "));
+
+  return { proper, properPhrases: phrases, common: common.map((c) => c.word), cues: common };
 }
 
 /**
@@ -259,7 +286,7 @@ export function documentFrequencies(segments) {
   let total = 0;
   for (const seg of segments || []) {
     for (const raw of String(seg?.text || "").split(/\s+/)) {
-      const t = bare(raw).toLowerCase().replace(/[^a-z0-9’'-]/g, "");
+      const t = normalise(raw);
       if (!t || FUNCTION_WORDS.has(t) || t.length < 3) continue;
       counts.set(t, (counts.get(t) || 0) + 1);
       total++;
@@ -286,8 +313,9 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
     const abs = from + i;
     return abs === 0 || /[.!?]["'’”]?$/.test(String(all[abs - 1] || ""));
   };
-  const { proper, common, cues } = classifyTokens(tokens, {
-    lexicon: lexicon || properLexicon([seg]),
+  const lex = lexicon || properLexicon([seg]);
+  const { proper, properPhrases, common, cues } = classifyTokens(tokens, {
+    lexicon: lex,
     startsSentence,
   });
   const { counts, total } = frequencies || documentFrequencies([seg]);
@@ -309,28 +337,131 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   // "campus hospital" reads as a search engine's idea of one.
   const ordered = common.filter((w, i) => common.indexOf(w) === i && ranked.includes(w));
 
-  if (ordered.length === 0) {
-    // A window made entirely of a proper noun and function words — "out past
-    // Loop 1604" — has no concept of its own to search for. The writer's intent
-    // for the take is the honest fallback: it is still derived from this script,
-    // and it is what the old per-take behaviour would have used anyway.
-    const fb = (fallbackKeywords || []).filter(Boolean).slice(0, MAX_KEYWORDS);
+  // IS THIS WINDOW MOSTLY A NAME?
+  //
+  // Not "did stripping leave nothing" — that missed the common case. "Timberwood
+  // Park is further north, past Stone Oak" leaves "further" and "little", so the
+  // window claims a concept and searches for adjectives, while what it is
+  // actually about is two neighbourhoods. Measuring the SHARE says what the
+  // sentence is doing: four name tokens against two weak content words is a
+  // window about places.
+  //
+  // This is the signal the map path keys on, so a place window gets the one
+  // visual that can actually show a place.
+  const placeDominated = properPhrases.length > 0 && proper.length >= 2 && proper.length >= common.length;
+
+  // WHAT THE VISION CHECK IS ASKED TO CONFIRM: the sentence, minus the names.
+  //
+  // Never the place name — the check has never been allowed to know one and
+  // still is not, so a clip can never be accepted as being a specific place.
+  // But the two-word search query is a bad description of a moment, and
+  // verifying against it is what let a goat farm through for "animal well".
+  const verifySubject = tokens
+    .map((t) => bare(t))
+    .filter((t) => t && !proper.includes(t))
+    .join(" ")
+    .trim() || null;
+
+  if (ordered.length > 0) {
     return {
-      keywords: fb,
-      subject: fb[0] || null,
+      verifySubject,
+      placeDominated,
+      keywords: [ordered.join(" ")],
+      subject: ordered.join(" "),
       dropped: proper,
+      properPhrases,
       phrase,
-      source: fb.length ? "take-intent" : "none",
+      source: "window",
     };
   }
 
-  return {
-    keywords: [ordered.join(" ")],
-    subject: ordered.join(" "),
-    dropped: proper,
-    phrase,
-    source: "window",
-  };
+  // ── THE WINDOW HAS NO CONCEPT OF ITS OWN ────────────────────────────────
+  //
+  // "Stone Oak is the big one", "out past Loop 1604", "Shavano Park sits right
+  // against it" — the sentence is almost entirely a NAME, the name is correctly
+  // stripped before any search, and what is left is function words.
+  //
+  // Revision 8 gave up here and let the wordless beat take the window. That is
+  // the worst possible answer, because these are not marginal windows: they are
+  // the passages where the video names the neighbourhoods it is about. Abstract
+  // gold arcs played through the core content while the footage layer sat idle.
+  //
+  // So the ladder widens instead of stopping. Each rung is still derived from
+  // this script at build time — nothing here knows what the video is about.
+  const widened = widenToSegment(seg, { counts, total, lexicon: lex, exclude: new Set(common) });
+  if (widened.length > 0) {
+    return {
+      verifySubject,
+      placeDominated,
+      keywords: [widened.join(" ")],
+      subject: widened.join(" "),
+      dropped: proper,
+      properPhrases,
+      phrase,
+      source: "sentence",
+    };
+  }
+
+  const fb = (fallbackKeywords || []).filter(Boolean).slice(0, MAX_KEYWORDS);
+  if (fb.length) {
+    return { verifySubject, placeDominated, keywords: fb, subject: fb[0], dropped: proper, properPhrases, phrase, source: "take-intent" };
+  }
+
+  // THE FLOOR, and it only ever carries a window that named a place and said
+  // nothing else about it anywhere in the take. A generic establishing shot is
+  // not a claim about that place — which is exactly why it is safe, and why it
+  // is still enormously better than geometry that means nothing.
+  if (properPhrases.length > 0) {
+    return {
+      verifySubject,
+      placeDominated,
+      keywords: [PLACE_ESTABLISHING_CONCEPT],
+      subject: PLACE_ESTABLISHING_CONCEPT,
+      dropped: proper,
+      properPhrases,
+      phrase,
+      source: "place-establishing",
+    };
+  }
+
+  return { verifySubject, placeDominated, keywords: [], subject: null, dropped: proper, properPhrases, phrase, source: "none" };
+}
+
+/**
+ * The last-resort concept for a window that is nothing but a place name.
+ *
+ * ONE fixed phrase, and it is the floor of a ladder rather than the mechanism —
+ * every rung above it is derived from the script. It earns its place by being a
+ * claim about NOTHING: an establishing shot of housing says only "this is a
+ * residential area", which is the one thing every window that names a
+ * neighbourhood has already told the viewer in words.
+ */
+export const PLACE_ESTABLISHING_CONCEPT = "aerial suburban neighborhood homes";
+
+/**
+ * Look past the window, to the rest of the take, for something to show.
+ *
+ * The window is six seconds of a sentence that ran longer. "Stone Oak has newer
+ * two-story homes" splits so the name lands in one window and "newer two-story
+ * homes" in the next, and the first window is then declared conceptless while
+ * the words that describe it sit twenty tokens away.
+ *
+ * `exclude` is what the window already offered, so widening cannot simply return
+ * the same nothing.
+ */
+export function widenToSegment(seg, { counts, total, lexicon, exclude = new Set() }) {
+  const tokens = String(seg?.text || "").split(/\s+/).filter(Boolean);
+  const startsSentence = (i) => i === 0 || /[.!?]["'’”]?$/.test(String(tokens[i - 1] || ""));
+  const { common, cues } = classifyTokens(tokens, { lexicon, startsSentence });
+  const nounCue = new Map();
+  for (const c of cues || []) nounCue.set(c.word, nounCue.get(c.word) || c.nounCue);
+
+  return [...new Set(common)]
+    .filter((w) => !exclude.has(w))
+    .map((w) => ({ w, score: specificity(w, counts, total) + (nounCue.get(w) ? 1.2 : 0) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_KEYWORDS)
+    .map((x) => x.w);
 }
 
 /**
