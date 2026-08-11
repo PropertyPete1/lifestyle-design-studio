@@ -136,6 +136,23 @@ describe("2. everything that moves, tweens", () => {
     assert.ok(drawing[Math.floor(drawing.length / 2)] > 0.6, `midpoint at ${drawing[Math.floor(drawing.length / 2)]} — that is linear`);
   });
 
+  test("state times are frame-accurate, so the collapse does not eat half the tweens", () => {
+    // FOUND BY THE ARTIFACT PROBE, not by reasoning. State times rounded to
+    // 0.01s while finish() discarded anything closer together than a frame
+    // (0.0333s at 30fps) — so successive tween frames landed 0.03 and 0.04 apart
+    // and every 0.03 one was collapsed as "coincident". A draw asking for 30
+    // drawings a second delivered 18.
+    const reveals = [{ at: 1, label: "Loop 1604", index: 0, synced: true }];
+    const states = buildStates({ type: "MAP", labels: ["Loop 1604"], reveals, beats: [], seconds: 10, roadIds: ["loop1604"] });
+    const drawing = states.filter((s) => s.roadProgress?.loop1604 > 0 && s.roadProgress.loop1604 < 1);
+    // 0.7s at 30fps asks for 21 steps; 20 of them are partial.
+    assert.ok(drawing.length >= 18, `only ${drawing.length} of ~20 draw states survived the collapse`);
+    // And no two states may share a timestamp, or the concat list holds a frame
+    // for zero seconds.
+    const times = states.map((s) => s.at);
+    assert.equal(new Set(times).size, times.length, "collapsed states must not leave duplicates");
+  });
+
   test("the tween rate is tied to the delivery rate", () => {
     assert.equal(GRAPHIC_TWEEN_FPS, 30, "a graphic that moves slower than the video is what 'laggy' meant");
   });

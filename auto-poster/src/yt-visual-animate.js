@@ -134,7 +134,13 @@ function easeOut(t) {
  */
 export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [], spec = null, established = new Set() }) {
   const states = [];
-  const push = (at, s) => states.push({ at: round(Math.max(0, Math.min(seconds, at))), ...s });
+  // MILLISECONDS, NOT CENTISECONDS. State times used to round to 0.01s while the
+  // collapse below discards anything closer together than a frame (0.0333s at
+  // 30fps). A tween frame is spaced exactly one frame apart, so rounding walked
+  // successive states to 0.03 and 0.04 gaps and the 0.03 ones were eaten as
+  // "coincident" — roughly every other frame of every draw. Measured: a draw
+  // asking for 30 drawings a second delivered 18.
+  const push = (at, s) => states.push({ at: roundTime(Math.max(0, Math.min(seconds, at))), ...s });
 
   if (type === "MAP") {
     // A MAP reveals in two currencies. A road ARRIVES over time — it draws
@@ -339,13 +345,16 @@ function finish(states, seconds) {
   const merged = [];
   for (const s of states) {
     const prev = merged[merged.length - 1];
-    if (prev && Math.abs(prev.at - s.at) < 1 / GRAPHIC_FPS) merged[merged.length - 1] = { ...s, at: prev.at };
+    // HALF A FRAME, not a whole one. Two states a full frame apart are two
+    // frames and must both survive; only states closer than half a frame are
+    // genuinely the same instant (a beat landing on a reveal).
+    if (prev && Math.abs(prev.at - s.at) < 0.5 / GRAPHIC_FPS) merged[merged.length - 1] = { ...s, at: prev.at };
     else merged.push(s);
   }
 
   return merged.map((s, i) => ({
     ...s,
-    until: round(i + 1 < merged.length ? merged[i + 1].at : seconds),
+    until: roundTime(i + 1 < merged.length ? merged[i + 1].at : seconds),
   })).filter((s) => s.until > s.at);
 }
 
@@ -366,6 +375,7 @@ export async function renderAnimatedGraphic({
   writeFileSync,
   renderPng = renderCardPng,
   session = null,
+  push = true,
 }) {
   // MAP is the one type whose renderer and label set live elsewhere: its reveal
   // unit is geometry, not a row of text, so both come from yt-map-render.js.
@@ -467,7 +477,7 @@ export async function renderAnimatedGraphic({
   const deadStates = stateDiffs.filter((d) => d.diff < 0.02);
 
   const out = join(dir, `${stem}.mp4`);
-  ffmpeg(concatArgs(listPath, out, { seconds, fps }));
+  ffmpeg(concatArgs(listPath, out, { seconds, fps, push }));
 
   return {
     path: out,
@@ -582,14 +592,29 @@ export async function renderTypographyClip({
  * counter the whole push depends on — advances about six times across nine
  * seconds. The clip renders, is the right length, and the push is a staircase.
  */
-export function concatArgs(listPath, output, { seconds, fps = GRAPHIC_FPS }) {
+export function concatArgs(listPath, output, { seconds, fps = GRAPHIC_FPS, push = true }) {
   const frames = Math.max(1, Math.round(seconds * fps));
   const z = `1+${PUSH_TRAVEL}*on/${frames}`;
+  // `push: false` RENDERS THE SAME STATES THROUGH THE SAME ENCODE, WITHOUT THE
+  // CAMERA. It exists for measurement and is never used by a build.
+  //
+  // The push moves every pixel a little on every frame, which is the point of it
+  // — and it means a frame-to-frame difference is never zero even when the
+  // CONTENT is a held still. The first artifact-level motion check was defeated
+  // by exactly that: it reported a 2.5fps slideshow as "0.0% held" and passed
+  // its own negative control, because the drifting camera answered the question
+  // instead of the drawing.
+  //
+  // With the camera off, a held still is bit-identical to the one before it and
+  // stepping becomes unambiguous rather than statistical. Same state list, same
+  // concat, same encoder — one variable removed.
+  const vf = push
+    ? `fps=${fps},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1920x1080:fps=${fps},format=yuv420p,setsar=1`
+    : `fps=${fps},scale=1920:1080,format=yuv420p,setsar=1`;
   return [
     "-y",
     "-f", "concat", "-safe", "0", "-i", listPath,
-    "-vf",
-    `fps=${fps},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1920x1080:fps=${fps},format=yuv420p,setsar=1`,
+    "-vf", vf,
     "-t", String(seconds),
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
     "-an",
@@ -859,6 +884,11 @@ function median(xs) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+/** State times are frame-accurate, so they round to milliseconds. */
+function roundTime(n) {
+  return Math.round(n * 1000) / 1000;
+}
+
 function round(n) {
   return Math.round(n * 1000) / 1000;
 }
@@ -871,7 +901,7 @@ function round(n) {
  * so there is no transcript to read, no phrase to window, and nothing that could
  * ever contradict the caption underneath it.
  */
-export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FPS, ffmpeg, writeFileSync, startPhase = 0 }) {
+export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FPS, ffmpeg, writeFileSync, startPhase = 0, push = true }) {
   const total = Math.max(0.2, Number(seconds) || 0);
   // THE BEAT MOVED AT 2.5 FRAMES A SECOND, and it carried more than half the
   // runtime. One state per 0.4s was chosen so "a long beat does not cost more
@@ -912,6 +942,6 @@ export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FP
   writeFileSync(listPath, lines.join("\n"));
 
   const out = join(dir, `${stem}.mp4`);
-  ffmpeg(concatArgs(listPath, out, { seconds: total, fps }));
+  ffmpeg(concatArgs(listPath, out, { seconds: total, fps, push }));
   return { path: out, seconds: round(total), stateCount: count };
 }
