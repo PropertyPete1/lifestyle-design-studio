@@ -1129,6 +1129,188 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-11",
+      "timestamp": "2026-08-11T14:51:53.940Z",
+      "pillar": "texas_lifestyle",
+      "topic": "The Austin to San Antonio I-35 drive nobody warns transplants about",
+      "hook": "Austin to San Antonio is 80 miles. Locals still block out three hours each way.",
+      "closeType": "question",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "The Austin to San Antonio I-35 drive nobody warns transplants about",
+        "hook": "Austin to San Antonio is 80 miles. Locals still block out three hours each way.",
+        "map": [
+          "The 80 mile lie",
+          "Direction decides your day",
+          "The 3pm problem",
+          "Friday getaway trap",
+          "How locals beat it"
+        ],
+        "points": [
+          {
+            "title": "The 80 Mile Lie",
+            "body": [
+              "I-35 between the two cities has been under construction for years.",
+              "The map says 80 minutes. On a bad afternoon it is three hours each way, and there is no way around it once you are in it."
+            ],
+            "loop": "Direction matters more than distance."
+          },
+          {
+            "title": "Direction Decides Your Day",
+            "body": [
+              "Living in San Antonio and working in Austin is a completely different drive than doing it the other way.",
+              "The heavy morning wave runs north. Drive south instead and you can save half an hour on the same road."
+            ],
+            "loop": "One clock ruins both directions."
+          },
+          {
+            "title": "The 3PM Problem",
+            "body": [
+              "Most Texas schools let out right around 3pm.",
+              "School traffic and the early highway wave land at the same time. Parents who planned to leave at 4 learn to leave at 2:15."
+            ],
+            "loop": "Fridays follow a different rule."
+          },
+          {
+            "title": "The Friday Getaway",
+            "body": [
+              "On Friday afternoon, both cities empty out toward the coast and the Hill Country at once.",
+              "Leave at 4 on a Friday and you are in line with everyone else who had the same idea."
+            ],
+            "loop": "There is a quieter hour."
+          },
+          {
+            "title": "How Locals Beat It",
+            "body": [
+              "People who do this drive often leave before 2 or after 7. Nothing in between.",
+              "They also pay for the toll loop east of Austin and never complain about it."
+            ],
+            "loop": "Where you buy settles this."
+          }
+        ],
+        "cta": {
+          "question": "If you had to commute it: Austin side or San Antonio side?"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 7,
+        "loops": 7,
+        "cta": 8,
+        "worst_problem": "The last point slide's loop, \"Where you buy settles this,\" promises a payoff the deck never delivers — the next slide is the CTA, so the reader is teased into a dead end.",
+        "fix": "Replace the final loop with a line that hands off to the question instead of promising more content, e.g. \"So which side wins?\", and fix the hook/slide-1 mismatch by making both say miles or both say minutes."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 360821211,
+          "verified": false,
+          "verdict": "pending",
+          "verifiedAt": "2026-08-11T14:57:56.585Z"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 360821214,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-11T14:54:54.694Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492956225395929089"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 360821254,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-11T14:54:54.806Z",
+          "publicUrl": "https://www.instagram.com/p/Db52RhUjR6S/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 360821299,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-11T14:54:54.966Z",
+          "publicUrl": "https://www.instagram.com/p/Db52Vmqip7D/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 360821303,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-11T14:54:55.069Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492956224414482432"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 360821330,
+          "verified": false,
+          "verdict": "failed",
+          "verifiedAt": "2026-08-11T14:54:55.180Z",
+          "failureReason": "The media could not be fetched from this URI: https://static.metricool.com/video/3748462/202608/9763808007c84abe.png.Please check the limitations section in our development document for more information: https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media#creating"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 360821331,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-11T14:54:55.285Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122113139745400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 360821334,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-11T14:54:55.397Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7492956224884441088"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-11T14:57:56.585Z",
+        "anyFailed": true,
+        "pendingRecheck": true
+      }
     }
   ]
 }
