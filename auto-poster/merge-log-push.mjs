@@ -15,17 +15,25 @@
  * - posted-log.json: append entries whose timestamp doesn't already exist
  * - video-matches.json: merge keys (local wins on conflict)
  * - performance-weights.json: take whichever has newer lastUpdated per key
+ *
+ * It also publishes the dashboard's telemetry (status/social_stats.json and
+ * status/social_log.json), regenerated from the merged logs inside the retry
+ * loop. This is the hook point for it because this script is the last thing
+ * every posting job runs, it runs `if: always()` so it covers failed runs too,
+ * and its `git reset --hard` would destroy a status/ written any earlier.
  */
 
 import { execSync } from "node:child_process";
 import { readFileSync, writeFileSync, copyFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { MERGE_STRATEGIES, MERGE_FILES } from "./merge-strategies.mjs";
+import { writeSocialTelemetry, STATUS_DIRNAME, STATS_FILENAME, LOG_FILENAME } from "./src/social-telemetry.js";
 
 const MAX_ATTEMPTS = 5;
 const CITY = process.argv[2] || "unknown";
 const POST_SUCCESS = process.argv[3] === "true";
 const REPO_DIR = process.cwd(); // Should be auto-poster/
+let REPO_ROOT = REPO_DIR; // resolved from git in main(); status/ lives here
 
 // Files to merge
 const FILES = MERGE_FILES;
@@ -81,12 +89,21 @@ function writeJSON(path, data) {
 async function main() {
   console.log(`[MergePush] Starting for city=${CITY}, post_success=${POST_SUCCESS}`);
 
-  // Step 0: Check if there are any changes to commit
+  // Step 0: Note whether the run changed anything. This used to `exit 0` here
+  // when the tree was clean — which skipped telemetry on exactly the runs that
+  // most need it. A run the duplicate guard aborts touches no JSON, so the
+  // dashboard's last_run_iso would sit at the last successful post and the
+  // owner could not tell "nothing to post today" from "the poster is dead".
+  // The loop below already exits cleanly when there is no diff after merging.
   const status = run("git status --porcelain", { allowFail: true }).trim();
   if (!status) {
-    console.log("[MergePush] No changes to commit — nothing to push.");
-    process.exit(0);
+    console.log("[MergePush] Run changed no merge-managed files — continuing for telemetry only.");
   }
+
+  // status/ lives at the REPO ROOT, one level above auto-poster/. Asked of git
+  // rather than assumed from `..` so this keeps working if the poster is ever
+  // moved or vendored deeper.
+  REPO_ROOT = run("git rev-parse --show-toplevel").trim();
 
   // Step 1: Save this run's file state to /tmp
   run(`mkdir -p ${TMP_DIR}`);
@@ -133,6 +150,39 @@ async function main() {
       if (filesToAdd.length === 0) {
         throw new Error("No merge-managed files exist on disk — refusing to continue");
       }
+
+      // Telemetry is generated HERE — inside the loop, after the reset and the
+      // merge — for two reasons that are both load-bearing:
+      //
+      //  1. `git reset --hard origin/main` above reverts every tracked file. A
+      //     status/ written earlier (at the end of main.js, say) is gone by the
+      //     time we get here. Anything that wants to survive must be written
+      //     after the reset, on every attempt.
+      //  2. It reads the MERGED logs, so the numbers are computed from the exact
+      //     bytes about to be committed — including sibling runners' posts and
+      //     the manual-confirm Instagram receipts the dashboard pushes.
+      //
+      // It cannot throw: writeSocialTelemetry returns {ok:false} instead. A
+      // dashboard file must never be able to abort the push that carries
+      // posted-log.json, which is the file that stops the next run double-posting.
+      const telemetry = writeSocialTelemetry({ repoRoot: REPO_ROOT, autoPosterDir: REPO_DIR });
+      if (telemetry.ok) {
+        const pub = Object.entries(telemetry.stats.posts_published_today);
+        console.log(
+          `[MergePush] telemetry ${telemetry.stats.date}: ` +
+          `${telemetry.stats.posts_scheduled} scheduled, ` +
+          `${pub.length ? pub.map(([p, n]) => `${p}=${n}`).join(" ") : "no confirmed publications"}, ` +
+          `${telemetry.stats.failures} failures, ${telemetry.log.length} log entries`
+        );
+        for (const f of [STATS_FILENAME, LOG_FILENAME]) {
+          const abs = join(REPO_ROOT, STATUS_DIRNAME, f);
+          if (existsSync(abs)) filesToAdd.push(abs);
+        }
+      } else {
+        // Say so out loud. Silence here would read as "telemetry is fine".
+        console.log(`[MergePush] ⚠️  telemetry not written: ${telemetry.error}`);
+      }
+
       run(`git add ${filesToAdd.map((f) => `"${f}"`).join(" ")}`);
 
       const staged = runStatus("git diff --cached --quiet");
