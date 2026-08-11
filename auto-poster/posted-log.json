@@ -3119,6 +3119,30 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1N2rR10-Cch1CynM_pZTXCiDGLQkGhtIO/view"
+    },
+    {
+      "driveFileId": "11KXCa3-fP7p7IrspVncqab7WYJyo54Bf",
+      "fileName": "75CC63F8-487B-4238-81CA-23C6B14DB697.mp4",
+      "city": "austin",
+      "caption": "I've never seen finishes like this at this price point in Austin right now.\n\nNew construction in this market moves fast, especially when builder incentives are still on the table. This one's worth a s",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-11T17:11:00.102Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "Austin",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "deadpan_comedian",
+      "content_hash": "0fffd781013cc8cf:0000717f0f39381c:ffffffff70000301:000000fefe98ffff:ffffcfc5010080f8",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1MYcrJgqJUSdj4GokJtbohKYYfFH--3am/view"
     }
   ],
   "lastTemplateIndex": -1
