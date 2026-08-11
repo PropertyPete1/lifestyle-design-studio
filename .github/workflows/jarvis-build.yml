@@ -1,5 +1,5 @@
 name: jarvis-build
-
+run-name: "jarvis-build #${{ github.event.issue.number }}: ${{ github.event.issue.title }}"
 # Fires when LIFESTYLE (or Peter) files a build order. The brain applies the
 # `jarvis-build` label at issue-creation time; that label is the only trigger.
 on:
