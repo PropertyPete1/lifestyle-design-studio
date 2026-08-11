@@ -62,7 +62,7 @@ describe("platformOf — the three-platform contract", () => {
   });
 });
 
-describe("eventsFromPostedEntry — a reel's outcome is 'scheduled', never 'published'", () => {
+describe("eventsFromPostedEntry — an UNVERIFIED reel's outcome is 'scheduled', never 'published'", () => {
   const reel = {
     timestamp: TS,
     city: "austin",
@@ -83,10 +83,11 @@ describe("eventsFromPostedEntry — a reel's outcome is 'scheduled', never 'publ
     );
   });
 
-  test("NEVER emits published for a reel — nothing in that path verifies", () => {
-    // metricool.verifyPostPublished exists and has zero callers. Until it is
-    // wired, a 200 from the scheduler is not evidence of a publication, and
-    // this writer must not launder one into the other.
+  test("NEVER emits published for a reel that carries no verdict rows", () => {
+    // The reels path verifies now (main.js → reel-verify.js), but an entry
+    // written before that wiring — or by a run whose verification never got to
+    // look — holds only a 200 from the scheduler. That is not evidence of a
+    // publication and this writer must not launder one into the other.
     assert.ok(eventsFromPostedEntry(reel).every((e) => e.type !== "published"));
   });
 
@@ -153,6 +154,72 @@ describe("eventsFromPostedEntry — a reel's outcome is 'scheduled', never 'publ
     assert.deepEqual(eventsFromPostedEntry(null), []);
     assert.deepEqual(eventsFromPostedEntry({}), []);
     assert.deepEqual(eventsFromPostedEntry({ timestamp: TS, success: true, platforms: [] }), []);
+  });
+});
+
+describe("eventsFromPostedEntry — a VERIFIED reel reports what actually published", () => {
+  // reel-verify.js stamps the entry with one row per (brand, network), the same
+  // shape carousel-verify.js writes. Those rows are an outcome, so they are read
+  // as one — and they REPLACE the `platforms` literal, which is only intent.
+  const verified = (distribution) => ({
+    timestamp: TS,
+    city: "austin",
+    fileName: "atx-tour.mp4",
+    success: true,
+    platforms: ["tiktok", "youtube", "satellite_ig"],
+    brands: "propertypete01",
+    mainIgDelivery: "delivered",
+    distribution,
+    verification: { checkedAt: TS, allVerified: true, anyFailed: false, pendingRecheck: false },
+  });
+  const row = (network, verdict, over = {}) => ({
+    label: "propertypete01", blogId: 1, postId: 4242, network, ok: true, verdict, ...over,
+  });
+
+  test("a published verdict is a published event, per network", () => {
+    const events = eventsFromPostedEntry(verified([row("tiktok", "published"), row("youtube", "published")]));
+    assert.equal(events.length, 2);
+    assert.ok(events.every((e) => e.type === "published"));
+    assert.deepEqual(events.map((e) => e.platform).sort(), ["tiktok", "youtube_shorts"]);
+  });
+
+  test("the rows replace `platforms` — one publication is never both scheduled and published", () => {
+    const events = eventsFromPostedEntry(verified([row("tiktok", "published")]));
+    assert.equal(events.length, 1, "the three-platform intent literal must not be counted too");
+  });
+
+  test("pending and unknown stay scheduled — accepted is all we know", () => {
+    assert.equal(eventsFromPostedEntry(verified([row("tiktok", "pending")]))[0].type, "scheduled");
+    assert.equal(eventsFromPostedEntry(verified([row("tiktok", "unknown")]))[0].type, "scheduled");
+  });
+
+  test("a failed verdict carries Metricool's own reason", () => {
+    const events = eventsFromPostedEntry(verified([row("tiktok", "failed", { failureReason: "media rejected" })]));
+    assert.equal(events[0].type, "failed");
+    assert.equal(events[0].platform, "tiktok");
+    assert.match(events[0].detail, /media rejected/);
+  });
+
+  test("a failed main-IG delivery is still its own Instagram failure", () => {
+    const entry = { ...verified([row("tiktok", "published")]), mainIgDelivery: "delivery_failed_owner_must_post" };
+    const failures = eventsFromPostedEntry(entry).filter((e) => e.type === "failed");
+    assert.equal(failures.length, 1);
+    assert.equal(failures[0].platform, "instagram");
+  });
+
+  test("success:false still wins — a run that failed never published anything", () => {
+    const entry = { ...verified([row("tiktok", "published")]), success: false, note: "delivery exhausted" };
+    const events = eventsFromPostedEntry(entry);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].type, "failed");
+  });
+
+  test("an empty distribution array falls back to the scheduler evidence", () => {
+    // A verification pass that found nothing to check writes no rows. The entry
+    // is then exactly as unverified as it was before, and says so.
+    const events = eventsFromPostedEntry({ ...verified([]), verification: null });
+    assert.equal(events.length, 3);
+    assert.ok(events.every((e) => e.type === "scheduled"));
   });
 });
 

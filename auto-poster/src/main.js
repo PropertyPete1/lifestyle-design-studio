@@ -22,7 +22,8 @@
  */
 
 import { listCityVideos, downloadVideo, getAccessToken } from "./drive.js";
-import { getRecentIgPosts, uploadVideoToMetricool, createPost, verifyPostStatus } from "./metricool.js";
+import { getRecentIgPosts, uploadVideoToMetricool, createPost } from "./metricool.js";
+import { verifyReelPublication, applyReelVerification, findReelEntryIndex } from "./reel-verify.js";
 import { generateCaption, generateCaptionFromOriginal, findCommunity } from "./caption.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
 import { runPriceConsistencyCheck, readVideoOverlays, extractPriceCheckFrames } from "./price-check.js";
@@ -635,90 +636,57 @@ async function main() {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // POST VERIFICATION: Wait and confirm posts are actually PUBLISHED
+  // POST VERIFICATION: confirm what actually PUBLISHED, per network
   // ═══════════════════════════════════════════════════════════════
+  //
+  // Runs strictly AFTER createPost — it reads a status back and posts nothing,
+  // so it cannot double-post — and it records a per-network verdict on the log
+  // entry so social-telemetry.js can count real publications instead of
+  // reporting tiktok and youtube_shorts as unknown forever. See reel-verify.js
+  // for the two rules this path lives by; the shape matches the carousel's.
   if (posted && !DRY_RUN && !TEST_DELIVERY_ONLY && postedBrands.length > 0) {
-    const VERIFY_DELAY_MS = 7 * 60 * 1000; // 7 minutes
-    console.log(`\n[Verify] Waiting ${VERIFY_DELAY_MS / 60000} minutes before verifying post status...`);
-    await new Promise(r => setTimeout(r, VERIFY_DELAY_MS));
+    const verified = await verifyReelPublication(postedBrands);
 
-    console.log(`[Verify] Checking ${postedBrands.length} brand(s)...`);
-    let allVerified = true;
-    const verificationResults = [];
-
-    for (const brand of postedBrands) {
-      try {
-        const result = await verifyPostStatus(brand.postId, brand.blogId);
-        const statusSummary = result.providers.map(p => `${p.network}=${p.status}`).join(", ");
-        console.log(`[Verify] Brand ${brand.label} (post ${brand.postId}): ${statusSummary}`);
-
-        if (result.verified) {
-          console.log(`[Verify] ✓ Brand ${brand.label}: ALL PUBLISHED`);
-        } else if (result.anyFailed) {
-          console.error(`[Verify] ✗ Brand ${brand.label}: FAILED on some providers`);
-          allVerified = false;
-        } else {
-          // Still pending — not necessarily a failure, but flag it
-          console.warn(`[Verify] ⚠ Brand ${brand.label}: still pending (not yet PUBLISHED)`);
-          allVerified = false;
-        }
-
-        verificationResults.push({
-          label: brand.label,
-          postId: brand.postId,
-          verified: result.verified,
-          anyFailed: result.anyFailed,
-          providers: result.providers,
-        });
-      } catch (err) {
-        console.error(`[Verify] ✗ Brand ${brand.label}: verification error: ${err.message}`);
-        allVerified = false;
-        verificationResults.push({
-          label: brand.label,
-          postId: brand.postId,
-          verified: false,
-          error: err.message,
-        });
-      }
-    }
-
-    // Update the log with verification status
-    // Find the MOST RECENT video post for this city (not LinkedIn entries)
-    const videoPost = [...log.posts].reverse().find(
-      p => p.city === CITY && !p.type
-    );
-    if (videoPost) {
-      videoPost.verification = {
-        checkedAt: new Date().toISOString(),
-        allVerified,
-        results: verificationResults,
-      };
+    // Stamp the entry this run just wrote. Only `distribution` and
+    // `verification` are added; nothing the duplicate guards read is touched.
+    const idx = findReelEntryIndex(log.posts, CITY);
+    if (idx !== -1 && verified.verification) {
+      log.posts[idx] = applyReelVerification(log.posts[idx], verified);
       saveLog(log);
     }
 
-    if (!allVerified) {
+    const { verification } = verified;
+    const perBrand = (verification?.results || [])
+      .map((r) => {
+        const detail = r.error
+          ? `error: ${r.error}`
+          : (r.providers || []).map((p) => `${p.network}=${p.status}`).join(", ") || "no provider status";
+        return `  ${r.label} (post ${r.postId}): ${r.verdict === "published" ? "PUBLISHED" : detail}`;
+      })
+      .join("\n");
+
+    if (verification?.anyFailed) {
+      // Metricool accepted the post and then did NOT publish it. The run already
+      // wrote a posted-log entry, so the duplicate guards now believe this slot
+      // is done — which means without an alert the slot is simply lost. This is
+      // an observed publication failure, not a verification problem, so it keeps
+      // reddening the run exactly as it did before.
       console.error("\n" + "!".repeat(60));
       console.error("[Verify] POST VERIFICATION FAILED");
-      console.error("[Verify] One or more brands did NOT reach PUBLISHED status.");
+      console.error("[Verify] Metricool reported a provider as FAILED.");
       console.error("[Verify] Check Metricool dashboard for details.");
       console.error("!".repeat(60));
-      // Metricool accepted the post and then did not publish it. The run already
-      // wrote a posted-log entry, so the duplicate guards now believe this slot
-      // is done — which means without an alert the slot is simply lost.
-      const perBrand = verificationResults
-        .map((r) => {
-          const detail = r.error
-            ? `error: ${r.error}`
-            : (r.providers || []).map((p) => `${p.network}=${p.status}`).join(", ") || "no provider status";
-          return `  ${r.label} (post ${r.postId}): ${r.verified ? "PUBLISHED" : detail}`;
-        })
+      const failedRows = verified.distribution
+        .filter((d) => d.verdict === "failed")
+        .map((d) => `  ${d.label} ${d.network}: ${d.failureReason}`)
         .join("\n");
       await notifyDailyFailure({
         pipeline: "Reels",
         label: `${CITY} ${SLOT}`,
         outcome: OUTCOME.UNVERIFIED,
         reason:
-          `Metricool accepted the post but at least one brand never reached PUBLISHED.\n\n` +
+          `Metricool accepted the post but reported a provider as FAILED.\n\n` +
+          `FAILED\n${failedRows}\n\n` +
           `PER BRAND\n${perBrand}\n\n` +
           `posted-log already records this slot, so the duplicate guard will NOT retry it.`,
         remedy:
@@ -727,7 +695,36 @@ async function main() {
       });
       process.exit(1);
     }
-    console.log(`[Verify] ✓ All ${postedBrands.length} brand(s) verified PUBLISHED`);
+
+    if (verification?.pendingRecheck) {
+      // Not confirmed, and not observed to have failed either: still queued, or
+      // the status call could not be read. Peter is told, because the slot may
+      // yet be lost and nothing re-checks posted-log.json on a later run — but
+      // the run is NOT failed. The reel is posted; an unread status cannot
+      // un-post it, and a red run here would be verification breaking a
+      // successful post.
+      console.log(
+        `::warning::[Reels] ${CITY} ${SLOT}: publication unconfirmed for ` +
+        `${verification.counts.pending} pending / ${verification.counts.unknown} unreadable network(s)`
+      );
+      await notifyDailyFailure({
+        pipeline: "Reels",
+        label: `${CITY} ${SLOT}`,
+        outcome: OUTCOME.UNVERIFIED,
+        reason:
+          `The post was accepted by Metricool, but publication could not be CONFIRMED for every network ` +
+          `(${verification.counts.published} published, ${verification.counts.pending} still pending, ` +
+          `${verification.counts.unknown} status unreadable).\n\n` +
+          `PER BRAND\n${perBrand}\n\n` +
+          `Nothing was re-posted and nothing will be: posted-log already records this slot, so the ` +
+          `duplicate guard will NOT retry it.`,
+        remedy:
+          "Open Metricool and look at the post. Pending usually resolves on its own within a few minutes; " +
+          "if a network shows an error, post that one manually.",
+      });
+    } else if (verification?.allVerified) {
+      console.log(`[Verify] ✓ All ${verified.distribution.length} network(s) verified PUBLISHED`);
+    }
   }
 
   console.log("\n" + "=".repeat(60));

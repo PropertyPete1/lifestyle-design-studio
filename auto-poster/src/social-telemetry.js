@@ -21,29 +21,28 @@
  * dashboard that confidently prints "TikTok: 4" on a day TikTok rejected every
  * upload is worse than one that prints nothing.
  *
- * This matters here more than it looks, because THE PIPELINE DOES NOT KNOW
- * WHAT IT PUBLISHED:
+ * This matters here more than it looks, because AN ENTRY CAN CARRY EITHER REAL
+ * EVIDENCE OR NONE, and the two must not read alike:
  *
- *   - main.js writes `platforms: ["tiktok","youtube","satellite_ig"]` as a
- *     HARDCODED LITERAL (main.js, in the recordPost call). It is written
- *     whenever the run reaches that line, whatever the providers actually did.
- *     It records INTENT, not outcome, and is never read here as an outcome.
+ *   - BOTH pipelines now verify. carousel-verify.js and reel-verify.js poll
+ *     Metricool after the post settles and stamp each distribution row with a
+ *     per-network `verdict` — published / failed / pending / unknown. When those
+ *     rows are on an entry they are the outcome, they are what this writer
+ *     counts, and instagram/tiktok/youtube_shorts report real publication
+ *     numbers off them.
  *
- *   - metricool.createPost returns real per-brand outcomes, but main.js
- *     persists only `brands` — a comma-joined string of the labels that
- *     succeeded. That is genuine evidence that the scheduler accepted the
- *     post, and it is the only such evidence a reel entry carries.
+ *   - main.js ALSO writes `platforms: ["tiktok","youtube","satellite_ig"]` as a
+ *     HARDCODED LITERAL (in the recordPost call). It is written whenever the run
+ *     reaches that line, whatever the providers actually did. It records INTENT,
+ *     not outcome, and is never read here as an outcome — a verified entry's
+ *     rows REPLACE it rather than being counted alongside it.
  *
- *   - metricool.verifyPostPublished exists and has ZERO callers. Nothing in
- *     the reels path ever confirms publication.
- *
- * So for a reel, "scheduled" is a fact and "published" is unknowable, and this
- * writer says exactly that. The carousel path is different and better:
- * carousel-verify.js polls Metricool and writes a per-network `verdict` of
- * published / failed / pending / unknown, so carousel numbers are real
- * publication counts. Wiring the same verification into the reels path is the
- * one change that would let instagram/tiktok/youtube_shorts report published
- * counts every day; until then they read "unknown", which is the truth.
+ *   - An entry with NO verdict rows is either older than the verification
+ *     wiring or was written by a run whose verification never got to look. For
+ *     those, `brands` — the comma-joined labels whose scheduler call returned
+ *     200 — is the only evidence there is, so "scheduled" is a fact and
+ *     "published" stays unknowable. That is still the truth for them, and the
+ *     writer keeps saying exactly that.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * UNITS
@@ -209,6 +208,19 @@ export function eventsFromPostedEntry(entry) {
     return out;
   }
 
+  // A VERIFIED reel. main.js runs reel-verify.js after the scheduler accepts the
+  // post and stamps the entry with per-network verdict rows — the same shape and
+  // the same meaning as a carousel row — so the outcome is readable here rather
+  // than guessable. When those rows exist they REPLACE the `platforms` literal
+  // entirely: `platforms` records intent, the rows record what happened, and
+  // counting both would report one publication as scheduled AND published.
+  const verdictRows = Array.isArray(entry.distribution) ? entry.distribution : [];
+  if (verdictRows.length > 0) {
+    out.push(...eventsFromVerdictRows({ ts, slug, rows: verdictRows, kind: "reel" }));
+    out.push(...mainIgDeliveryEvents({ ts, slug, entry }));
+    return out;
+  }
+
   const intended = Array.isArray(entry.platforms) ? entry.platforms : [];
   const platforms = [...new Set(intended.map(platformOf).filter(Boolean))];
 
@@ -239,15 +251,64 @@ export function eventsFromPostedEntry(entry) {
     }));
   }
 
-  // Delivery of the main-IG cut is a separate, real outcome: when it fails the
-  // owner never gets the video and main Instagram silently goes dark that slot.
-  if (entry.mainIgDelivery && entry.mainIgDelivery !== "delivered") {
-    out.push(event({
-      ts, platform: "instagram", type: "failed", slug,
-      detail: "main Instagram video was not delivered to the owner — nothing to post natively",
-    }));
-  }
+  out.push(...mainIgDeliveryEvents({ ts, slug, entry }));
 
+  return out;
+}
+
+/**
+ * Delivery of the main-IG cut is a separate, real outcome: when it fails the
+ * owner never gets the video and main Instagram silently goes dark that slot.
+ * Independent of verification — the satellites can publish perfectly while the
+ * owner's copy never arrives.
+ */
+function mainIgDeliveryEvents({ ts, slug, entry }) {
+  if (!entry.mainIgDelivery || entry.mainIgDelivery === "delivered") return [];
+  return [event({
+    ts, platform: "instagram", type: "failed", slug,
+    detail: "main Instagram video was not delivered to the owner — nothing to post natively",
+  })];
+}
+
+// ── verdict rows → events ───────────────────────────────────────────────────
+
+/**
+ * The one reader for a verified per-network row, used by BOTH pipelines.
+ *
+ * carousel-verify.js and reel-verify.js write the same row — { network, label,
+ * postId, ok, verdict, failureReason } — because they answer the same question
+ * against the same API. `kind` only names the pipeline in the human-readable
+ * detail; the counting is identical, which is the point: a published reel and a
+ * published carousel are both one publication.
+ */
+function eventsFromVerdictRows({ ts, slug, rows, kind }) {
+  const out = [];
+  for (const row of rows) {
+    if (!row || row.skipped) continue;           // never sent to that network
+    const platform = platformOf(row.network);
+    if (!platform) continue;                     // facebook / linkedin
+
+    // The account name is not decoration — it is what makes two rows distinct.
+    // One post fans out to several brands, so a single run really does publish
+    // to Instagram two or three times, on different accounts, in the same
+    // second. Without the label those rows render identically and the log
+    // dedupes real publications away: on 2026-08-11 the carousel published to
+    // Instagram as propertypete01 AND lifestyledesignrealtyaustintx, and the
+    // log showed one of them while the stats counted both.
+    const who = row.label ? ` (${row.label})` : "";
+
+    if (row.verdict === "published") {
+      out.push(event({ ts, platform, type: "published", slug, detail: `${kind} confirmed published${who}` }));
+    } else if (row.verdict === "failed") {
+      out.push(event({
+        ts, platform, type: "failed", slug,
+        detail: `${row.failureReason || `${kind} provider reported failure`}${who}`,
+      }));
+    } else if (row.ok && row.postId) {
+      // pending / unknown — it reached the scheduler, and that is all we know.
+      out.push(event({ ts, platform, type: "scheduled", slug, detail: `${kind} accepted by scheduler, publication unconfirmed${who}` }));
+    }
+  }
   return out;
 }
 
@@ -256,45 +317,21 @@ export function eventsFromPostedEntry(entry) {
 /**
  * Events from one carousel entry.
  *
- * This is the pipeline that actually checks. carousel-verify.js polls
- * Metricool after settling and stamps each distribution row with a verdict, so
- * "published" here is a confirmed publication rather than an accepted upload.
+ * carousel-verify.js polls Metricool after settling and stamps each
+ * distribution row with a verdict, so "published" here is a confirmed
+ * publication rather than an accepted upload. The reels path now writes the same
+ * rows, and both go through the same reader.
  */
 export function eventsFromCarouselEntry(entry) {
   if (!entry || typeof entry !== "object") return [];
   const ts = entry.timestamp || entry.date;
   if (!ts) return [];
-  const slug = slugFor(entry);
-  const rows = Array.isArray(entry.distribution) ? entry.distribution : [];
-  const out = [];
-
-  for (const row of rows) {
-    if (!row || row.skipped) continue;           // never sent to that network
-    const platform = platformOf(row.network);
-    if (!platform) continue;                     // facebook / linkedin
-
-    // The account name is not decoration — it is what makes two rows distinct.
-    // One carousel fans out to several brands, so a single run really does
-    // publish to Instagram two or three times, on different accounts, in the
-    // same second. Without the label those rows render identically and the log
-    // dedupes real publications away: on 2026-08-11 the carousel published to
-    // Instagram as propertypete01 AND lifestyledesignrealtyaustintx, and the
-    // log showed one of them while the stats counted both.
-    const who = row.label ? ` (${row.label})` : "";
-
-    if (row.verdict === "published") {
-      out.push(event({ ts, platform, type: "published", slug, detail: `carousel confirmed published${who}` }));
-    } else if (row.verdict === "failed") {
-      out.push(event({
-        ts, platform, type: "failed", slug,
-        detail: `${row.failureReason || "carousel provider reported failure"}${who}`,
-      }));
-    } else if (row.ok && row.postId) {
-      // pending / unknown — it reached the scheduler, and that is all we know.
-      out.push(event({ ts, platform, type: "scheduled", slug, detail: `carousel accepted by scheduler, publication unconfirmed${who}` }));
-    }
-  }
-  return out;
+  return eventsFromVerdictRows({
+    ts,
+    slug: slugFor(entry),
+    rows: Array.isArray(entry.distribution) ? entry.distribution : [],
+    kind: "carousel",
+  });
 }
 
 // ── Stats ───────────────────────────────────────────────────────────────────

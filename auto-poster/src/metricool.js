@@ -226,7 +226,8 @@ function chicagoLocalDateTime() {
  * 
  * Posts to Instagram (Reel), TikTok, YouTube per brand. LinkedIn excluded.
  * 
- * Returns { ok, brands: [{ label, ok, networks, error? }], platforms }
+ * Returns { ok, brands: [{ label, ok, networks, providers, postId, blogId, error? }], platforms }
+ * where `providers` is the networks actually submitted for that brand.
  */
 export async function createPost(mediaUrl, caption, options = {}) {
   const { dryRun = false, prefetched = null, mainBrandSkipIG = false } = options;
@@ -332,7 +333,18 @@ export async function createPost(mediaUrl, caption, options = {}) {
       } else {
         const postId = raw?.id || raw?.postId || "unknown";
         console.log(`[Metricool] ✓ Brand ${brand.label} posted (ID: ${postId}) — ${providers.map(p => NICE_NAMES[p.network] || p.network).join(", ")}`);
-        results.push({ label: brand.label, ok: true, networks: brand.networks, postId, blogId: brand.blogId });
+        // `providers` is what was actually SUBMITTED — `networks` is the brand's
+        // full connected set and over-reports whenever a network was withheld
+        // (mainBrandSkipIG). reel-verify.js needs the submitted list to know
+        // which networks it is entitled to expect a status for.
+        results.push({
+          label: brand.label,
+          ok: true,
+          networks: brand.networks,
+          providers: providers.map(p => p.network),
+          postId,
+          blogId: brand.blogId,
+        });
       }
     } catch (err) {
       console.warn(`[Metricool] ✗ Brand ${brand.label} error: ${err.message?.slice(0, 200)}`);
