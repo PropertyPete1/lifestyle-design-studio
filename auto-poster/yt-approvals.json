@@ -994,8 +994,16 @@
       },
       "videoId": "vid-2026-08-07-d5cddf9d",
       "decision": "reject",
+      "notes": "Rejected — rebuild as revision 9 with the merged feel fixes (place-window maps, concept-fallback stock, beat bridge cap, smooth tweens, silent dead-space joins, crossfades). Same takes.",
       "decidedAt": "2026-08-11T17:33:15.421Z",
-      "notes": "Rejected — rebuild as revision 9 with the merged feel fixes (place-window maps, concept-fallback stock, beat bridge cap, smooth tweens, silent dead-space joins, crossfades). Same takes."
+      "actedAt": "2026-08-11T17:37:07.024Z",
+      "actedAction": "review_recorded",
+      "actedResult": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "approved": false,
+        "notes": "Rejected — rebuild as revision 9 with the merged feel fixes (place-window maps, concept-fallback stock, beat bridge cap, smooth tweens, silent dead-space joins, crossfades). Same takes.",
+        "reworkQueued": true
+      }
     }
   ]
 }
