@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We've got more buyer and lease leads than we can actually work right now. New construction in San Antonio and Austin. Out-of-state relocations. The leads are warm. People are actively looking or actively moving. But most of them aren't ready to close today. They need vetting. They need consistent follow-up. They need someone who understands pipeline work instead of chasing the quick commission. I know most agents see that and move on. They want deals closing next month, not relationships closing next quarter. If you're different. If you know how to stay in touch, answer questions, and be the expert when someone's actually ready to move. Then you've got real work here.\n\nIf this sounds like something you'd take on, send me a DM.",
-      "format": "story",
-      "ending": "dm_cta",
-      "date": "2026-08-04"
-    },
-    {
       "topic": "why_agents_leave",
       "body": "Agents don't leave because of splits. They leave because they feel alone.\n\n1. No one's backing them up when deals get messy. They're solving problems by themselves while their broker checks in once a quarter.\n\n2. They're not growing. They're just hustling harder doing the same thing every year. No coaching. No systems. No one showing them what's actually working.\n\n3. They feel invisible. Their production doesn't matter. Their struggles don't get addressed. They're a number on a spreadsheet, not a person someone believes in.\n\nThe agents who stay at brokerages aren't there for the commission split. They're there because someone's actually invested in their success.\n\nWhat would it take for you to stop looking elsewhere?",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "strong_close",
       "date": "2026-08-10"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We've got more buyer and lease leads than we can work right now. New construction in San Antonio and Austin. Out-of-state relocations. They're warm but need vetting and real follow-up. Most aren't ready to close today. If this sounds like something you'd take on, send me a DM.",
+      "format": "short_punchy",
+      "ending": "dm_cta",
+      "date": "2026-08-11"
     }
   ]
 }
