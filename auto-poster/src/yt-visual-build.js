@@ -18,7 +18,7 @@ import { join } from "path";
 import { existsSync, writeFileSync } from "fs";
 
 import { planVisuals, REASON, coverageReport } from "./yt-visual-plan.js";
-import { SCENE_MAX_SECONDS } from "./yt-config.js";
+import { SCENE_MAX_SECONDS, BEAT_BRIDGE_MAX_SECONDS } from "./yt-config.js";
 import { documentFrequencies, properLexicon, keywordsForWindow } from "./yt-scene-keywords.js";
 
 /**
@@ -220,6 +220,7 @@ export async function buildVisuals(plan, {
   const lexicon = properLexicon(planned.segments);
   const stockAttempts = [];
   const stockWindows = [];
+  const beatBridges = [];
 
   // ── turn the coverage blocks into broll entries the renderer understands ──
   const segments = [];
@@ -267,12 +268,72 @@ export async function buildVisuals(plan, {
         let clip = null;
         let attempts = [{ stage: "keywords", reason: "no searchable concept in this window" }];
 
+        // ── A PLACE WINDOW IS THE MAP'S TERRITORY ──────────────────────────
+        //
+        // When a window's own words yield nothing, it is almost always because
+        // the window IS a name: "Stone Oak is the big one", "Shavano Park sits
+        // right against it". Revision 8 answered those with the wordless beat —
+        // abstract gold arcs playing over the passages that name the
+        // neighbourhoods the video is about, which is the worst available
+        // answer and the one Peter called the blocker.
+        //
+        // A named place is a map's subject by definition, and the geometry is
+        // already vendored. So the window asks for a map of itself before it
+        // asks for stock, and only a place this video has not already drawn —
+        // otherwise the same neighbourhood gets introduced three times.
+        if (win.placeDominated) {
+          const placeSpec = mapSpecForIntent({ places: win.properPhrases, lines: [] }, { market });
+          if (placeSpec && !mapSession.coversPlaces(placeSpec)) {
+            const mi = index++;
+            try {
+              const r = await renderAnimatedGraphic({
+                session: mapSession, type: MAP, spec: placeSpec,
+                seconds: block.seconds, words: timings.get(seg.takeId),
+                dir, index: mi, ffmpeg, writeFileSync,
+              });
+              if (r.deadStates.length === 0) {
+                broll.push({
+                  generated: true, preRendered: true, kind: "graphic", visual: MAP,
+                  sourcePath: r.path, seconds: block.seconds, phase: 0, fileName: "MAP.mp4",
+                });
+                stockWindows.push({
+                  takeId: seg.takeId, phase: block.phase ?? 0, startAt: block.startAt ?? 0,
+                  seconds: block.seconds, phrase: win.phrase, keywords: [], subject: null,
+                  dropped: win.dropped, source: "map-of-place", matched: true,
+                  resolved: "MAP", places: win.properPhrases,
+                });
+                block.kind = "graphic";
+                continue;
+              }
+              animationFailures.push({ takeId: seg.takeId, type: MAP, reason: `place map rendered ${r.deadStates.length} dead state(s)` });
+            } catch (err) {
+              animationFailures.push({ takeId: seg.takeId, type: MAP, reason: `place map failed: ${err.message}` });
+            }
+          }
+        }
+
         if (win.keywords.length > 0) {
           try {
             const r = await fetchStockClip({
               keywords: win.keywords,
               seconds: block.seconds,
-              subject: win.subject,
+              // THE SEARCH AND THE CHECK ASK DIFFERENT QUESTIONS.
+              //
+              // Two keywords are what a stock search can use; they are a poor
+              // description of a moment. Revision 8 verified against them, so
+              // the check asked "is this plausibly 'animal well'?" of a goat
+              // farm and correctly said yes — under a sentence about a suburb.
+              // "closest base" returned a baseball field and passed for the
+              // same reason: the check was answering a question I invented
+              // rather than the one the video asks.
+              //
+              // So the clip is verified against what is actually SPOKEN while
+              // it is on screen, with the proper nouns stripped — the check has
+              // never been allowed to know a place name and still is not. A
+              // goat farm is not plausibly "is further north, past, and it's a
+              // little more spread out"; a baseball field is not plausibly a
+              // sentence about a base's front gate.
+              subject: win.verifySubject || win.subject,
               dir,
               index: wi,
               orientation: seg.visualSpec?.orientation || "landscape",
@@ -368,6 +429,24 @@ export async function buildVisuals(plan, {
       animationFailures.push({ takeId: seg.takeId, type: String(block.kind || "?").toUpperCase(), reason: `no builder for block kind "${block.kind}"` });
     }
 
+    // ── THE BEAT IS A BRIDGE, NOT A LAYER ────────────────────────────────
+    //
+    // Applied here rather than in the planner because a beat can be born in two
+    // places: the planner's floor, and a stock window whose fetch came back
+    // empty a few lines above. Only after both have run is it known how much of
+    // this take the wordless geometry actually ends up holding.
+    //
+    // Revision 8 gave it 56% of the runtime. Extending the neighbouring scene is
+    // strictly better than abstract arcs: a stock clip or a graphic held two
+    // seconds longer is a shot that ran a beat long, which nobody notices, while
+    // gold circles over the passage naming a neighbourhood is the thing Peter
+    // called the blocker.
+    //
+    // A take with NOTHING else in it keeps its beats — there is no neighbour to
+    // extend, and a hole in the picture is not an improvement. That case is
+    // reported rather than hidden.
+    bridgeBeats(broll, { max: BEAT_BRIDGE_MAX_SECONDS, takeId: seg.takeId, beatBridges });
+
     // A take PLANNED for stock whose every window came back empty is a fall, and
     // it did not used to look like one. The planner set `visualPrimary: "stock"`
     // before any fetch happened, so a take carried entirely by beats still
@@ -393,6 +472,7 @@ export async function buildVisuals(plan, {
     ...coverageReport(segments),
     intents: planned.intents,
     stockWindows,
+    beatBridges,
     // Drives the map attribution line in the description. Computed from what
     // actually reached the timeline rather than from what was requested: a MAP
     // intent that fell back to typography must not credit a map source for a
@@ -451,6 +531,41 @@ export async function buildVisuals(plan, {
   };
 
   return { plan: { ...plan, segments, visuals: report }, report };
+}
+
+
+/**
+ * Cap every wordless beat at a bridge, handing the overflow to a real scene.
+ *
+ * PURE, and separate from the build loop so the rule can be argued with in a
+ * test rather than by rendering a video and watching for circles.
+ *
+ * The overflow goes to the PREVIOUS scene by preference: extending a shot the
+ * viewer is already watching is invisible, while extending the next one delays
+ * its arrival and can pull a reveal off the word it was timed to. A beat with no
+ * real scene on either side is left alone and recorded — that take has nothing
+ * else to show, and a gap would be worse than geometry.
+ */
+export function bridgeBeats(broll, { max, takeId = null, beatBridges = [] } = {}) {
+  const isReal = (b) => b && b.kind !== "beat" && (b.seconds || 0) > 0;
+  for (let i = 0; i < broll.length; i++) {
+    const b = broll[i];
+    if (!b || b.kind !== "beat") continue;
+    const over = round2((b.seconds || 0) - max);
+    if (over <= 0.01) continue;
+
+    const prev = broll[i - 1];
+    const next = broll[i + 1];
+    const host = isReal(prev) ? prev : isReal(next) ? next : null;
+    if (!host) {
+      beatBridges.push({ takeId, seconds: round2(b.seconds), capped: false, reason: "no other visual in this take to extend" });
+      continue;
+    }
+    b.seconds = round2(max);
+    host.seconds = round2((host.seconds || 0) + over);
+    beatBridges.push({ takeId, seconds: max, capped: true, gaveSeconds: over, to: host.kind || "footage" });
+  }
+  return broll;
 }
 
 /** Milliseconds are enough for a word boundary; more just makes noisy diffs. */

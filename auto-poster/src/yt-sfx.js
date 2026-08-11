@@ -27,7 +27,7 @@
 import { join } from "path";
 import { existsSync } from "fs";
 
-import { PUNCH_SFX_ENABLED, PUNCH_SFX_DB } from "./yt-config.js";
+import { PUNCH_SFX_ENABLED, PUNCH_SFX_DB, PUNCH_WHOOSH_ENABLED } from "./yt-config.js";
 
 /** The most hits one video may carry, whatever the edit asks for. */
 export const MAX_SFX_EVENTS = 40;
@@ -139,23 +139,31 @@ export function ensureSfxKit(dir, ffmpeg) {
  * sounds like the effect broke halfway through. Evenly dropping them keeps the
  * texture across the whole video, which is what "subtle" has to mean here.
  */
-export function punchSfxTimeline(plan, punches = [], { max = MAX_SFX_EVENTS, enabled = PUNCH_SFX_ENABLED } = {}) {
+export function punchSfxTimeline(plan, punches = [], { max = MAX_SFX_EVENTS, enabled = PUNCH_SFX_ENABLED, whoosh = PUNCH_WHOOSH_ENABLED } = {}) {
   if (!enabled) return [];
 
   const events = (punches || []).map((p) => ({ at: p.at, kind: "impact" }));
 
-  // Every seam the retention edit created, in absolute video time.
+  // ONLY DELIBERATE PUNCH-IN SEAMS, and only when the whoosh is switched on.
+  //
+  // This used to walk every piece boundary, which meant every DEAD-SPACE join
+  // got a whoosh too — a sound announcing each removed breath, on an edit whose
+  // entire purpose is to be unnoticeable. Dozens of them across a take is the
+  // "weird noise on cuts" note. `joinKind` now says which seam is which, and
+  // only a framing change is a beat that a sound may sit on.
   const cuts = [];
   let elapsed = 0;
   for (const seg of plan?.segments || []) {
     const seconds = seg.seconds || 0;
-    if (seg.kind === "on_camera" && seg.editPlan?.pieces?.length > 1) {
+    if (whoosh && seg.kind === "on_camera" && seg.editPlan?.pieces?.length > 1) {
       let within = 0;
-      for (const piece of seg.editPlan.pieces.slice(0, -1)) {
+      for (const piece of seg.editPlan.pieces) {
+        // The join OPENS this piece, so the offset is where the previous ones
+        // ended — measured before adding this piece's own length.
+        if (piece.joinKind === "punch-in" && within > 0.4 && within < seconds - 0.4) {
+          cuts.push({ at: round(elapsed + within), kind: "whoosh" });
+        }
         within += piece.seconds ?? piece.duration ?? 0;
-        // The very first frame of a take is a cut the viewer already hears as a
-        // scene change; a whoosh on it doubles what the edit is doing.
-        if (within > 0.4 && within < seconds - 0.4) cuts.push({ at: round(elapsed + within), kind: "whoosh" });
       }
     }
     elapsed += seconds;
