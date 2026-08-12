@@ -576,13 +576,26 @@ describe("writeSocialTelemetry — the whole thing, and it never throws", () => 
     // The contract that matters most: this runs in the commit step of a live
     // posting job. If it throws, the step dies and posted-log.json never gets
     // pushed — and the next run double-posts.
-    const res = writeSocialTelemetry({
-      repoRoot: "/proc/nonexistent-cannot-create",
-      autoPosterDir: "/nope",
-      now: NOW,
-    });
-    assert.equal(res.ok, false);
-    assert.equal(typeof res.error, "string");
+    //
+    // The unwritable path is BUILT, not borrowed from the OS. This test used to
+    // point at /proc/nonexistent-cannot-create, which does not exist on macOS
+    // and is a live procfs mount on Linux — a test whose meaning depended on
+    // which machine ran it. Putting a regular FILE where a directory is needed
+    // gives ENOTDIR everywhere, and needs no privileges to set up.
+    const dir = tempDir();
+    try {
+      const blocker = join(dir, "not-a-directory");
+      writeFileSync(blocker, "this is a file, so nothing can be created beneath it");
+      const res = writeSocialTelemetry({
+        repoRoot: join(blocker, "under-a-file"),
+        autoPosterDir: join(blocker, "under-a-file"),
+        now: NOW,
+      });
+      assert.equal(res.ok, false);
+      assert.equal(typeof res.error, "string");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test("survives being handed no arguments at all", () => {

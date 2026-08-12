@@ -20,6 +20,13 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # A hung test file used to sit here for the full six-hour default and then
+    # report "fail", which reads exactly like a broken test and is not one. The
+    # suite finishes in minutes; anything past 25 is stuck, and finding that out
+    # in 25 minutes instead of six hours is the difference between noticing and
+    # not. Paired with --test-timeout in `npm test`, which fails the individual
+    # test and NAMES it rather than taking the whole job down anonymously.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
