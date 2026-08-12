@@ -121,6 +121,7 @@ async function main() {
   // ── card every new video ─────────────────────────────────────────────────
   const carded = [];
   const tooShort = [];
+  const dashboardMisses = [];
 
   for (const record of needsQueueCard(queue)) {
     // A video too short to edit gets a failed card immediately rather than a
@@ -178,7 +179,7 @@ async function main() {
     saveApprovals(appendRequest(loadApprovals(), { requestId, kind: KIND_REEL_EDIT, payload: queueCardPayload(carded_record) }));
 
     const mail = queueCardEmail(carded_record);
-    await sendApprovalRequest({
+    const sent = await sendApprovalRequest({
       requestId,
       kind: KIND_REEL_EDIT,
       payload: queueCardPayload(carded_record),
@@ -187,7 +188,32 @@ async function main() {
       accessToken,
       mailPrefix: MAIL_PREFIX.EDIT,
     });
-    console.log(`[EditQueueScan] ✓ carded ${record.fileName} as ${requestId}`);
+
+    // A START CARD THAT DID NOT REACH THE DASHBOARD IS A DEAD VIDEO.
+    //
+    // `sendApprovalRequest` throws only when BOTH channels fail, which is the
+    // right rule for a review — the email IS a working review surface, so a
+    // dashboard outage degrades it rather than breaking it. It is the WRONG
+    // rule for this card, and the difference is worth being loud about: the
+    // review email carries links Peter can act on, but the Start card carries a
+    // BUTTON, and there is no email equivalent of pressing it. Without the card
+    // there is no decision, without a decision the advance job correctly does
+    // nothing, and the video sits queued forever behind a green tick.
+    //
+    // This is not hypothetical. On 2026-08-12 the deployed dashboard rejected
+    // `kind: "reel_edit"` outright — HTTP 400, "Invalid kind — must be one of:
+    // topic_pick, video_review, recording_kit" — so every Start card would have
+    // gone to email only and every video would have been unstartable, with
+    // nothing anywhere reporting a problem.
+    if (!sent.channels.includes("dashboard")) {
+      dashboardMisses.push(record.fileName);
+      console.log(
+        `::error::[EditQueueScan] ${record.fileName} was carded but the card did NOT reach the dashboard. ` +
+        `There is no button to press, so this video cannot be started until that is fixed.`
+      );
+    }
+
+    console.log(`[EditQueueScan] ✓ carded ${record.fileName} as ${requestId} via ${sent.channels.join(" + ")}`);
     carded.push(record.fileName);
   }
 
@@ -201,12 +227,23 @@ async function main() {
   await notifyDailyOutcome({
     pipeline: "Manual edit queue (scan)",
     label: "scan",
-    outcome: carded.length > 0 || tooShort.length > 0 ? OUTCOME.SUCCEEDED : OUTCOME.SKIPPED,
+    // A card that never reached the dashboard is escalated, not merely logged:
+    // it means a video Peter can see in his folder has no way to be started.
+    outcome: dashboardMisses.length
+      ? OUTCOME.UNVERIFIED
+      : carded.length > 0 || tooShort.length > 0
+      ? OUTCOME.SUCCEEDED
+      : OUTCOME.SKIPPED,
+    remedy: dashboardMisses.length
+      ? `The dashboard did not accept the card. Until it renders kind "${KIND_REEL_EDIT}", these videos ` +
+        `cannot be started — there is no button. Relay to Manus; the studio side is ready.`
+      : null,
     reason:
       `${files.length} item(s) in the folder. ` +
       `${carded.length ? `Carded: ${carded.join(", ")}. ` : "Nothing new to card. "}` +
       `${tooShort.length ? `Too short to edit: ${tooShort.join(", ")}. ` : ""}` +
       `${ignored.length ? `Ignored ${ignored.length} non-video item(s). ` : ""}` +
+      `${dashboardMisses.length ? `NO DASHBOARD CARD for: ${dashboardMisses.join(", ")} — these cannot be started. ` : ""}` +
       `Queue: ${summary}. No edit was started — only a card action can do that.`,
   });
 }
