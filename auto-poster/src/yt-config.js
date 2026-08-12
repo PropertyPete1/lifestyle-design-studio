@@ -135,8 +135,18 @@ function subsetOf(raw, allowed, fallback) {
  *
  * Per-video kill switch. Off is always safe: the visual plays full-screen,
  * which is exactly what it did before the feature existed.
+ *
+ * DEFAULTS OFF as of the baseline strip, joining music, micro-punches and the
+ * two sound effects — see MUSIC_ENABLED for the argument. It is not on Peter's
+ * list of what the baseline renders, and the matte quality on his real takes is
+ * still one of the four open known-unknowns in longform/LAUNCH-READINESS.md: a
+ * bubble cut from real footage has never been reviewed, which makes this
+ * exactly the kind of layer that should not be in a publish candidate.
+ *
+ * Nothing is deleted. planPip, the segmenter and the matte quality gate are
+ * untouched and still tested; `YT_PIP_ENABLED=true` puts the bubble back.
  */
-export const PIP_ENABLED = process.env.YT_PIP_ENABLED !== "false";
+export const PIP_ENABLED = process.env.YT_PIP_ENABLED === "true";
 
 /**
  * Whether dead air is cut out of on-camera takes.
