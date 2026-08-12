@@ -153,6 +153,64 @@ export function heldBelowBarPayload(requestId) {
   };
 }
 
+// ─── the reels manual edit queue's two card shapes ───────────────────────────
+//
+// NEW KINDS — "reel_edit" and "reel_review" — rather than a reuse of
+// topic_pick/video_review, because `decisionState` reads the newest request of
+// a kind and the long-form pipeline calls it with no further filter: a queue
+// card raised as video_review would become the record long-form believes is its
+// own video review, and approving an edited reel would publish a YouTube video.
+//
+// WHICH MAKES THESE TWO THE MOST IMPORTANT CARDS IN THIS FILE. The dashboard
+// routes on `kind`, and these are kinds it has never been sent. Whether it
+// renders them is a question with a real answer, and this suite is the only
+// thing that can ask it — so these are posted here rather than assumed to work,
+// and the reels queue's own email channel carries every Drive link precisely
+// because the answer might be no.
+
+export function reelEditPayload(requestId) {
+  return {
+    requestId,
+    driveFileId: "SMOKE-not-a-real-drive-id",
+    fileName: "[SMOKE TEST] queued-clip.mp4",
+    durationSeconds: 41.2,
+    duration: "41s",
+    discoveredAt: new Date().toISOString(),
+    folder: "Videos To Edit",
+    question: "Start the retention edit on this video?",
+    actions: [{ id: "approve", label: "Start Edit" }],
+    whatHappens: "SMOKE TEST — automated dashboard check. Nothing will be edited.",
+    isTest: true,
+  };
+}
+
+export function reelReviewPayload(requestId) {
+  return {
+    requestId,
+    driveFileId: "SMOKE-not-a-real-drive-id",
+    fileName: "[SMOKE TEST] reviewed-clip.mp4",
+    revision: 1,
+    question: "Approve these for the Trial tab, or send them back with a note?",
+    actions: [
+      { id: "approve", label: "Approve" },
+      { id: "reject", label: "Reject with note" },
+    ],
+    driveLink: "https://drive.google.com/file/d/SMOKE/view",
+    master: { fileName: "[SMOKE TEST] master.mp4", link: "https://drive.google.com/file/d/SMOKE/view", driveFileId: "SMOKE" },
+    variants: ["A", "B", "C"].map((label) => ({
+      label,
+      hookLine: `SMOKE TEST hook line ${label}`,
+      treatment: "SMOKE TEST — automated dashboard check",
+      link: `https://drive.google.com/file/d/SMOKE-${label}/view`,
+      fileName: `[SMOKE TEST] variant-${label}.mp4`,
+      driveFileId: `SMOKE-${label}`,
+    })),
+    editSummary: "SMOKE TEST — 40.0s in, 33.0s out, 7.0s of dead air removed",
+    warnings: [],
+    isTest: true,
+  };
+}
+
 /**
  * Best-effort removal of everything this run created.
  *

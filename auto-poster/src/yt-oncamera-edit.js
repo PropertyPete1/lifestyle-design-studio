@@ -612,20 +612,55 @@ export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = nul
  *
  * Returns the report the build summary prints, because "we removed dead air"
  * is a claim that should come with a number.
+ *
+ * ─── THE FOUR OPTIONAL ARGUMENTS, AND WHY THEY ARE ARGUMENTS ────────────────
+ *
+ * `interval`, `treatment`, `silences` and `duration` all default to exactly
+ * what this function did before they existed, so every long-form caller is
+ * unchanged by their presence — yt-oncamera-edit.test.mjs pins that.
+ *
+ * They exist because the reels manual edit queue runs THIS function rather than
+ * a second copy of it (see reel-edit.js). A reel needs a faster cadence and a
+ * plain fit instead of the 16:9 blur-fill, and both were already parameters one
+ * level down in buildEditList and pieceArgs — so passing them through is the
+ * difference between one editor with two callers and two editors that drift.
+ *
+ * `silences` and `duration` are the subtler pair, and they close a real hole.
+ * A caller that wants to INSPECT the plan before rendering it — to refuse an
+ * edit that would cut into speech, say — used to have to call detectSilences
+ * itself, and this function would then call it again. Two detections is not
+ * merely wasteful: the caller's could pass `duration` and pick up a trailing
+ * unterminated silence that this one, calling `detectSilences(input)` bare,
+ * would drop. The plan that was checked would not have been the plan that
+ * rendered, which is the worst possible shape for a safety check.
  */
-export function editOnCameraTake(input, outputDir, { dim, index = 0, isOpening = false, minKeep = 0, fps = 30, ffmpeg, writeFileSync, join, mediaDuration }) {
-  const duration = mediaDuration(input);
-  const silences = detectSilences(input);
-  const plan = buildEditList(duration, silences, { isOpening, minKeep, seed: index });
+export function editOnCameraTake(input, outputDir, {
+  dim,
+  index = 0,
+  isOpening = false,
+  minKeep = 0,
+  fps = 30,
+  interval = PUNCH_INTERVAL,
+  treatment = null,
+  silences = null,
+  duration = null,
+  ffmpeg,
+  writeFileSync,
+  join,
+  mediaDuration,
+}) {
+  const total = duration ?? mediaDuration(input);
+  const found = silences ?? detectSilences(input);
+  const plan = buildEditList(total, found, { isOpening, minKeep, seed: index, interval });
 
   const files = [];
   plan.pieces.forEach((piece, i) => {
     const out = join(outputDir, `oc${String(index).padStart(2, "0")}_p${String(i).padStart(3, "0")}.mp4`);
-    ffmpeg(pieceArgs(input, out, piece, dim, { fps }));
+    ffmpeg(pieceArgs(input, out, piece, dim, { fps, treatment }));
     files.push(out);
   });
 
-  return { ...plan, files, silenceCount: silences.length };
+  return { ...plan, files, silenceCount: found.length };
 }
 
 function round(n) {

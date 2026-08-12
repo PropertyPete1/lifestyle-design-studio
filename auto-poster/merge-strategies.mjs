@@ -6,6 +6,13 @@
  * makes the concurrent-runner merge behaviour testable.
  */
 
+// The ONE import this module has, and it is deliberately to a module that
+// imports nothing itself. `capRequests` is shared with src/yt-approvals.js —
+// which reads and writes the file and therefore has `fs` — and importing it
+// from THERE would drag `fs` into this module through the back door and break
+// the purity the header above depends on.
+import { capRequests } from "./src/approvals-retention.js";
+
 /** How much post history posted-log.json keeps. Matches state.js recordPost(). */
 export const POSTED_LOG_RETENTION_DAYS = 365;
 
@@ -214,7 +221,7 @@ export function mergeYtApprovals(local, remote, log = console.log) {
   const merged = [...byId.values()].sort((a, b) =>
     String(a.requestedAt || "").localeCompare(String(b.requestedAt || ""))
   );
-  const kept = merged.slice(-MAX_APPROVALS);
+  const kept = capRequests(merged);
   const decided = kept.filter((r) => typeof r.decision === "string" && r.decision).length;
   const acted = kept.filter((r) => r.actedAt).length;
   log(`[Merge] yt-approvals: ${kept.length} requests (${decided} decided, ${acted} acted)`);
@@ -225,8 +232,11 @@ export function mergeYtApprovals(local, remote, log = console.log) {
   return { ...base, ...overlay, requests: kept };
 }
 
-/** Keep in step with MAX_ENTRIES in src/yt-approvals.js. */
-const MAX_APPROVALS = 400;
+// The cap used to be a local `MAX_APPROVALS = 400` with a comment asking the
+// next reader to keep it in step with src/yt-approvals.js. It is now IMPORTED
+// from there (see the top of this file), which is the only version of "in step"
+// that cannot come apart — and it had to, because the cap stopped being one
+// number when the reels edit queue started writing to the same file.
 
 /**
  * Which side owns a field group: a present value beats an absent one, and when
@@ -478,6 +488,115 @@ function mergeVideoRecord(x, y) {
   return out;
 }
 
+/**
+ * edit-queue.json: union by driveFileId, merged field-group by field-group.
+ *
+ * ONE WRITER, TWO RUNNERS. Unlike yt-approvals.json the dashboard never touches
+ * this file — but the scan job and the advance job both do, and both start from
+ * `git reset --hard origin/main`, so a scan that discovers a new video while an
+ * advance is halfway through a render is the ordinary case rather than the
+ * exotic one. Whichever pushes second must not erase what the first recorded.
+ *
+ * THE STATUS IS NOT MONOTONIC, which rules out the obvious merge. A rejection
+ * moves in_review -> editing, so "the further-along status wins" would make a
+ * re-edit impossible to record: the stale copy's `in_review` would beat the
+ * new `editing` forever and the rework would vanish, which is precisely the
+ * failure mergeVideoRecord's revision handling exists to fix on the long-form
+ * side. So status is resolved by `statusAt` — the later transition is the true
+ * one — with one asymmetry:
+ *
+ *   DELIVERED IS NEVER DOWNGRADED. Approving moves master and variants onto the
+ *   Trial tab, and that is not undone by a concurrent runner that had not heard
+ *   about it. A merge that loses a delivery would re-deliver on the next run and
+ *   put a second copy of three variants on the tab.
+ *
+ * The card ids, the outputs and the attempt history all union rather than
+ * choosing, because losing any of them loses the thread between a card Peter is
+ * looking at and the video it belongs to.
+ */
+export function mergeEditQueue(local, remote, log = console.log) {
+  const all = [...(remote?.videos || []), ...(local?.videos || [])];
+  const byId = new Map();
+  for (const v of all) {
+    if (!v || typeof v !== "object") continue;
+    const id = v.driveFileId;
+    if (typeof id !== "string" || !id) continue;
+    const existing = byId.get(id);
+    byId.set(id, existing ? mergeQueueRecord(existing, v) : { ...v });
+  }
+  const merged = [...byId.values()].sort((a, b) =>
+    String(a.discoveredAt || "").localeCompare(String(b.discoveredAt || ""))
+  );
+  const kept = merged.slice(-MAX_QUEUE_VIDEOS);
+  const counts = kept.reduce((acc, v) => ({ ...acc, [v.status]: (acc[v.status] || 0) + 1 }), {});
+  log(
+    `[Merge] edit-queue: ${kept.length} videos (` +
+      Object.entries(counts).map(([s, n]) => `${s}=${n}`).join(" ") + ")"
+  );
+  return { ...remote, ...local, videos: kept };
+}
+
+/** Keep in step with MAX_ENTRIES in src/edit-queue.js. */
+const MAX_QUEUE_VIDEOS = 500;
+
+function mergeQueueRecord(x, y) {
+  const out = { driveFileId: x.driveFileId };
+
+  // identity — written once at discovery and never changed. Earlier wins, so a
+  // re-discovery cannot restamp a video as newly found.
+  const first = String(x.discoveredAt || "") <= String(y.discoveredAt || "") ? x : y;
+  for (const f of ["fileName", "durationSeconds", "sizeBytes", "discoveredAt", "test"]) {
+    const v = first[f] ?? x[f] ?? y[f];
+    if (v !== undefined) out[f] = v;
+  }
+
+  // status — the later transition is the real one, EXCEPT that delivered stands.
+  const delivered = [x, y].find((r) => r.status === "delivered");
+  const later = String(x.statusAt || "") >= String(y.statusAt || "") ? x : y;
+  const winner = delivered || later;
+  out.status = winner.status;
+  out.statusAt = winner.statusAt ?? null;
+  out.failure = winner.status === "failed" ? (winner.failure ?? null) : null;
+  const deliveredAt = x.deliveredAt || y.deliveredAt;
+  if (deliveredAt) out.deliveredAt = deliveredAt;
+
+  // the cards — a requestId is never dropped. Losing one orphans a card Peter
+  // can still see and press, and its decision would then match no video.
+  out.queueRequestId = x.queueRequestId || y.queueRequestId || null;
+  out.reviewRequestId = winner.reviewRequestId || x.reviewRequestId || y.reviewRequestId || null;
+
+  // the outputs — belong to the newest generation, like the long-form upload.
+  out.revision = Math.max(Number(x.revision) || 0, Number(y.revision) || 0);
+  const newest = (Number(x.revision) || 0) >= (Number(y.revision) || 0) ? x : y;
+  out.master = newest.master ?? x.master ?? y.master ?? null;
+  out.variants = newest.variants ?? x.variants ?? y.variants ?? [];
+
+  // attempts — union on (revision, startedAt), oldest first. This is the record
+  // of what was tried and why it failed, and it is the only thing that survives
+  // a wedged video for a human to read.
+  const key = (a) => `${a?.revision ?? "?"}|${a?.startedAt ?? "?"}`;
+  const attempts = new Map();
+  for (const a of [...(x.attempts || []), ...(y.attempts || [])]) {
+    if (!a) continue;
+    const k = key(a);
+    // A finished attempt beats an open one for the same key — the side that
+    // wrote the outcome is the side that has it.
+    if (!attempts.has(k) || (a.finishedAt && !attempts.get(k).finishedAt)) attempts.set(k, a);
+  }
+  out.attempts = [...attempts.values()].sort((a, b) => String(a.startedAt || "").localeCompare(String(b.startedAt || "")));
+
+  // Everything else carries through, defined-over-undefined, local winning ties.
+  // The long-form video merge learned this the hard way: its named-field rebuild
+  // became an accidental allowlist and silently dropped every field added after
+  // it was written. This one starts with the lesson applied.
+  for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) {
+    if (k in out) continue;
+    const v = x[k] !== undefined ? x[k] : y[k];
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
 /** Dispatch table used by merge-log-push.mjs. */
 export const MERGE_STRATEGIES = {
   "posted-log.json": (l, r, log) => mergePostedLog(l, r || { posts: [] }, log),
@@ -490,6 +609,7 @@ export const MERGE_STRATEGIES = {
   "carousel-log.json": (l, r, log) => mergeCarouselLog(l, r || { posts: [] }, log),
   "yt-approvals.json": (l, r, log) => mergeYtApprovals(l, r || { requests: [] }, log),
   "youtube-log.json": (l, r, log) => mergeYouTubeLog(l, r || { videos: [] }, log),
+  "edit-queue.json": (l, r, log) => mergeEditQueue(l, r || { videos: [] }, log),
 };
 
 export const MERGE_FILES = Object.keys(MERGE_STRATEGIES);

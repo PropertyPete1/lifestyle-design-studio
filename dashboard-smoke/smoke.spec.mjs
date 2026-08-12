@@ -25,6 +25,7 @@ import { readFileSync } from "node:fs";
 import {
   postApproval, cleanup, testRequestId,
   topicPickPayload, recordingKitPayload, videoReviewPayload, heldBelowBarPayload,
+  reelEditPayload, reelReviewPayload,
 } from "./webhook.mjs";
 
 /** Controls that can end a decision, spend money, or reach a live account. */
@@ -235,6 +236,12 @@ test("each approval card type renders from a TEST- payload", async ({ page }) =>
     { label: "recording_kit (takes)", kind: "topic_pick", make: recordingKitPayload, expect: /smoke test take one/i },
     { label: "video_review (buttons)", kind: "video_review", make: videoReviewPayload, expect: /SMOKE TEST\] Video review/i },
     { label: "held_below_bar (strip)", kind: "topic_pick", make: heldBelowBarPayload, expect: /Held below bar|held/i },
+    // The reels manual edit queue. Both are kinds the dashboard has never been
+    // sent, and both are load-bearing: the first is the ONLY way an edit can
+    // ever start, and the second is the only way anything reaches the Trial
+    // tab. A failure on these two is a real finding for Manus, not noise.
+    { label: "reel_edit (Start Edit)", kind: "reel_edit", make: reelEditPayload, expect: /queued-clip\.mp4|Start Edit/i },
+    { label: "reel_review (variants)", kind: "reel_review", make: reelReviewPayload, expect: /reviewed-clip\.mp4|SMOKE TEST hook line A/i },
   ];
 
   const posted = [];
@@ -291,7 +298,10 @@ test("each approval card type renders from a TEST- payload", async ({ page }) =>
     missing,
     `card types accepted by the webhook but not rendered anywhere: ${missing.join(", ")}.\n` +
       `If these are the stage-carrying types, the dashboard is routing on 'kind' alone — ` +
-      `every one of them is kind:"topic_pick" and only the flat 'stage' field tells them apart.`
+      `every one of them is kind:"topic_pick" and only the flat 'stage' field tells them apart.\n` +
+      `If they are the reel_edit / reel_review types, the dashboard has not been taught the ` +
+      `reels manual edit queue's two kinds yet. Until it is, those cards exist only in email — ` +
+      `which carries every Drive link, so the feature degrades rather than breaking.`
   ).toEqual([]);
 });
 

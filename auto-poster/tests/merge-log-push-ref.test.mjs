@@ -81,8 +81,17 @@ function sandbox({ checkoutBranch }) {
   for (const f of ["merge-log-push.mjs", "merge-strategies.mjs"]) {
     cpSync(join(AUTOPOSTER, f), join(repoDir, f));
   }
-  // …and the telemetry writer it publishes status/ with, from src/.
-  cpSync(join(AUTOPOSTER, "src", "social-telemetry.js"), join(repoDir, "src", "social-telemetry.js"));
+  // …and src/, WHOLESALE rather than the one file it used to need.
+  //
+  // This was `cpSync(src/social-telemetry.js)` — the single src/ module
+  // merge-log-push imported at the time. That made the sandbox a hand-kept
+  // list of the script's transitive dependencies, and the first time one was
+  // added (approvals-retention.js, which merge-strategies now shares with
+  // yt-approvals) every test in this file died with ERR_MODULE_NOT_FOUND on a
+  // change that was correct. A sandbox that has to be updated whenever the code
+  // under test grows an import is a sandbox that fails for reasons that are not
+  // about the thing being tested.
+  cpSync(join(AUTOPOSTER, "src"), join(repoDir, "src"), { recursive: true });
 
   return { root, remote, work, repoDir };
 }

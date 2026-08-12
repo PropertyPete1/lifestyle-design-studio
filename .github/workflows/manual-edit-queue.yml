@@ -1,0 +1,270 @@
+name: Manual Edit Queue
+
+# The reels-side manual edit queue. Peter drops raw verticals into the Drive
+# folder "Videos To Edit" whenever he likes; this workflow always knows what is
+# in there and NEVER starts an edit on its own.
+#
+# ─── TWO JOBS, AND THE SPLIT IS THE SAFETY PROPERTY ─────────────────────────
+#
+#   scan     Lists the folder and raises a card for anything new. It cannot
+#            edit: src/edit-queue-scan.js imports no renderer at all, and
+#            tests/edit-queue-safety.test.mjs walks its real import graph to
+#            prove it. Runs four times a day.
+#
+#   advance  Does the work — but only for a video the dashboard has recorded an
+#            explicit approval against, on that video's own card, that nobody
+#            has acted on yet. It runs on a schedule because the dashboard makes
+#            no inbound calls to us: a decision arrives as a commit, so the only
+#            way to see one is to look. Looking is scheduled; acting is not.
+#
+# A cheap pre-check gates the expensive half. Installing ffmpeg and Whisper
+# costs a couple of minutes, and the overwhelming majority of polls have nothing
+# to do — so scripts/edit-queue-check.mjs answers "is there a decision waiting"
+# from committed files alone, with no token and no network, and the setup steps
+# are skipped when the answer is no.
+#
+# ─── THIS WORKFLOW IS DELIBERATELY SEPARATE ─────────────────────────────────
+#
+# It shares no job, no schedule and no concurrency group with youtube-longform.
+# It writes yt-approvals.json, which long-form also writes — that file has had a
+# two-writer field-group merge since the dashboard started committing decisions
+# to it, and merge-log-push.mjs re-merges and retries on every push rejection,
+# which is exactly the mechanism this relies on. A SHARED concurrency group was
+# considered and rejected: it would make a 30-minute reel render able to delay
+# the long-form pipeline poll, which is interference with the thing the hard
+# rule says not to interfere with.
+on:
+  schedule:
+    # Scan: 8am, 12pm, 4pm and 8pm CT. No :30 backup crons, unlike the posting
+    # jobs — discovery is idempotent and self-healing, so a scan GitHub drops
+    # under load costs a few hours of latency on a card and nothing else. The
+    # backup pattern exists for jobs where "late" and "never" are
+    # indistinguishable; this is not one.
+    - cron: '0 13 * * *'
+    - cron: '0 17 * * *'
+    - cron: '0 21 * * *'
+    - cron: '0 1 * * *'
+    # Advance: every two hours. Peter presses a button on his own time and this
+    # is how long he waits. Nearly every run exits in under a minute having
+    # found no decision and installed nothing.
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run'
+        required: true
+        default: 'scan'
+        type: choice
+        options:
+          - scan
+          - advance
+          - sweep
+      dry_run:
+        description: 'Scan only: list and report, card nothing'
+        required: false
+        default: false
+        type: boolean
+      sweep_stage:
+        description: 'Sweep: which stage to run'
+        required: false
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - matrix
+          - cleanup
+      sweep_folder:
+        description: 'Sweep: Drive folder to use (blank = the real watch folder)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'scan')
+      || github.event.schedule == '0 13 * * *'
+      || github.event.schedule == '0 17 * * *'
+      || github.event.schedule == '0 21 * * *'
+      || github.event.schedule == '0 1 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: manual-edit-queue
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      # NO ffmpeg AND NO WHISPER ON THIS JOB, and that is not an oversight.
+      # The scan has no renderer in its import graph, so it could not cut a
+      # video if it tried — and without the binaries installed it could not
+      # even if that changed. Two independent reasons the schedule cannot edit.
+      - name: Scan the folder and card what is new
+        id: run
+        working-directory: auto-poster
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          EDIT_QUEUE_FOLDER_ID: ${{ github.event.inputs.sweep_folder }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: |
+          if node src/edit-queue-scan.js; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Notify Peter on failure
+        if: failure()
+        working-directory: auto-poster
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: node scripts/notify-run-failure.mjs edit-queue-scan
+      - name: Commit the queue
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs EDITSCAN "${{ steps.run.outputs.success }}"
+
+  advance:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'advance')
+      || github.event.schedule == '0 */2 * * *'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: manual-edit-queue
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      # THE GATE, and it costs about a second. No token, no network, no Drive
+      # call — it reads the two committed files and says whether the dashboard
+      # has recorded anything since the last run.
+      - name: Is there a decision to act on?
+        id: check
+        working-directory: auto-poster
+        run: node scripts/edit-queue-check.mjs
+      - name: Install ffmpeg & whisper
+        if: steps.check.outputs.has_work == 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install openai-whisper --quiet
+      - name: Free disk headroom
+        if: steps.check.outputs.has_work == 'true'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+          df -h /
+      - name: Act on the decisions
+        id: run
+        if: steps.check.outputs.has_work == 'true'
+        working-directory: auto-poster
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          EDIT_QUEUE_FOLDER_ID: ${{ github.event.inputs.sweep_folder }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+          # DELIBERATELY NO METRICOOL CREDENTIALS. Nothing in this queue posts
+          # to a social account — approval moves files to the Trial tab, which
+          # Peter posts natively. Without a token the posting path has no
+          # credentials even if something reached it.
+        run: |
+          if node src/edit-queue-advance.js; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Notify Peter on failure
+        if: failure()
+        working-directory: auto-poster
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: node scripts/notify-run-failure.mjs edit-queue-advance
+      - name: Commit the queue
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs EDITADVANCE "${{ steps.run.outputs.success || 'false' }}"
+
+  # THE SWEEP. Drives the whole chain against real Drive, the real dashboard and
+  # real mail, using TEST- artifacts that every real surface filters out. Manual
+  # dispatch only — it uploads to Drive and raises cards, so it is never on a
+  # schedule and it declares the live acknowledgement the repo uses for jobs
+  # that touch production.
+  sweep:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'sweep'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: manual-edit-queue
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg, espeak & whisper
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg espeak
+          pip install openai-whisper --quiet
+      - name: Free disk headroom
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc || true
+          df -h /
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Run the sweep
+        working-directory: auto-poster
+        env:
+          # LIVE: uploads test videos to Drive, raises real cards and sends real
+          # mail. Every artifact carries the TEST- prefix, which keeps it off
+          # every real surface and out of every scheduled job.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
+          SWEEP_STAGE: ${{ github.event.inputs.sweep_stage }}
+          EDIT_QUEUE_FOLDER_ID: ${{ github.event.inputs.sweep_folder }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+        run: node scripts/edit-queue-sweep.mjs
+      - name: Upload the sweep report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edit-queue-sweep-${{ github.run_id }}
+          path: ${{ runner.temp }}/edit-queue-sweep/
+          if-no-files-found: warn
+          retention-days: 30
+      # The sweep writes NO state: it works on TEST- records the whole way
+      # through and removes them at the end. Nothing is committed, which is
+      # what "burn no state" means here.

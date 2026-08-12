@@ -332,6 +332,15 @@ export const MAIL_PREFIX = {
   CAROUSEL: "[CAROUSEL]",
   YT: "[YT PIPELINE]",
   /**
+   * The manual edit queue — a video Peter dropped in "Videos To Edit".
+   *
+   * Its own prefix rather than REELS, because REELS marks the daily delivery he
+   * skims and this mail is the opposite: it is either asking him to press
+   * something or telling him a render died. Filing it with the routine is how
+   * it would stop being read, which is the failure MAIL_PREFIX exists for.
+   */
+  EDIT: "[EDIT QUEUE]",
+  /**
    * Something broke and nobody is coming unless Peter does.
    *
    * Deliberately NOT one of the above: the reels and carousel prefixes mark mail
@@ -956,7 +965,7 @@ function stageOf(payload) {
   return typeof stage === "string" && stage ? stage : null;
 }
 
-export async function sendApprovalRequest({ requestId, kind, payload, emailSubject, emailBody, accessToken = null }) {
+export async function sendApprovalRequest({ requestId, kind, payload, emailSubject, emailBody, accessToken = null, mailPrefix = MAIL_PREFIX.YT }) {
   const dashboardUrl = process.env.DASHBOARD_URL;
   const dashboardSecret = process.env.DASHBOARD_WEBHOOK_SECRET;
 
@@ -984,12 +993,14 @@ export async function sendApprovalRequest({ requestId, kind, payload, emailSubje
 
   let ch2 = { ok: false, lastError: new Error("No Google token supplied") };
   if (accessToken) {
-    // Every caller of sendApprovalRequest is the long-form pipeline, so the
-    // prefix is fixed here rather than asked of each one.
+    // The prefix used to be fixed at MAIL_PREFIX.YT because every caller was
+    // the long-form pipeline. The reels edit queue is the second caller and
+    // files under its own prefix, so it is now an argument — defaulted to YT so
+    // no long-form call site changes.
     ch2 = await sendOwnerEmailViaGmail(accessToken, {
       subject: emailSubject,
       body: emailBody,
-      prefix: MAIL_PREFIX.YT,
+      prefix: mailPrefix,
     });
   }
 
