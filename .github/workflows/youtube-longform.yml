@@ -73,6 +73,22 @@ on:
         required: false
         default: ''
         type: string
+      piece_audio:
+        # A BISECT HANDLE, not a setting anybody should need.
+        #
+        # On-camera pieces carry PCM so their joins do not accumulate an AAC
+        # priming frame apiece (see PIECE_AUDIO in yt-oncamera-edit.js). If a
+        # render ever comes out the wrong length again, "aac" reverts that one
+        # change and keeps everything else, which answers in one run whether the
+        # container is implicated. Default follows the code.
+        description: 'On-camera piece audio codec — leave default unless bisecting a render-length defect'
+        required: false
+        default: 'default'
+        type: choice
+        options:
+          - default
+          - aac
+          - pcm
 
 permissions:
   contents: write
@@ -191,6 +207,9 @@ jobs:
           # city folders are unreachable from this pipeline by construction —
           # their clips carry burned-in price and rate copy.
           YT_LONGFORM_BROLL_FOLDER: 18wMxgDnPm1HS10k9DTIc-1EijZXhq8RD
+          # Empty unless a dispatch is bisecting, in which case yt-config's own
+          # default applies — an unset variable and "default" are the same build.
+          YT_PIECE_AUDIO: ${{ github.event.inputs.piece_audio == 'default' && '' || github.event.inputs.piece_audio }}
           # The stock layer. Without it searchPexels returns nothing, every
           # FOOTAGE intent falls to typography, and the build says so — a
           # degraded video, never a dead job.
@@ -234,6 +253,28 @@ jobs:
           path: ${{ runner.temp }}/yt-diagnostics/
           if-no-files-found: ignore
           retention-days: 30
+      # THE RENDER THAT FAILED ITS OWN CHECKS, KEPT.
+      #
+      # On 2026-08-12 the artifact QC gate correctly refused a 20.5-minute
+      # render of an 11.2-minute plan — and the file went with the runner, so
+      # the only way to look at what it had already measured was another
+      # fifty-five minute build. A gate that destroys its evidence converts a
+      # diagnosable defect into a guess.
+      #
+      # `if: always()` rather than `if: failure()` on purpose: the gate can fail
+      # the build in ways that do not mark THIS step's job as failed yet, and a
+      # 180 MB upload that is usually a no-op costs nothing (if-no-files-found:
+      # ignore). Peter can also watch a render the gate blocked — refusing to
+      # card it and hiding it are different things.
+      - name: Preserve a render that failed QC
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-render-${{ github.run_id }}
+          path: /tmp/yt-qc-failed/
+          if-no-files-found: ignore
+          retention-days: 14
+          compression-level: 0
       - name: Notify Peter on failure
         if: failure()
         working-directory: auto-poster

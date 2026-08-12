@@ -63,7 +63,7 @@ import { buildVisuals } from "./yt-visual-build.js";
 import { listLongformFootage } from "./yt-footage-source.js";
 import { creditsBlock } from "./yt-stock.js";
 import { selectPunches, captionTextFor } from "./yt-punch.js";
-import { runArtifactQc } from "./yt-artifact-qc.js";
+import { runArtifactQc, preserveFailedRender } from "./yt-artifact-qc.js";
 import { pickTrack, fetchMusicBed, musicReport, musicCreditsBlock, cacheKey as musicCacheKey, MUSIC_FOLDER } from "./yt-music.js";
 import { findInFolder, downloadFileById, uploadToFolder } from "./drive.js";
 import { getWordTimestamps } from "./burned-captions.js";
@@ -87,7 +87,7 @@ import {
   isUploaded,
   recentBrollHashes,
 } from "./yt-log.js";
-import { RESOLUTION, renderLayerSummary } from "./yt-config.js";
+import { RESOLUTION, renderLayerSummary, layerKnobs } from "./yt-config.js";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 
@@ -725,9 +725,31 @@ async function buildFromRecordings(approvals, record) {
     workDir,
   });
   if (!qc.ok) {
+    // KEEP THE EVIDENCE BEFORE THROWING. A fifty-five minute build that dies and
+    // leaves nothing to inspect turns a diagnosable defect into a guess, and it
+    // did exactly that on 2026-08-12. The workflow collects this directory on
+    // failure, so the render is downloadable from the run.
+    //
+    // It also means a render the gate refused to card is still watchable.
+    // Blocking the card and hiding the video are different things.
+    const kept = preserveFailedRender({
+      videoPath: rendered.outputPath,
+      qc,
+      plan: {
+        videoId: videoIdFor(record.requestId),
+        title: result.selectedTitle || null,
+        plannedSeconds: rendered.qcInputs?.plannedSeconds ?? null,
+        renderedSeconds: rendered.seconds,
+        segmentDurations: rendered.qcInputs?.segmentDurations ?? [],
+        layers: layerKnobs(),
+      },
+    });
     console.log(`::error::the render failed ${qc.failures.length} artifact check(s) — no card will be sent`);
     throw new Error(
-      `the render did not pass its own checks and will not be sent for review:\n${qc.summary}`
+      `the render did not pass its own checks and will not be sent for review:\n${qc.summary}\n` +
+        (kept.video
+          ? `The render is kept at ${kept.video} and is attached to this run as the "failed-render" artifact.`
+          : `The render could NOT be preserved: ${kept.errors.join("; ")}`)
     );
   }
 
