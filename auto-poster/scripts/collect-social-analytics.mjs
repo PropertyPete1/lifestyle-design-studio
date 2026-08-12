@@ -76,7 +76,7 @@ function summarise(doc) {
     }
     const latest = block.daily?.[0];
     lines.push(
-      `${platform}: ${block.posts_in_window} posts in window across ${block.accounts.length} account(s)` +
+      `${platform}: ${block.posts_recorded} post(s) on file across ${block.accounts.length} account(s)` +
       (latest ? `, latest day ${latest.date} — ${latest.posts} post(s)${latest.views !== undefined ? `, ${latest.views} views` : ""}` : "") +
       (block.partial ? " [PARTIAL]" : "")
     );

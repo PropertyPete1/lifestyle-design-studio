@@ -12,20 +12,23 @@ name: Social Analytics Probe
 # reference does not list youtube under post analytics, and the API is
 # plan-gated, so the answer is an empirical one.
 #
-# workflow_dispatch only becomes selectable once this file is on the default
-# branch, so while it lives on the feature branch a commit-message marker drives
-# it — the same arrangement as longform-probe.yml:
+# Two jobs, both read-only and both manual:
 #
-#   [probe-analytics]   run the capability probe
-#   [probe-collector]   run the REAL collector against the live API in DRY_RUN —
-#                       it writes to a scratch dir and never touches git, so it
-#                       proves the mapping end to end without committing
+#   probe               sweep the analytics endpoints and grade every field
+#   collector-dry-run   run the REAL collector against the live API with
+#                       DRY_RUN=true — it writes to a scratch dir and issues no
+#                       git command, so it proves the mapping end to end
+#                       without committing anything
+#
+# Nothing here is scheduled. It exists to re-answer "what does this plan expose"
+# when Metricool changes something or a metric starts looking wrong, and to
+# re-verify the collector against live accounts before trusting a change to it.
+#
+# (While this was being built the jobs were driven by [probe-analytics] and
+# [probe-collector] commit-message markers, because workflow_dispatch is only
+# selectable once the file is on the default branch. Once merged, dispatch is
+# the trigger and the markers are no longer needed.)
 on:
-  push:
-    branches: [feat/social-analytics-ingestion]
-    paths:
-      - 'auto-poster/scripts/probe-social-analytics.mjs'
-      - '.github/workflows/social-analytics-probe.yml'
   workflow_dispatch:
     inputs:
       days:
@@ -48,10 +51,6 @@ permissions:
 
 jobs:
   probe:
-    if: >-
-      github.event_name == 'workflow_dispatch'
-      || contains(github.event.head_commit.message, '[probe-analytics]')
-      || contains(github.event.head_commit.message, '[probe-followers]')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -63,7 +62,7 @@ jobs:
         working-directory: auto-poster
         env:
           PROBE_DAYS: ${{ github.event.inputs.days || '30' }}
-          PROBE_MODE: ${{ github.event.inputs.mode || (contains(github.event.head_commit.message, '[probe-followers]') && 'followers') || 'endpoints' }}
+          PROBE_MODE: ${{ github.event.inputs.mode || 'endpoints' }}
           METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
@@ -73,9 +72,6 @@ jobs:
   # The unit tests pin the mapping against captured rows; this pins it against
   # the account. DRY_RUN writes to a scratch directory and runs no git command.
   collector-dry-run:
-    if: >-
-      github.event_name == 'workflow_dispatch'
-      || contains(github.event.head_commit.message, '[probe-collector]')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

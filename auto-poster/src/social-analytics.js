@@ -100,6 +100,14 @@ export const WINDOW_DAYS = 30;
  */
 export const MAX_RECENT_POSTS = 750;
 
+/**
+ * Bound on the daily series. Days are cheap — one small object each — so this
+ * is generous on purpose: the series is the part worth keeping for a year,
+ * because it is the only record of what a day looked like once the individual
+ * posts behind it have aged out of MAX_RECENT_POSTS.
+ */
+export const MAX_DAILY_DAYS = 400;
+
 const BASE = "https://app.metricool.com/api";
 const SLUG_MAX_CHARS = 120;
 
@@ -595,44 +603,98 @@ export function mergeRecentPosts(existing, fresh, limit = MAX_RECENT_POSTS) {
 }
 
 /**
+ * Union of the daily series on disk and the one just computed.
+ *
+ * WHY THIS EXISTS AT ALL, when `daily` could simply be recomputed from
+ * recent_posts every run: because recent_posts is capped, and at this account's
+ * volume (~510 rows per 30 days) the cap is about six weeks of history. Once
+ * trimming starts, recomputing would find fewer posts on an old date than it
+ * found last week and quietly rewrite that day from 20 posts to 5 — a measured
+ * number silently shrinking, months after the fact, with nothing to explain it.
+ *
+ * So the rule is about WHERE the better information is:
+ *
+ *   inside the fetch window   every post is re-read from the API on every run,
+ *                             so the fresh row is complete and it wins
+ *   older than the window     the fresh row is only whatever survived trimming,
+ *                             so the stored row is the authority and is kept
+ *
+ * A fresh row for an old date is still taken when there is nothing stored for
+ * it — that is a first sighting, not a contradiction.
+ */
+export function mergeDailySeries(existing, fresh, { windowStart, limit = MAX_DAILY_DAYS } = {}) {
+  const byDate = new Map();
+
+  for (const row of Array.isArray(existing) ? existing : []) {
+    if (row && typeof row.date === "string" && Number.isFinite(row.posts)) byDate.set(row.date, row);
+  }
+  for (const row of Array.isArray(fresh) ? fresh : []) {
+    if (!row || typeof row.date !== "string") continue;
+    const insideWindow = !windowStart || row.date >= windowStart;
+    if (insideWindow || !byDate.has(row.date)) byDate.set(row.date, row);
+  }
+
+  return [...byDate.values()]
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+    .slice(0, limit);
+}
+
+/**
  * Build the document from a merged post set and this run's source records.
  *
  * A platform appears with a `daily` series ONLY when at least one source for it
- * answered. When every source for a platform failed, the platform carries
- * `unavailable` and the reasons instead — never an empty series, which would
- * read as "we looked and there was nothing".
+ * answered, or when a previous run left real history behind. When every source
+ * for a platform failed, the platform carries `unavailable` and the reasons —
+ * never an empty or zeroed series, which would read as "we looked and there was
+ * nothing". Previously measured days are kept in that case, because they are
+ * still facts; `unavailable` is what tells the reader they are not fresh.
  */
-export function buildAnalytics({ posts, sources, now = new Date(), windowDays = WINDOW_DAYS, unclassifiedYouTube = 0, brandsError = null }) {
+export function buildAnalytics({
+  posts, sources, now = new Date(), windowDays = WINDOW_DAYS,
+  unclassifiedYouTube = 0, brandsError = null, previous = null,
+}) {
   const platforms = {};
+
+  // Days at or after this were fully re-read from the API this run, so a fresh
+  // row for them is authoritative. See mergeDailySeries.
+  const windowStart = todayInChicago(new Date(now.getTime() - windowDays * 24 * 60 * 60 * 1000));
+  const priorDaily = (platform) => previous?.platforms?.[platform]?.daily;
 
   for (const platform of PLATFORMS) {
     const mine = sources.filter((s) => s.platform === platform);
     const ok = mine.filter((s) => s.ok);
     const failed = mine.filter((s) => !s.ok);
 
-    if (mine.length === 0) {
-      platforms[platform] = {
-        unavailable: brandsError
-          ? `brand list could not be read: ${brandsError}`
-          : "no connected account for this platform on any brand",
+    if (mine.length === 0 || ok.length === 0) {
+      const block = {
+        unavailable: mine.length === 0
+          ? (brandsError
+            ? `brand list could not be read: ${brandsError}`
+            : "no connected account for this platform on any brand")
+          : "every source for this platform failed",
       };
-      continue;
-    }
-
-    if (ok.length === 0) {
-      platforms[platform] = {
-        unavailable: "every source for this platform failed",
-        failures: failed.map((s) => ({ account: s.account, endpoint: s.endpoint, reason: s.reason })),
-      };
+      if (failed.length > 0) {
+        block.failures = failed.map((s) => ({ account: s.account, endpoint: s.endpoint, reason: s.reason }));
+      }
+      // History already measured stays. It was true when it was written and it
+      // is still true; only its freshness is in question, and `unavailable`
+      // says so.
+      const kept = priorDaily(platform);
+      if (Array.isArray(kept) && kept.length > 0) block.daily = kept;
+      platforms[platform] = block;
       continue;
     }
 
     const minePosts = posts.filter((p) => p.platform === platform);
-    const { daily, undated } = buildDailySeries(minePosts);
+    const { daily: freshDaily, undated } = buildDailySeries(minePosts);
+    const daily = mergeDailySeries(priorDaily(platform), freshDaily, { windowStart });
 
     const block = {
       accounts: [...new Set(ok.map((s) => s.account))].sort(),
-      posts_in_window: minePosts.length,
+      // Every post record on file for this platform — which grows past the
+      // 30-day API window as history accumulates, and is capped by
+      // MAX_RECENT_POSTS. Deliberately not called "in_window": it is not one.
+      posts_recorded: minePosts.length,
       daily,
     };
     if (undated > 0) block.undated_posts = undated;
@@ -706,7 +768,10 @@ export async function writeSocialAnalytics({
 
     const existing = readJsonOr(path, null);
     const merged = mergeRecentPosts(existing?.recent_posts, posts);
-    const doc = buildAnalytics({ posts: merged, sources, now, windowDays, unclassifiedYouTube, brandsError });
+    const doc = buildAnalytics({
+      posts: merged, sources, now, windowDays, unclassifiedYouTube, brandsError,
+      previous: existing,
+    });
 
     atomicWriteJson(path, doc);
 

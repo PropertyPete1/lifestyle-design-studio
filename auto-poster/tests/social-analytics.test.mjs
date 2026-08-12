@@ -29,8 +29,10 @@ import {
   normalizeYouTubeRow,
   buildDailySeries,
   mergeRecentPosts,
+  mergeDailySeries,
   buildAnalytics,
   keyOfPost,
+  MAX_DAILY_DAYS,
   writeSocialAnalytics,
   collectFromApi,
   ANALYTICS_FILENAME,
@@ -399,6 +401,64 @@ describe("mergeRecentPosts", () => {
   });
 });
 
+describe("mergeDailySeries — history must not be rewritten by trimming", () => {
+  const WINDOW_START = "2026-07-13";
+
+  test("inside the window, the fresh row wins — it was fully re-fetched", () => {
+    const merged = mergeDailySeries(
+      [{ date: "2026-08-11", posts: 18, views: 3000, views_from_posts: 18 }],
+      [{ date: "2026-08-11", posts: 20, views: 4300, views_from_posts: 20 }],
+      { windowStart: WINDOW_START }
+    );
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0].posts, 20, "metrics keep moving; the newer reading is the better one");
+    assert.equal(merged[0].views, 4300);
+  });
+
+  /**
+   * The bug this function exists to prevent.
+   *
+   * recent_posts is capped, so months later a recompute finds only a handful of
+   * the posts that were on an old day. Without this rule the stored 20 would be
+   * overwritten by that remnant and the day would appear to shrink.
+   */
+  test("outside the window, stored history beats a thinned recompute", () => {
+    const merged = mergeDailySeries(
+      [{ date: "2026-05-02", posts: 20, views: 5000, views_from_posts: 20 }],
+      [{ date: "2026-05-02", posts: 3, views: 400, views_from_posts: 3 }],
+      { windowStart: WINDOW_START }
+    );
+    assert.equal(merged[0].posts, 20, "a measured day must not silently shrink");
+    assert.equal(merged[0].views, 5000);
+  });
+
+  test("outside the window, a first sighting is still recorded", () => {
+    // Nothing stored for that date — this is new information, not a contradiction.
+    const merged = mergeDailySeries([], [{ date: "2026-05-02", posts: 3, views: 400, views_from_posts: 3 }], { windowStart: WINDOW_START });
+    assert.equal(merged.length, 1);
+    assert.equal(merged[0].posts, 3);
+  });
+
+  test("days neither side knows about are left alone; newest first", () => {
+    const merged = mergeDailySeries(
+      [{ date: "2026-01-01", posts: 1 }],
+      [{ date: "2026-08-11", posts: 2 }],
+      { windowStart: WINDOW_START }
+    );
+    assert.deepEqual(merged.map((d) => d.date), ["2026-08-11", "2026-01-01"]);
+  });
+
+  test("junk rows on disk are dropped", () => {
+    const merged = mergeDailySeries([null, { posts: 3 }, { date: "2026-08-01" }], [], { windowStart: WINDOW_START });
+    assert.equal(merged.length, 0);
+  });
+
+  test("capped", () => {
+    const many = Array.from({ length: MAX_DAILY_DAYS + 10 }, (_, i) => ({ date: `2025-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 28) + 1).padStart(2, "0")}`, posts: 1 }));
+    assert.ok(mergeDailySeries(many, [], { windowStart: WINDOW_START }).length <= MAX_DAILY_DAYS);
+  });
+});
+
 // ── Document assembly ───────────────────────────────────────────────────────
 
 describe("buildAnalytics — degradation is visible", () => {
@@ -413,6 +473,21 @@ describe("buildAnalytics — degradation is visible", () => {
     assert.equal(doc.platforms.tiktok.unavailable, "every source for this platform failed");
     assert.ok(!("daily" in doc.platforms.tiktok), "an empty series would read as 'we looked, there was nothing'");
     assert.match(doc.platforms.tiktok.failures[0].reason, /403/);
+  });
+
+  test("a failed platform keeps the history it already measured", () => {
+    // The days were real when they were written. Losing them because today's
+    // fetch failed would destroy measured facts; `unavailable` is what marks
+    // them stale.
+    const previous = { platforms: { tiktok: { daily: [{ date: "2026-08-10", posts: 4, views: 900, views_from_posts: 4 }] } } };
+    const doc = buildAnalytics({
+      posts: [],
+      sources: [{ platform: "tiktok", account: "texas", endpoint: "/v2/analytics/posts/tiktok", ok: false, reason: "HTTP 500" }],
+      now: NOW,
+      previous,
+    });
+    assert.equal(doc.platforms.tiktok.unavailable, "every source for this platform failed");
+    assert.deepEqual(doc.platforms.tiktok.daily, previous.platforms.tiktok.daily);
   });
 
   test("a platform nobody has connected is unavailable, not zero", () => {
@@ -431,7 +506,7 @@ describe("buildAnalytics — degradation is visible", () => {
       now: NOW,
     });
     assert.equal(doc.platforms.instagram.partial, true);
-    assert.equal(doc.platforms.instagram.posts_in_window, 1);
+    assert.equal(doc.platforms.instagram.posts_recorded, 1);
     assert.equal(doc.platforms.instagram.failures.length, 1);
   });
 
@@ -532,9 +607,9 @@ describe("writeSocialAnalytics", () => {
 
     const written = JSON.parse(readFileSync(join(repoRoot, "status", ANALYTICS_FILENAME), "utf-8"));
     assert.equal(written.recent_posts.length, 3);
-    assert.equal(written.platforms.instagram.posts_in_window, 1);
-    assert.equal(written.platforms.tiktok.posts_in_window, 1);
-    assert.equal(written.platforms.youtube_shorts.posts_in_window, 1);
+    assert.equal(written.platforms.instagram.posts_recorded, 1);
+    assert.equal(written.platforms.tiktok.posts_recorded, 1);
+    assert.equal(written.platforms.youtube_shorts.posts_recorded, 1);
     assert.equal(written.window_days, 30);
     assert.deepEqual(written.unavailable, UNAVAILABLE);
   });
