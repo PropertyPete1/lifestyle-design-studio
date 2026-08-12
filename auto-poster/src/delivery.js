@@ -615,6 +615,18 @@ export async function deliverToOwner(accessToken, videoPath, city, caption, opti
       driveFileId: upload.fileId,
       sourceViews: options.sourceViews || 0,
       isTest: Boolean(options.isTest),
+      // The A/B/C hook line, for variants that HAVE one.
+      //
+      // The trial pipeline's variants differ by `hookAngle` — a named strategy
+      // like "price_hook" — and that is all the tab needed to tell them apart.
+      // The manual edit queue's variants differ by an actual LINE OF TEXT
+      // written for that video, and "which line won" is the entire question its
+      // A/B exists to answer. Sending only the angle would put three cards on
+      // the tab that are indistinguishable to the person deciding between them.
+      //
+      // Optional and null for every existing caller, so nothing about the trial
+      // pipeline's payload changes.
+      hookLine: options.trialHookLine || null,
     });
 
     // Channel 2. The trial path used to have exactly one channel and no way to

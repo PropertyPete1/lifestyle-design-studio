@@ -448,7 +448,12 @@ async function runReviewDecision(queue, driveFileId, { accessToken }) {
     }
 
     for (const item of todo) {
-      const localPath = join(work, `${item.label}.mp4`);
+      // THE FILENAME CARRIES THE LABEL, because the Trial tab renders a file
+      // name and may not render a field it has never been sent. Between the
+      // name, the angle and the new hookLine field, "which of these three is
+      // B" is answerable from the card however much of the payload the
+      // dashboard understands.
+      const localPath = join(work, `${record.test ? "TEST-" : ""}${baseName(record.fileName)}-${item.label}.mp4`);
       writeFileSync(localPath, await downloadFileById(item.driveFileId));
 
       const caption = await generateCaption(QUEUE_CITY, null, { trialAngle: `edit_queue_${item.label}` });
@@ -458,6 +463,7 @@ async function runReviewDecision(queue, driveFileId, { accessToken }) {
         isTest: Boolean(record.test),
         trialLabel: `${record.fileName} ${item.label}`,
         trialAngle: `edit_queue_${item.label}`,
+        trialHookLine: item.hookLine || null,
         trialVariantNumber: record.revision,
         window: "manual",
         sourceVideoId: record.driveFileId,
