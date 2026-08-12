@@ -1,0 +1,57 @@
+name: Social Analytics Probe
+
+# Capability probe for issue #83's analytics collector.
+#
+# READ ONLY against Metricool — every call is a GET. It creates no post, moves
+# no media and publishes nothing, so unlike the long-form probes it carries no
+# I_UNDERSTAND_THIS_TOUCHES_LIVE gate.
+#
+# It answers one question the collector cannot be written without: which
+# analytics endpoints does THIS account's plan actually expose, and which of the
+# metric fields issue #83 names come back populated? Metricool's own command
+# reference does not list youtube under post analytics, and the API is
+# plan-gated, so the answer is an empirical one.
+#
+# workflow_dispatch only becomes selectable once this file is on the default
+# branch, so while it lives on the feature branch a commit-message marker drives
+# it — the same arrangement as longform-probe.yml:
+#
+#   [probe-analytics]   run the capability probe
+on:
+  push:
+    branches: [feat/social-analytics-ingestion]
+    paths:
+      - 'auto-poster/scripts/probe-social-analytics.mjs'
+      - '.github/workflows/social-analytics-probe.yml'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'How many days back to probe'
+        required: false
+        default: '30'
+        type: string
+
+# Reports; never commits.
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || contains(github.event.head_commit.message, '[probe-analytics]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Probe which analytics endpoints this account tier exposes
+        working-directory: auto-poster
+        env:
+          PROBE_DAYS: ${{ github.event.inputs.days || '30' }}
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+        run: node scripts/probe-social-analytics.mjs
