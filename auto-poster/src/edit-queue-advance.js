@@ -68,14 +68,17 @@ import {
   finishAttempt,
   loadQueue,
   markDelivered,
+  pendingDeliveries,
   reclaimStale,
   saveQueue,
   setStatus,
   startEdit,
   summarise,
+  tooShortReason,
   STATUS,
 } from "./edit-queue.js";
 import { coldOpenPoints, describeEdit, renderReelEdit } from "./reel-edit.js";
+import { mediaDuration } from "./yt-assemble.js";
 import { generateHookLines, planVariants, MIN_VARIANTS } from "./reel-hooks.js";
 import { renderVariant } from "./reel-variant.js";
 import {
@@ -264,6 +267,26 @@ async function editInto(queue, record, { accessToken, work, notes }) {
   const sourcePath = join(work, "source.mp4");
   writeFileSync(sourcePath, await downloadFileById(driveFileId));
 
+  // THE TOO-SHORT FLOOR, ENFORCED WHERE THE DURATION IS ACTUALLY KNOWN.
+  //
+  // The scan checks this too, from Drive's videoMediaMetadata — and that check
+  // is best-effort by nature, which the first live sweep demonstrated rather
+  // than argued. Drive populates a file's video metadata ASYNCHRONOUSLY after
+  // the upload finishes, so a scan that runs soon after Peter drops something
+  // gets `durationMillis: undefined`. `isLongEnough` deliberately reads a
+  // missing duration as "long enough" — refusing on absent metadata would drop
+  // perfectly good videos for a reason that has nothing to do with them — so a
+  // 1.5-second clip sailed through and was carded as editable.
+  //
+  // Here there is no ambiguity: the bytes are on disk and ffprobe answers
+  // exactly. So this is the authoritative floor and the scan's is an early-out.
+  const tooShort = tooShortReason(mediaDuration(sourcePath), { fileName: record.fileName });
+  if (tooShort) {
+    const err = new Error(tooShort);
+    err.stage = "precheck";
+    throw err;
+  }
+
   // ── 2. the cut ───────────────────────────────────────────────────────────
   const edit = renderReelEdit(sourcePath, work);
   console.log(`[EditQueueAdvance] ${describeEdit(edit)}`);
@@ -385,7 +408,16 @@ async function runReviewDecision(queue, driveFileId, { accessToken }) {
     // the shared `recordDecision`, which refuses to overwrite an existing
     // decision. So this can only ever set the answer to a card THIS run just
     // created, and can never answer a question Peter was actually asked.
-    saveApprovals(recordDecision(loadApprovals(), reopened, { decision: APPROVE, notes }));
+    //
+    // AND IT IS MARKED ACTED IN THE SAME BREATH, before the re-edit runs. The
+    // card is created, decided and consumed inside one run, so no later poll
+    // can find an approved-and-unacted card and start a SECOND re-edit off the
+    // one rejection. Without this the status guard is the only thing standing
+    // in the way, and it only holds while the re-edit gets far enough to change
+    // the status — a re-edit that dies before `startEdit` would leave a queued
+    // record with a live approval on it and edit again unprompted on the next
+    // poll, which is the one thing this feature must never do.
+    saveApprovals(markActed(recordDecision(loadApprovals(), reopened, { decision: APPROVE, notes }), reopened, { action: "rework" }));
     return await runEdit(queue, driveFileId, { accessToken, notes });
   }
 
@@ -403,8 +435,15 @@ async function runReviewDecision(queue, driveFileId, { accessToken }) {
       ...(record.variants || []),
     ];
 
-    for (const item of items) {
-      if (!item?.driveFileId) continue;
+    // WHAT STILL HAS TO GO OUT — see pendingDeliveries for why this is not
+    // simply `items`.
+    const todo = pendingDeliveries(record, items);
+    const sentNow = [...(record.deliveredLabels || [])];
+    for (const skipped of items.filter((i) => i?.driveFileId && !todo.includes(i))) {
+      console.log(`[EditQueueAdvance] ${skipped.label} already reached the Trial tab — not sending it twice`);
+    }
+
+    for (const item of todo) {
       const localPath = join(work, `${item.label}.mp4`);
       writeFileSync(localPath, await downloadFileById(item.driveFileId));
 
@@ -454,6 +493,14 @@ async function runReviewDecision(queue, driveFileId, { accessToken }) {
         });
       }
       console.log(`[EditQueueAdvance] ✓ ${item.label} on the Trial tab — ${delivery.driveLink}`);
+
+      // Recorded IMMEDIATELY after each item lands, and the queue is written
+      // out with it — not batched to the end. A crash between the third
+      // delivery and the end of the loop is exactly the case this exists for,
+      // and a marker that is only written on the happy path would not be there.
+      sentNow.push(item.label);
+      queue = setStatus(queue, driveFileId, STATUS.IN_REVIEW, { deliveredLabels: [...sentNow] });
+      saveQueue(queue);
     }
 
     if (!record.test) {

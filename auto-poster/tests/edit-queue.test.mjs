@@ -9,6 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -28,6 +29,7 @@ import {
   isTestFile,
   leaseExpired,
   loadQueue,
+  pendingDeliveries,
   looksLikeVideo,
   markDelivered,
   needsQueueCard,
@@ -37,6 +39,7 @@ import {
   setStatus,
   startEdit,
   summarise,
+  tooShortReason,
 } from "../src/edit-queue.js";
 import { TEST_REQUEST_PREFIX } from "../src/yt-approvals.js";
 import { TEST_PREFIX as DELIVERY_TEST_PREFIX } from "../src/delivery.js";
@@ -105,10 +108,40 @@ test("a delivered video is never put back on the dashboard by a later scan", () 
 });
 
 test("duration missing from Drive is not read as 'too short'", () => {
+  // Drive populates videoMediaMetadata ASYNCHRONOUSLY after an upload, so a
+  // scan running shortly after Peter drops a file legitimately sees nothing
+  // here. Reading that as "too short" would refuse good videos for a reason
+  // that has nothing to do with them; reading it as "long enough" lets a
+  // 1.5-second clip through to the advance job, which measures the real
+  // duration with ffprobe and fails it there. The first live sweep found this
+  // exact case — the clip was carded, and the floor that caught it was the
+  // second one.
   assert.equal(durationOf({ videoMediaMetadata: {} }), null);
+  assert.equal(durationOf({}), null);
+  assert.equal(durationOf({ videoMediaMetadata: { durationMillis: "0" } }), null);
   assert.equal(isLongEnough({ durationSeconds: null }), true);
   assert.equal(isLongEnough({ durationSeconds: MIN_EDITABLE_SECONDS - 0.1 }), false);
   assert.equal(isLongEnough({ durationSeconds: MIN_EDITABLE_SECONDS }), true);
+});
+
+test("both guards on the too-short floor give Peter the same sentence", () => {
+  // The scan reads Drive's metadata and the advance job reads ffprobe. They
+  // fire in different jobs and Peter has no idea there are two, so they must
+  // not explain themselves differently.
+  const short = tooShortReason(1.5, { fileName: "clip.mp4" });
+  assert.match(short, /clip\.mp4 is 1\.5s, under the 10s floor/);
+  assert.match(short, /re-encode that changes nothing/);
+  assert.equal(tooShortReason(MIN_EDITABLE_SECONDS, { fileName: "clip.mp4" }), null);
+  assert.equal(tooShortReason(41.2, { fileName: "clip.mp4" }), null);
+});
+
+test("an unknown duration is not 'too short' — it is unknown", () => {
+  // This is the case the first live sweep hit: Drive had not written the
+  // metadata yet. Returning a reason here would refuse good videos; returning
+  // null lets the advance job measure the real bytes and decide.
+  for (const value of [null, undefined, 0, -1, "", "not a number", NaN]) {
+    assert.equal(tooShortReason(value, { fileName: "clip.mp4" }), null, `${String(value)} was read as too short`);
+  }
 });
 
 // ─── the gate on editing ────────────────────────────────────────────────────
@@ -308,6 +341,32 @@ test("the selectors pick exactly the records their job should look at", () => {
   assert.deepEqual(needsQueueCard(q).map((v) => v.driveFileId), ["a"]);
   assert.deepEqual(awaitingStart(q).map((v) => v.driveFileId), ["b"]);
   assert.deepEqual(awaitingReview(q).map((v) => v.driveFileId), ["d"]);
+});
+
+test("a partial delivery is not re-sent when the decision is retried", () => {
+  const items = [
+    { label: "MASTER", driveFileId: "m" },
+    { label: "A", driveFileId: "a" },
+    { label: "B", driveFileId: "b" },
+    { label: "C", driveFileId: "c" },
+  ];
+
+  // Nothing sent yet: everything goes.
+  assert.deepEqual(pendingDeliveries({}, items).map((i) => i.label), ["MASTER", "A", "B", "C"]);
+
+  // Crashed after the second: only the rest goes, and the order is preserved.
+  assert.deepEqual(
+    pendingDeliveries({ deliveredLabels: ["MASTER", "A"] }, items).map((i) => i.label),
+    ["B", "C"]
+  );
+
+  // Everything already landed: a retry sends nothing at all.
+  assert.deepEqual(pendingDeliveries({ deliveredLabels: ["MASTER", "A", "B", "C"] }, items), []);
+});
+
+test("an output with no Drive id is never delivered — a link that 404s is worse than a gap", () => {
+  const items = [{ label: "MASTER", driveFileId: "m" }, { label: "A" }, null];
+  assert.deepEqual(pendingDeliveries({}, items).map((i) => i.label), ["MASTER"]);
 });
 
 test("markDelivered is terminal and stamps when", () => {

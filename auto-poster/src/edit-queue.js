@@ -280,6 +280,37 @@ export function isLongEnough(record, min = MIN_EDITABLE_SECONDS) {
   return Number(seconds) >= min;
 }
 
+/**
+ * Why a clip of this length is not worth editing, or null if it is.
+ *
+ * ONE SENTENCE, WRITTEN ONCE, used by both guards. The scan checks the floor
+ * against Drive's metadata and the advance job checks it against ffprobe, and
+ * they should not explain themselves differently — Peter reads whichever one
+ * fires and has no idea there are two.
+ *
+ * There ARE two because the first is unreliable through no fault of its own:
+ * Drive populates videoMediaMetadata asynchronously after an upload, so a scan
+ * that runs shortly after a drop sees no duration at all. The first live sweep
+ * found exactly that — a 1.5-second clip carded as editable, because
+ * `isLongEnough` reads a missing duration as "long enough" (refusing on absent
+ * metadata would drop good videos for a reason that has nothing to do with
+ * them). The advance job measures the real bytes, so its check is the one that
+ * cannot be evaded, and the scan's is an early-out that saves a pointless
+ * render when Drive happens to have caught up.
+ *
+ * A duration of 0 or an unreadable one returns null — "I do not know" is not
+ * "too short", and the render will fail with its own, better error.
+ */
+export function tooShortReason(seconds, { fileName = "this clip", min = MIN_EDITABLE_SECONDS } = {}) {
+  const n = Number(seconds);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  if (n >= min) return null;
+  return (
+    `${fileName} is ${n.toFixed(1)}s, under the ${min}s floor. There is not enough dead air to ` +
+    `remove or room for two framings, so an "edit" would be a re-encode that changes nothing.`
+  );
+}
+
 // ─── transitions ────────────────────────────────────────────────────────────
 
 /**
@@ -393,6 +424,29 @@ export function finishAttempt(queue, driveFileId, { ok, reason = null, stage = n
 /** Approved: the master and its variants are on the Trial tab. */
 export function markDelivered(queue, driveFileId, { now = new Date().toISOString() } = {}) {
   return setStatus(queue, driveFileId, STATUS.DELIVERED, { deliveredAt: now }, { now });
+}
+
+/**
+ * Which of a record's outputs still have to reach the Trial tab.
+ *
+ * Delivering is four uploads and four webhooks, not one atomic act, so a
+ * failure on the third leaves the first two already on the tab. The decision is
+ * consumed either way — so a retry needs Peter to press something — but when he
+ * does, re-sending the two that landed puts a SECOND copy of each on the tab.
+ * That is the duplicate-post failure this codebase has already paid for twice
+ * on other surfaces, and the fix is the same one: record what went out, and
+ * ask before sending rather than after.
+ *
+ * `deliveredLabels` is written after each individual item lands rather than
+ * batched at the end, because a crash mid-loop is the entire case this exists
+ * for and a marker only written on the happy path would not be there for it.
+ *
+ * Pure, and takes the items rather than reading them off the record, so the
+ * ordering (master first, then A/B/C) stays the caller's decision.
+ */
+export function pendingDeliveries(record, items) {
+  const sent = new Set(record?.deliveredLabels || []);
+  return (items || []).filter((item) => item && item.driveFileId && !sent.has(item.label));
 }
 
 // ─── selection ──────────────────────────────────────────────────────────────

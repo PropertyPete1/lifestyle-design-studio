@@ -29,16 +29,15 @@ import { remedyFor } from "./failure-remedy.js";
 import { appendRequest, loadApprovals, newRequestId, saveApprovals, KIND_REEL_EDIT, TEST_REQUEST_PREFIX } from "./yt-approvals.js";
 import {
   VIDEOS_TO_EDIT_FOLDER,
-  MIN_EDITABLE_SECONDS,
   STATUS,
   discover,
-  isLongEnough,
   loadQueue,
   needsQueueCard,
   reclaimStale,
   saveQueue,
   setStatus,
   summarise,
+  tooShortReason,
 } from "./edit-queue.js";
 import { failureCardPayload, failureEmail, queueCardEmail, queueCardPayload } from "./edit-queue-cards.js";
 
@@ -126,11 +125,14 @@ async function main() {
   for (const record of needsQueueCard(queue)) {
     // A video too short to edit gets a failed card immediately rather than a
     // Start button that would produce a re-encode and call it an edit.
-    if (!isLongEnough(record)) {
-      const reason =
-        `${record.fileName} is ${record.durationSeconds}s, under the ${MIN_EDITABLE_SECONDS}s floor. ` +
-        `There is not enough dead air to remove or room for two framings, so an "edit" would be a ` +
-        `re-encode that changes nothing.`;
+    //
+    // BEST-EFFORT HERE, and authoritative in the advance job. Drive populates
+    // videoMediaMetadata asynchronously, so a scan running soon after a drop
+    // sees no duration and this does not fire — the advance job then measures
+    // the real bytes with ffprobe and fails it there. Both quote the same
+    // sentence because Peter reads whichever one fires.
+    const reason = tooShortReason(record.durationSeconds, { fileName: record.fileName });
+    if (reason) {
       console.log(`::warning::[EditQueueScan] ${reason}`);
       queue = setStatus(queue, record.driveFileId, STATUS.FAILED, {
         failure: { stage: "precheck", reason, at: new Date().toISOString() },

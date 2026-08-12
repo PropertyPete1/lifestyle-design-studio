@@ -374,11 +374,36 @@ async function matrixPass(folderId) {
   check("matrix: the .txt was ignored, not queued", !queue.videos.some((v) => v.fileName.endsWith(".txt")), "no .txt record");
   check("matrix: ignoring it was reported", /ignoring "TEST-notes/.test(scan.out), "warning present");
 
-  const shortRecord = findVideo(queue, shortDrive.id);
+  // ── under ten seconds: caught at scan when Drive has reported a duration,
+  //    and at the edit itself when it has not ──────────────────────────────
+  //
+  // Drive populates videoMediaMetadata asynchronously after an upload, so a
+  // scan running seconds later legitimately sees no duration and cards the
+  // video. The floor that MATTERS is the one in the advance job, measured with
+  // ffprobe on the downloaded bytes. Both are asserted, and which one fires
+  // depends on how fast Drive was — so the check is on the OUTCOME rather than
+  // on which guard produced it.
+  let shortRecord = findVideo(loadQueue(), shortDrive.id);
+  if (shortRecord?.status === STATUS.QUEUED && shortRecord.queueRequestId) {
+    check(
+      "matrix: a short video with no Drive duration is carded honestly",
+      /unknown/.test(shortRecord.durationSeconds === null ? "unknown" : ""),
+      `Drive reported durationSeconds=${shortRecord.durationSeconds}`
+    );
+    dashboardDecides(shortRecord.queueRequestId, "approve");
+    const attempt = runEntry("src/edit-queue-advance.js", { EDIT_QUEUE_FOLDER_ID: folderId });
+    check("matrix: the run reports the short video as a failure", attempt.code === 1, `exit ${attempt.code}`);
+    shortRecord = findVideo(loadQueue(), shortDrive.id);
+  }
   check(
-    "matrix: the short video failed loudly instead of being carded",
-    shortRecord?.status === STATUS.FAILED && /under the 10s floor/.test(shortRecord?.failure?.reason || ""),
+    "matrix: the short video fails loudly rather than being edited",
+    shortRecord?.status === STATUS.FAILED && /floor/.test(shortRecord?.failure?.reason || ""),
     `status=${shortRecord?.status}: ${shortRecord?.failure?.reason || "(no reason)"}`
+  );
+  check(
+    "matrix: the short video produced no master",
+    !shortRecord?.master,
+    shortRecord?.master ? "a master was rendered for a clip under the floor" : "nothing rendered"
   );
 
   // ── the two speech-free videos: start both AT ONCE ───────────────────────
