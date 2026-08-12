@@ -105,6 +105,46 @@ const TRIAL_OPTS = {
   sourceViews: 4200,
 };
 
+describe("the A/B/C hook line reaches the Trial tab", () => {
+  /**
+   * The manual edit queue's variants differ by an actual LINE OF TEXT written
+   * for that video, and "which line won" is the entire question its A/B exists
+   * to answer. The trial pipeline's variants differ by a named strategy
+   * (`hookAngle`), which is all the tab needed until now — so a queue variant
+   * sent with only an angle would put three cards on the tab that are
+   * indistinguishable to the person deciding between them.
+   */
+  test("a hook line is passed through when one is given", async () => {
+    const h = await loadTrialDeliveryWithStubs({ dashboardOk: true, emailOk: true });
+    try {
+      await h.deliverToOwner("token", VIDEO, "austin", "caption", {
+        ...TRIAL_OPTS,
+        trialAngle: "edit_queue_B",
+        trialHookLine: "Taxes here catch most buyers out",
+      });
+      const payload = h.calls.trialPayloads.at(-1);
+      assert.equal(payload.hookLine, "Taxes here catch most buyers out");
+      assert.equal(payload.hookAngle, "edit_queue_B", "the label must survive too");
+    } finally {
+      h.restore();
+    }
+  });
+
+  test("the trial pipeline's own payload is unchanged — the field is null, not missing logic", async () => {
+    const h = await loadTrialDeliveryWithStubs({ dashboardOk: true, emailOk: true });
+    try {
+      await h.deliverToOwner("token", VIDEO, "austin", "caption", TRIAL_OPTS);
+      const payload = h.calls.trialPayloads.at(-1);
+      assert.equal(payload.hookLine, null, "an existing caller must not start sending undefined");
+      assert.equal(payload.hookAngle, "price_hook");
+      assert.equal(payload.variantNumber, 2);
+      assert.equal(payload.window, "am");
+    } finally {
+      h.restore();
+    }
+  });
+});
+
 describe("trial delivery reports the Trial tab honestly", () => {
   test("a dead trial webhook is reported, not swallowed behind delivered:true", async () => {
     const h = await loadTrialDeliveryWithStubs({ dashboardOk: false, emailOk: true });

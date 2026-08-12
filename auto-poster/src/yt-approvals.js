@@ -38,6 +38,8 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
 
+import { capRequests } from "./approvals-retention.js";
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 export const YT_APPROVALS_PATH = join(ROOT, "yt-approvals.json");
 
@@ -47,10 +49,37 @@ export const APPROVE = "approve";
 /** Request kinds the poster knows how to raise. */
 export const KIND_TOPIC_PICK = "topic_pick";
 export const KIND_VIDEO_REVIEW = "video_review";
-export const KINDS = [KIND_TOPIC_PICK, KIND_VIDEO_REVIEW];
 
-/** Keep the file bounded. Weekly cadence, two requests a week — years of history. */
-export const MAX_ENTRIES = 400;
+/**
+ * The reels manual edit queue's two card types.
+ *
+ * NEW KINDS RATHER THAN A REUSE OF THE TWO ABOVE, and the reason is a hard
+ * requirement rather than tidiness. `decisionState` reads the NEWEST request of
+ * a kind, and yt-pipeline-main.js calls it with no further filter — so an edit
+ * queue card raised as `video_review` would become the record the long-form
+ * pipeline believes is its own video review. Peter approving an edited reel
+ * would publish a YouTube video. A distinct kind makes that impossible by
+ * construction: `latestRequestOfKind` filters on equality, so these records are
+ * invisible to every long-form call site without one line of long-form code
+ * changing.
+ *
+ * They ARE in `KINDS`, because `appendRequest` validates against it and would
+ * otherwise throw on every card this feature raises. Being an accepted kind and
+ * being visible to a long-form lookup are different things: the first is this
+ * list, the second is an equality filter on `kind`.
+ */
+export const KIND_REEL_EDIT = "reel_edit";
+export const KIND_REEL_REVIEW = "reel_review";
+
+/** Every kind `appendRequest` will accept. */
+export const KINDS = [KIND_TOPIC_PICK, KIND_VIDEO_REVIEW, KIND_REEL_EDIT, KIND_REEL_REVIEW];
+
+// The retention rule lives in its own dependency-free module so the pure merge
+// strategies can import it too — see the header of approvals-retention.js.
+// Imported at the top of the file AND re-exported here: `export ... from`
+// alone would not create a local binding, and `saveApprovals` below calls
+// capRequests directly.
+export { KIND_FAMILY, MAX_ENTRIES, MAX_REEL_ENTRIES, FAMILY_LIMITS, capRequests } from "./approvals-retention.js";
 
 // ─── load / save ────────────────────────────────────────────────────────────
 
@@ -111,9 +140,7 @@ export function loadApprovals(path = YT_APPROVALS_PATH) {
 }
 
 export function saveApprovals(log, path = YT_APPROVALS_PATH) {
-  const requests = [...(log?.requests || [])]
-    .sort((a, b) => String(a.requestedAt || "").localeCompare(String(b.requestedAt || "")))
-    .slice(-MAX_ENTRIES);
+  const requests = capRequests(log?.requests);
   writeFileSync(path, JSON.stringify({ ...log, requests }, null, 2) + "\n");
 }
 

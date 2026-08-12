@@ -64,8 +64,16 @@ describe("MAIL_PREFIX — a scannable inbox", () => {
   test("each class has its own prefix", () => {
     assert.deepEqual(
       Object.values(MAIL_PREFIX).sort(),
-      ["[CAROUSEL]", "[DAILY ALERT]", "[REELS]", "[YT PIPELINE]"]
+      ["[CAROUSEL]", "[DAILY ALERT]", "[EDIT QUEUE]", "[REELS]", "[YT PIPELINE]"]
     );
+  });
+
+  test("every prefix is unique — a shared one is an unfilterable class", () => {
+    // The exhaustive list above catches an addition; this catches a COLLISION,
+    // which is the failure that actually costs something. Two classes sharing a
+    // prefix cannot be filtered apart, which is the whole reason prefixes exist.
+    const all = Object.values(MAIL_PREFIX);
+    assert.equal(new Set(all).size, all.length);
   });
 
   /**

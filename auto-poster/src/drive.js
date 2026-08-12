@@ -205,4 +205,154 @@ export async function uploadToFolder(folderId, name, buffer, mimeType = "applica
   return res.json();
 }
 
+// ─── arbitrary folders ──────────────────────────────────────────────────────
+//
+// Everything above is scoped to the three city folders and the caches. The
+// manual edit queue watches a folder Peter names, and writes its output to a
+// folder it creates — neither of which is a city — so it needs the generic
+// forms. Added here rather than in the queue's own module because "how this
+// system talks to Drive" has one home, and a second uploader would be a second
+// place for the multipart boundary and the error handling to be got wrong.
+
+/**
+ * List a folder's contents.
+ *
+ * `videoOnly` filters on mimeType IN THE QUERY, which is what the city lister
+ * does — but the queue calls this with it OFF on purpose. A phone or a desktop
+ * sync client routinely uploads .mov as application/octet-stream, and a
+ * server-side mimeType filter would make those files invisible: not skipped
+ * with a reason, invisible. The queue would report an empty folder over a
+ * folder with three videos in it, which is the worst answer available. So the
+ * listing is unfiltered and `looksLikeVideo` decides locally, where a rejection
+ * can be reported.
+ */
+export async function listFolderFiles(folderId, { videoOnly = false, accessToken = null } = {}) {
+  const token = accessToken || (await getAccessToken());
+  const files = [];
+  let pageToken = undefined;
+
+  do {
+    const params = new URLSearchParams({
+      q: `'${folderId}' in parents and trashed = false` + (videoOnly ? " and mimeType contains 'video/'" : ""),
+      fields: "nextPageToken,files(id,name,mimeType,size,createdTime,modifiedTime,videoMediaMetadata)",
+      pageSize: "100",
+      orderBy: "createdTime",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.text().then((t) => t.slice(0, 200));
+      throw new Error(`Drive list failed for folder ${folderId} (${res.status}): ${err}`);
+    }
+    const data = await res.json();
+    if (data.files) files.push(...data.files);
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  return files;
+}
+
+/**
+ * Find a subfolder by name, creating it if it is not there. Returns the id.
+ *
+ * Searched before created, every time, because this runs on a schedule: a
+ * create-first version would leave Drive with fourteen folders of the same name
+ * and the links in old cards pointing at whichever one that run happened to
+ * make.
+ */
+export async function ensureFolder(name, parentId, { accessToken = null } = {}) {
+  const token = accessToken || (await getAccessToken());
+  const safe = String(name).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  const params = new URLSearchParams({
+    q: `'${parentId}' in parents and name = '${safe}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: "files(id,name)",
+    pageSize: "1",
+  });
+  const found = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (found.ok) {
+    const data = await found.json();
+    if (data.files?.[0]?.id) return data.files[0].id;
+  }
+
+  const res = await fetch("https://www.googleapis.com/drive/v3/files?fields=id,name", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ name, parents: [parentId], mimeType: "application/vnd.google-apps.folder" }),
+  });
+  if (!res.ok) {
+    const err = await res.text().then((t) => t.slice(0, 200));
+    throw new Error(`Drive folder create failed for "${name}" (${res.status}): ${err}`);
+  }
+  return (await res.json()).id;
+}
+
+/**
+ * Upload a file and return a link that actually opens.
+ *
+ * TWO THINGS BEYOND uploadToFolder, and both are the difference between a link
+ * in an email and a link in an email that works:
+ *
+ *   - `webViewLink` is REQUESTED. Drive's create response returns id/name/kind
+ *     by default, so a caller that built its own /file/d/<id>/view URL would be
+ *     guessing at a format Drive owns.
+ *   - LINK-VIEW ACCESS IS GRANTED, and the grant is CHECKED. Peter opens these
+ *     from his phone, often signed into a different Google account than the one
+ *     the bot uploads with, and an ungranted link is a permission wall. The
+ *     result is returned rather than logged: a review card whose links need a
+ *     login is a review card that cannot be actioned, and the caller needs to
+ *     be able to say so out loud rather than discover it from Peter.
+ */
+export async function uploadAndShare(folderId, name, buffer, mimeType = "video/mp4", { accessToken = null } = {}) {
+  const token = accessToken || (await getAccessToken());
+  const boundary = "-----ldr-drive-boundary-9f3a2c";
+  const meta = JSON.stringify({ name, parents: [folderId] });
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n`),
+    Buffer.from(`--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`),
+    buffer,
+    Buffer.from(`\r\n--${boundary}--`),
+  ]);
+
+  const res = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink",
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": `multipart/related; boundary=${boundary}` },
+      body,
+    }
+  );
+  if (!res.ok) {
+    const err = await res.text().then((t) => t.slice(0, 200));
+    throw new Error(`Drive upload failed for "${name}" (${res.status}): ${err}`);
+  }
+  const file = await res.json();
+
+  let shared = true;
+  let shareError = null;
+  const perm = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}/permissions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ role: "reader", type: "anyone" }),
+  });
+  if (!perm.ok) {
+    shared = false;
+    shareError = `${perm.status} ${await perm.text().then((t) => t.slice(0, 160)).catch(() => "")}`;
+  }
+
+  return {
+    id: file.id,
+    name: file.name,
+    // Drive returns webViewLink when asked; the fallback is the documented URL
+    // shape and exists so a link is never literally undefined in an email.
+    link: file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`,
+    shared,
+    shareError,
+  };
+}
+
 export { CITY_FOLDER_IDS, getAccessToken };

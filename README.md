@@ -4,10 +4,10 @@ Automated social content for Lifestyle Design Realty. Everything runs on GitHub
 Actions cron; there is no server. State lives in JSON files committed back to this
 repo by the jobs themselves.
 
-Three content pipelines run on their own, plus one that only ever prepares work for
-a human. Nothing in this repo publishes to a social account without either a
-scheduled job doing it deliberately or Peter approving it first — the YouTube
-pipeline in particular **never** publishes.
+Three content pipelines run on their own; two others only ever prepare work for a
+human. Nothing in this repo publishes to a social account without either a scheduled
+job doing it deliberately or Peter approving it first — the YouTube pipeline and the
+manual edit queue in particular **never** publish.
 
 ## The pipelines
 
@@ -17,6 +17,7 @@ pipeline in particular **never** publishes.
 | **Daily carousel** | `auto-poster/src/carousel-main.js` | `post.yml` | 14:00 / 9:00 AM |
 | **Weekly YouTube** | `auto-poster/src/yt-brief-main.js`, `yt-pipeline-main.js` | `youtube-longform.yml` | Brief Mon 14:00 (+`:30` backup); pipeline polls 15:00 and 21:00 daily |
 | **Trial variant** | `auto-poster/src/trial-variant-main.js` | `post.yml` | 13:15 / 8:15 AM and 23:45 / 6:45 PM |
+| **Manual edit queue** | `auto-poster/src/edit-queue-scan.js`, `edit-queue-advance.js` | `manual-edit-queue.yml` | Scan 13:00/17:00/21:00/01:00; advance polls every 2h |
 
 Every slot has a `:30` backup cron. A slot-aware idempotency guard makes a double
 fire safe.
@@ -65,6 +66,21 @@ polling job runs twice a day and most runs correctly do nothing.
 Generates one experimental variant of an existing video, twice a day, and delivers
 it to Drive + the dashboard + email. **Posts to no social account.**
 
+### Manual edit queue
+
+Peter drops raw vertical videos into the Drive folder **Videos To Edit** whenever he
+wants. A scan lists the folder four times a day and raises a **Start Edit** card for
+anything new. **Nothing is edited until he presses it** — and the scan job physically
+cannot edit: it imports no renderer, and its workflow job installs neither ffmpeg nor
+Whisper. A test walks its import graph and fails if that ever changes.
+
+When he does press Start, the advance job runs the retention edit (the long-form one,
+not a copy: dead air over 400ms out with 150ms kept, framing change every ~2.5s, 15ms
+declick at every join), writes 2-3 hook variants from the video's own transcript, puts
+everything in Drive, and sends a review card plus an email with every link. Approve
+moves the master and its variants to the Trial tab with captions; reject with a note
+re-edits using the note. **Posts to no social account.**
+
 ## What requires a human
 
 | Moment | Who | Why |
@@ -74,6 +90,8 @@ it to Drive + the dashboard + email. **Posts to no social account.**
 | YouTube release to public | Peter | The pipeline uploads private and stops; publishing is manual in Studio |
 | Main Instagram carousel | Peter | Delivered to him, never auto-published |
 | Trial variants | Peter | Delivered for review, never posted |
+| Starting any manual-queue edit | Peter | The scheduled scan can only card a video; only a card action edits it |
+| Manual-queue release to the Trial tab | Peter | The review card gates it; nothing reaches the tab unapproved |
 | Rotating `GOOGLE_REFRESH_TOKEN` | Peter | `scripts/get-refresh-token.js`, run locally |
 
 ## Where state lives
@@ -87,18 +105,30 @@ Merge rules are in `merge-strategies.mjs` and unit-tested.
 | `posted-log.json` | Every post: city, date, video, caption, brands, verification | 365-day window |
 | `video-matches.json` | Drive-to-Instagram hash match cache | **uncapped** — ~160KB, watch it |
 | `carousel-log.json` | Carousel decks, scores, distribution results | last 120 |
-| `yt-approvals.json` | YouTube approval requests and Peter's decisions | last 400 |
+| `yt-approvals.json` | Approval requests and Peter's decisions, **both pipelines** | last 400 long-form + last 200 reels, capped per pipeline |
 | `youtube-log.json` | Rendered / uploaded / reviewed long-form videos | last 200 |
 | `trial-variants.json` | Trial variant history | last 100 |
 | `linkedin-history.json` | Recent LinkedIn posts, for anti-repetition | last 7 |
 | `performance-weights.json` | Hook-style weights from weekly analytics | bounded by style count |
 | `qc-blocklist.json` | Drive IDs blocked by quality check | union, never released |
 | `skip-list.json` | Drive IDs the owner skipped from the dashboard | union, never released |
+| `edit-queue.json` | Manual edit queue: what is in "Videos To Edit" and how far each video has got | last 500 |
 
 `yt-approvals.json` and `youtube-log.json` have **two** writers — this repo's jobs and
 the deployed dashboard — so their merges reconcile field-group by field-group. Read
 the comments in `merge-strategies.mjs` before touching either: the rules there are
 what stop a decision being erased or a video being published twice.
+
+`yt-approvals.json` also has **two pipelines** writing to it since the manual edit
+queue landed, which is why its cap is per pipeline rather than one global 400: the
+reels queue raises at least two cards per video and Peter drops videos whenever he
+likes, so a single cap would have let a busy fortnight of reels silently evict months
+of long-form approval history. See `src/approvals-retention.js`.
+
+`edit-queue.json` has one writer but two runners (the scan and the advance job), and
+its status is **not** monotonic — a rejection moves `in_review` back to `queued` — so
+its merge resolves on `statusAt` rather than on progress, with `delivered` never
+downgraded.
 
 Config, not state: `carousel-brand.json` (palette), `communities.json` (community
 knowledge base).
@@ -109,6 +139,7 @@ knowledge base).
 | --- | --- | --- | --- |
 | `post.yml` | 13 crons + manual | `contents: write` | Reels, carousel, trial variant. **The live posting path.** |
 | `youtube-longform.yml` | 4 crons + manual | `contents: write` (dry-run job: `read`) | Weekly brief and pipeline poll |
+| `manual-edit-queue.yml` | 5 crons + manual | `contents: write` | Manual edit queue: folder scan (cannot edit) and decision poll (only edits on a card action) |
 | `test.yml` | push to main, all PRs | `contents: read` | The test suite |
 | `carousel-review.yml` | push to `fix/**`, `feat/**` | `contents: read` | Re-scores past decks, generates samples |
 | `verify-dashboard.yml` | push to `fix/**`, `feat/**` | `contents: read` | Replays the carousel delivery webhook |
