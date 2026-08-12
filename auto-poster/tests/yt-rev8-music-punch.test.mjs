@@ -185,6 +185,84 @@ describe("2. micro-punches say what the captions say", () => {
     }
   });
 
+  // ─── the 2026-08-11 card 9 failure ────────────────────────────────────────
+  //
+  // Two 30-plus-minute builds died at the pipeline's verbatim guard on
+  // `micro-punch "highway ten" does not appear verbatim in take s4t5's
+  // captions`. Whisper had transcribed the take as "…along highway, ten minutes
+  // from the loop": "highway" + "ten" is exactly the shape of a counted noun,
+  // and the counted-noun branch joined the two PUNCTUATION-STRIPPED tokens with
+  // a space, producing a string the captions never contain.
+  //
+  // The module claimed verbatim-by-construction from the day it was written.
+  // One branch did not honour it and the fixtures had no punctuation mid-phrase,
+  // so nothing caught it until a real transcript did.
+
+  test("a comma between the noun and the number is not a counted noun", () => {
+    const s = seg("s4t5", "it runs right along highway, ten minutes from the loop", 40);
+    const c = punchCandidatesFor(s);
+    assert.deepEqual(c, [], `nothing here is an emphasis beat: ${JSON.stringify(c)}`);
+  });
+
+  test("a sentence boundary between them is not a counted noun either", () => {
+    const s = seg("s4t5", "it runs right along highway. Ten minutes from the loop", 40);
+    assert.deepEqual(punchCandidatesFor(s), []);
+  });
+
+  test("the real counted nouns still punch — the boundary rule is not a blanket ban", () => {
+    // The fix must not buy verbatim-ness by rejecting the feature.
+    assert.ok(punchCandidatesFor(seg("t", "you are on highway ten minutes from the loop", 20))
+      .some((c) => c.text === "highway ten"));
+    assert.ok(punchCandidatesFor(seg("t", "the credit survives to month nine of the build", 20))
+      .some((c) => c.text === "month nine"));
+  });
+
+  test("NO candidate is ever non-verbatim, whatever the punctuation", () => {
+    // The structural claim, checked as a property rather than on one example.
+    // Every one of these is a shape a transcript really can produce.
+    const transcripts = [
+      "it runs right along highway, ten minutes from the loop",
+      "it runs right along highway. Ten minutes from the loop",
+      "you put down $0 at closing, and 100% of it survives to month nine.",
+      "they call it the \"month\" nine problem, and it is real",
+      "just past Loop 1604 the lots get bigger.",
+      "hold\n\nthe   line at   100%   even  then",
+      "the fee is 100%. Nine times out of ten nobody reads it",
+      "(month nine) is when the credit lands",
+      "grade 5, year two, and month nine all matter here",
+      "$450,000. That is the number nobody says out loud.",
+      "it is ten; the second one is twelve",
+      "day one — month nine — year two",
+    ];
+    for (const text of transcripts) {
+      const s = seg("t", text, 40);
+      const caption = captionTextFor(s);
+      for (const c of punchCandidatesFor(s)) {
+        assert.ok(
+          caption.includes(c.text),
+          `"${c.text}" is not in the captions "${caption}"`
+        );
+      }
+    }
+  });
+
+  test("selectPunches inherits it — nothing non-verbatim survives to the plan", () => {
+    const plan = { segments: [
+      seg("t1", "it runs right along highway, ten minutes from the loop and it is slow", 40),
+      seg("t2", "you put down $0 at closing, and 100% of that credit survives to month nine.", 60),
+      seg("t3", "the fee is 100%. Nine times out of ten nobody reads it at all", 40),
+    ] };
+    const { punches } = selectPunches(plan, { max: 6, minGap: 5, protectedSeconds: 15 });
+    for (const p of punches) {
+      const take = plan.segments.find((s) => s.takeId === p.takeId);
+      assert.ok(
+        captionTextFor(take).includes(p.text),
+        `"${p.text}" is not verbatim in ${p.takeId}: "${captionTextFor(take)}"`
+      );
+    }
+    assert.ok(!punches.some((p) => p.text === "highway ten"), "the s4t5 punch must not come back");
+  });
+
   test("a punch is on screen while its own words are in the captions", () => {
     const plan = { segments: [seg("t1", "one two three four five six seven eight $0 ten eleven twelve", 12)] };
     const { punches } = selectPunches(plan, { minGap: 1, protectedSeconds: 0 });

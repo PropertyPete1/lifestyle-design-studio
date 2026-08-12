@@ -646,7 +646,14 @@ async function buildFromRecordings(approvals, record) {
   );
   const mismatched = punchPlan.punches.filter((p) => !(captionText.get(p.takeId) || "").includes(p.text));
   for (const p of mismatched) {
+    // PRINT THE CAPTION TEXT, NOT JUST THE PUNCH. This guard fired twice on
+    // 2026-08-11 saying only that "highway ten" was not verbatim in s4t5, and
+    // the one fact needed to fix it — that the captions read "highway, ten" —
+    // was not on screen. The captions are Whisper's output, so they exist
+    // nowhere but this run: a failure that does not print them costs another
+    // 30-minute build just to look.
     console.log(`::error::micro-punch "${p.text}" does not appear verbatim in take ${p.takeId}'s captions`);
+    console.log(`[YTPipeline]   take ${p.takeId} captions: ${JSON.stringify(captionText.get(p.takeId) || "(no caption text for this take)")}`);
   }
   if (mismatched.length > 0) {
     throw new Error(`${mismatched.length} micro-punch(es) would put words on screen the captions do not say`);

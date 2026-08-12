@@ -12,13 +12,21 @@
  *
  * TWO INVARIANTS, BOTH STRUCTURAL RATHER THAN CAREFUL
  *
- * 1. A punch's text is BUILT FROM THE CAPTION'S OWN TOKENS. Not from the script
- *    re-read, not from a model asked for a good word, not from a synonym. The
- *    candidate scanner walks `seg.text.split(/\s+/)` — the identical token array
- *    buildCaptionChunks walks — and a punch is a slice of it joined the same
- *    way. So "appears verbatim in the captions" is a property of how the string
- *    was made, and the test that asserts it is checking the construction rather
- *    than hoping.
+ * 1. A punch's text is BUILT FROM THE CAPTION'S OWN TOKENS, and every candidate
+ *    is CHECKED AGAINST THE RENDERED CAPTION STRING BEFORE IT LEAVES THE
+ *    SCANNER. Not from the script re-read, not from a model asked for a good
+ *    word, not from a synonym. The scanner walks captionTokensFor(seg) — the
+ *    same array captionTextFor joins and buildCaptionChunks walks — and a punch
+ *    is a slice of it.
+ *
+ *    The check at the end of punchCandidatesFor is the part that makes this
+ *    true rather than intended. This module claimed the property from the day
+ *    it was written and did not hold it: the counted-noun branch joined two
+ *    punctuation-stripped tokens with a space, so a take captioned "highway,
+ *    ten minutes" yielded the punch "highway ten" — a string the captions never
+ *    contain. It survived because the fixtures happened to have no punctuation
+ *    mid-phrase, and it cost two 30-plus-minute builds at the pipeline's guard.
+ *    A property that matters this much is filtered on, not commented about.
  *
  * 2. A punch is ON SCREEN WHILE ITS OWN WORDS ARE. Its time is not a guess and
  *    not a Whisper match — it is the start of the caption chunk that contains
@@ -87,6 +95,17 @@ function bare(token) {
 }
 
 /**
+ * A clause or sentence boundary hanging off the end of a token.
+ *
+ * Two tokens either side of one are not a phrase. Whisper transcribed a take as
+ * "…runs along highway, ten minutes from the loop", and "highway" + "ten" has
+ * the exact shape of a counted noun while being a road name at the end of one
+ * clause and a duration at the start of the next. Reading across the comma
+ * built the punch "highway ten", which is not a thing the captions ever say.
+ */
+const TRAILING_BOUNDARY = /[.,;:!?…]["'’”)]*$/;
+
+/**
  * An extreme figure hits harder than an ordinary one.
  *
  * Zero and one hundred percent are the values a script builds toward — "you pay
@@ -111,7 +130,7 @@ function numericValue(token) {
  * are video-wide decisions and cannot be made one segment at a time.
  */
 export function punchCandidatesFor(seg) {
-  const tokens = String(seg?.text || "").split(/\s+/).filter(Boolean);
+  const tokens = captionTokensFor(seg);
   const out = [];
 
   tokens.forEach((raw, i) => {
@@ -138,6 +157,12 @@ export function punchCandidatesFor(seg) {
     if (
       next &&
       /^[a-z]{3,10}$/.test(t) &&
+      // NOT ACROSS A CLAUSE BOUNDARY. The two tokens have to be one phrase in
+      // the captions, and a comma or a full stop on the lead says they are not.
+      // This is what shipped "highway ten" over a take whose captions read
+      // "highway, ten" — a punch the guard then had to catch at the very end of
+      // a 33-minute build. See TRAILING_BOUNDARY.
+      !TRAILING_BOUNDARY.test(String(tokens[i] || "")) &&
       // THE LEAD MUST CARRY MEANING, and revision 8 shipped six punches that
       // proved it does not follow from being lower-case. "the three", "other
       // two", "and eleven", "mostly one" — and "against 1604", which put a road
@@ -167,7 +192,22 @@ export function punchCandidatesFor(seg) {
     }
   });
 
-  return out;
+  // THE INVARIANT, ENFORCED HERE RATHER THAN ASSUMED.
+  //
+  // Every branch above builds `text` out of this segment's own caption tokens,
+  // which is what is supposed to make a punch verbatim by construction. It was
+  // supposed to before, too — and revision 8's counted-noun branch joined two
+  // punctuation-stripped tokens with a space, so "highway," + "ten" became
+  // "highway ten" and the captions said "highway, ten". The reasoning was
+  // right and one branch quietly did not follow it.
+  //
+  // So the property is now checked where the strings are made, against the
+  // exact string captionTextFor renders, and a candidate that fails is dropped
+  // rather than carried to the end of a long build for the pipeline's guard to
+  // reject. Any future branch gets the same treatment for free: to ship a punch
+  // the captions do not contain, you would have to delete this filter.
+  const captionText = captionTextFor(seg);
+  return out.filter((c) => captionText.includes(c.text));
 }
 
 /**
@@ -180,7 +220,19 @@ export function punchCandidatesFor(seg) {
  * rendered, and it is what the verbatim check must run against.
  */
 export function captionTextFor(seg) {
-  return String(seg?.text || "").split(/\s+/).filter(Boolean).join(" ");
+  return captionTokensFor(seg).join(" ");
+}
+
+/**
+ * The caption's own token array for a segment.
+ *
+ * ONE definition, and the candidate scanner and captionTextFor both go through
+ * it. That is the whole mechanism behind "a punch is a slice of the captions":
+ * the scanner cannot walk a different array from the one the rendered string is
+ * joined out of, because there is only one array.
+ */
+export function captionTokensFor(seg) {
+  return String(seg?.text || "").split(/\s+/).filter(Boolean);
 }
 
 /**
