@@ -1311,6 +1311,198 @@
         "anyFailed": true,
         "pendingRecheck": true
       }
+    },
+    {
+      "date": "2026-08-12",
+      "timestamp": "2026-08-12T14:52:38.103Z",
+      "pillar": "motivation_business",
+      "topic": "The nine boring years: holding one rental beat trading four",
+      "hook": "The people who built real money in Texas real estate spent nine years doing nothing.",
+      "closeType": "share",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "The nine boring years: holding one rental beat trading four",
+        "hook": "The people who built real money in Texas real estate spent nine years doing nothing.",
+        "map": [
+          "Nine years, one house",
+          "Every year had an exit",
+          "The year it cost money",
+          "The friends who traded",
+          "What actually compounds",
+          "How she sat still"
+        ],
+        "points": [
+          {
+            "title": "Nine Years, One House",
+            "body": [
+              "A client bought one rental in 2013 and never bought another.",
+              "Nine years later she still owned it."
+            ],
+            "loop": "Sitting still costs something."
+          },
+          {
+            "title": "Every Year Had An Exit",
+            "body": [
+              "2015 was a job offer in another state. 2018 was a headline saying the top was in.",
+              "2020 was a neighbor offering cash on the spot."
+            ],
+            "loop": "One of those almost worked."
+          },
+          {
+            "title": "The Year It Cost Money",
+            "body": [
+              "Roof and AC went out the same summer.",
+              "She wrote a check that wiped out two years of profit. She kept the house anyway."
+            ],
+            "loop": "That check bought her something."
+          },
+          {
+            "title": "The Friends Who Traded",
+            "body": [
+              "Two people I know bought and sold four times in that same stretch.",
+              "Every sale meant fees, taxes, and starting a new loan over."
+            ],
+            "loop": "The fees were the small part."
+          },
+          {
+            "title": "What Actually Compounds",
+            "body": [
+              "Her loan got smaller every month while the rent went up.",
+              "Nobody feels that happening. It only shows up at the end."
+            ],
+            "loop": "Most people quit before that."
+          },
+          {
+            "title": "How She Sat Still",
+            "body": [
+              "She kept six months of repair money in cash and stopped checking the value online.",
+              "Boredom is a lot cheaper than panic."
+            ],
+            "loop": "Almost nobody makes it there."
+          }
+        ],
+        "cta": {
+          "shareLine": "Send this to someone who has been waiting for a better time to buy since 2019."
+        }
+      },
+      "scores": {
+        "clarity": 7,
+        "hook": 8,
+        "loops": 8,
+        "cta": 9,
+        "worst_problem": "A couple of slide loops lean on unspecified pronouns — \"One of those almost worked\" and \"That check bought her something\" — forcing a half-second of decoding about what 'worked' or what was 'bought'.",
+        "fix": "Name the referent in the vague loops, e.g. \"The 2020 cash offer nearly won\" and \"That check bought nine years of rent\", so the tease points at a concrete missing fact rather than an unnamed one."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 361276465,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-12T14:55:38.663Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673158352976825614"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 361276469,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-12T14:55:38.754Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7493318807541870592"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 361276506,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-12T14:55:38.849Z",
+          "publicUrl": "https://www.instagram.com/p/Db8bQLkCGXE/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 361276534,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-12T14:55:38.938Z",
+          "publicUrl": "https://www.instagram.com/p/Db8bPf7ir4B/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 361276537,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-12T14:55:39.037Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7493318805922766848"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 361276588,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-12T14:55:39.461Z",
+          "publicUrl": "https://www.instagram.com/p/Db8bLqPDXoQ/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 361276591,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-12T14:55:39.545Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122113392471400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 361276595,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-12T14:55:39.627Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7493318806866538497"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-12T14:55:39.628Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
