@@ -138,26 +138,40 @@ export function figureTokens(text) {
 /**
  * Does the transcript contain this figure?
  *
- * Compared on DIGITS ALONE, because a transcript and a written hook spell the
- * same number differently as a matter of course: Whisper writes "340,000" or
- * "340000" or "three hundred forty thousand" for the same spoken amount, and a
- * string comparison would reject an honest hook most of the time. Digits are
- * the part that cannot be re-spelled, so a hook saying 340000 over a video that
- * says 340,000 passes, and one saying 450000 does not.
+ * Compared on DIGITS, because a transcript and a written hook spell the same
+ * number differently as a matter of course: Whisper writes "340,000" or
+ * "340000" for the same spoken amount, and a raw string comparison would reject
+ * an honest hook most of the time. Digits are the part that cannot be
+ * re-spelled.
  *
- * The spelled-out case is handled by the caller giving the model a transcript
- * to draw from; a hook whose figure appears nowhere in digits AND is not a word
- * the transcript used is rejected, which is the safe direction.
+ * FIGURE BY FIGURE, AND ON EQUALITY — NOT a substring search over the
+ * transcript's digits run together, which is what this did first and which was
+ * a hole big enough to drive the whole feature through. "340,000" in the
+ * transcript becomes the digit string "340000", and "40000" is a substring of
+ * it — so a hook claiming a $40,000 price over a video that says $340,000
+ * passed the honesty gate. That is not a near miss; it is the single most
+ * damaging thing this feature could publish, and it passed.
+ *
+ * So the transcript's figures are extracted as figures, normalised the same
+ * way, and the hook's has to EQUAL one of them.
+ *
+ * The whole-token fallback stays for the cases digits cannot settle — "3%", a
+ * token carrying a unit — but it is BOUNDARY-CHECKED rather than a plain
+ * `includes`. It was written as a plain includes on the assumption that it was
+ * strictly stricter than the digit test, and it was not: "340,000" contains the
+ * literal substring "40,000", so the fallback let through exactly the case the
+ * digit comparison had just been fixed to catch. A number is only "said" if it
+ * is not part of a longer one.
  */
 export function figureSupported(token, transcript) {
-  const digits = String(token).replace(/[^\d]/g, "");
+  const raw = String(token);
+  const digits = raw.replace(/[^\d]/g, "");
   if (!digits) return true;
   const haystack = String(transcript ?? "");
-  if (haystack.replace(/[^\d]/g, "").includes(digits)) return true;
-  // A percentage or a small count often survives as a word. Accept it only when
-  // the WHOLE token appears in the transcript, which is a stricter test than
-  // the digit one and cannot match a coincidence of digits.
-  return haystack.toLowerCase().includes(String(token).toLowerCase());
+  const said = new Set((haystack.match(/\d[\d,.]*/g) || []).map((f) => f.replace(/[^\d]/g, "")));
+  if (said.has(digits)) return true;
+  const escaped = raw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![\\d.,])${escaped}(?![\\d.,])`, "i").test(haystack);
 }
 
 /**
@@ -277,6 +291,7 @@ function parseJson(raw) {
  */
 export async function generateHookLines({
   transcript,
+  guidance = null,
   want = MAX_VARIANTS,
   maxRetries = 2,
   modelCall = callModel,
@@ -285,6 +300,22 @@ export async function generateHookLines({
   if (!text) {
     return { lines: [], rejected: [], attemptsUsed: 0, reason: "the video has no transcript to write a hook from" };
   }
+
+  // PETER'S NOTE STEERS THE WRITER AND IS INVISIBLE TO THE GATE.
+  //
+  // A rejection comes with a note, and the note has to reach the prompt or the
+  // re-edit ignores what he asked for. The first version did that by appending
+  // it to the transcript — which quietly punched a hole straight through the
+  // honesty gate, because every gate below validates against `text`. A note
+  // reading "make it about the pool and the $40,000 price drop" would have
+  // authorised a hook claiming a pool and a figure the VIDEO never mentions:
+  // his words, checked against his own words, presented to viewers as something
+  // the video contains.
+  //
+  // So it travels as separate context. The writer sees it; `validateHookLine`
+  // never does, and still only ever compares a candidate against what was
+  // actually said on camera.
+  const note = String(guidance ?? "").trim();
 
   const seen = new Set();
   const kept = [];
@@ -297,7 +328,12 @@ export async function generateHookLines({
     try {
       const raw = await modelCall(
         WRITER_SYSTEM,
-        `THE VIDEO'S TRANSCRIPT:\n${text.slice(0, 6000)}\n\nWrite the hook lines.${feedback}`
+        `THE VIDEO'S TRANSCRIPT:\n${text.slice(0, 6000)}\n` +
+          (note
+            ? `\nWHAT PETER SAID ABOUT THE LAST VERSION — follow it, but it is NOT a source of ` +
+              `facts. Every claim still has to come from the transcript above:\n${note.slice(0, 1000)}\n`
+            : "") +
+          `\nWrite the hook lines.${feedback}`
       );
       const parsed = parseJson(raw);
       const list = Array.isArray(parsed.candidates) ? parsed.candidates : [parsed.hook];

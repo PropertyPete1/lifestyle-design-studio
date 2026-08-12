@@ -305,9 +305,11 @@ async function editInto(queue, record, { accessToken, work, notes }) {
     console.log(`::warning::[EditQueueAdvance] no speech found in ${record.fileName} — no hook lines can be written from it`);
   }
 
-  const hookNote = notes ? `\n\nPETER'S NOTE ON THE LAST VERSION — follow it:\n${notes}` : "";
+  // `notes` goes in as GUIDANCE, never as transcript — see generateHookLines.
+  // Appending it to the transcript would let a hook quote Peter's own note back
+  // as though the video had said it.
   const hooks = spoken
-    ? await generateHookLines({ transcript: `${spoken}${hookNote}` })
+    ? await generateHookLines({ transcript: spoken, guidance: notes })
     : { lines: [], rejected: [], attemptsUsed: 0, reason: "the video has no speech to write a hook from" };
 
   const warnings = [...edit.warnings];

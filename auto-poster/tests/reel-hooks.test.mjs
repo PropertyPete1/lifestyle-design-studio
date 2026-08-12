@@ -58,6 +58,28 @@ test("a figure spelled differently from the transcript still passes on its digit
   assert.equal(figureSupported("450,000", "they are asking 340,000 today"), false);
 });
 
+test("a figure that is merely a SUBSTRING of one the video said is rejected", () => {
+  // The hole the first version had, and the most damaging thing this feature
+  // could ship: a hook claiming $40,000 over a video that says $340,000. It
+  // passed, because "40000" is a substring of "340000" once every digit in the
+  // transcript is run together. Figures are compared as figures now.
+  assert.equal(figureSupported("40,000", "they are asking 340,000 today"), false);
+  assert.equal(figureSupported("40", "they are asking 340,000 today"), false);
+  assert.equal(figureSupported("00", "they are asking 340,000 today"), false);
+  // …and two separate figures cannot be spliced into a third.
+  assert.equal(figureSupported("1234", "it is 12 minutes from the 34 corridor"), false);
+  // The honest cases still pass.
+  assert.equal(figureSupported("12", "it is 12 minutes from the 34 corridor"), true);
+  assert.equal(figureSupported("34", "it is 12 minutes from the 34 corridor"), true);
+});
+
+test("the whole hook is rejected when it invents a near-miss figure", () => {
+  // End to end through the gate, not just the helper.
+  const check = validateHookLine("This one dropped 40,000 last week", TRANSCRIPT);
+  assert.equal(check.valid, false);
+  assert.ok(check.failures.some((f) => /never says/.test(f)), check.failures.join("; "));
+});
+
 test("figureTokens finds figures whatever punctuation hangs off them", () => {
   assert.deepEqual(figureTokens("Asking $340,000. Really?"), ["$340,000"]);
   assert.deepEqual(figureTokens("It is 12 minutes, 3% down"), ["12", "3%"]);
@@ -177,6 +199,30 @@ test("generation never throws when every candidate is dishonest", async () => {
   });
   assert.deepEqual(result.lines, []);
   assert.equal(result.rejected.length, 3);
+});
+
+test("Peter's note steers the writer but cannot authorise a claim", async () => {
+  // The hole this closes: a rejection note reaching the gate as if it were
+  // transcript. "Make it about the pool and the $40,000 drop" would then have
+  // let a hook claim a pool and a figure the video never mentions — his words,
+  // validated against his own words, shown to viewers as the video's content.
+  const guidance = "Make it about the pool and the 40,000 dollar price drop.";
+  let sawNote = false;
+  const model = async (_system, prompt) => {
+    sawNote = prompt.includes("pool");
+    return JSON.stringify({ candidates: ["The pool here drops 40,000 in value", "Taxes here catch most buyers out"] });
+  };
+
+  const result = await generateHookLines({ transcript: TRANSCRIPT, guidance, modelCall: model, maxRetries: 0 });
+  assert.equal(sawNote, true, "the writer must actually receive the note, or a re-edit ignores what Peter asked for");
+
+  const kept = result.lines.map((l) => l.line);
+  assert.ok(!kept.some((l) => /pool/i.test(l)), "a claim sourced from the note got through the honesty gate");
+  assert.ok(kept.includes("Taxes here catch most buyers out"), "an honest line was rejected");
+  assert.ok(
+    result.rejected.some((r) => r.failures.some((f) => /never says/.test(f))),
+    JSON.stringify(result.rejected)
+  );
 });
 
 test("a video with no transcript produces no hooks and says why", async () => {
