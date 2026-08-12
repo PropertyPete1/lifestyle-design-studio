@@ -478,9 +478,40 @@ export function splitForPunchIns(span, { enabled = true, interval = PUNCH_INTERV
 /**
  * Render one piece of a take to its own file.
  *
- * `-ss` before `-i` seeks fast but lands on a keyframe; after `-i` it is
- * frame-accurate and slower. Accuracy wins here without argument — a cut point
- * that drifts to the nearest keyframe is a cut point that lands mid-word.
+ * THE SEEK GOES BEFORE `-i`, AND THAT IS THE WHOLE POINT OF THIS COMMENT.
+ *
+ * It used to go after, on the reasoning that output-side seeking is
+ * frame-accurate and input-side seeking lands on a keyframe. The second half of
+ * that has not been true for years — modern ffmpeg seeks to the keyframe and
+ * then decodes forward to the exact frame — and the first half was hiding a
+ * defect that silenced most of every on-camera take.
+ *
+ * OUTPUT-SIDE SEEKING DOES NOT MOVE THE FILTER GRAPH'S CLOCK. Frames are
+ * filtered on the SOURCE timeline and discarded afterwards, so every filter
+ * here that is a function of time was being evaluated against the wrong one.
+ * Everything downstream computes its times relative to the PIECE — the declick
+ * fades below start at 0 and end at `pieceSeconds`, the zoom pulses gate on
+ * `on` counted from the piece's first frame — so on any piece with
+ * `srcStart > 0` the two clocks disagreed by exactly `srcStart`.
+ *
+ * Measured on a synthetic take, three 3-second pieces, ffmpeg 7.1.1:
+ *
+ *   piece 0 (srcStart 0)  peak 2927 — audio present, declick at both edges
+ *   piece 1 (srcStart 3)  peak    0 — SILENT
+ *   piece 2 (srcStart 6)  peak    0 — SILENT
+ *
+ * `afade=t=out` holds silence forever once its ramp completes, and its ramp was
+ * completing at `pieceSeconds` on the source clock — before the retained window
+ * even opened. So the take kept its first piece's audio and lost every piece
+ * after it, which across twelve on-camera takes is most of Peter's voice. The
+ * zoom pulses failed the same way and more quietly: `between(on, ...)` never
+ * opened, so the pulses simply never fired off the first piece.
+ *
+ * With the seek on the input side all three pieces measure a clean fade in and
+ * out around full-level speech, and the frames are identical — verified against
+ * a per-frame luminance stamp, where both seek methods land on the same source
+ * frame to the pixel. The accuracy the old comment was protecting was never at
+ * risk; the clock it silently broke was.
  *
  * The tight framing is a CROP then a scale back up, not a `scale` alone:
  * cropping keeps the centre of the frame and discards the edges, which is what
@@ -494,7 +525,7 @@ export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = nul
     bgZoom: ONCAM_BG_ZOOM,
     vignette: ONCAM_VIGNETTE,
   };
-  const args = ["-y", "-i", input, "-ss", String(piece.srcStart), "-to", String(piece.srcEnd)];
+  const args = ["-y", "-ss", String(piece.srcStart), "-to", String(piece.srcEnd), "-i", input];
 
   // The punch-in crop applies to the SOURCE — a tighter framing of him — and
   // the treatment then composes that tighter framing into the 16:9 frame.
