@@ -116,7 +116,29 @@ describe("duckArgs — the bed moves under the voice", () => {
 
   test("splits the narration so it is both the key and the output", () => {
     assert.ok(graph.includes("asplit=2[vo1][vo2]"));
-    assert.ok(graph.includes("[vo2][ducked]amix"));
+    assert.ok(graph.includes("[vo2][duck1]amix"));
+  });
+
+  test("amix does not halve the narration on its way through", () => {
+    // amix divides by its input count unless told not to, so this stage was
+    // handing back a mix with the voice 6 dB quieter than it arrived. The bed
+    // lost the same 6 dB so the balance looked untouched and the loss hid —
+    // but every dB the voice gives up is a dB of margin the bed does not have
+    // to beat. yt-sfx.js already learned this; this stage had not.
+    assert.match(graph, /amix=inputs=2:duration=first:normalize=0/);
+  });
+
+  test("the bed is kept on its own branch so it can be measured afterwards", () => {
+    // Two signals cannot be un-summed, so the only way to ask "is the music
+    // under his voice at 7:12" is to keep the branch that made it. Same filter
+    // graph, same samples — a second render would answer about a different file.
+    const withBed = duckArgs("v.mp4", "m.mp3", "out.mp4", {
+      envelope: { expr: "0.2", body: 0.2 },
+      bedOnlyOutput: "bed-only.wav",
+    });
+    assert.match(withBed.join(" "), /\[ducked\]asplit=2\[duck1\]\[duck2\]/);
+    assert.ok(withBed.includes("bed-only.wav"));
+    assert.equal(withBed[withBed.indexOf("bed-only.wav") - 1], "-vn");
   });
 
   test("copies the video — ducking is an audio-only stage", () => {
@@ -224,10 +246,25 @@ describe("buildAssFile", () => {
     assert.ok(file.includes("hello there"));
   });
 
-  test("STRIPS braces — a stray one swallows the rest of the caption", () => {
-    const risky = buildAssFile([{ start: 0, end: 1, text: "cost {roughly} 300k" }], DIM);
-    assert.ok(!risky.includes("{roughly}"));
-    assert.ok(risky.includes("cost roughly 300k"));
+  test("REFUSES braces rather than stripping them", () => {
+    // THIS TEST USED TO ASSERT THE STRIPPING, and the stripping was the defect.
+    // A brace opens an override block in ASS and a stray one swallows the rest
+    // of the line, so deleting it looks like the careful thing to do — but what
+    // it actually does is turn a caption reading `{{PRICE}}` into a caption
+    // reading `PRICE`, in the caption font, on screen, as though somebody had
+    // written it. There is no error and no visible brace: a substitution
+    // failure that survives to pixels looking exactly like content.
+    //
+    // The renderer is still protected — the build never reaches ffmpeg — and
+    // the reason is now in the log instead of in the video.
+    assert.throws(
+      () => buildAssFile([{ start: 0, end: 1, text: "cost {roughly} 300k" }], DIM),
+      /not renderable/
+    );
+    assert.throws(
+      () => buildAssFile([{ start: 0, end: 1, text: "the fee is {{PRICE}} at closing" }], DIM),
+      /not renderable/
+    );
   });
 
   test("newlines become ASS line breaks rather than breaking the format", () => {

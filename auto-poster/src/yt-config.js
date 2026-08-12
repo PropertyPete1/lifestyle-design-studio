@@ -120,6 +120,17 @@ function oneOf(raw, allowed, fallback) {
 }
 
 /**
+ * A comma-separated subset of `allowed`, or `fallback` when nothing was asked
+ * for. An explicit empty string means the empty set — "none of them" has to be
+ * expressible, or a class list cannot be switched off from a workflow.
+ */
+function subsetOf(raw, allowed, fallback) {
+  if (raw === undefined || raw === null) return fallback;
+  const asked = String(raw).split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return allowed.filter((a) => asked.includes(a));
+}
+
+/**
  * Whether the floating-head PIP may be composited over visuals.
  *
  * Per-video kill switch. Off is always safe: the visual plays full-screen,
@@ -201,10 +212,29 @@ export const ONCAM_VIGNETTE = clampFloat(process.env.YT_ONCAM_VIGNETTE, 0.35, 0,
 /**
  * Whether the video carries a music bed at all.
  *
- * Off is always safe: renderTimeline treats a missing bed as an ordinary state
- * and ships narration only, which is what every revision before this one did.
+ * DEFAULTS OFF as of the baseline strip. Off is always safe: renderTimeline
+ * treats a missing bed as an ordinary state and ships narration only, which is
+ * what every revision before revision 8 did.
+ *
+ * ─── WHY THE FOUR LAYERS BELOW DEFAULT OFF ──────────────────────────────────
+ *
+ * Every defect on card 8 came from the newest layer, and each new layer arrived
+ * switched on by default, so the first render that contained it was also the
+ * first render Peter had to review it in. That is backwards: a layer that has
+ * never been seen is exactly the layer that should not be in a publish
+ * candidate.
+ *
+ * So music, micro-punches, whooshes and impacts are opt-IN. Nothing is deleted
+ * and nothing is weakened — every one of them is still built, still tested and
+ * still one environment variable from rendering. They are simply not in the
+ * frame until Peter has looked at each one on its own and asked for it back.
+ *
+ * The polarity is the mechanism, not a formality. `!== "false"` means a
+ * workflow that forgets to mention the knob gets the feature; `=== "true"`
+ * means a workflow that wants the feature has to say so. Only the second one
+ * makes "off" the state you land in by accident.
  */
-export const MUSIC_ENABLED = process.env.YT_MUSIC !== "false";
+export const MUSIC_ENABLED = process.env.YT_MUSIC === "true";
 
 /**
  * Where the bed sits under the narration, in dB.
@@ -223,6 +253,23 @@ export const MUSIC_ENABLED = process.env.YT_MUSIC !== "false";
 export const MUSIC_DB = clampFloat(process.env.YT_MUSIC_DB, -14, -40, -3);
 
 /**
+ * The loudness the whole programme is brought to before anything is mixed under
+ * it, in LUFS.
+ *
+ * THE NUMBER THAT MAKES EVERY OTHER AUDIO KNOB MEAN SOMETHING. `YT_MUSIC_DB`,
+ * `YT_PUNCH_SFX_DB` and the sidechain threshold are all levels relative to full
+ * scale, and every one of them was being applied against a programme whose own
+ * level nobody had ever set: Peter's takes arrive at whatever the room gave
+ * them, and `postProcessVoiceoverAudio` only ever levelled generated TTS — of
+ * which card 8's build contained none.
+ *
+ * -16 LUFS is the streaming-delivery convention and is where YouTube's own
+ * normalisation lands, so a video at this level plays back at the same loudness
+ * as everything around it in the feed.
+ */
+export const PROGRAMME_LUFS = clampFloat(process.env.YT_PROGRAMME_LUFS, -16, -30, -8);
+
+/**
  * How much the bed lifts under the hook and the close, in dB above MUSIC_DB.
  *
  * The energy change is the point — a bed at one level for twelve minutes is
@@ -237,8 +284,15 @@ export const MUSIC_LIFT_DB = clampFloat(process.env.YT_MUSIC_LIFT_DB, 5, 0, 12);
  * Separate knob from the punch-in framing changes despite the shared word: those
  * are camera moves on an on-camera take, these are text over any visual. Turning
  * one off must not cost the other.
+ *
+ * DEFAULTS OFF as of the baseline strip — see MUSIC_ENABLED for the argument.
+ * This one has the strongest case of the four: card 8 put "410", "1604", "third
+ * one" and "hold three" on screen in gold, and every one of those was verbatim
+ * in the captions. The selector was fixed (see yt-punch.js), but "the scanner no
+ * longer picks road numbers" is a claim about a class of English, and the place
+ * to test that claim is not a publish candidate.
  */
-export const MICRO_PUNCHES_ENABLED = process.env.YT_MICRO_PUNCHES !== "false";
+export const MICRO_PUNCHES_ENABLED = process.env.YT_MICRO_PUNCHES === "true";
 
 /**
  * The most micro-punches one video may carry.
@@ -254,6 +308,24 @@ export const MICRO_PUNCH_MAX = clampInt(process.env.YT_MICRO_PUNCH_MAX, 6, 0, 12
 export const MICRO_PUNCH_SECONDS = clampFloat(process.env.YT_MICRO_PUNCH_SECONDS, 1.2, 0.6, 2.5);
 
 /**
+ * Which kinds of emphasis beat a punch may be drawn from.
+ *
+ * Defaults to the two SYMBOL-ANCHORED classes. `counted` and `figure` are
+ * inferred from token shape and have produced nothing but false positives across
+ * two revisions — the full argument, with the list of what they actually put on
+ * screen, is on PUNCH_CLASS in yt-punch.js.
+ *
+ * Comma-separated, so widening it is `YT_MICRO_PUNCH_CLASSES=currency,percent,counted`
+ * rather than a code change. Unknown names are dropped rather than throwing: a
+ * typo in a workflow should cost the class it misspelled, not the video.
+ */
+export const MICRO_PUNCH_CLASSES = subsetOf(
+  process.env.YT_MICRO_PUNCH_CLASSES,
+  ["currency", "percent", "counted", "figure"],
+  ["currency", "percent"]
+);
+
+/**
  * Whether punches and punch-in cuts carry a sound.
  *
  * SYNTHESISED, NOT LICENSED. The standing decision was to ship revision 8
@@ -262,8 +334,13 @@ export const MICRO_PUNCH_SECONDS = clampFloat(process.env.YT_MICRO_PUNCH_SECONDS
  * audio or gate downloads behind OAuth. Generating the impact and the whoosh
  * from ffmpeg's own oscillators sidesteps the question rather than compromising
  * on it, because a tone we synthesise is a tone we own. See yt-sfx.js.
+ *
+ * DEFAULTS OFF as of the baseline strip — see MUSIC_ENABLED. Note that this is
+ * the master switch for BOTH synthesised sounds: with it off, PUNCH_WHOOSH_ENABLED
+ * cannot re-enable the whoosh on its own, because punchSfxTimeline returns an
+ * empty timeline before it ever looks at the whoosh flag.
  */
-export const PUNCH_SFX_ENABLED = process.env.YT_PUNCH_SFX !== "false";
+export const PUNCH_SFX_ENABLED = process.env.YT_PUNCH_SFX === "true";
 
 /** How loud the synthesised hits sit, in dB. Under the bed, not over it. */
 export const PUNCH_SFX_DB = clampFloat(process.env.YT_PUNCH_SFX_DB, -20, -40, -6);
@@ -337,3 +414,41 @@ export const BEAT_BRIDGE_MAX_SECONDS = clampFloat(process.env.YT_BEAT_BRIDGE_MAX
  * 8s by default, a knob because the right number is a review-round answer.
  */
 export const SCENE_MAX_SECONDS = clampFloat(process.env.YT_SCENE_MAX_SECONDS, 8, 3, 20);
+
+/**
+ * Every render layer and whether this build will draw it.
+ *
+ * EXISTS SO A DISPATCH CAN BE CONFIRMED FROM THE LOG RATHER THAN FROM THE
+ * WORKFLOW FILE. "Rebuild with music off" is a request about the render, and
+ * the only place that is answerable is the run that produced the video —
+ * a workflow that sets `YT_MUSIC: "false"` against a knob that reads `=== "true"`
+ * and a workflow that sets nothing at all are the same build and look completely
+ * different in the diff.
+ *
+ * Ordered baseline-first so the printed line reads as "here is the video, and
+ * here is what was added to it".
+ */
+export function layerKnobs() {
+  return {
+    // The baseline: what a video is before anything is layered onto it.
+    deadSpaceCuts: JUMP_CUTS_ENABLED,
+    punchInZooms: PUNCH_INS_ENABLED,
+    zoomPulses: ZOOM_PULSES_ENABLED,
+    blurFill: ONCAM_TREATMENT === "blur-fill",
+    floatingHead: PIP_ENABLED,
+    // The layers that default off and are added back one at a time.
+    music: MUSIC_ENABLED,
+    microPunches: MICRO_PUNCHES_ENABLED,
+    impactSfx: PUNCH_SFX_ENABLED,
+    // The whoosh needs BOTH switches, so report what it will actually do
+    // rather than what its own flag says.
+    whoosh: PUNCH_SFX_ENABLED && PUNCH_WHOOSH_ENABLED,
+  };
+}
+
+/** The knob state as one log line. */
+export function renderLayerSummary(knobs = layerKnobs()) {
+  const on = Object.entries(knobs).filter(([, v]) => v).map(([k]) => k);
+  const off = Object.entries(knobs).filter(([, v]) => !v).map(([k]) => k);
+  return `layers ON: ${on.join(", ") || "none"} | layers OFF: ${off.join(", ") || "none"}`;
+}

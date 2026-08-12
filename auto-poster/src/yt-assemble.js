@@ -21,19 +21,20 @@
  * rather than being folded into a single graph.
  */
 
-import { execFileSync } from "child_process";
+import { execFileSync, spawnSync } from "child_process";
 import { writeFileSync, existsSync, mkdirSync, statSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { generateTTS, postProcessVoiceoverAudio } from "./voiceover.js";
-import { RESOLUTION } from "./yt-config.js";
+import { RESOLUTION, PROGRAMME_LUFS, MUSIC_DB } from "./yt-config.js";
 import { kenBurnsArgs } from "./yt-visual-broll.js";
 import { renderOverlayPng, burnOverlayArgs } from "./yt-opening.js";
-import { pieceArgs } from "./yt-oncamera-edit.js";
+import { pieceArgs, pieceExtension } from "./yt-oncamera-edit.js";
 import { pipCompositeArgs } from "./yt-pip.js";
 import { renderPunchPng } from "./yt-punch.js";
 import { bedEnvelope } from "./yt-music.js";
 import { ensureSfxKit, mixSfxArgs, punchSfxTimeline } from "./yt-sfx.js";
+import { assertRenderableText } from "./yt-text-safety.js";
 
 export const CANVAS = {
   "1080p": { w: 1920, h: 1080 },
@@ -182,20 +183,166 @@ export function concatArgs(listFile, output) {
  * the viewer will hear. Ducking a signal and then raising it afterwards would
  * hand the loud sections back exactly the headroom the duck just took away.
  */
-export function duckArgs(videoIn, musicIn, output, { envelope = null } = {}) {
+export function duckArgs(videoIn, musicIn, output, { envelope = null, bedOnlyOutput = null } = {}) {
   const level = envelope?.expr
     ? `volume=eval=frame:volume='${envelope.expr}'`
     : `volume=${envelope?.body ?? 0.25}`;
-  return [
-    "-y", "-i", videoIn, "-i", musicIn,
-    "-filter_complex",
+
+  // `normalize=0` IS LOAD-BEARING AND WAS MISSING.
+  //
+  // amix divides by its input count unless told not to, so this stage was
+  // handing back a mix with the narration 6 dB quieter than it arrived. The bed
+  // lost the same 6 dB, so the BALANCE looked untouched and the defect hid — but
+  // the video got quieter every time it passed through, and every dB the voice
+  // gives up is a dB of margin the bed does not have to beat. yt-sfx.js already
+  // learned this and says so; this stage did not.
+  //
+  // With it off the levels are exactly what the two branches computed: the
+  // narration at the level programmeGain put it, the bed at MUSIC_DB under it.
+  const graph =
     `[1:a]${level}[bed];` +
-      `[0:a]asplit=2[vo1][vo2];` +
-      `[bed][vo1]sidechaincompress=threshold=0.05:ratio=12:attack=20:release=400[ducked];` +
-      `[vo2][ducked]amix=inputs=2:duration=first:dropout_transition=0[aout]`,
+    `[0:a]asplit=2[vo1][vo2];` +
+    `[bed][vo1]sidechaincompress=threshold=${SIDECHAIN_THRESHOLD}:ratio=12:attack=20:release=400[ducked];` +
+    `[ducked]asplit=2[duck1][duck2];` +
+    `[vo2][duck1]amix=inputs=2:duration=first:normalize=0:dropout_transition=0[aout]`;
+
+  const args = [
+    "-y", "-i", videoIn, "-i", musicIn,
+    "-filter_complex", graph,
     "-map", "0:v", "-map", "[aout]",
     "-c:v", "copy", "-c:a", "aac", "-b:a", AUDIO_BITRATE,
     "-movflags", "+faststart",
+    output,
+  ];
+
+  // THE BED, ALONE, AS THIS EXACT GRAPH PRODUCED IT.
+  //
+  // Written out so the artifact check can measure the music against the voice
+  // in the finished file. There is no way to un-mix two signals after the fact,
+  // so the only honest way to ask "is the bed under his voice at 7:12" is to
+  // keep the branch that made it — post-envelope, post-sidechain, the same
+  // samples that were summed into the mix.
+  //
+  // A second output on the SAME invocation rather than a second run: two runs
+  // would be two encodes of a twelve-minute file, and worse, they could differ.
+  // What the check measures has to be what the viewer hears, and sharing the
+  // filter graph is what makes that true rather than likely.
+  if (bedOnlyOutput) {
+    args.push("-map", "[duck2]", "-c:a", "pcm_s16le", "-vn", bedOnlyOutput);
+  }
+  return args;
+}
+
+/**
+ * Where the sidechain starts pulling the bed down, in linear amplitude.
+ *
+ * 0.05 is about -26 dBFS. THIS NUMBER ONLY MEANS ANYTHING BECAUSE THE PROGRAMME
+ * IS LEVELLED FIRST — it is a threshold on an absolute signal level, and before
+ * levelProgrammeArgs existed there was no absolute level to speak of. Peter's
+ * phone takes arrive wherever the room put them, `postProcessVoiceoverAudio`
+ * only ever touched generated TTS, and card 8's build generated none at all
+ * (`narrated 0 voiceover take(s)`, YT_NARRATION_MODE=peter). So the compressor
+ * was comparing a fixed threshold against a level nobody had ever set, and if
+ * that level had come in under -26 dBFS the duck would have done nothing while
+ * looking perfectly correct in the filter graph.
+ */
+const SIDECHAIN_THRESHOLD = 0.05;
+
+/**
+ * Bring the whole programme to a known loudness before anything is mixed under
+ * it.
+ *
+ * WHY A MEASURED STATIC GAIN AND NOT `loudnorm`'s OWN FILTER. loudnorm in
+ * single-pass mode is a dynamic processor: it rides the level, and riding the
+ * level of a twelve-minute narration is exactly the audible processing this
+ * channel should not have on a man talking to camera. Measuring the integrated
+ * loudness and applying ONE gain to the whole file moves it to the right place
+ * and changes nothing else — his dynamics, his pauses and his emphasis all
+ * survive intact.
+ *
+ * The true-peak ceiling is what stops the gain from clipping a take that was
+ * recorded quiet but peaky. Whichever of the two limits binds, binds.
+ */
+export function programmeGainDb(measured, { targetLufs = PROGRAMME_LUFS, ceilingDbTp = -1.5 } = {}) {
+  const i = Number(measured?.inputI);
+  const tp = Number(measured?.inputTp);
+  if (!Number.isFinite(i) || i <= -70) return { db: 0, reason: "no measurable programme loudness — leaving it alone" };
+  const wanted = targetLufs - i;
+  const headroom = Number.isFinite(tp) ? ceilingDbTp - tp : Infinity;
+  const db = Math.round(Math.min(wanted, headroom) * 100) / 100;
+  return {
+    db,
+    measuredLufs: Math.round(i * 10) / 10,
+    truePeakDb: Number.isFinite(tp) ? Math.round(tp * 10) / 10 : null,
+    limitedByPeak: headroom < wanted,
+    reason: null,
+  };
+}
+
+/** Ask ffmpeg what the programme's integrated loudness and true peak are. */
+export function measureLoudnessArgs(input) {
+  return [
+    "-hide_banner", "-nostats", "-i", input,
+    "-af", "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json",
+    "-f", "null", "-",
+  ];
+}
+
+/**
+ * loudnorm prints its JSON to stderr after the progress output. Parsed from the
+ * LAST brace-balanced block rather than the first, because a file that produced
+ * warnings can have other output in the way.
+ */
+export function parseLoudnessJson(stderr) {
+  const text = String(stderr || "");
+  const start = text.lastIndexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    const j = JSON.parse(text.slice(start, end + 1));
+    return {
+      inputI: Number.parseFloat(j.input_i),
+      inputTp: Number.parseFloat(j.input_tp),
+      inputLra: Number.parseFloat(j.input_lra),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What gain the BED needs so it sits `under` dB below the programme.
+ *
+ * MUSIC_DB'S OWN DOCUMENTATION SAYS "where the bed sits UNDER THE NARRATION",
+ * and until this function existed it was nothing of the kind — it was a gain
+ * applied to whatever the mp3's own mastering happened to be, mixed against
+ * whatever level Peter's room happened to give. Two absolute numbers with no
+ * relationship between them, describing a relationship.
+ *
+ * Both sides are measured now, so the number means the sentence. And it is
+ * measured against what the programme ACTUALLY REACHED rather than the target
+ * it was aiming at: a quiet, peaky recording gets held back by its true peak,
+ * lands short of -16 LUFS, and a bed placed relative to the target would then
+ * sit that much closer to his voice than intended. The one case where this most
+ * matters is the one where it would silently go wrong.
+ */
+export function bedRelativeGainDb({ bedLufs, programmeLufs, under = -14, fallback = -14 }) {
+  const b = Number(bedLufs);
+  const p = Number(programmeLufs);
+  if (!Number.isFinite(b) || !Number.isFinite(p) || b <= -70) {
+    return { db: fallback, measured: false, reason: "could not measure both sides — falling back to the absolute knob" };
+  }
+  const want = p + under;          // where the bed should land, in LUFS
+  return { db: Math.round((want - b) * 100) / 100, measured: true, bedLufs: Math.round(b * 10) / 10, targetLufs: Math.round(want * 10) / 10, reason: null };
+}
+
+/** Apply the measured gain, leaving the picture untouched. */
+export function levelProgrammeArgs(videoIn, output, gainDb) {
+  return [
+    "-y", "-i", videoIn,
+    "-af", `volume=${gainDb.toFixed(2)}dB`,
+    "-map", "0:v", "-map", "0:a",
+    "-c:v", "copy", ...segmentAudioArgs(),
     output,
   ];
 }
@@ -343,9 +490,21 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 }
 
 function escapeAss(text) {
-  // Braces open an override block in ASS; a stray one swallows the rest of the
-  // line, so a caption containing "{" would silently lose its text.
-  return String(text || "").replace(/[{}]/g, "").replace(/\r?\n/g, "\\N");
+  // THIS USED TO STRIP BRACES, AND THE STRIPPING WAS THE BUG.
+  //
+  // Braces open an override block in ASS and a stray one swallows the rest of
+  // the line, so deleting them looks like the careful thing to do. What it
+  // actually does is turn a caption reading `{{PRICE}}` into a caption reading
+  // `PRICE` — no error, no visible brace, just a template's insides rendered in
+  // the caption font as though somebody had written them. A substitution
+  // failure that survives to pixels looking like a word is the worst available
+  // outcome, and it was the one this line guaranteed.
+  //
+  // Now it stops. The renderer is still protected from the unbalanced brace —
+  // the build never reaches ffmpeg — and the reason is on screen in the log
+  // instead of in the video.
+  assertRenderableText(text, "a caption chunk");
+  return String(text).replace(/\r?\n/g, "\\N");
 }
 
 // ─── execution ──────────────────────────────────────────────────────────────
@@ -368,6 +527,24 @@ export function ffmpeg(args, timeoutMs = 60 * 60_000) {
     encoding: "utf-8",
     maxBuffer: 32 * 1024 * 1024,
   });
+}
+
+/**
+ * Run ffmpeg for what it says on stderr rather than for what it writes.
+ *
+ * The analysis filters — loudnorm's JSON, silencedetect's spans, astats — all
+ * report there, and `ffmpeg()` above throws the stderr away. Kept separate
+ * rather than changing that return shape, because every existing caller wants
+ * "it worked or it threw" and this is the only kind of caller that does not.
+ */
+export function ffmpegStderr(args, timeoutMs = 30 * 60_000) {
+  const res = spawnSync("ffmpeg", args, {
+    timeout: timeoutMs,
+    encoding: "utf-8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (res.error) throw res.error;
+  return String(res.stderr || "");
 }
 
 export function mediaDuration(path) {
@@ -440,14 +617,24 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
         const edit = seg.editPlan;
         if (edit && edit.pieces.length > 0) {
           const pieceFiles = [];
+          const ext = pieceExtension();
           edit.pieces.forEach((piece, pi) => {
-            const out = `${base}_e${String(pi).padStart(3, "0")}.mp4`;
+            const out = `${base}_e${String(pi).padStart(3, "0")}.${ext}`;
             ffmpeg(pieceArgs(seg.source, out, piece, dim, { fps: FPS }));
             pieceFiles.push(out);
           });
           const listFile = `${base}_edit.txt`;
           writeFileSync(listFile, pieceFiles.map((p) => `file '${p}'`).join("\n"));
-          ffmpeg(concatArgs(listFile, withAudio));
+          // THE PIECES CARRY PCM, SO THE JOIN IS SAMPLE-EXACT, and the take is
+          // encoded to AAC once at the end rather than once per piece. An AAC
+          // encode per piece put a 21.3 ms priming frame at every join and the
+          // concat demuxer stacked them: 29.3 ms of audio sliding behind the
+          // picture per join, measured, which across card 8's seventy-six
+          // pieces is close to two seconds by the close. See PIECE_AUDIO.
+          const jointed = `${base}_joined.${ext}`;
+          ffmpeg(concatArgs(listFile, jointed));
+          ffmpeg(["-y", "-i", jointed, "-c:v", "copy", ...segmentAudioArgs(), withAudio]);
+          rmSync(jointed, { force: true });
           pieceFiles.forEach((p) => rmSync(p, { force: true }));
           rmSync(listFile, { force: true });
           console.log(
@@ -559,18 +746,46 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
   const joined = join(dir, "joined.mp4");
   t("concat", () => ffmpeg(concatArgs(concatList, joined)));
 
-  // ── 3. the sound: punches, then the bed ──────────────────────────────────
+  // ── 3. level the programme ───────────────────────────────────────────────
+  // BEFORE ANY OF THE THREE THINGS THAT MIX SOMETHING UNDER IT. The hits, the
+  // bed and the sidechain threshold are all absolute levels, and until this
+  // stage existed they were absolute levels measured against nothing: Peter's
+  // takes come in wherever the room left them, and the only leveller in the
+  // codebase (postProcessVoiceoverAudio) runs on generated TTS, which a
+  // YT_NARRATION_MODE=peter build has none of.
+  let levelled = joined;
+  let programme = { db: 0, reason: "not measured" };
+  try {
+    const measured = parseLoudnessJson(ffmpegStderr(measureLoudnessArgs(joined)));
+    programme = programmeGainDb(measured, { targetLufs: PROGRAMME_LUFS });
+    if (Math.abs(programme.db) >= 0.1) {
+      levelled = join(dir, "levelled.mp4");
+      t("level", () => ffmpeg(levelProgrammeArgs(joined, levelled, programme.db)));
+    }
+    console.log(
+      `[Assemble] programme loudness: ${programme.measuredLufs ?? "?"} LUFS -> ${PROGRAMME_LUFS} LUFS ` +
+        `(${programme.db >= 0 ? "+" : ""}${programme.db} dB` +
+        `${programme.limitedByPeak ? `, held back by a ${programme.truePeakDb} dBTP peak` : ""})`
+    );
+  } catch (err) {
+    // A measurement that fails costs the calibration, not the video — but it
+    // must be loud, because every level below it is now guesswork again and the
+    // artifact check is the only thing that will notice.
+    console.log(`::warning::could not measure programme loudness (${err.message}) — levels are uncalibrated this build`);
+  }
+
+  // ── 4. the sound: punches, then the bed ──────────────────────────────────
   // The synthesised hits go in BEFORE the bed so the sidechain compressor sees
   // them as part of the programme it is ducking under, rather than sitting on
   // top of a mix that was already balanced without them.
-  let scored = joined;
+  let scored = levelled;
   const sfxTimeline = punchSfxTimeline(plan, punches);
   if (sfxTimeline.length > 0) {
     const kit = ensureSfxKit(dir, ffmpeg);
     if (kit) {
       const withSfx = join(dir, "sfx.mp4");
       try {
-        t("sfx", () => ffmpeg(mixSfxArgs(joined, sfxTimeline, kit, withSfx)));
+        t("sfx", () => ffmpeg(mixSfxArgs(levelled, sfxTimeline, kit, withSfx)));
         scored = withSfx;
         console.log(`[Assemble] mixed ${sfxTimeline.length} synthesised hit(s)`);
       } catch (err) {
@@ -581,19 +796,42 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
   }
 
   let mixed = scored;
+  // The two files the audio check needs: the programme without any bed on it,
+  // and the bed as the duck actually produced it. Null when there is no bed,
+  // which is its own answer — a video with no music cannot have music over the
+  // voice, and the check says so rather than being skipped.
+  let bedOnlyPath = null;
+  const voiceOnlyPath = scored;
   if (musicPath && existsSync(musicPath)) {
     mixed = join(dir, "mixed.mp4");
-    const envelope = bedEnvelope({ seconds: mediaDuration(scored) || plannedSeconds(plan) });
-    t("duck", () => ffmpeg(duckArgs(scored, musicPath, mixed, { envelope })));
+    bedOnlyPath = join(dir, "bed-only.wav");
+
+    // Both sides measured, so MUSIC_DB means "under his voice" rather than
+    // "under full scale". `achieved` is what the levelling actually reached,
+    // which is not the target whenever a true peak got in the way.
+    const achieved = Number.isFinite(programme.measuredLufs) ? programme.measuredLufs + programme.db : null;
+    let bedLevel = { db: MUSIC_DB, measured: false, reason: "the bed was not measured" };
+    try {
+      const bedMeasured = parseLoudnessJson(ffmpegStderr(measureLoudnessArgs(musicPath)));
+      bedLevel = bedRelativeGainDb({ bedLufs: bedMeasured?.inputI, programmeLufs: achieved, under: MUSIC_DB, fallback: MUSIC_DB });
+    } catch (err) {
+      console.log(`::warning::could not measure the music bed (${err.message}) — using ${MUSIC_DB} dB flat`);
+    }
+
+    const envelope = bedEnvelope({ seconds: mediaDuration(scored) || plannedSeconds(plan), db: bedLevel.db });
+    t("duck", () => ffmpeg(duckArgs(scored, musicPath, mixed, { envelope, bedOnlyOutput: bedOnlyPath })));
     console.log(
-      `[Assemble] music bed at ${envelope.body} ` +
+      `[Assemble] music bed ${bedLevel.measured
+        ? `at ${bedLevel.db} dB — ${bedLevel.bedLufs} LUFS brought to ${bedLevel.targetLufs} LUFS, ${MUSIC_DB} dB under the programme`
+        : `at ${bedLevel.db} dB absolute (${bedLevel.reason})`}` +
+        `; gain ${envelope.body} ` +
         (envelope.shaped ? `lifting to ${envelope.lift} under the hook and from ${envelope.closeAt}s` : "(flat — too short to shape)")
     );
   } else {
     console.log("[Assemble] no music bed supplied — narration only");
   }
 
-  // ── 4. captions, and the micro-punches in the same pass ──────────────────
+  // ── 5. captions, and the micro-punches in the same pass ──────────────────
   const assPath = join(dir, "captions.ass");
   const chunks = buildCaptionChunks(plan);
   writeFileSync(assPath, buildAssFile(chunks, dim));
@@ -616,7 +854,33 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
     `[Assemble] done: ${(seconds / 60).toFixed(1)} min, ${(bytes / 1024 / 1024).toFixed(1)} MB, ` +
     `${chunks.length} caption chunks, ${plates.length} micro-punch(es)`
   );
-  return { outputPath: finalPath, seconds, bytes, chunkCount: chunks.length, punches: plates, stages };
+  return {
+    outputPath: finalPath,
+    seconds,
+    bytes,
+    chunkCount: chunks.length,
+    punches: plates,
+    stages,
+    // EVERYTHING THE ARTIFACT CHECKS NEED, HANDED BACK RATHER THAN REDERIVED.
+    //
+    // The checks run on the finished file, but two of them need to know what
+    // went INTO it — you cannot separate a bed from a voice after they are
+    // summed. These are the intermediate artifacts of this exact render, and
+    // handing them over is what makes the difference between measuring the
+    // video and measuring a reconstruction of it.
+    //
+    // `captionChunks` is here for the same reason and with a caveat: it is
+    // PLANNED timing, and the checks must not trust it for windows. It is
+    // passed so the OCR pass can compare what it READ against what was
+    // SUPPOSED to be there — text, not time.
+    qcInputs: {
+      voiceOnlyPath,
+      bedOnlyPath,
+      programme,
+      captionChunks: chunks,
+      punches: plates,
+    },
+  };
 }
 
 /**

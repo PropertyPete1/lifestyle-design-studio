@@ -266,8 +266,14 @@ export async function fetchMusicBed({
   fetchImpl = fetch,
   driveGet = null,
   drivePut = null,
+  // AN OVERRIDE, THE SAME SHAPE selectPunches USES. The knob now defaults OFF,
+  // and without this the acquisition, cache and licensing logic would be
+  // untestable — every test would return "YT_MUSIC is off" before reaching the
+  // behaviour it was written to check. A feature that is switched off must
+  // still be a feature that is covered.
+  enabled = musicEnabled(),
 } = {}) {
-  if (!musicEnabled()) return { path: null, track: null, reason: "YT_MUSIC is off" };
+  if (!enabled) return { path: null, track: null, reason: "YT_MUSIC is off" };
   if (!track) return { path: null, track: null, reason: "no track selected" };
 
   // The music folder is not a reels folder, but every Drive reach in the

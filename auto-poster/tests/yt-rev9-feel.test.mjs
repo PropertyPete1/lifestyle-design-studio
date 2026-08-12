@@ -261,14 +261,23 @@ describe("4. the new paths, pushed until they break", () => {
     // Revision 8 shipped "other two", "the three", "and eleven" and "against
     // 1604" — every one a function word or preposition in front of a number.
     for (const text of ["the other two are cheaper", "and eleven of them sold", "just against 1604 the lots widen", "mostly one story homes"]) {
-      const c = punchCandidatesFor({ text, seconds: 10 });
+      // The gate is opened deliberately: with the counted class off by default
+      // this loop would pass without testing anything at all, which is the
+      // vacuous-green shape these suites exist to avoid.
+      const c = punchCandidatesFor({ text, seconds: 10 }, { allowedClasses: ["currency", "percent", "counted", "figure"] });
       const counted = c.filter((x) => x.klass === "counted");
       assert.deepEqual(counted, [], `"${text}" produced ${JSON.stringify(counted.map((x) => x.text))}`);
     }
   });
 
-  test("a real counted noun still punches", () => {
-    const c = punchCandidatesFor({ text: "the credit survives to month nine of the build", seconds: 10 });
+  test("a real counted noun still punches, with the class gate opened", () => {
+    // The counted class defaults OFF now. The scanner it tests is unchanged, so
+    // the test opens the gate rather than being deleted — the day Peter wants
+    // counted nouns back, this is the cover that says they still work.
+    const c = punchCandidatesFor(
+      { text: "the credit survives to month nine of the build", seconds: 10 },
+      { allowedClasses: ["currency", "percent", "counted", "figure"] }
+    );
     assert.ok(c.some((x) => x.text === "month nine"), JSON.stringify(c));
   });
 });

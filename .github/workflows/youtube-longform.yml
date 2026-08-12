@@ -146,9 +146,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg & whisper
+      - name: Install ffmpeg, tesseract & whisper
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+          # tesseract is NOT optional tooling. The artifact QC gate reads the
+          # on-screen text back off the rendered frames, and a missing OCR
+          # binary fails the build rather than skipping the check — an overlay
+          # nobody read is exactly the defect the gate exists to catch.
+          sudo apt-get update && sudo apt-get install -y ffmpeg tesseract-ocr
           pip install openai-whisper --quiet
       - name: Free disk headroom
         run: |
@@ -265,9 +269,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg, espeak & whisper
+      - name: Install ffmpeg, espeak, tesseract & whisper
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg espeak
+          # tesseract MUST match the pipeline job, for the same reason
+          # YT_NARRATION_MODE does: this job exists to predict what the real
+          # build will do, and it renders through the same artifact QC gate.
+          # Without OCR here the dry run fails a check the real build would
+          # pass, which is the drift that makes a dry run worthless.
+          sudo apt-get update && sudo apt-get install -y ffmpeg espeak tesseract-ocr
           pip install openai-whisper --quiet
       - name: Free disk headroom
         run: |

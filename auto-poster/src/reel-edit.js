@@ -40,6 +40,7 @@ import {
   KEEP_SILENCE_SECONDS,
   PIECE_DECLICK_SECONDS,
   MIN_RETAINED_SHARE,
+  pieceExtension,
 } from "./yt-oncamera-edit.js";
 import { ffmpeg, mediaDuration, concatArgs } from "./yt-assemble.js";
 
@@ -227,7 +228,18 @@ export function renderReelEdit(inputPath, outputDir, {
   const listFile = join(outputDir, "reel-concat.txt");
   writeFileSync(listFile, report.files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n") + "\n");
   const outputPath = join(outputDir, "reel-master.mp4");
-  runFfmpeg(concatArgs(listFile, outputPath));
+  // ONE AAC ENCODE FOR THE WHOLE REEL, not one per piece. The pieces carry PCM
+  // (see PIECE_AUDIO in yt-oncamera-edit.js) precisely so this join is
+  // sample-exact: an AAC encode per piece prepends a 21.3 ms priming frame to
+  // each one, the concat demuxer stacks them, and the audio walks behind the
+  // picture at 29.3 ms per cut. A reel is short enough that a handful of cuts
+  // is only a tenth of a second — but it is the same editor as the long-form
+  // path by design, and half a fix would be exactly the drift that sharing it
+  // was supposed to prevent.
+  const jointed = join(outputDir, `reel-joined.${pieceExtension()}`);
+  runFfmpeg(concatArgs(listFile, jointed));
+  runFfmpeg(["-y", "-i", jointed, "-c:v", "copy",
+             "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", outputPath]);
 
   return {
     outputPath,

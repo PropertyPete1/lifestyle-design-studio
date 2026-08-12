@@ -63,6 +63,7 @@ import { buildVisuals } from "./yt-visual-build.js";
 import { listLongformFootage } from "./yt-footage-source.js";
 import { creditsBlock } from "./yt-stock.js";
 import { selectPunches, captionTextFor } from "./yt-punch.js";
+import { runArtifactQc } from "./yt-artifact-qc.js";
 import { pickTrack, fetchMusicBed, musicReport, musicCreditsBlock, cacheKey as musicCacheKey, MUSIC_FOLDER } from "./yt-music.js";
 import { findInFolder, downloadFileById, uploadToFolder } from "./drive.js";
 import { getWordTimestamps } from "./burned-captions.js";
@@ -86,7 +87,7 @@ import {
   isUploaded,
   recentBrollHashes,
 } from "./yt-log.js";
-import { RESOLUTION } from "./yt-config.js";
+import { RESOLUTION, renderLayerSummary } from "./yt-config.js";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 
@@ -432,6 +433,12 @@ async function buildFromRecordings(approvals, record) {
   }
 
   console.log(`[YTPipeline] all ${ingest.result.matches.length} takes matched — building`);
+  // WHAT THIS BUILD WILL ACTUALLY DRAW, printed before it draws any of it.
+  // "Rebuild with music off" is a claim about a render, and the run that
+  // produced the video is the only place it can be checked — a workflow that
+  // sets a knob the code no longer reads looks identical in the diff to one
+  // that sets it correctly.
+  console.log(`[YTPipeline] ${renderLayerSummary()}`);
 
   // Recordings, keyed by takeId, for the planner.
   const recordings = {};
@@ -698,6 +705,31 @@ async function buildFromRecordings(approvals, record) {
     musicPath: bed.path,
     punches: punchPlan.punches,
   });
+
+  // ── THE PIPELINE WATCHES ITS OWN RENDER ──────────────────────────────────
+  //
+  // BEFORE THE UPLOAD AND BEFORE THE CARD, and the order is the requirement
+  // rather than an optimisation. Peter's eyes have been the only thing in this
+  // loop that ever looked at the finished video, which means every defect cost a
+  // review round to find and the pipeline reported success on all of them. A
+  // check that runs after the card has been sent is a check that has already
+  // failed at its job.
+  //
+  // Failing here throws away a completed render, which is expensive and correct.
+  // A build that cannot prove its own output is watchable has not produced a
+  // publish candidate, and sending one anyway is how card 8 happened.
+  const qc = runArtifactQc({
+    videoPath: rendered.outputPath,
+    duration: rendered.seconds,
+    qcInputs: rendered.qcInputs,
+    workDir,
+  });
+  if (!qc.ok) {
+    console.log(`::error::the render failed ${qc.failures.length} artifact check(s) — no card will be sent`);
+    throw new Error(
+      `the render did not pass its own checks and will not be sent for review:\n${qc.summary}`
+    );
+  }
 
   const packaging = await buildPackaging({
     topic: { title: result.selectedTitle, query: result.query, market: result.market, intent: result.intent },

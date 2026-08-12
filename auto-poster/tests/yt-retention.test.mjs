@@ -219,12 +219,29 @@ describe("punch-in splitting", () => {
 });
 
 describe("piece rendering arguments", () => {
-  test("seeks AFTER the input so cuts are frame-accurate", () => {
-    // -ss before -i lands on a keyframe, which is a cut point that drifts into
-    // the middle of a word.
+  test("seeks BEFORE the input, so the filter graph's clock is the piece's", () => {
+    // THIS TEST USED TO ASSERT THE OPPOSITE, on the reasoning that output-side
+    // seeking is frame-accurate and input-side seeking lands on a keyframe.
+    // Modern ffmpeg seeks to the keyframe and then decodes forward to the exact
+    // frame, so both are accurate — verified against a per-frame luminance
+    // stamp, where the two methods land on the same source frame to the pixel.
+    //
+    // What output-side seeking does NOT do is move the filter graph's clock.
+    // Frames are filtered on the source timeline and discarded afterwards, so
+    // the declick fades — computed relative to the piece — were evaluated
+    // against the source. `afade=t=out` holds silence once its ramp completes,
+    // and its ramp completed before the retained window opened: every piece
+    // with srcStart > 0 rendered at peak 0. Silent. Card 8 lost most of Peter's
+    // voice this way, and the zoom pulses never fired off the first piece for
+    // the same reason.
+    //
+    // See tests/yt-artifact-qc.test.mjs §7, which renders the pieces and
+    // measures them rather than arguing about argument order.
     const args = pieceArgs("in.mp4", "out.mp4", { srcStart: 5, srcEnd: 9, seconds: 4, scale: 1 }, DIM);
-    assert.ok(args.indexOf("-ss") > args.indexOf("-i"), "-ss must come after -i");
+    assert.ok(args.indexOf("-ss") < args.indexOf("-i"), "-ss must come before -i");
+    assert.ok(args.indexOf("-to") < args.indexOf("-i"), "-to must come before -i");
     assert.equal(args[args.indexOf("-to") + 1], "9");
+    assert.equal(args[args.indexOf("-ss") + 1], "5");
   });
 
   test("a tight framing CROPS rather than scaling", () => {
