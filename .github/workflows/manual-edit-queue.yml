@@ -34,20 +34,6 @@ name: Manual Edit Queue
 # the long-form pipeline poll, which is interference with the thing the hard
 # rule says not to interfere with.
 on:
-  # ─── TEMPORARY, AND IT COMES OUT BEFORE THIS MERGES ────────────────────────
-  # GitHub will not accept a workflow_dispatch for a workflow that is not yet on
-  # the default branch, so the sweep cannot be dispatched from this branch until
-  # the branch is merged — which is the wrong order: the sweep is what says
-  # whether it SHOULD merge. A push trigger scoped to this one branch is the
-  # standard way out. It is removed in the last commit before review.
-  push:
-    branches: [feat/manual-edit-queue]
-    paths:
-      - 'auto-poster/src/edit-queue*'
-      - 'auto-poster/src/reel-*'
-      - 'auto-poster/scripts/edit-queue-sweep.mjs'
-      - '.github/workflows/manual-edit-queue.yml'
-      - 'auto-poster/SWEEP_TRIGGER'
   schedule:
     # Scan: 8am, 12pm, 4pm and 8pm CT. No :30 backup crons, unlike the posting
     # jobs — discovery is idempotent and self-healing, so a scan GitHub drops
@@ -233,9 +219,7 @@ jobs:
   # schedule and it declares the live acknowledgement the repo uses for jobs
   # that touch production.
   sweep:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'sweep')
-      || github.event_name == 'push'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'sweep'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     concurrency:
