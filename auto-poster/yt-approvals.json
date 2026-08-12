@@ -1004,6 +1004,17 @@
         "notes": "Rejected — rebuild as revision 9 with the merged feel fixes (place-window maps, concept-fallback stock, beat bridge cap, smooth tweens, silent dead-space joins, crossfades). Same takes.",
         "reworkQueued": true
       }
+    },
+    {
+      "requestId": "video_review-2026-08-12-49abed53",
+      "kind": "video_review",
+      "requestedAt": "2026-08-12T02:30:07.337Z",
+      "payload": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "title": "Best North San Antonio Neighborhoods for Veterans, Compared",
+        "requestId": "topic_pick-2026-08-07-d5cddf9d"
+      },
+      "videoId": "vid-2026-08-07-d5cddf9d"
     }
   ]
 }
