@@ -228,9 +228,14 @@ async function followerHunt() {
   }
 
   console.log("\n## Competitor surface — does our own brand appear with a follower count?\n");
+  // Metricool lets an account track itself as a competitor, and the competitor
+  // record does carry followers. That would be a follower source — but only if
+  // the owner has configured it, which makes it a source that silently
+  // disappears. Checked anyway, because "unavailable" has to survive the
+  // obvious follow-up question.
   for (const network of ["instagram", "tiktok", "youtube"]) {
-    const r = await api(`/v2/analytics/competitors/${network}`);
-    const body = redact(JSON.stringify(r.json ?? r.text)).slice(0, 260);
+    const r = await api(`/v2/analytics/competitors/${network}?from=${iso(from)}&to=${iso(to)}&timezone=America/Chicago`);
+    const body = redact(JSON.stringify(r.json ?? r.text)).slice(0, 400);
     console.log(`  ${String(r.status).padStart(3)}  /v2/analytics/competitors/${network.padEnd(10)} ${body}`);
   }
 }
