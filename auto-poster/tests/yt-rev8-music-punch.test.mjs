@@ -101,9 +101,22 @@ describe("1. the music bed", () => {
     assert.ok(graph.indexOf("volume=eval=frame") < graph.indexOf("sidechaincompress"));
   });
 
-  test("a download that returns an error page is not accepted as a track", async () => {
+  test("the bed is OFF unless a build asks for it", async () => {
+    // The baseline strip made every added layer opt-in: a workflow that forgets
+    // to mention the knob gets a video with no bed, rather than a video with a
+    // bed nobody reviewed. `enabled` is how the rest of this suite still reaches
+    // the acquisition logic behind it.
     const r = await fetchMusicBed({
       track: TRACKS[0], dir: DIR,
+      fetchImpl: async () => { throw new Error("must not reach the network"); },
+    });
+    assert.equal(r.path, null);
+    assert.match(r.reason, /YT_MUSIC is off/);
+  });
+
+  test("a download that returns an error page is not accepted as a track", async () => {
+    const r = await fetchMusicBed({
+      track: TRACKS[0], dir: DIR, enabled: true,
       fetchImpl: async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(512) }),
     });
     assert.equal(r.path, null);
@@ -112,7 +125,7 @@ describe("1. the music bed", () => {
 
   test("a failed fetch is reported, never thrown — the video ships without music", async () => {
     const r = await fetchMusicBed({
-      track: TRACKS[1], dir: DIR,
+      track: TRACKS[1], dir: DIR, enabled: true,
       fetchImpl: async () => { throw new Error("ECONNREFUSED"); },
     });
     assert.equal(r.path, null);
@@ -123,7 +136,7 @@ describe("1. the music bed", () => {
   test("the Drive cache is preferred over the network", async () => {
     let fetched = false;
     const r = await fetchMusicBed({
-      track: TRACKS[2], dir: DIR,
+      track: TRACKS[2], dir: DIR, enabled: true,
       driveGet: async (name) => { assert.equal(name, cacheKey(TRACKS[2])); return Buffer.alloc(600 * 1024, 1); },
       fetchImpl: async () => { fetched = true; throw new Error("should not reach the network"); },
     });
@@ -142,6 +155,21 @@ describe("2. micro-punches say what the captions say", () => {
     const byText = Object.fromEntries(c.map((x) => [x.text, x.klass]));
     assert.equal(byText["$0"], PUNCH_CLASS.CURRENCY);
     assert.equal(byText["100%"], PUNCH_CLASS.PERCENT);
+    // "month nine" is NOT here by default any more. The counted class is
+    // switched off — see PUNCH_CLASS in yt-punch.js for the list of what it
+    // actually put on screen across two revisions — and the scanner behind the
+    // gate is checked in the next test.
+    assert.equal(byText["month nine"], undefined);
+  });
+
+  test("the disabled classes are gated, not deleted", () => {
+    // The finder is intact. Only what reaches the plan is narrowed, so widening
+    // it again is a workflow change and nothing else.
+    const c = punchCandidatesFor(
+      seg("t", "you pay $0 up front and 100% of the fee comes back by month nine.", 20),
+      { allowedClasses: ["currency", "percent", "counted", "figure"] }
+    );
+    const byText = Object.fromEntries(c.map((x) => [x.text, x.klass]));
     assert.equal(byText["month nine"], PUNCH_CLASS.COUNTED);
   });
 
@@ -161,7 +189,7 @@ describe("2. micro-punches say what the captions say", () => {
       seg("t2", "You put down $0 at closing, and 100% of that credit survives to month nine of the build.", 60),
       seg("t3", "That is the trade nobody explains up front.", 40),
     ] };
-    const { punches } = selectPunches(plan, { max: 6, minGap: 5, protectedSeconds: 15 });
+    const { punches } = selectPunches(plan, { enabled: true, max: 6, minGap: 5, protectedSeconds: 15 });
     assert.ok(punches.length > 0, "this script has punchable figures in it");
     for (const p of punches) {
       const take = plan.segments.find((s) => s.takeId === p.takeId);
@@ -179,7 +207,7 @@ describe("2. micro-punches say what the captions say", () => {
     // buildCaptionChunks splits on /\s+/ and joins with one space, so a punch
     // compared against the RAW script would pass here and fail on screen.
     const plan = { segments: [seg("t1", "hold\n\nthe   line at   100%   even  then", 40)] };
-    const { punches } = selectPunches(plan, { minGap: 1, protectedSeconds: 0 });
+    const { punches } = selectPunches(plan, { enabled: true, minGap: 1, protectedSeconds: 0 });
     for (const p of punches) {
       assert.ok(captionTextFor(plan.segments[0]).includes(p.text));
     }
@@ -209,11 +237,17 @@ describe("2. micro-punches say what the captions say", () => {
     assert.deepEqual(punchCandidatesFor(s), []);
   });
 
-  test("the real counted nouns still punch — the boundary rule is not a blanket ban", () => {
-    // The fix must not buy verbatim-ness by rejecting the feature.
-    assert.ok(punchCandidatesFor(seg("t", "you are on highway ten minutes from the loop", 20))
+  test("the counted scanner still works behind its gate", () => {
+    // THIS TEST USED TO REQUIRE "highway ten" TO PUNCH, which is the road-name
+    // defect written down as a requirement. It is kept, with the gate opened
+    // explicitly, because the boundary rule it was guarding is still real and
+    // still needs cover — but wanting the class ON is no longer the default,
+    // and "highway ten" is now an example of what the gate is for rather than
+    // an example of what the feature is for.
+    const wide = { allowedClasses: ["currency", "percent", "counted", "figure"] };
+    assert.ok(punchCandidatesFor(seg("t", "you are on highway ten minutes from the loop", 20), wide)
       .some((c) => c.text === "highway ten"));
-    assert.ok(punchCandidatesFor(seg("t", "the credit survives to month nine of the build", 20))
+    assert.ok(punchCandidatesFor(seg("t", "the credit survives to month nine of the build", 20), wide)
       .some((c) => c.text === "month nine"));
   });
 
@@ -252,7 +286,7 @@ describe("2. micro-punches say what the captions say", () => {
       seg("t2", "you put down $0 at closing, and 100% of that credit survives to month nine.", 60),
       seg("t3", "the fee is 100%. Nine times out of ten nobody reads it at all", 40),
     ] };
-    const { punches } = selectPunches(plan, { max: 6, minGap: 5, protectedSeconds: 15 });
+    const { punches } = selectPunches(plan, { enabled: true, max: 6, minGap: 5, protectedSeconds: 15 });
     for (const p of punches) {
       const take = plan.segments.find((s) => s.takeId === p.takeId);
       assert.ok(
@@ -265,7 +299,7 @@ describe("2. micro-punches say what the captions say", () => {
 
   test("a punch is on screen while its own words are in the captions", () => {
     const plan = { segments: [seg("t1", "one two three four five six seven eight $0 ten eleven twelve", 12)] };
-    const { punches } = selectPunches(plan, { minGap: 1, protectedSeconds: 0 });
+    const { punches } = selectPunches(plan, { enabled: true, minGap: 1, protectedSeconds: 0 });
     const p = punches.find((x) => x.text === "$0");
     assert.ok(p, "the figure is punched");
     const chunk = buildCaptionChunks(plan).find((c) => c.text.includes("$0"));
@@ -277,7 +311,7 @@ describe("2. micro-punches say what the captions say", () => {
 
   test("nothing draws in the protected opening", () => {
     const plan = { segments: [seg("t1", "$0 down and 100% back", 60)] };
-    const { punches, rejected } = selectPunches(plan, { protectedSeconds: 15, minGap: 1 });
+    const { punches, rejected } = selectPunches(plan, { enabled: true, protectedSeconds: 15, minGap: 1 });
     assert.ok(punches.every((p) => p.at >= 15));
     assert.ok(rejected.some((r) => /protected opening/.test(r.reason)) || punches.length > 0);
   });
@@ -285,7 +319,7 @@ describe("2. micro-punches say what the captions say", () => {
   test("the ceiling and the spacing both hold", () => {
     const text = Array.from({ length: 40 }, (_, i) => `item ${i + 10} costs $${i + 10}00`).join(" ");
     const plan = { segments: [seg("t1", text, 600)] };
-    const { punches } = selectPunches(plan, { max: 4, minGap: 20, protectedSeconds: 15 });
+    const { punches } = selectPunches(plan, { enabled: true, max: 4, minGap: 20, protectedSeconds: 15 });
     assert.ok(punches.length <= 4, `${punches.length} punches exceeds the ceiling`);
     for (let i = 1; i < punches.length; i++) {
       assert.ok(punches[i].at - punches[i - 1].at >= 20, "two punches landed inside the gap");
@@ -297,7 +331,7 @@ describe("2. micro-punches say what the captions say", () => {
       { takeId: "oc", kind: "on_camera", text: "you pay $0 up front", seconds: 60 },
       seg("vo", "and 100% comes back", 60),
     ] };
-    const { punches } = selectPunches(plan, { minGap: 1, protectedSeconds: 0 });
+    const { punches } = selectPunches(plan, { enabled: true, minGap: 1, protectedSeconds: 0 });
     assert.ok(punches.every((p) => p.takeId !== "oc"), "an edited take's word positions move");
   });
 

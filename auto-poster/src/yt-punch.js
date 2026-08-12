@@ -54,9 +54,10 @@
 import sharp from "sharp";
 
 import { BRAND, SANS } from "./carousel-render.js";
-import { MICRO_PUNCHES_ENABLED, MICRO_PUNCH_MAX, MICRO_PUNCH_SECONDS } from "./yt-config.js";
+import { MICRO_PUNCHES_ENABLED, MICRO_PUNCH_MAX, MICRO_PUNCH_SECONDS, MICRO_PUNCH_CLASSES } from "./yt-config.js";
 import { PROTECTED_SECONDS } from "./yt-opening.js";
 import { FUNCTION_WORDS } from "./yt-scene-keywords.js";
+import { assertRenderableText } from "./yt-text-safety.js";
 
 /** Must match buildCaptionChunks, and is imported nowhere so it cannot drift silently. */
 const WORDS_PER_CHUNK = 4;
@@ -81,6 +82,44 @@ export const PUNCH_CLASS = {
   COUNTED: "counted",
   FIGURE: "figure",
 };
+
+/**
+ * WHICH CLASSES A BUILD MAY ACTUALLY DRAW, and why two of the four are off.
+ *
+ * The four classes are not equally trustworthy, and two revisions of evidence
+ * say so. CURRENCY and PERCENT are anchored by a SYMBOL — `$` and `%` mean
+ * "quantity" in English and mean nothing else, so a token carrying one is a
+ * quantity no matter what surrounds it. Neither class has ever produced a bad
+ * punch.
+ *
+ * COUNTED and FIGURE are inferred from SHAPE, and shape does not survive
+ * contact with a real transcript. What they have actually put on screen:
+ *
+ *   revision 8   "the three", "other two", "and eleven", "mostly one",
+ *                "against 1604"
+ *   card 8       "410", "1604", "third one", "big one", "feeds one",
+ *                "hold three"
+ *
+ * Every one of those is verbatim in the captions, so the verbatim guard passed
+ * all of them and would pass them again. That is the important part: the defect
+ * was never that a punch disagreed with the captions, it was that "a lowercase
+ * word next to a number" and "a number with two digits" are not descriptions of
+ * an emphasis beat. `410` and `1604` are the two ring roads of San Antonio and
+ * appeared in gold, forty point, in the middle of the frame.
+ *
+ * Each fix so far has been another exclusion — not a function word, not an
+ * adverb, not across a comma — and each one shipped a build that found a shape
+ * the exclusions did not cover. The pattern is the argument: the classes cannot
+ * be repaired by adding rules to them, because English keeps producing new ways
+ * to put a word next to a number.
+ *
+ * So they are switched off rather than deleted. `YT_MICRO_PUNCH_CLASSES` takes
+ * them back the moment there is a reason, and the code that finds them is
+ * untouched and still tested.
+ */
+export function classEnabled(klass, allowed = MICRO_PUNCH_CLASSES) {
+  return allowed.includes(klass);
+}
 
 const CURRENCY = /^\$\d[\d,]*(\.\d+)?[KMB]?$/i;
 const PERCENT = /^\d+(\.\d+)?%$/;
@@ -129,7 +168,7 @@ function numericValue(token) {
  * PURE, and returns candidates rather than choices — the spacing and the ceiling
  * are video-wide decisions and cannot be made one segment at a time.
  */
-export function punchCandidatesFor(seg) {
+export function punchCandidatesFor(seg, { allowedClasses = MICRO_PUNCH_CLASSES } = {}) {
   const tokens = captionTokensFor(seg);
   const out = [];
 
@@ -207,7 +246,23 @@ export function punchCandidatesFor(seg) {
   // reject. Any future branch gets the same treatment for free: to ship a punch
   // the captions do not contain, you would have to delete this filter.
   const captionText = captionTextFor(seg);
-  return out.filter((c) => captionText.includes(c.text));
+  return out
+    .filter((c) => captionText.includes(c.text))
+    // THE CLASS GATE, APPLIED AFTER THE SCAN RATHER THAN INSIDE IT. The scanner
+    // still finds every candidate and `considered` still counts them, so the
+    // build report can say what a wider setting would have drawn. Only what
+    // reaches the plan is narrowed. See PUNCH_CLASS above for why.
+    .filter((c) => classEnabled(c.klass, allowedClasses))
+    // A PUNCH IS THE ONE PIECE OF TEXT ON SCREEN THAT NOBODY WROTE. Captions are
+    // the script; the opening overlay is reviewed before the build; a punch is
+    // assembled by this file out of tokens. So it gets the strictest check, at
+    // the point where it becomes a plan rather than at the point where it
+    // becomes pixels — a build that dies here has cost seconds, and one that
+    // dies at the plate has cost half an hour.
+    .filter((c) => {
+      assertRenderableText(c.text, `micro-punch candidate in take ${seg?.takeId ?? "?"}`);
+      return true;
+    });
 }
 
 /**
@@ -342,7 +397,12 @@ export function punchDisplay(text) {
  * disappears against half the clips the stock layer returns.
  */
 export function punchSvg(text, dim, { hold = MICRO_PUNCH_SECONDS } = {}) {
-  const display = punchDisplay(text);
+  // THE LAST GATE BEFORE PIXELS. Already checked in punchCandidatesFor, and
+  // checked again here because this function is what actually draws — a future
+  // caller that builds a punch some other way must not be able to reach the
+  // rasteriser without passing this. `escapeXml` below is the same hazard
+  // `escapeAss` was: it would happily render the insides of a template.
+  const display = punchDisplay(assertRenderableText(text, "a micro-punch plate"));
   // Long enough that a three-word punch still fits, tight enough that "$0" is
   // the size of the frame. Measured against the box rather than the glyphs
   // because the plate is centred and the exact advance width does not matter.

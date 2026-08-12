@@ -120,6 +120,17 @@ function oneOf(raw, allowed, fallback) {
 }
 
 /**
+ * A comma-separated subset of `allowed`, or `fallback` when nothing was asked
+ * for. An explicit empty string means the empty set — "none of them" has to be
+ * expressible, or a class list cannot be switched off from a workflow.
+ */
+function subsetOf(raw, allowed, fallback) {
+  if (raw === undefined || raw === null) return fallback;
+  const asked = String(raw).split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  return allowed.filter((a) => asked.includes(a));
+}
+
+/**
  * Whether the floating-head PIP may be composited over visuals.
  *
  * Per-video kill switch. Off is always safe: the visual plays full-screen,
@@ -242,6 +253,23 @@ export const MUSIC_ENABLED = process.env.YT_MUSIC === "true";
 export const MUSIC_DB = clampFloat(process.env.YT_MUSIC_DB, -14, -40, -3);
 
 /**
+ * The loudness the whole programme is brought to before anything is mixed under
+ * it, in LUFS.
+ *
+ * THE NUMBER THAT MAKES EVERY OTHER AUDIO KNOB MEAN SOMETHING. `YT_MUSIC_DB`,
+ * `YT_PUNCH_SFX_DB` and the sidechain threshold are all levels relative to full
+ * scale, and every one of them was being applied against a programme whose own
+ * level nobody had ever set: Peter's takes arrive at whatever the room gave
+ * them, and `postProcessVoiceoverAudio` only ever levelled generated TTS — of
+ * which card 8's build contained none.
+ *
+ * -16 LUFS is the streaming-delivery convention and is where YouTube's own
+ * normalisation lands, so a video at this level plays back at the same loudness
+ * as everything around it in the feed.
+ */
+export const PROGRAMME_LUFS = clampFloat(process.env.YT_PROGRAMME_LUFS, -16, -30, -8);
+
+/**
  * How much the bed lifts under the hook and the close, in dB above MUSIC_DB.
  *
  * The energy change is the point — a bed at one level for twelve minutes is
@@ -278,6 +306,24 @@ export const MICRO_PUNCH_MAX = clampInt(process.env.YT_MICRO_PUNCH_MAX, 6, 0, 12
 
 /** How long one punch holds the frame. Long enough to read, short enough to hit. */
 export const MICRO_PUNCH_SECONDS = clampFloat(process.env.YT_MICRO_PUNCH_SECONDS, 1.2, 0.6, 2.5);
+
+/**
+ * Which kinds of emphasis beat a punch may be drawn from.
+ *
+ * Defaults to the two SYMBOL-ANCHORED classes. `counted` and `figure` are
+ * inferred from token shape and have produced nothing but false positives across
+ * two revisions — the full argument, with the list of what they actually put on
+ * screen, is on PUNCH_CLASS in yt-punch.js.
+ *
+ * Comma-separated, so widening it is `YT_MICRO_PUNCH_CLASSES=currency,percent,counted`
+ * rather than a code change. Unknown names are dropped rather than throwing: a
+ * typo in a workflow should cost the class it misspelled, not the video.
+ */
+export const MICRO_PUNCH_CLASSES = subsetOf(
+  process.env.YT_MICRO_PUNCH_CLASSES,
+  ["currency", "percent", "counted", "figure"],
+  ["currency", "percent"]
+);
 
 /**
  * Whether punches and punch-in cuts carry a sound.
