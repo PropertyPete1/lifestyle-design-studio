@@ -25,11 +25,6 @@
         "worst_problem": "The description's opening two lines promise a broad price-and-commute comparison including Alamo Heights, Hollywood Park and Shavano Park — none of which appear anywhere in the chapters, which are actually a military/VA-buyer piece about 1604, ISD lines and MUD fees.",
         "fix": "Delete the boilerplate first two description lines and replace them with a summary that matches the chapters (Stone Oak vs Timberwood Park vs the northeast bases, the Northside/Comal ISD line, MUD and PID fees on top of the VA exemption), and put the veteran angle in the title, e.g. \"Moving to North San Antonio: Stone Oak, ISD Lines, and the MUD Fee Your VA Exemption Won't Cover.\""
       },
-      "uploadedAt": null,
-      "privacy": "private",
-      "youtubeUrl": null,
-      "metricoolPostId": null,
-      "blogId": "4807109",
       "approved": false,
       "revision": 10,
       "reworks": [
@@ -114,6 +109,11 @@
           "notes": "baseline rebuild (PR #86): the take audio comes back — output-side seek silenced every piece after the first, and an AAC encode per piece walked the audio ~2s behind the picture. Music, micro-punches, whooshes, impacts and the floating head are all OFF. The render is now gated on its own artifact checks."
         }
       ],
+      "uploadedAt": null,
+      "privacy": "private",
+      "youtubeUrl": null,
+      "metricoolPostId": null,
+      "blogId": "4807109",
       "reviewedAt": null,
       "reviewNotes": null,
       "shortsCutAt": null,
