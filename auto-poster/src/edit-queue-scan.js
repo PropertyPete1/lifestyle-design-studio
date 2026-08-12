@@ -134,7 +134,15 @@ async function main() {
     const reason = tooShortReason(record.durationSeconds, { fileName: record.fileName });
     if (reason) {
       console.log(`::warning::[EditQueueScan] ${reason}`);
+      // The failure card still gets a requestId, and it is STORED ON THE RECORD
+      // rather than minted inline for the notice. Two reasons, both small and
+      // both the kind of thing that reads as a bug from the outside: the
+      // envelope's requestId and the one inside failureCardPayload have to be
+      // the same string or a dashboard correlating them sees an orphan, and a
+      // record with no requestId at all leaves nothing to key a later retry to.
+      const requestId = requestIdFor(record);
       queue = setStatus(queue, record.driveFileId, STATUS.FAILED, {
+        queueRequestId: requestId,
         failure: { stage: "precheck", reason, at: new Date().toISOString() },
       });
       tooShort.push(record.fileName);
@@ -144,7 +152,7 @@ async function main() {
           payload: failureCardPayload(failed, { stage: "precheck", reason, remedy: "Record a longer take, or post this one as-is." }),
           mail: failureEmail(failed, { stage: "precheck", reason }),
           kind: KIND_REEL_EDIT,
-          requestId: `${record.test ? TEST_REQUEST_PREFIX : ""}${newRequestId(KIND_REEL_EDIT)}`,
+          requestId,
         });
       }
       continue;

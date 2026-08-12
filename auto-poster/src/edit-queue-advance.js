@@ -89,7 +89,9 @@ import {
   reviewCardPayload,
   startedCardPayload,
 } from "./edit-queue-cards.js";
-import { loadLog, recordPost, saveLog } from "./state.js";
+// No saveLog: recordPost persists posted-log.json itself, and calling both
+// would write the same file twice per item for no reason.
+import { loadLog, recordPost } from "./state.js";
 import { loadTrialHistory, saveTrialHistory } from "./trial-variant.js";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
@@ -494,18 +496,24 @@ async function runReviewDecision(queue, driveFileId, { accessToken }) {
       }
       console.log(`[EditQueueAdvance] ✓ ${item.label} on the Trial tab — ${delivery.driveLink}`);
 
-      // Recorded IMMEDIATELY after each item lands, and the queue is written
-      // out with it — not batched to the end. A crash between the third
-      // delivery and the end of the loop is exactly the case this exists for,
-      // and a marker that is only written on the happy path would not be there.
+      // ── EVERYTHING ABOUT THIS ITEM IS COMMITTED BEFORE THE NEXT ONE STARTS ──
+      //
+      // The marker and the Trial-tab record have to land TOGETHER, and batching
+      // either of them to the end of the loop breaks that. The first version
+      // wrote `deliveredLabels` per item and saved trial-variants.json once at
+      // the end, which is the worst of both: a crash on the third item would
+      // leave the first two marked as delivered — so a retry correctly skips
+      // them — with no trial-variants record for either. They would sit on the
+      // dashboard from the webhook and vanish on the next page load, and the
+      // smoke suite's "trial parity" test is precisely the check that catches
+      // that state.
+      //
+      // recordPost() already persists posted-log.json itself; saveTrialHistory
+      // is the half that was missing.
       sentNow.push(item.label);
       queue = setStatus(queue, driveFileId, STATUS.IN_REVIEW, { deliveredLabels: [...sentNow] });
+      if (!record.test) saveTrialHistory(history);
       saveQueue(queue);
-    }
-
-    if (!record.test) {
-      saveTrialHistory(history);
-      saveLog(log);
     }
   } finally {
     rmSync(work, { recursive: true, force: true });
