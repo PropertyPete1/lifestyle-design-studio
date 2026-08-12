@@ -15,19 +15,19 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, existsSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, existsSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
-  checkAudioLevels, checkJoinClicks, checkMotion, checkOverlayText,
+  checkAudioLevels, checkJoinClicks, checkMotion, checkOverlayText, checkDuration,
   speechWindows, decodePcm, rmsDb, ocrAvailable, ocrNormalise, runArtifactQc,
-  timestamp,
+  preserveFailedRender, timestamp,
 } from "../src/yt-artifact-qc.js";
 import { assertRenderableText, describeTextProblem, isRenderableText } from "../src/yt-text-safety.js";
 import { punchSvg, renderPunchPng, punchCandidatesFor, selectPunches, PUNCH_CLASS } from "../src/yt-punch.js";
 import { pieceArgs, pieceExtension } from "../src/yt-oncamera-edit.js";
-import { programmeGainDb, bedRelativeGainDb, parseLoudnessJson, duckArgs, levelProgrammeArgs, concatArgs } from "../src/yt-assemble.js";
+import { programmeGainDb, bedRelativeGainDb, parseLoudnessJson, duckArgs, levelProgrammeArgs, concatArgs, muxNarrationArgs } from "../src/yt-assemble.js";
 
 const ff = (args) => execFileSync("ffmpeg", args, { stdio: ["pipe", "pipe", "pipe"] });
 const have = (bin) => !spawnSync(bin, ["-version"], { encoding: "utf-8" }).error;
@@ -336,6 +336,109 @@ describe("5. the gate refuses to pass what it could not check", () => {
   });
 });
 
+// ─── 5b. the render is the length the plan asked for ────────────────────────
+
+describe("5b. a render that stopped matching its plan is caught", () => {
+  test("a render within tolerance passes", () => {
+    const r = checkDuration({ actualSeconds: 668, plannedSeconds: 671.8, segments: [] });
+    assert.ok(r.ok, `4s short of an 11-minute plan is codec rounding: ${JSON.stringify(r.failures)}`);
+    assert.equal(r.stats.driftSeconds, -3.8);
+  });
+
+  test("THE 2026-08-12 RENDER FAILS, with the number in the message", () => {
+    // The actual figures from run 31631297976. This check did not exist, so the
+    // one sentence that described the defect was never printed — it was inferred
+    // afterwards from ninety-five duplicate-frame reports, which are the symptom
+    // two steps downstream.
+    const r = checkDuration({
+      actualSeconds: 1231.2,
+      plannedSeconds: 671.8,
+      segments: [
+        { takeId: "s1t1", kind: "on_camera", planned: 16.7, measured: 16.7 },
+        { takeId: "s1t2", kind: "voiceover", planned: 21.4, measured: 58.9 },
+        { takeId: "s1t3", kind: "voiceover", planned: 18.2, measured: 46.1 },
+      ],
+    });
+    assert.equal(r.ok, false);
+    assert.match(r.failures[0].reason, /20\.5 min against a 11\.2 min plan/);
+    assert.match(r.failures[0].reason, /\+559s \(83\.3%\)/);
+    // THE SEGMENT TABLE IS THE DIAGNOSIS. "The voiceover segments are the ones
+    // that overran" is very nearly the fix, and it is the difference between
+    // this and another fifty-five minute bisect.
+    assert.match(r.failures[0].reason, /s1t2 \(voiceover\) planned 21\.40s, rendered 58\.90s/);
+    assert.ok(!/s1t1/.test(r.failures[0].reason), "a segment that matched its plan is not named");
+  });
+
+  test("a render SHORT of its plan fails too — a lost segment is not a pass", () => {
+    const r = checkDuration({ actualSeconds: 400, plannedSeconds: 671.8, segments: [] });
+    assert.equal(r.ok, false);
+    assert.match(r.failures[0].reason, /-272s/);
+  });
+
+  test("no plan to compare against is a failure, not a skip", () => {
+    const r = checkDuration({ actualSeconds: 600, plannedSeconds: null });
+    assert.equal(r.ok, false);
+    assert.match(r.failures[0].reason, /nobody looked/);
+  });
+
+  test("an unreadable render is a failure", () => {
+    const r = checkDuration({ actualSeconds: 0, plannedSeconds: 671.8 });
+    assert.equal(r.ok, false);
+    assert.match(r.failures[0].reason, /ffprobe could not read it/);
+  });
+
+  test("duration is checked FIRST, so the cause is read before the symptoms", () => {
+    const r = runArtifactQc({ videoPath: "/nope.mp4", duration: 10, qcInputs: {}, workDir: dir, log: () => {} });
+    assert.equal(r.results[0].name, "duration");
+  });
+});
+
+// ─── 5c. the evidence survives the failure ──────────────────────────────────
+
+describe("5c. a render that fails its checks is kept", () => {
+  test("THE RENDER AND THE REPORT BOTH SURVIVE", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    const keepDir = join(dir, "kept");
+    const render = join(dir, "to-keep.mp4");
+    ff(["-y", "-v", "error", "-f", "lavfi", "-i", "color=c=black:s=64x64:r=30:d=1",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", render]);
+
+    const qc = { ok: false, results: [{ name: "duration", ok: false, failures: [{ reason: "too long" }] }], failures: [{ check: "duration", reason: "too long" }] };
+    const kept = preserveFailedRender({ videoPath: render, qc, plan: { plannedSeconds: 671.8 }, dir: keepDir, log: () => {} });
+
+    assert.ok(kept.video && existsSync(kept.video), "the render itself is kept");
+    assert.ok(kept.report && existsSync(kept.report), "the report is kept");
+    assert.deepEqual(kept.errors, []);
+
+    const report = JSON.parse(readFileSync(kept.report, "utf-8"));
+    assert.equal(report.ok, false);
+    assert.equal(report.plan.plannedSeconds, 671.8);
+    assert.equal(report.failures[0].check, "duration");
+    assert.ok(report.failedAt, "the report is dated");
+  });
+
+  test("the ORIGINAL is not moved — preserving must not disturb the render", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    assert.ok(existsSync(join(dir, "to-keep.mp4")), "the source file is still where the pipeline left it");
+  });
+
+  test("a preservation that cannot happen REPORTS rather than throwing", () => {
+    // This runs on the way to throwing an error that already says what is
+    // wrong. Throwing here would replace a useful failure with a confusing one.
+    const kept = preserveFailedRender({
+      videoPath: "/does/not/exist.mp4",
+      qc: { ok: false, results: [], failures: [] },
+      dir: join(dir, "kept2"),
+      log: () => {},
+    });
+    assert.equal(kept.video, null);
+    assert.ok(kept.errors.some((e) => /already gone/.test(e)));
+    // The report still lands, because the failure list is worth keeping even
+    // when the file is not.
+    assert.ok(kept.report && existsSync(kept.report));
+  });
+});
+
 // ─── 6. text that cannot be drawn ───────────────────────────────────────────
 
 describe("6. an unsubstituted template crashes rather than rendering", () => {
@@ -473,6 +576,66 @@ describe("7. every piece of an on-camera take keeps its audio", () => {
     const edge = rmsDb(s, 0, 48000 * 0.004);
     const body = rmsDb(s, 48000 * 1.0, 48000 * 1.1);
     assert.ok(edge < body - 6, `the piece opens on a fade: edge ${edge.toFixed(1)} vs body ${body.toFixed(1)}`);
+  });
+});
+
+// ─── 7b. the voiceover picture is bounded by its narration ──────────────────
+
+describe("7b. a segment is the length the plan allocated it", () => {
+  before(() => {
+    if (!have("ffmpeg")) return;
+    // A 12s picture and 8s of narration against a 5s allocation.
+    ff(["-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=30:duration=12",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-an", join(dir, "vo-picture.mp4")]);
+    ff(["-y", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=8:sample_rate=48000",
+        "-c:a", "pcm_s16le", join(dir, "vo-narration.wav")]);
+  });
+
+  const durationOf = (f) => Number.parseFloat(execFileSync("ffprobe",
+    ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f], { encoding: "utf-8" }).trim());
+
+  test("A NARRATION LONGER THAN ITS ALLOCATION DOES NOT STRETCH THE SEGMENT", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    // THE PROPERTY THAT MATTERS, and the one -shortest does not provide.
+    // Captions are laid out from seg.seconds, so a segment that renders longer
+    // than its allocation drifts every caption after it for the rest of the
+    // video. Reachable under YT_NARRATION_MODE=peter: generateNarration only
+    // updates seg.seconds from audio it GENERATED, and it skips every take that
+    // already carries Peter's own recording.
+    const out = join(dir, "vo-bounded.mp4");
+    ff(muxNarrationArgs(join(dir, "vo-picture.mp4"), join(dir, "vo-narration.wav"), out, { seconds: 5 }));
+    assert.ok(Math.abs(durationOf(out) - 5) < 0.2,
+      `the segment must be its 5s allocation, not its 8s narration: got ${durationOf(out)}s`);
+  });
+
+  test("-shortest alone gives the narration's length, which is the gap -t closes", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    // The control that establishes -t is doing something. -shortest DOES work
+    // under -c:v copy — it correctly ends a 12s picture at 5s of narration —
+    // it just answers a different question from "how long is this segment
+    // supposed to be".
+    const out = join(dir, "vo-unbounded.mp4");
+    ff(muxNarrationArgs(join(dir, "vo-picture.mp4"), join(dir, "vo-narration.wav"), out));
+    assert.ok(durationOf(out) > 7,
+      `without -t the segment takes the narration's length: got ${durationOf(out)}s`);
+  });
+
+  test("a picture SHORTER than its narration is still ended by -shortest", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    // -t is a ceiling; this is the floor it does not cover. A picture that ran
+    // out early would otherwise freeze its last frame to fill the gap.
+    const shortPic = join(dir, "vo-short.mp4");
+    ff(["-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=30:duration=3",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-an", shortPic]);
+    const out = join(dir, "vo-floor.mp4");
+    ff(muxNarrationArgs(shortPic, join(dir, "vo-narration.wav"), out, { seconds: 5 }));
+    assert.ok(durationOf(out) < 4, `the segment ends with the picture: got ${durationOf(out)}s`);
+  });
+
+  test("renderTimeline hands the allocation through", () => {
+    const a = muxNarrationArgs("p.mp4", "n.wav", "o.mp4", { seconds: 12.5 });
+    assert.equal(a[a.indexOf("-t") + 1], "12.5");
+    assert.ok(a.includes("-shortest"), "the floor stays");
   });
 });
 

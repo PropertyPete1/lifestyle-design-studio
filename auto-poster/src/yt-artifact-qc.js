@@ -36,7 +36,7 @@
  */
 
 import { execFileSync, spawnSync } from "child_process";
-import { existsSync, readFileSync, rmSync } from "fs";
+import { existsSync, rmSync, mkdirSync, copyFileSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
 
 import { describeTextProblem } from "./yt-text-safety.js";
@@ -387,7 +387,95 @@ export function checkMotion({ path, duration, maxRatio = MAX_DUPLICATE_FRAME_RAT
   };
 }
 
-// ─── 4. OCR on every overlay ────────────────────────────────────────────────
+// ─── 4. the render is the length the plan said ──────────────────────────────
+
+/**
+ * How far the finished file may be from the timeline that described it.
+ *
+ * The tolerance is generous on purpose. This is not a check for the frame of
+ * rounding a codec adds at a segment boundary — `join-clicks` and the marker
+ * test cover that class. This is a check for the render having stopped
+ * describing the plan at all, and the number that made it necessary is 83%.
+ */
+export const MAX_DURATION_DRIFT = Number.parseFloat(process.env.YT_QC_MAX_DURATION_DRIFT || "0.015");
+
+/**
+ * Did the render come out the length its own timeline asked for?
+ *
+ * THE CHEAPEST CHECK HERE AND THE MOST DIAGNOSTIC, and it did not exist for the
+ * 2026-08-12 build. That render was 20.5 minutes against a 11.2 minute plan —
+ * the single most useful sentence about it — and nothing said so. It was
+ * inferred afterwards from a duplicate-frame count, which is the symptom two
+ * steps downstream: a picture padded to twice its length is mostly frames
+ * repeated, so `motion` fired ninety-five times and `duration` would have fired
+ * once, with the actual number in it.
+ *
+ * PER-SEGMENT WHERE IT CAN BE. A total that disagrees says the render is wrong;
+ * the segment table says WHICH segments, which is the difference between a fix
+ * and another fifty-five minute bisect. Voiceover and on-camera segments come
+ * from completely different branches of renderTimeline, so "the overrun is all
+ * in the voiceover takes" is very nearly the diagnosis on its own.
+ */
+export function checkDuration({ actualSeconds, plannedSeconds, segments = [], tolerance = MAX_DURATION_DRIFT }) {
+  if (!Number.isFinite(plannedSeconds) || plannedSeconds <= 0) {
+    return {
+      name: "duration",
+      ok: false,
+      failures: [{ reason: "the plan reported no duration, so the render could not be compared to it — nobody looked" }],
+    };
+  }
+  if (!Number.isFinite(actualSeconds) || actualSeconds <= 0) {
+    return {
+      name: "duration",
+      ok: false,
+      failures: [{ reason: "the finished file reported no duration — ffprobe could not read it" }],
+    };
+  }
+
+  const drift = actualSeconds - plannedSeconds;
+  const pct = drift / plannedSeconds;
+  const allowed = Math.max(2, plannedSeconds * tolerance);
+  const failures = [];
+
+  if (Math.abs(drift) > allowed) {
+    // The offending segments, worst first, so the message names the branch.
+    const bad = segments
+      .filter((s) => Number.isFinite(s.measured) && Number.isFinite(s.planned) && Math.abs(s.measured - s.planned) > 0.25)
+      .sort((a, b) => Math.abs(b.measured - b.planned) - Math.abs(a.measured - a.planned))
+      .slice(0, 8)
+      .map((s) => `${s.takeId} (${s.kind}) planned ${s.planned.toFixed(2)}s, rendered ${s.measured.toFixed(2)}s`);
+
+    failures.push({
+      at: 0,
+      drift: Math.round(drift * 100) / 100,
+      reason:
+        `the render is ${fmtMinutes(actualSeconds)} against a ${fmtMinutes(plannedSeconds)} plan — ` +
+        `${drift > 0 ? "+" : ""}${Math.round(drift)}s (${(pct * 100).toFixed(1)}%), and ${Math.round(allowed)}s is the limit.` +
+        (bad.length
+          ? ` The segments that disagree: ${bad.join("; ")}`
+          : " No single segment disagrees, so the length was added after the segments were joined."),
+    });
+  }
+
+  return {
+    name: "duration",
+    ok: failures.length === 0,
+    stats: {
+      plannedSeconds: Math.round(plannedSeconds * 10) / 10,
+      actualSeconds: Math.round(actualSeconds * 10) / 10,
+      driftSeconds: Math.round(drift * 10) / 10,
+      driftPct: Math.round(pct * 1000) / 10,
+      segmentsMeasured: segments.length,
+    },
+    failures,
+  };
+}
+
+function fmtMinutes(seconds) {
+  return `${(seconds / 60).toFixed(1)} min`;
+}
+
+// ─── 5. OCR on every overlay ────────────────────────────────────────────────
 
 /** Is tesseract on this machine? A check that cannot run is not a check that passed. */
 export function ocrAvailable(run = spawnSync) {
@@ -554,6 +642,14 @@ export function runArtifactQc({ videoPath, duration, qcInputs = {}, workDir, log
     }
   };
 
+  // DURATION FIRST, because when it fails everything downstream is describing
+  // the consequences. A picture padded to twice its length reports as ninety-five
+  // motion failures, and reading those first is reading the symptom.
+  results.push(guard("duration", () => checkDuration({
+    actualSeconds: duration,
+    plannedSeconds: qcInputs.plannedSeconds,
+    segments: qcInputs.segmentDurations || [],
+  })));
   results.push(guard("audio-levels", () => checkAudioLevels({
     voicePath: qcInputs.voiceOnlyPath,
     bedPath: qcInputs.bedOnlyPath,
@@ -583,6 +679,80 @@ export function runArtifactQc({ videoPath, duration, qcInputs = {}, workDir, log
   };
 }
 
+/**
+ * Where a render that failed its checks is kept.
+ *
+ * A FIXED PATH, OUTSIDE THE WORK DIRECTORY, because the work directory is a
+ * tmpdir named after a timestamp and the workflow step that collects the
+ * evidence has to know where to look before the build has run.
+ */
+export const FAILED_RENDER_DIR = process.env.YT_QC_FAILED_DIR || "/tmp/yt-qc-failed";
+
+/**
+ * Keep the render that failed, and everything needed to argue with the failure.
+ *
+ * THE 2026-08-12 BUILD IS WHY THIS EXISTS. Fifty-five minutes of encoding
+ * produced a video that failed two checks, the pipeline threw, and the file went
+ * with the runner. The one artifact that would have answered "why is this 20.5
+ * minutes long" in thirty seconds did not survive the function that noticed it
+ * was wrong — so the next step was another fifty-five minutes to look at
+ * something the build had already been holding.
+ *
+ * A gate that destroys its own evidence is worse than no gate: it converts a
+ * diagnosable defect into a guess.
+ *
+ * COPIED, NOT MOVED, and failures here are swallowed. This runs on the way to
+ * throwing an error that already says what is wrong; a preservation step that
+ * threw would replace a useful failure with a confusing one.
+ *
+ * It also means Peter can WATCH a render the gate refused to card. "The checks
+ * blocked it" and "nobody can see it" are different things, and only the first
+ * one is intended.
+ */
+export function preserveFailedRender({ videoPath, qc, plan = null, dir = FAILED_RENDER_DIR, log = console.log }) {
+  const kept = { dir, video: null, report: null, errors: [] };
+  try {
+    mkdirSync(dir, { recursive: true });
+  } catch (err) {
+    kept.errors.push(`could not create ${dir}: ${err.message}`);
+    log(`::warning::could not preserve the failed render — ${err.message}`);
+    return kept;
+  }
+
+  try {
+    if (videoPath && existsSync(videoPath)) {
+      const dest = join(dir, "failed-render.mp4");
+      copyFileSync(videoPath, dest);
+      kept.video = dest;
+      const mb = Math.round((statSync(dest).size / 1024 / 1024) * 10) / 10;
+      log(`[QC] kept the failed render at ${dest} (${mb} MB) — it is downloadable from the run's artifacts`);
+    } else {
+      kept.errors.push("the render was already gone when the gate tried to keep it");
+    }
+  } catch (err) {
+    kept.errors.push(`could not copy the render: ${err.message}`);
+    log(`::warning::could not copy the failed render — ${err.message}`);
+  }
+
+  try {
+    const dest = join(dir, "qc-report.json");
+    writeFileSync(dest, JSON.stringify({
+      failedAt: new Date().toISOString(),
+      ok: qc?.ok ?? false,
+      results: qc?.results ?? [],
+      failures: qc?.failures ?? [],
+      // The plan, so "what was this supposed to be" is answerable from the
+      // evidence rather than by re-reading a log that has scrolled away.
+      plan,
+    }, null, 2));
+    kept.report = dest;
+  } catch (err) {
+    kept.errors.push(`could not write the report: ${err.message}`);
+  }
+
+  return kept;
+}
+
 /** One block for the build report, so a pass is as legible as a failure. */
 export function renderQcSummary(results) {
   return results
@@ -603,6 +773,9 @@ function describeStats(name, s) {
   if (name === "motion") return `${s.duplicates}/${s.frames} duplicate frames, worst window ${Math.round((s.worstWindow?.ratio || 0) * 100)}%`;
   if (name === "join-clicks") return "no discontinuities";
   if (name === "overlay-text") return `${s.read}/${s.overlays} overlays read`;
+  if (name === "duration") {
+    return `${s.actualSeconds}s rendered against a ${s.plannedSeconds}s plan (${s.driftSeconds >= 0 ? "+" : ""}${s.driftSeconds}s, ${s.driftPct}%)`;
+  }
   return JSON.stringify(s);
 }
 

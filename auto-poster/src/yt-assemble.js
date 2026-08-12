@@ -145,14 +145,40 @@ export function conformArgs(input, output, dim, { seconds, fps = FPS } = {}) {
 }
 
 /** Mux one narration track onto a silent visual segment. */
-export function muxNarrationArgs(videoIn, audioIn, output) {
+export function muxNarrationArgs(videoIn, audioIn, output, { seconds = null } = {}) {
   return [
     "-y", "-i", videoIn, "-i", audioIn,
     "-map", "0:v", "-map", "1:a",
     "-c:v", "copy", ...segmentAudioArgs(),
-    // The visual is cut to the narration's length upstream, but -shortest is
-    // the belt to that braces: a narration overrun would otherwise freeze the
-    // last frame for however long it ran over.
+    // `-t` MAKES THE SEGMENT THE LENGTH THE PLAN SAYS, which is a different
+    // guarantee from the one `-shortest` gives and the one that actually matters
+    // here.
+    //
+    // `-shortest` ends the segment when the shorter of picture and narration
+    // runs out. Measured, and it does work under `-c:v copy` — a 12s picture
+    // with 5s of narration comes out at 5.000s either way. What it does NOT do
+    // is bound the segment to `seg.seconds`: give it a 12s picture and 8s of
+    // narration against a 5s allocation and it produces 8 seconds.
+    //
+    // That case is reachable. `generateNarration` only sets `seg.seconds` from
+    // the audio it generates, and it skips any segment that already carries a
+    // `narrationSource` — which, under YT_NARRATION_MODE=peter, is every
+    // voiceover take. So nothing reconciles the plan's allocation with the
+    // length of the recording Peter actually made, and a take that reads long
+    // silently stretches its segment.
+    //
+    // Captions are laid out from `seg.seconds` (buildCaptionChunks), so a
+    // segment that renders longer than its allocation drifts every caption after
+    // it for the rest of the video. `-t` closes that: the artifact is the length
+    // the plan described, and the QC duration check verifies it end to end.
+    //
+    // NOT PRESENTED AS THE CAUSE OF THE 2026-08-12 OVERRUN. That render came out
+    // 20.5 minutes against an 11.2 minute plan and the mechanism is still
+    // unidentified — four candidates were tested and none reproduced. This is a
+    // real defect found while looking for it, fixed on its own merits.
+    ...(seconds ? ["-t", String(seconds)] : []),
+    // Kept for the case it genuinely covers: a picture shorter than its
+    // narration would otherwise freeze its last frame to fill the gap.
     "-shortest",
     output,
   ];
@@ -731,7 +757,7 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       const narration = seg.narrationSource || seg.generatedNarrationPath;
       if (!narration) throw new Error(`voiceover take ${seg.takeId} has no narration audio`);
       const withAudio = `${base}.mp4`;
-      ffmpeg(muxNarrationArgs(picture, narration, withAudio));
+      ffmpeg(muxNarrationArgs(picture, narration, withAudio, { seconds: seg.seconds }));
 
       pieces.forEach((p) => rmSync(p, { force: true }));
       rmSync(picture, { force: true });
@@ -739,6 +765,38 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       segmentFiles.push(withAudio);
     });
   });
+
+  // ── 1b. what the segments actually came out as ───────────────────────────
+  //
+  // MEASURED, ONE FFPROBE EACH, BEFORE ANYTHING IS JOINED. Twenty-four probes
+  // against a stage that just spent ten minutes encoding is free, and it is the
+  // difference between "the render is the wrong length" and "these four
+  // voiceover segments are the wrong length".
+  //
+  // The 2026-08-12 build needed exactly this and did not have it: a 20.5 minute
+  // file from an 11.2 minute plan, and no way to tell which branch of the loop
+  // above had produced the extra nine minutes without another full build.
+  const segmentDurations = plan.segments.map((seg, i) => {
+    const measured = mediaDuration(segmentFiles[i]);
+    return {
+      takeId: seg.takeId,
+      kind: seg.kind,
+      planned: round(seg.seconds || 0),
+      measured: round(measured),
+      drift: round(measured - (seg.seconds || 0)),
+    };
+  });
+  const strayed = segmentDurations.filter((s) => Math.abs(s.drift) > 0.25);
+  if (strayed.length > 0) {
+    for (const s of strayed) {
+      console.log(`::warning::${s.takeId} (${s.kind}) rendered ${s.measured}s against a planned ${s.planned}s (${s.drift > 0 ? "+" : ""}${s.drift}s)`);
+    }
+  }
+  console.log(
+    `[Assemble] segment lengths: ${segmentDurations.length} measured, ` +
+      `${strayed.length} off plan by more than 0.25s, ` +
+      `total ${round(segmentDurations.reduce((n, s) => n + s.measured, 0))}s against a planned ${plannedSeconds(plan)}s`
+  );
 
   // ── 2. concat ────────────────────────────────────────────────────────────
   const concatList = join(dir, "concat.txt");
@@ -879,6 +937,11 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       programme,
       captionChunks: chunks,
       punches: plates,
+      // The two the duration check compares. `plannedSeconds` is a plan value
+      // and is exactly the point: this is the one check whose whole job is to
+      // ask whether the artifact still matches it.
+      plannedSeconds: plannedSeconds(plan),
+      segmentDurations,
     },
   };
 }
