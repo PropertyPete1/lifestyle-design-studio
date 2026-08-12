@@ -3234,6 +3234,21 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1LVPBsHCL4IkaVtu50X5DesDcbSyWgaCw/view"
+    },
+    {
+      "driveFileId": "1VehfE7WS0zE28K27F04Li19xY0Ke9lL2",
+      "fileName": "D65D9A53-1D3F-4C55-90DC-07B8E06558EE.mp4",
+      "city": "austin",
+      "caption": "three hundred ninety-eight thousand nine hundred ninety for brand new construction in Austin. yes, you read that right.\n\nnew construction at this price point moves fast. builder incentives are still o",
+      "voiceover": true,
+      "platforms": [],
+      "timestamp": "2026-08-12T00:45:55.765Z",
+      "success": true,
+      "type": "trial_variant",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "window": "pm",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1MF3x2WReCrcTWOu9DFxH_fQ_EOftandG/view"
     }
   ],
   "lastTemplateIndex": -1
