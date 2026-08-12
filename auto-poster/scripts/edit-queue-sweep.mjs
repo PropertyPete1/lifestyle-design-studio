@@ -196,6 +196,30 @@ async function putInFolder(folderId, name, path, mime = "video/mp4") {
 }
 
 /**
+ * Retry a Drive call a few times before giving up on it.
+ *
+ * A sweep makes dozens of Drive calls over a quarter of an hour, and undici
+ * raises a bare `fetch failed` for any transport-level blip — a reset
+ * connection, a DNS hiccup, a rate limit closing the socket. One of those in
+ * the CLEANUP is what left a whole sweep's TEST- files in Peter's Drive: the
+ * work had all succeeded, and the tidying up died on a network error that would
+ * have been gone a second later.
+ */
+async function withRetry(label, fn, attempts = 4) {
+  let lastError;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      console.log(`[Sweep] ${label} attempt ${i}/${attempts} failed: ${err.message}`);
+      if (i < attempts) await new Promise((r) => setTimeout(r, 1000 * 2 ** (i - 1)));
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Find a folder by name anywhere the token can see it.
  *
  * Needed for "Ready to Post", which is a root-level folder rather than a child
@@ -216,13 +240,13 @@ async function findFolderByName(name, token) {
 
 async function trashEverythingWeMade(folderId) {
   const token = await getAccessToken();
-  const files = await listFolderFiles(folderId, { accessToken: token });
+  const files = await withRetry("list watch folder", () => listFolderFiles(folderId, { accessToken: token }));
   const ours = files.filter((f) => String(f.name || "").startsWith("TEST-"));
 
   // The review subfolder too — the advance job creates it and puts TEST-
   // masters and variants in it.
   for (const folder of files.filter((f) => f.mimeType === "application/vnd.google-apps.folder")) {
-    const inner = await listFolderFiles(folder.id, { accessToken: token });
+    const inner = await withRetry(`list ${folder.name}`, () => listFolderFiles(folder.id, { accessToken: token }));
     ours.push(...inner.filter((f) => String(f.name || "").startsWith("TEST-")));
   }
 
@@ -239,24 +263,36 @@ async function trashEverythingWeMade(folderId) {
   // They carry the TEST- prefix so `isTestArtifact` keeps them off every real
   // surface — this is clutter rather than a hazard — but a test that leaves
   // litter in a working folder is not finished.
-  const readyToPost = await findFolderByName("Ready to Post", token);
+  const readyToPost = await withRetry("find Ready to Post", () => findFolderByName("Ready to Post", token));
   if (readyToPost) {
-    const delivered = await listFolderFiles(readyToPost, { accessToken: token });
+    const delivered = await withRetry("list Ready to Post", () => listFolderFiles(readyToPost, { accessToken: token }));
     ours.push(...delivered.filter((f) => String(f.name || "").startsWith("TEST-")));
   } else {
     console.log(`::warning::[Sweep] could not find "Ready to Post" — TEST- deliveries there are NOT cleaned up`);
   }
 
   let removed = 0;
+  const stuck = [];
   for (const f of ours) {
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ trashed: true }),
-    });
-    if (res.ok) removed++;
-    else console.log(`::warning::[Sweep] could not trash ${f.name} (${res.status})`);
+    try {
+      const res = await withRetry(`trash ${f.name}`, () =>
+        fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ trashed: true }),
+        })
+      );
+      if (res.ok) removed++;
+      else stuck.push(`${f.name} (HTTP ${res.status})`);
+    } catch (err) {
+      stuck.push(`${f.name} (${err.message})`);
+    }
   }
+  // ONE FILE LEFT BEHIND IS A FINDING, not a warning nobody reads. The previous
+  // version stuffed a failed cleanup into the report object and still printed
+  // "0 finding(s)" — which is how a whole sweep's artifacts came to sit in
+  // Peter's Drive under a green tick.
+  for (const s of stuck) check(`cleanup: removed ${s}`, false, "still in Drive");
   console.log(`[Sweep] trashed ${removed}/${ours.length} TEST- file(s)`);
   return { removed, total: ours.length };
 }
@@ -583,7 +619,18 @@ async function main() {
       await matrixPass(folderId);
     }
   } finally {
+    // A CLEANUP THAT DIED IS A FINDING. This used to `.catch()` the error into
+    // the report object and carry on, so the run printed "95 check(s), 0
+    // finding(s)" over a cleanup that had thrown on its first Drive call and
+    // left every TEST- file it made sitting in Peter's folders. The work was
+    // fine; the tidying up failed silently, which is the same shape of bug this
+    // whole feature is written against.
     const cleaned = await trashEverythingWeMade(folderId).catch((e) => ({ removed: 0, total: -1, error: e.message }));
+    check(
+      "cleanup: every TEST- artifact was removed from Drive",
+      !cleaned.error && cleaned.removed === cleaned.total,
+      cleaned.error ? `cleanup threw: ${cleaned.error}` : `removed ${cleaned.removed}/${cleaned.total}`
+    );
     const report = {
       stage: STAGE,
       folderId,
