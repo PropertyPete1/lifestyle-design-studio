@@ -517,7 +517,44 @@ export function splitForPunchIns(span, { enabled = true, interval = PUNCH_INTERV
  * cropping keeps the centre of the frame and discards the edges, which is what
  * a tighter lens does. Scaling alone would just make a smaller picture.
  */
-export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = null } = {}) {
+/**
+ * THE PIECE'S AUDIO CODEC, AND WHY IT IS NOT AAC ANY MORE.
+ *
+ * An AAC encoder emits whole frames of 1024 samples and prepends a frame of
+ * priming samples to every file it writes. Neither is a problem for one file.
+ * Concatenate seventy-six of them with `-c copy` and both are: the priming
+ * frame is a real 21.3 ms of samples at the head of every piece, and the
+ * demuxer offsets the next piece by the previous one's rounded-up duration.
+ *
+ * MEASURED, through this function and concatArgs, with an impulse planted
+ * 1.5 s into each of four 3-second pieces (ffmpeg 7.1.1):
+ *
+ *   AAC pieces   1.5214  4.5507  7.5801  10.6094   →  +29.3 ms per join
+ *   PCM pieces   1.5001  4.5001  7.5001  10.5001   →   +0.0 ms per join
+ *
+ * Card 8's build cut its twelve on-camera takes into seventy-six pieces. At
+ * 29.3 ms a join that is close to two seconds of audio sliding behind the
+ * picture across the video — his lips and his voice, drifting apart the longer
+ * anyone watches. The video stream stays exactly right, which is what makes it
+ * invisible to every duration check in the pipeline.
+ *
+ * PCM has no frame size and no priming, so the arithmetic is exact and there is
+ * nothing to accumulate. The cost is a large intermediate file per piece, which
+ * is deleted as soon as the take is concatenated, and one AAC encode per take
+ * instead of one per piece — which is cheaper, not dearer.
+ *
+ * The container has to change with the codec: mp4 does not carry PCM sensibly,
+ * so pieces land in Matroska. Callers pick the path; `pieceExtension` below is
+ * how they know which.
+ */
+export const PIECE_AUDIO = process.env.YT_PIECE_AUDIO === "aac" ? "aac" : "pcm";
+
+/** The container a piece must be written into for a given audio codec. */
+export function pieceExtension(audio = PIECE_AUDIO) {
+  return audio === "pcm" ? "mkv" : "mp4";
+}
+
+export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = null, audio: audioCodec = PIECE_AUDIO } = {}) {
   const t = treatment || {
     mode: ONCAM_TREATMENT,
     blur: ONCAM_BG_BLUR,
@@ -631,7 +668,9 @@ export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = nul
     "-map", "[v]", "-map", "0:a?",
     ...audio,
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-    "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
+    ...(audioCodec === "pcm"
+      ? ["-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2"]
+      : ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2"]),
     output
   );
   return args;
@@ -678,6 +717,7 @@ export function editOnCameraTake(input, outputDir, {
   treatment = null,
   silences = null,
   duration = null,
+  pieceAudio = PIECE_AUDIO,
   ffmpeg,
   writeFileSync,
   join,
@@ -688,9 +728,12 @@ export function editOnCameraTake(input, outputDir, {
   const plan = buildEditList(total, found, { isOpening, minKeep, seed: index, interval });
 
   const files = [];
+  // The extension follows the codec: PCM pieces are Matroska, so the joins do
+  // not accumulate an AAC priming frame apiece. See PIECE_AUDIO.
+  const ext = pieceExtension(pieceAudio);
   plan.pieces.forEach((piece, i) => {
-    const out = join(outputDir, `oc${String(index).padStart(2, "0")}_p${String(i).padStart(3, "0")}.mp4`);
-    ffmpeg(pieceArgs(input, out, piece, dim, { fps, treatment }));
+    const out = join(outputDir, `oc${String(index).padStart(2, "0")}_p${String(i).padStart(3, "0")}.${ext}`);
+    ffmpeg(pieceArgs(input, out, piece, dim, { fps, treatment, audio: pieceAudio }));
     files.push(out);
   });
 

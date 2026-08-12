@@ -29,7 +29,7 @@ import { generateTTS, postProcessVoiceoverAudio } from "./voiceover.js";
 import { RESOLUTION, PROGRAMME_LUFS, MUSIC_DB } from "./yt-config.js";
 import { kenBurnsArgs } from "./yt-visual-broll.js";
 import { renderOverlayPng, burnOverlayArgs } from "./yt-opening.js";
-import { pieceArgs } from "./yt-oncamera-edit.js";
+import { pieceArgs, pieceExtension } from "./yt-oncamera-edit.js";
 import { pipCompositeArgs } from "./yt-pip.js";
 import { renderPunchPng } from "./yt-punch.js";
 import { bedEnvelope } from "./yt-music.js";
@@ -617,14 +617,24 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
         const edit = seg.editPlan;
         if (edit && edit.pieces.length > 0) {
           const pieceFiles = [];
+          const ext = pieceExtension();
           edit.pieces.forEach((piece, pi) => {
-            const out = `${base}_e${String(pi).padStart(3, "0")}.mp4`;
+            const out = `${base}_e${String(pi).padStart(3, "0")}.${ext}`;
             ffmpeg(pieceArgs(seg.source, out, piece, dim, { fps: FPS }));
             pieceFiles.push(out);
           });
           const listFile = `${base}_edit.txt`;
           writeFileSync(listFile, pieceFiles.map((p) => `file '${p}'`).join("\n"));
-          ffmpeg(concatArgs(listFile, withAudio));
+          // THE PIECES CARRY PCM, SO THE JOIN IS SAMPLE-EXACT, and the take is
+          // encoded to AAC once at the end rather than once per piece. An AAC
+          // encode per piece put a 21.3 ms priming frame at every join and the
+          // concat demuxer stacked them: 29.3 ms of audio sliding behind the
+          // picture per join, measured, which across card 8's seventy-six
+          // pieces is close to two seconds by the close. See PIECE_AUDIO.
+          const jointed = `${base}_joined.${ext}`;
+          ffmpeg(concatArgs(listFile, jointed));
+          ffmpeg(["-y", "-i", jointed, "-c:v", "copy", ...segmentAudioArgs(), withAudio]);
+          rmSync(jointed, { force: true });
           pieceFiles.forEach((p) => rmSync(p, { force: true }));
           rmSync(listFile, { force: true });
           console.log(

@@ -26,8 +26,8 @@ import {
 } from "../src/yt-artifact-qc.js";
 import { assertRenderableText, describeTextProblem, isRenderableText } from "../src/yt-text-safety.js";
 import { punchSvg, renderPunchPng, punchCandidatesFor, selectPunches, PUNCH_CLASS } from "../src/yt-punch.js";
-import { pieceArgs } from "../src/yt-oncamera-edit.js";
-import { programmeGainDb, bedRelativeGainDb, parseLoudnessJson, duckArgs, levelProgrammeArgs } from "../src/yt-assemble.js";
+import { pieceArgs, pieceExtension } from "../src/yt-oncamera-edit.js";
+import { programmeGainDb, bedRelativeGainDb, parseLoudnessJson, duckArgs, levelProgrammeArgs, concatArgs } from "../src/yt-assemble.js";
 
 const ff = (args) => execFileSync("ffmpeg", args, { stdio: ["pipe", "pipe", "pipe"] });
 const have = (bin) => !spawnSync(bin, ["-version"], { encoding: "utf-8" }).error;
@@ -406,7 +406,7 @@ describe("7. every piece of an on-camera take keeps its audio", () => {
       { srcStart: 3, srcEnd: 6, seconds: 3, scale: 1.08 },
       { srcStart: 6, srcEnd: 9, seconds: 3, scale: 1.0 },
     ].forEach((piece, i) => {
-      const out = join(dir, `piece${i}.mp4`);
+      const out = join(dir, `piece${i}.${pieceExtension()}`);
       ff(pieceArgs(take, out, piece, dim, { fps: 30 }));
       const s = decodePcm(out);
       // The middle of the piece, clear of both declick ramps.
@@ -423,9 +423,53 @@ describe("7. every piece of an on-camera take keeps its audio", () => {
     assert.ok(spread < 3, `pieces differ by ${spread.toFixed(1)} dB: ${peaks.map((p) => p.toFixed(1))}`);
   });
 
+  test("THE AUDIO DOES NOT WALK BEHIND THE PICTURE ACROSS THE JOINS", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    // An impulse 1.5s into each of four 3-second pieces. Concatenated, the four
+    // markers must land at 1.5, 4.5, 7.5 and 10.5 — anywhere else is the audio
+    // sliding against the video, which no duration check can see because the
+    // video stream stays exactly right.
+    //
+    // With an AAC encode per piece they landed at 1.5214, 4.5507, 7.5801 and
+    // 10.6094: a 21.3 ms priming frame at the head of every piece, stacked by
+    // the concat demuxer into 29.3 ms per join. Card 8 cut twelve takes into
+    // seventy-six pieces, so that is close to two seconds of lip-sync error by
+    // the close of the video.
+    const src = join(dir, "marked.mp4");
+    ff(["-y", "-v", "error",
+        "-f", "lavfi", "-i", "testsrc=size=320x568:rate=30:duration=12",
+        "-f", "lavfi", "-i",
+        "aevalsrc=0.9*sin(2*PI*900*t)*if(lt(mod(t+1.5\\,3)\\,0.004)\\,1\\,0)+0.05*sin(2*PI*200*t):d=12:s=48000",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-ar", "48000", "-ac", "2", "-shortest", src]);
+
+    const ext = pieceExtension();
+    const files = [[0, 3], [3, 6], [6, 9], [9, 12]].map(([a, b], i) => {
+      const out = join(dir, `mp${i}.${ext}`);
+      ff(pieceArgs(src, out, { srcStart: a, srcEnd: b, seconds: b - a, scale: 1.0 }, { w: 640, h: 360 }, { fps: 30 }));
+      return out;
+    });
+    const list = join(dir, "mp.txt");
+    writeFileSync(list, files.map((p) => `file '${p}'`).join("\n"));
+    const joinedPath = join(dir, `mpcat.${ext}`);
+    ff(concatArgs(list, joinedPath));
+
+    const s = decodePcm(joinedPath);
+    const markers = [];
+    for (let i = 0; i < s.length; i++) {
+      if (Math.abs(s[i]) > 6000) { markers.push(i / 48000); i += 48000; }
+    }
+    assert.equal(markers.length, 4, `four markers, one per piece: ${JSON.stringify(markers)}`);
+    markers.forEach((m, i) => {
+      const ideal = 1.5 + i * 3;
+      assert.ok(Math.abs(m - ideal) < 0.01,
+        `marker ${i} is ${((m - ideal) * 1000).toFixed(1)} ms off (${m} vs ${ideal}) — the joins are accumulating an offset`);
+    });
+  });
+
   test("the declick still lands, at both edges of every piece", (t) => {
     if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
-    const s = decodePcm(join(dir, "piece1.mp4"));
+    const s = decodePcm(join(dir, `piece1.${pieceExtension()}`));
     const edge = rmsDb(s, 0, 48000 * 0.004);
     const body = rmsDb(s, 48000 * 1.0, 48000 * 1.1);
     assert.ok(edge < body - 6, `the piece opens on a fade: edge ${edge.toFixed(1)} vs body ${body.toFixed(1)}`);
