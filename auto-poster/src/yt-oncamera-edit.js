@@ -617,7 +617,10 @@ export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = nul
  *
  * `interval`, `treatment`, `silences` and `duration` all default to exactly
  * what this function did before they existed, so every long-form caller is
- * unchanged by their presence — yt-oncamera-edit.test.mjs pins that.
+ * unchanged by their presence. `tests/reel-edit.test.mjs` pins that with
+ * "editOnCameraTake's new arguments change nothing for a long-form caller",
+ * which makes the SAME call the pipeline makes and asserts the emitted ffmpeg
+ * invocations are byte-identical to buildEditList's own default plan.
  *
  * They exist because the reels manual edit queue runs THIS function rather than
  * a second copy of it (see reel-edit.js). A reel needs a faster cadence and a

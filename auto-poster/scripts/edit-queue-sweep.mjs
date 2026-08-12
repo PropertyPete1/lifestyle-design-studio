@@ -35,7 +35,7 @@ import { join } from "node:path";
 import { getAccessToken, listFolderFiles, uploadAndShare } from "../src/drive.js";
 import { loadApprovals, saveApprovals, findRequest, TEST_REQUEST_PREFIX } from "../src/yt-approvals.js";
 import { mergeYtApprovals } from "../merge-strategies.mjs";
-import { loadQueue, findVideo, STATUS, VIDEOS_TO_EDIT_FOLDER } from "../src/edit-queue.js";
+import { loadQueue, saveQueue, findVideo, STATUS, VIDEOS_TO_EDIT_FOLDER } from "../src/edit-queue.js";
 
 const ROOT = join(import.meta.dirname, "..");
 const STAGE = process.env.SWEEP_STAGE || "full";
@@ -195,6 +195,25 @@ async function putInFolder(folderId, name, path, mime = "video/mp4") {
   return res;
 }
 
+/**
+ * Find a folder by name anywhere the token can see it.
+ *
+ * Needed for "Ready to Post", which is a root-level folder rather than a child
+ * of the watch folder — see trashEverythingWeMade.
+ */
+async function findFolderByName(name, token) {
+  const params = new URLSearchParams({
+    q: `name = '${String(name).replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: "files(id,name)",
+    pageSize: "5",
+  });
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) return null;
+  return (await res.json()).files?.[0]?.id || null;
+}
+
 async function trashEverythingWeMade(folderId) {
   const token = await getAccessToken();
   const files = await listFolderFiles(folderId, { accessToken: token });
@@ -205,6 +224,27 @@ async function trashEverythingWeMade(folderId) {
   for (const folder of files.filter((f) => f.mimeType === "application/vnd.google-apps.folder")) {
     const inner = await listFolderFiles(folder.id, { accessToken: token });
     ours.push(...inner.filter((f) => String(f.name || "").startsWith("TEST-")));
+  }
+
+  // AND "READY TO POST", WHICH IS NOT UNDER THE WATCH FOLDER AT ALL.
+  //
+  // Approving a review is a real delivery, and a real delivery uploads to the
+  // real "Ready to Post" — that is the point of driving the actual path rather
+  // than a stub. It is a ROOT-level folder, so descending from the watch folder
+  // never reaches it, and the first version of this cleanup did exactly that:
+  // it reported "trashed 22/22" while quietly leaving four TEST- files per pass
+  // in the folder Peter opens to find things he is about to post. Twelve per
+  // sweep, and the honest-looking 22/22 is what made it invisible.
+  //
+  // They carry the TEST- prefix so `isTestArtifact` keeps them off every real
+  // surface — this is clutter rather than a hazard — but a test that leaves
+  // litter in a working folder is not finished.
+  const readyToPost = await findFolderByName("Ready to Post", token);
+  if (readyToPost) {
+    const delivered = await listFolderFiles(readyToPost, { accessToken: token });
+    ours.push(...delivered.filter((f) => String(f.name || "").startsWith("TEST-")));
+  } else {
+    console.log(`::warning::[Sweep] could not find "Ready to Post" — TEST- deliveries there are NOT cleaned up`);
   }
 
   let removed = 0;
@@ -475,6 +515,49 @@ async function matrixPass(folderId) {
     );
   } else {
     note("no video reached review in the matrix pass, so reject-then-approve was not exercised here — the unit suite covers it");
+  }
+
+  // ── a render killed mid-flight ───────────────────────────────────────────
+  //
+  // Simulated by writing the residue a killed runner leaves behind — a record
+  // still saying `editing`, with an open attempt and a stale `statusAt` — and
+  // then running the real scan over it. NOT by fault injection in the pipeline:
+  // a production code path that exists only so a test can break it is a
+  // liability, and the state a cancelled runner leaves is fully described by
+  // those three fields, so writing them is a faithful reproduction rather than
+  // a stand-in.
+  //
+  // What must NOT happen is the thing this catches: the record sitting in
+  // `editing` forever, invisible to every selector, with the queue quietly
+  // stopped and nothing anywhere gone red.
+  const wedged = findVideo(loadQueue(), silentDrive.id) || findVideo(loadQueue(), noSpeechDrive.id);
+  if (wedged) {
+    const q = loadQueue();
+    const stale = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
+    q.videos = q.videos.map((v) =>
+      v.driveFileId === wedged.driveFileId
+        ? { ...v, status: "editing", statusAt: stale, attempts: [...(v.attempts || []), { revision: (v.revision || 0) + 1, startedAt: stale, finishedAt: null, ok: null, reason: null }] }
+        : v
+    );
+    saveQueue(q);
+
+    const afterScan = runEntry("src/edit-queue-scan.js", { EDIT_QUEUE_FOLDER_ID: folderId });
+    const reclaimed = findVideo(loadQueue(), wedged.driveFileId);
+    check(
+      "matrix: a render killed mid-flight is reclaimed, not left wedged in 'editing'",
+      afterScan.code === 0 && reclaimed?.status === "failed",
+      `status=${reclaimed?.status}`
+    );
+    check(
+      "matrix: the reclaimed record says why",
+      /lease has expired/.test(reclaimed?.failure?.reason || ""),
+      reclaimed?.failure?.reason || "(no reason)"
+    );
+    check(
+      "matrix: the open attempt was closed rather than left dangling",
+      (reclaimed?.attempts || []).every((a) => a.finishedAt),
+      JSON.stringify((reclaimed?.attempts || []).map((a) => ({ rev: a.revision, done: Boolean(a.finishedAt) })))
+    );
   }
 
   return { noSpeechDrive, silentDrive, shortDrive };

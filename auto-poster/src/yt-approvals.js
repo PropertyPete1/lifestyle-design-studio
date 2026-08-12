@@ -63,7 +63,10 @@ export const KIND_VIDEO_REVIEW = "video_review";
  * invisible to every long-form call site without one line of long-form code
  * changing.
  *
- * They are NOT in `KINDS`. See KINDS below.
+ * They ARE in `KINDS`, because `appendRequest` validates against it and would
+ * otherwise throw on every card this feature raises. Being an accepted kind and
+ * being visible to a long-form lookup are different things: the first is this
+ * list, the second is an equality filter on `kind`.
  */
 export const KIND_REEL_EDIT = "reel_edit";
 export const KIND_REEL_REVIEW = "reel_review";
