@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-08-12",
+      "window": "am",
+      "sourceVideoId": "1VehfE7WS0zE28K27F04Li19xY0Ke9lL2",
+      "sourceFileName": "D65D9A53-1D3F-4C55-90DC-07B8E06558EE.mp4",
+      "city": "austin",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "the monthly payment on this one is lower than most people guess\n\nnew construction in Austin at $398,990 doesn't sit around long, especially when builder incentives are in play.\n\n✨ open floor plan with",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1AyTs_NoPCwnZqFevlD3Gv64kGCdQUesp/view",
+      "generatedAt": "2026-08-12T14:36:17.539Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-08-11",
       "window": "pm",
       "sourceVideoId": "1VehfE7WS0zE28K27F04Li19xY0Ke9lL2",
