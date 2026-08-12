@@ -17,6 +17,9 @@ name: Social Analytics Probe
 # it — the same arrangement as longform-probe.yml:
 #
 #   [probe-analytics]   run the capability probe
+#   [probe-collector]   run the REAL collector against the live API in DRY_RUN —
+#                       it writes to a scratch dir and never touches git, so it
+#                       proves the mapping end to end without committing
 on:
   push:
     branches: [feat/social-analytics-ingestion]
@@ -65,3 +68,29 @@ jobs:
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
         run: node scripts/probe-social-analytics.mjs
+
+  # Does the collector itself produce the right numbers from the live API?
+  # The unit tests pin the mapping against captured rows; this pins it against
+  # the account. DRY_RUN writes to a scratch directory and runs no git command.
+  collector-dry-run:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || contains(github.event.head_commit.message, '[probe-collector]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install deps
+        working-directory: auto-poster
+        run: npm ci --no-audit --no-fund
+      - name: Collect from the live API, write nothing
+        working-directory: auto-poster
+        env:
+          DRY_RUN: "true"
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+        run: node scripts/collect-social-analytics.mjs
