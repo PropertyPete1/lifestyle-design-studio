@@ -30,6 +30,14 @@ on:
         required: false
         default: '30'
         type: string
+      mode:
+        description: 'endpoints = full sweep; followers = follower-source hunt only'
+        required: false
+        default: 'endpoints'
+        type: choice
+        options:
+          - endpoints
+          - followers
 
 # Reports; never commits.
 permissions:
@@ -51,6 +59,7 @@ jobs:
         working-directory: auto-poster
         env:
           PROBE_DAYS: ${{ github.event.inputs.days || '30' }}
+          PROBE_MODE: ${{ github.event.inputs.mode || (contains(github.event.head_commit.message, '[probe-followers]') && 'followers') || 'endpoints' }}
           METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}

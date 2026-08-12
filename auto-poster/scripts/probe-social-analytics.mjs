@@ -31,6 +31,14 @@
  * reported as UNPOPULATED, and belongs in the "documented, not collected" list
  * rather than in the schema.
  *
+ * PASS 2 — THE FOLLOWER HUNT. The first pass found /stats/timeline/<metric>
+ * answering 200 for every metric name with the same one-row body,
+ * [["<today>","0"]], and /stats/aggregation/<metric> answering the scalar 0.
+ * A surface that returns the same stub for `followers` and for `shares` is not
+ * reporting; it is acknowledging. Before the collector may say followers are
+ * unavailable it has to be looked for properly, so `--followers` sweeps every
+ * plausible spelling and shape and reports what each one really said.
+ *
  * SECRETS. Everything printed goes through redact(). The token, user id and
  * blog ids never reach the log, in URLs or in echoed response bodies.
  */
@@ -46,6 +54,7 @@ if (!TOKEN || !USER_ID || !BLOG_ID) {
 }
 
 const DAYS = Number(process.env.PROBE_DAYS || 30);
+const MODE = process.env.PROBE_MODE || "endpoints";
 
 /** Never let a credential reach the log, in a URL or an echoed body. */
 const redact = (s) =>
@@ -151,11 +160,92 @@ function describe(label, result, { showFields = true } = {}) {
   return { ok: true, status: 200, rows: 0, fields: null };
 }
 
+// ── Pass 2: is a follower number reachable by ANY route? ────────────────────
+
+/**
+ * Sweep every plausible follower surface and print the RAW body of each.
+ *
+ * The bodies matter more than the statuses here. Pass 1 established that a 200
+ * from /stats proves nothing — the same [["<today>","0"]] came back for
+ * `followers` and for `shares`, which is a stub, not a series. So this prints
+ * what each route actually returned, and a route only counts as a follower
+ * source if the number it returns is (a) non-zero, (b) attributable to one
+ * platform, and (c) different from the number the next metric name returns.
+ */
+async function followerHunt() {
+  console.log("=".repeat(78));
+  console.log("FOLLOWER HUNT — is a per-platform follower count reachable at all?");
+  console.log("=".repeat(78));
+
+  const statsWindow = `start=${ymd(from)}&end=${ymd(to)}`;
+
+  console.log("\n## /stats/timeline — legacy metric spellings\n");
+  // Metricool's older stats surface used capitalised, domain-ish metric names.
+  // If `Community` behaves differently from `followers`, the lowercase 200s
+  // were the stub and the real series is here.
+  for (const metric of [
+    "Community", "community", "followers", "Followers", "fans", "Fans",
+    "subscribers", "Subscribers", "communityDaily", "followersDaily",
+  ]) {
+    const r = await api(`/stats/timeline/${metric}?${statsWindow}`);
+    const body = redact(JSON.stringify(r.json ?? r.text)).slice(0, 220);
+    console.log(`  ${String(r.status).padStart(3)}  /stats/timeline/${metric.padEnd(16)} ${body}`);
+  }
+
+  console.log("\n## /stats/timeline — network-scoped variants\n");
+  for (const path of [
+    `/stats/instagram/timeline/followers`,
+    `/stats/timeline/followers?network=instagram`,
+    `/stats/timeline/instagram/followers`,
+    `/v2/analytics/timelines/followers`,
+    `/v2/analytics/timelines/instagram/followers`,
+    `/v2/analytics/instagram/timelines/followers`,
+  ]) {
+    const joiner = path.includes("?") ? "&" : "?";
+    const r = await api(`${path}${joiner}${statsWindow}`);
+    const body = redact(JSON.stringify(r.json ?? r.text)).slice(0, 220);
+    console.log(`  ${String(r.status).padStart(3)}  ${path.padEnd(46)} ${body}`);
+  }
+
+  console.log("\n## Does the brand list itself carry follower counts?\n");
+  // The cheapest possible source, if it exists: the profile list is already
+  // fetched on every posting run.
+  const prof = await fetch(`${BASE}/admin/simpleProfiles?userId=${USER_ID}`, {
+    headers: { "Content-Type": "application/json", "X-Mc-Auth": TOKEN },
+  }).then(async (r) => ({ status: r.status, json: await r.json().catch(() => null) }))
+    .catch((e) => ({ status: 0, json: null, err: String(e?.message || e) }));
+
+  if (prof.status === 200 && Array.isArray(prof.json) && prof.json[0]) {
+    const keys = Object.keys(prof.json[0]).sort();
+    console.log(`  simpleProfiles keys: ${keys.join(", ")}`);
+    const followerish = keys.filter((k) => /follow|fan|subscrib|communit|audience/i.test(k));
+    console.log(`  follower-ish keys:   ${followerish.length ? followerish.join(", ") : "NONE"}`);
+    for (const k of followerish) {
+      console.log(`    ${k} = ${redact(JSON.stringify(prof.json[0][k])).slice(0, 160)}`);
+    }
+  } else {
+    console.log(`  simpleProfiles failed (${prof.status})`);
+  }
+
+  console.log("\n## Competitor surface — does our own brand appear with a follower count?\n");
+  for (const network of ["instagram", "tiktok", "youtube"]) {
+    const r = await api(`/v2/analytics/competitors/${network}`);
+    const body = redact(JSON.stringify(r.json ?? r.text)).slice(0, 260);
+    console.log(`  ${String(r.status).padStart(3)}  /v2/analytics/competitors/${network.padEnd(10)} ${body}`);
+  }
+}
+
 async function main() {
   console.log("=".repeat(78));
   console.log("METRICOOL ANALYTICS CAPABILITY PROBE — read-only");
-  console.log(`window: ${iso(from)} → ${iso(to)} (${DAYS} days)`);
+  console.log(`window: ${iso(from)} → ${iso(to)} (${DAYS} days)   mode: ${MODE}`);
   console.log("=".repeat(78));
+
+  if (MODE === "followers") {
+    await followerHunt();
+    console.log("\nDone. Nothing was created, modified or published.");
+    return;
+  }
 
   // ── Which brands exist, and what is connected to them? ────────────────────
   console.log("\n## BRANDS (/admin/simpleProfiles)\n");
@@ -205,7 +295,7 @@ async function main() {
   console.log("\n\n## PROFILE + FOLLOWER ENDPOINTS — default blog\n");
   const profile = {};
   for (const network of ["instagram", "tiktok", "youtube", "facebook"]) {
-    profile[`profile/${network}`] = describe(`/v2/analytics/${network}/profile`, await api(`/v2/analytics/${network}/profile?${window}`));
+    profile[`profile/${network}`] = describe(`/v2/analytics/${network}/profile`, await api(`/v2/analytics/${network}/profile?${window}`), { showFields: false });
   }
 
   // The legacy /stats surface is blog-scoped rather than network-scoped, so a
@@ -265,8 +355,14 @@ async function main() {
   for (const key of Object.keys(stats)) say(key, stats[key]);
 
   // The metric fields issue #83 names, answered per endpoint that returned rows.
+  // Field names differ per network — TikTok spells them viewCount/likeCount —
+  // so the alias list is part of the question, not a convenience.
   console.log("\nrequested metrics, by endpoint that could carry them:");
-  const WANTED = ["views", "impressions", "reach", "likes", "comments", "shares", "saved", "saves", "plays", "engagement"];
+  const WANTED = [
+    "views", "viewCount", "impressions", "impressionsTotal", "reach",
+    "likes", "likeCount", "comments", "commentCount", "shares", "shareCount",
+    "saved", "saves", "plays", "engagement",
+  ];
   for (const [key, r] of Object.entries({ ...postLevel })) {
     if (!usable(r) || !r.fields) continue;
     const found = [];
