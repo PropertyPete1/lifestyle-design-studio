@@ -1,0 +1,61 @@
+name: Social Analytics
+
+# The daily pull of real performance data: per-post metrics and per-platform
+# daily rollups from Metricool, into status/social_analytics.json.
+#
+# READ-ONLY AGAINST METRICOOL. Every API call this job makes is a GET against an
+# analytics endpoint. It cannot post, upload, schedule or delete — the collector
+# imports no scheduler code at all.
+#
+# ─── WHY ITS OWN SCHEDULE, NOT A POSTING SLOT ──────────────────────────────
+#
+# The obvious alternative was to hang this off the end of a posting run, where
+# merge-log-push.mjs already commits status/. It is deliberately separate:
+#
+#   - Metrics on a post keep moving for days. Collection has to happen on its
+#     own clock, not only on days something was posted, or the numbers for a
+#     Thursday reel stop updating the moment Friday's post fails.
+#   - A posting run is the one job that must not be slowed down or put at risk
+#     by anything optional. Four brands x four endpoints is a few seconds, but
+#     it is a few seconds of somebody else's network on the critical path to
+#     publishing, for a dashboard number.
+#
+# 09:00 CT (14:00 UTC) — after the overnight posts have settled and well before
+# the 11:00 CT posting slot, so the two never contend for the push. There is no
+# backup cron: a dropped run costs one day of freshness on a rolling 30-day
+# window that the next run re-reads in full, so "late" and "never" are not
+# indistinguishable here.
+on:
+  schedule:
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+# The job commits status/social_analytics.json to main.
+permissions:
+  contents: write
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: social-analytics
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm ci --no-audit --no-fund
+      - name: Collect analytics and commit
+        working-directory: auto-poster
+        env:
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node scripts/collect-social-analytics.mjs
