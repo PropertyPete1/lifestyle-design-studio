@@ -3464,10 +3464,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "team_wins",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-13T14:10:57"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-13T14:40:57"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-13T15:10:57"
+        }
+      ],
       "timestamp": "2026-08-13T19:09:23.778Z",
       "runId": "31733827391",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
