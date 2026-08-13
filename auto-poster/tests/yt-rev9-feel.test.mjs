@@ -93,14 +93,56 @@ describe("1. a window about a place never falls to the beat", () => {
     assert.match(bridges[0].reason, /no other visual/);
   });
 
-  test("the search query and the verification subject are different things", () => {
-    // "closest base" returned a baseball field and passed a check that asked
-    // about "closest base". The check now reads the sentence instead.
-    const s = seg("Universal City is the closest thing to Randolph's front gate.");
+  test("the verification subject is a thing to film, never a claim about a place", () => {
+    // THIS TEST USED TO REQUIRE THE SUBJECT TO BE THE SENTENCE — "the check gets
+    // the sentence, not the query" — and that requirement was measured and found
+    // to be the reason stock never produced a single clip.
+    //
+    // A probe of all sixteen windows of the current script (2026-08-13, real
+    // Pexels, real vision) returned 48 vision rejections and ZERO search misses.
+    // Pexels had footage every time. The check was rejecting it because it was
+    // being asked things like "just south and west of that hospital cluster" and
+    // answering, correctly, that frames cannot establish a spatial relationship
+    // to a landmark. That is the one claim stock must never be taken to support,
+    // which is why proper nouns are stripped in the first place — so the check
+    // was right and the question was wrong.
+    //
+    // The subject is now the noun phrase around the head word: a thing a camera
+    // can be pointed at. The concern the old test carried — a baseball field
+    // passing for "closest base" — is still covered, by the assertions below and
+    // by the vision check's own criteria, not by asking an unanswerable question.
+    const s = seg("Oak Hills sits just south and west of that hospital cluster.");
     const w = keywordsForWindow(s, { startAt: 0, seconds: 8 }, ctx(s));
-    assert.ok(w.verifySubject.length > w.keywords.join(" ").length, "the check gets the sentence, not the query");
-    for (const name of ["universal", "city", "randolph"]) {
+
+    assert.equal(w.verifySubject, "hospital cluster", "the check is asked for a thing, not a relation");
+
+    // THE SAFETY PROPERTY, UNCHANGED AND STILL THE POINT. A clip may never be
+    // accepted as being a specific named place.
+    for (const name of ["oak", "hills"]) {
       assert.ok(!w.verifySubject.toLowerCase().includes(name), `the check may never learn "${name}"`);
+    }
+
+    // And no relation word survives into it, so the subject cannot express a
+    // position relative to anything.
+    for (const rel of [" of ", " south", " west", " north", " east", "just "]) {
+      assert.ok(!w.verifySubject.toLowerCase().includes(rel.trim() === "of" ? " of " : rel),
+        `"${rel.trim()}" would make the subject a claim rather than a picture`);
+    }
+  });
+
+  test("a named place still never reaches the check, whatever rung answers", () => {
+    for (const text of [
+      "Universal City is the closest thing to Randolph's front gate.",
+      "The Audie Murphy VA hospital anchors the whole south side.",
+      "Timberwood Park is further north, past Stone Oak.",
+    ]) {
+      const s = seg(text);
+      const w = keywordsForWindow(s, { startAt: 0, seconds: 8 }, ctx(s));
+      const subject = String(w.verifySubject || "").toLowerCase();
+      for (const name of (w.dropped || [])) {
+        assert.ok(!subject.includes(String(name).toLowerCase()),
+          `"${name}" reached the vision check via ${w.source}: ${JSON.stringify(w.verifySubject)}`);
+      }
     }
   });
 });

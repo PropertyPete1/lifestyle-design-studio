@@ -86,6 +86,64 @@ function currentScript() {
   return { script: null, requestId: null };
 }
 
+/**
+ * THE NEGATIVE CONTROL: proof the loosened criterion 3 did not loosen anything else.
+ *
+ * Relaxing "is this plausibly <the whole sentence>" to "does this depict <a
+ * thing>" moved the probe from 0/16 to 9/16. The obvious worry is that it moved
+ * because the check stopped checking. So two clips that MUST still be rejected,
+ * run against the same model with the same prompt:
+ *
+ *   1. BURNED-IN TEXT — a frame with large on-screen writing. Criteria 1 and 2.
+ *      Generated here rather than fetched, so the control cannot silently stop
+ *      testing anything the day Pexels changes what it returns.
+ *
+ *   2. WRONG SUBJECT — a real Pexels clip fetched for one query and then asked
+ *      to be something else entirely. Criterion 3, from the other side: the
+ *      question is now answerable, and the answer still has to be no.
+ *
+ * A control that cannot fail is not a control, so both assert on the verdict and
+ * the script exits non-zero if either is accepted.
+ */
+async function negativeControl(client, dir) {
+  const { visionCheckClip, searchPexels, rankCandidates } = await import("../src/yt-stock.js");
+  let failures = 0;
+
+  // ── 1. burned-in text ────────────────────────────────────────────────────
+  const textFrame = join(dir, "control-text.jpg");
+  ffmpeg([
+    "-y", "-v", "error",
+    "-f", "lavfi", "-i", "gradients=s=1280x720:c0=0x3a5f8a:c1=0x8fbfd4:d=1",
+    "-vf", "drawtext=text='STOCKFOOTAGE-DEMO':fontcolor=white@0.85:fontsize=96:x=(w-tw)/2:y=(h-th)/2",
+    "-frames:v", "1", textFrame,
+  ]);
+  const textVerdict = await visionCheckClip([textFrame], { subject: "a hospital campus", client });
+  console.log(`[StockProbe] control 1 (burned-in text): ${textVerdict.ok ? "ACCEPTED" : "rejected"} — ${textVerdict.reason}`);
+  if (textVerdict.ok) { console.log("::error::the burned-in-text control was ACCEPTED — criteria 1/2 have stopped working"); failures++; }
+
+  // ── 2. wrong subject ─────────────────────────────────────────────────────
+  const results = await searchPexels("commercial kitchen interior", { orientation: "landscape" });
+  const pick = rankCandidates(results)[0];
+  if (!pick) {
+    console.log("::error::the wrong-subject control could not fetch a clip — the control did not run");
+    failures++;
+  } else {
+    const clipPath = join(dir, "control-wrong.mp4");
+    const res = await fetch(pick.url);
+    const { writeFileSync } = await import("fs");
+    writeFileSync(clipPath, Buffer.from(await res.arrayBuffer()));
+    const frame = join(dir, "control-wrong.jpg");
+    ffmpeg(["-y", "-v", "error", "-ss", "1", "-i", clipPath, "-frames:v", "1", "-q:v", "3", frame]);
+    // A kitchen asked to be a hospital campus. Answerable, and the answer is no.
+    const wrongVerdict = await visionCheckClip([frame], { subject: "a hospital campus", client });
+    console.log(`[StockProbe] control 2 (wrong subject): ${wrongVerdict.ok ? "ACCEPTED" : "rejected"} — ${wrongVerdict.reason}`);
+    if (wrongVerdict.ok) { console.log("::error::the wrong-subject control was ACCEPTED — criterion 3 is now too loose"); failures++; }
+  }
+
+  console.log(`[StockProbe] negative control: ${failures === 0 ? "both clips correctly REJECTED" : `${failures} control(s) wrongly accepted`}`);
+  return failures;
+}
+
 async function main() {
   // SEMICOLON-SEPARATED, NOT SPACE. Every real query is two words — "hospital
   // cluster", "aerial suburban neighborhood" — so splitting a list on spaces
@@ -107,6 +165,18 @@ async function main() {
     // the probe would report "vision" for everything and prove nothing.
     console.log("::error::ANTHROPIC_API_KEY is not set — every clip would fail the vision check and the answer would be meaningless");
     process.exit(1);
+  }
+
+  const dirForControl = mkdtempSync(join(tmpdir(), "stock-control-"));
+  let controlFailures = 0;
+  if (process.env.STOCK_PROBE_CONTROL === "true") {
+    try {
+      controlFailures = await negativeControl(client, dirForControl);
+    } finally {
+      rmSync(dirForControl, { recursive: true, force: true });
+    }
+  } else {
+    rmSync(dirForControl, { recursive: true, force: true });
   }
 
   let windows;
@@ -199,6 +269,9 @@ async function main() {
   } else {
     console.log(`[StockProbe] verdict: MIXED (${search} search misses, ${vision} vision rejections) — both need work`);
   }
+
+  // A control that cannot fail the run is a control nobody reads.
+  if (controlFailures > 0) process.exit(1);
 }
 
 main().catch((err) => {
