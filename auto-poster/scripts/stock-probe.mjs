@@ -38,37 +38,42 @@ import { join } from "path";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { loadApprovals } from "../src/yt-approvals.js";
+import { orderedTakes, estimateSpeechSeconds } from "../src/yt-timeline.js";
+import { VOICEOVER } from "../src/yt-script.js";
 import { planWindowKeywords } from "../src/yt-scene-keywords.js";
 import { planVisuals } from "../src/yt-visual-plan.js";
 import { fetchStockClip, stockEnabled } from "../src/yt-stock.js";
 import { ffmpeg } from "../src/yt-assemble.js";
 
 /**
- * The window durations a probe has to invent, and why inventing them is sound.
+ * The script's voiceover takes, as segments the planner understands.
  *
- * A real build sets each segment's length from the narration audio. There is no
- * audio here, so windows are laid out on the script's word count at a normal
- * speaking rate. That moves a window's boundary by a word or two against the
- * real build — which changes the odd query at the margin and changes NOTHING
- * about the question being asked. "Do queries of this shape return clips, and do
- * those clips survive the vision check" is not a question about window edges.
+ * `orderedTakes` and `estimateSpeechSeconds` are the pipeline's own — a probe
+ * that flattened the script itself would be testing its own idea of the script.
+ * The script nests takes inside sections and marks them with `mode`, which is
+ * exactly the sort of shape a hand-rolled reader gets wrong: the first version
+ * of this looked for a top-level `takes` array and reported zero windows on a
+ * 34-take script.
+ *
+ * THE DURATIONS ARE ESTIMATED AND THAT IS SOUND. A real build sets each
+ * segment's length from the narration audio, which does not exist here, so this
+ * uses the same estimator the timeline uses before recordings arrive. It moves a
+ * window boundary by a word or two against the real build — which changes the
+ * odd query at the margin and changes nothing about the question being asked.
+ * "Do queries of this shape return clips, and do those clips survive the vision
+ * check" is not a question about window edges.
  */
-const WORDS_PER_SECOND = 2.6;
-
 function segmentsFromScript(script) {
-  const takes = (script?.takes || script?.segments || []).filter((t) => t && (t.kind === "voiceover" || t.type === "voiceover"));
-  return takes.map((t, i) => {
-    const text = String(t.text || t.script || "");
-    const words = text.split(/\s+/).filter(Boolean).length;
-    const seconds = Math.max(6, Math.round((words / WORDS_PER_SECOND) * 10) / 10);
-    return {
-      takeId: t.takeId || t.id || `vo${i}`,
+  return orderedTakes(script)
+    .filter((t) => t.mode === VOICEOVER)
+    .map((t) => ({
+      takeId: t.id,
       kind: "voiceover",
-      text,
-      seconds,
-      visualSpec: t.visualIntent || t.visualSpec || null,
-    };
-  });
+      text: String(t.text || ""),
+      seconds: Math.max(6, estimateSpeechSeconds(String(t.text || ""))),
+      visualIntent: t.visualIntent || null,
+      visualSpec: t.visualIntent || null,
+    }));
 }
 
 function currentScript() {
