@@ -366,29 +366,26 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   // either: verifying against "animal well" is what let a goat farm through.
   // The noun phrase around the head word is narrower than the sentence and
   // wider than the query.
-  const verifySubject = depictionSubject(tokens, ranked[0], { proper }) || null;
+  // Falling back to the QUERY, not to null and not to the sentence. A single
+  // noun is a fine thing to ask a camera for — "is this plausibly a hill" has an
+  // answer — and a window whose phrase yields nothing at all is better served by
+  // its own two words than by a question with no possible yes.
+  const verifySubject = depictionSubject(tokens, ranked[0], { proper }) || ordered.join(" ") || null;
 
-  // A WINDOW NEEDS A NOUN PHRASE, NOT A WORD.
+  // THE QUERY LADDER IS DELIBERATELY UNTOUCHED BY THIS CHANGE.
   //
-  // `depictionSubject` returns the run of content words around the head. When
-  // that run is a single bare word — "matters", "growth", "closest", "heading" —
-  // the window has not described a thing; it has offered one word that happens
-  // to be rare in this script. Asking a camera for "growth" is the same category
-  // of mistake as asking it for "just south of that hospital cluster", one
-  // abstraction rather than one relation.
+  // The first attempt gated this rung on the subject being two words or more,
+  // so a window whose phrase was one bare noun fell through to `widenToSegment`.
+  // That rung looks past the window to the rest of the take BY DESIGN, and it
+  // duly returned another sentence's words: a window reading "Further north the
+  // houses are from the 80s and 90s" came back with "hospital anchors" from the
+  // sentence before it. Two pinned tests caught it, and they were right to —
+  // the picture disagreeing with the words is the defect this whole module
+  // exists to prevent, and "houses" was a perfectly good subject all along.
   //
-  // A compound or a modified noun ("hospital cluster", "smaller payment") is a
-  // picture. A bare content word is not, so the window falls to the rungs below
-  // — widen to the take, then the take's intent, then the generic establishing
-  // shot. That floor is a real photograph of a real thing, which beats both a
-  // query nobody can film and the wordless beat.
-  //
-  // Structural, not tuned: the test is how many content words the phrase has,
-  // and the boundaries are the same closed-class list the rest of the module
-  // uses. It costs "hill" and "hospitals" a specific query and gives them an
-  // establishing shot instead, which is the right way to lose.
-  const depictable = verifySubject && verifySubject.split(/\s+/).length >= 2;
-  if (ordered.length > 0 && depictable) {
+  // So the ladder decides the QUERY exactly as it did. Only what the vision
+  // check is ASKED changes, below.
+  if (ordered.length > 0) {
     return {
       verifySubject,
       placeDominated,
@@ -420,7 +417,7 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
     // take rather than from the window that had nothing.
     const wideSubject = depictionSubject(String(seg?.text || "").split(/\s+/).filter(Boolean), widened[0], { proper });
     return {
-      verifySubject: (wideSubject && wideSubject.split(/\s+/).length >= 2) ? wideSubject : PLACE_ESTABLISHING_CONCEPT,
+      verifySubject: wideSubject || widened.join(" "),
       placeDominated,
       keywords: [widened.join(" ")],
       subject: widened.join(" "),
