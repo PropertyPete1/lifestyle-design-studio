@@ -1503,6 +1503,189 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-13",
+      "timestamp": "2026-08-13T14:52:05.252Z",
+      "pillar": "real_estate_education",
+      "topic": "The 11-month new build warranty window",
+      "hook": "Your Texas new build has a one year warranty. Most buyers waste 11 months of it.",
+      "closeType": "dm",
+      "keyword": "CHECKLIST",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "The 11-month new build warranty window",
+        "hook": "Your Texas new build has a one year warranty. Most buyers waste 11 months of it.",
+        "map": [
+          "When the clock starts",
+          "Items that expire early",
+          "The word settling",
+          "Month eleven",
+          "Getting it in writing"
+        ],
+        "points": [
+          {
+            "title": "The Clock Starts At Closing",
+            "body": [
+              "Your builder warranty year begins the day you close, not the day you move in.",
+              "If you closed in March, most of your coverage is gone by next March."
+            ],
+            "loop": "Not every item lasts that long."
+          },
+          {
+            "title": "Some Coverage Dies Early",
+            "body": [
+              "Structural coverage can run for years. Cosmetic stuff often does not.",
+              "Nail pops, grout, paint and drywall cracks can fall off the list in the first 30 or 60 days."
+            ],
+            "loop": "One word ends most claims."
+          },
+          {
+            "title": "That Word Is Settling",
+            "body": [
+              "Report a crack and you will hear it is normal settling. Sometimes that is true.",
+              "Without a dated record and a photo, you have no way to argue it."
+            ],
+            "loop": "When you call matters more."
+          },
+          {
+            "title": "Call In Month Eleven",
+            "body": [
+              "Hire your own inspector at month 11 and walk the whole house again.",
+              "That leaves you weeks to file everything before the year runs out."
+            ],
+            "loop": "How you report it matters."
+          },
+          {
+            "title": "Email, Never Phone",
+            "body": [
+              "A call to the site super leaves no proof it ever happened.",
+              "Email each item with photos and a date, and keep every reply."
+            ],
+            "loop": "Most buyers miss half the list."
+          }
+        ],
+        "cta": {
+          "payoff": "the new build inspection checklist"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 8,
+        "worst_problem": "The hook's \"waste 11 months of it\" implies waiting is the error, but the deck's core advice is to deliberately act in month eleven — a small logical collision that makes the payoff feel like it contradicts the setup.",
+        "fix": "Reword the hook to \"Your Texas new build has a one year warranty. Most buyers lose most of it without ever filing a claim.\" so it sets up, rather than fights, the month-eleven advice, and sharpen the flattest loop (\"How you report it matters\") into something with a concrete hint like \"One channel kills claims.\""
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 361751540,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-13T14:55:05.743Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673529269028408589"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 361751578,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-13T14:55:05.834Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7493681037462450176"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 361751623,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-13T14:55:05.925Z",
+          "publicUrl": "https://www.instagram.com/p/Db-_95biEAb/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 361751649,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-13T14:55:06.010Z",
+          "publicUrl": "https://www.instagram.com/p/Db-_4h_DWbJ/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 361751652,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-13T14:55:06.096Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7493681037445783552"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 361751687,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-13T14:55:06.195Z",
+          "publicUrl": "https://www.instagram.com/p/Db-_5SEDQeW/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 361751691,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-13T14:55:06.280Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122113677369400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 361751696,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-13T14:55:06.365Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7493681034924900353"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-13T14:55:06.366Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
