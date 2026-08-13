@@ -3382,6 +3382,21 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1XWQUpW_COXWYGUMfzhTpg_8TDZUld5gO/view"
+    },
+    {
+      "driveFileId": "1diZqKeE1Jt2N9mZYIVceGY53Ugwtjtn6",
+      "fileName": "092F0A61-7A39-4218-B223-ED6EFE0D7F9E.mp4",
+      "city": "austin",
+      "caption": "Brand new construction in Kyle starting at $389,900. This won't last long.\n\n✨ everyday living hits\nOpen floor plan with natural light flooding through, modern finishes, and kitchen islands built for r",
+      "voiceover": true,
+      "platforms": [],
+      "timestamp": "2026-08-13T00:50:17.751Z",
+      "success": true,
+      "type": "trial_variant",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "window": "pm",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1Ra5JN-BdlRcmde-tZ6mINRz6OIMx6A61/view"
     }
   ],
   "lastTemplateIndex": -1
