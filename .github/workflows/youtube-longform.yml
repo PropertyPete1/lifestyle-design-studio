@@ -49,7 +49,7 @@ on:
       stock_queries:
         # Hand it the exact queries a past build used and read off which stage
         # each one dies at. Empty derives them from the current script instead.
-        description: 'stock-probe: space-separated queries to test, or blank to use the current script'
+        description: 'stock-probe: semicolon-separated queries (e.g. "hospital cluster; aerial suburban neighborhood"), or blank to use the current script'
         required: false
         default: ''
         type: string
@@ -429,8 +429,8 @@ jobs:
         env:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          QUERIES: ${{ github.event.inputs.stock_queries }}
-        run: node scripts/stock-probe.mjs $QUERIES
+          STOCK_PROBE_QUERIES: ${{ github.event.inputs.stock_queries }}
+        run: node scripts/stock-probe.mjs
 
   resend-kit:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'resend-kit'

@@ -25,8 +25,8 @@
  * kit's `actedResult.script` on the approvals record. That is what makes this a
  * probe of the CURRENT video rather than of a fixture.
  *
- *   node scripts/stock-probe.mjs                     # the current script's windows
- *   node scripts/stock-probe.mjs "hospital cluster" "aerial suburban neighborhood"
+ *   node scripts/stock-probe.mjs                       # the current script's windows
+ *   STOCK_PROBE_QUERIES="hospital cluster; big hill" node scripts/stock-probe.mjs
  *
  * THE SECOND FORM IS THE ONE THAT SETTLES AN ARGUMENT: hand it the exact queries
  * a past build used, read off which stage each one dies at.
@@ -82,7 +82,15 @@ function currentScript() {
 }
 
 async function main() {
-  const explicit = process.argv.slice(2).filter(Boolean);
+  // SEMICOLON-SEPARATED, NOT SPACE. Every real query is two words — "hospital
+  // cluster", "aerial suburban neighborhood" — so splitting a list on spaces
+  // turns thirteen phrases into twenty-six single-word searches and answers a
+  // question nobody asked. The env var carries the list so a shell cannot word-
+  // split it either.
+  const explicit = (process.env.STOCK_PROBE_QUERIES || process.argv.slice(2).join(";"))
+    .split(";")
+    .map((q) => q.trim())
+    .filter(Boolean);
 
   if (!stockEnabled()) {
     console.log("::error::PEXELS_API_KEY is not set — the probe cannot ask Pexels anything");
