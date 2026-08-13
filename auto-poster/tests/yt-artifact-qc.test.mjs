@@ -639,6 +639,84 @@ describe("7b. a segment is the length the plan allocated it", () => {
   });
 });
 
+// ─── 7c. the zoom does not stretch the piece ────────────────────────────────
+
+describe("7c. a piece with a camera move is the length it was cut to", () => {
+  /**
+   * A 60fps SOURCE, WHICH IS THE POINT OF THIS SUITE.
+   *
+   * Peter's takes are 4K60 phone footage. Every earlier fixture in this file is
+   * 30fps, and at 30fps this defect does not appear at all — which is exactly
+   * why four hypotheses were tested and cleared while the real render was
+   * inflating 83%. The rate of the fixture was the bug's hiding place.
+   */
+  before(() => {
+    if (!have("ffmpeg")) return;
+    ff(["-y", "-v", "error",
+        "-f", "lavfi", "-i", "testsrc=size=540x960:rate=60:duration=12",
+        "-f", "lavfi", "-i", "sine=frequency=440:duration=12:sample_rate=48000",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-ar", "48000", "-ac", "2", "-shortest", join(dir, "src60.mp4")]);
+  });
+
+  const render = (piece, name) => {
+    const out = join(dir, `${name}.${pieceExtension()}`);
+    ff(pieceArgs(join(dir, "src60.mp4"), out, piece, { w: 1920, h: 1080 }, { fps: 30 }));
+    return out;
+  };
+  const frames = (f) => Number.parseInt(execFileSync("ffprobe",
+    ["-v", "error", "-count_frames", "-select_streams", "v:0",
+     "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", f], { encoding: "utf-8" }).trim(), 10);
+
+  test("THE OPENING PUSH DOES NOT INFLATE THE PIECE", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    // With `fps` inside zoompan instead of ahead of it, this rendered 1536.000s
+    // and 46080 frames — 512 output frames per input frame. Every on-camera
+    // piece carrying a push or a pulse had been doing that since the retention
+    // edit shipped; output-side seeking trimmed it back to the right duration
+    // and hid it as slow motion.
+    const out = render({ srcStart: 0, srcEnd: 3, seconds: 3, scale: 1.0, push: { from: 1.0, to: 1.08, seconds: 3 } }, "zoom-push");
+    assert.equal(frames(out), 90, "3 seconds at 30fps");
+  });
+
+  test("A ZOOM PULSE DOES NOT INFLATE THE PIECE", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    const out = render({ srcStart: 3, srcEnd: 6, seconds: 3, scale: 1.0, pulses: [{ at: 1.0, seconds: 0.5, strength: 0.05 }] }, "zoom-pulse");
+    assert.equal(frames(out), 90);
+  });
+
+  test("a piece with no camera move is unchanged by the fix", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    const out = render({ srcStart: 3, srcEnd: 6, seconds: 3, scale: 1.0 }, "zoom-none");
+    assert.equal(frames(out), 90);
+  });
+
+  test("AND THE PICTURE ACTUALLY MOVES — length alone is not the property", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    // The duration could be made right by any number of wrong things. What was
+    // actually broken was motion: the old path measured 74% duplicate frames on
+    // a piece like this, which is what "the whole video feels laggy" was.
+    const r = checkMotion({ path: join(dir, `zoom-push.${pieceExtension()}`), duration: 3, maxRatio: 0.5 });
+    assert.ok(r.ok, `a pushed piece must still move: ${JSON.stringify(r.stats)}`);
+    assert.ok(r.stats.overallRatio < 0.2,
+      `the old path sat at 0.74 here; got ${r.stats.overallRatio}`);
+  });
+
+  test("the rate is fixed on BOTH sides of zoompan", () => {
+    // Dropping either one is a different defect. Without the leading fps,
+    // zoompan generates a 30fps timeline to cover 60fps of arriving frames and
+    // the piece inflates 512x. Without zoompan's own fps it falls back to its
+    // default of 25 and the trailing fps=30 pads 90 frames into 108.
+    const g = pieceArgs("in.mp4", "out.mkv",
+      { srcStart: 0, srcEnd: 3, seconds: 3, scale: 1.0, push: { from: 1, to: 1.08, seconds: 3 } },
+      { w: 1920, h: 1080 }, { fps: 30 });
+    const graph = g[g.indexOf("-filter_complex") + 1];
+    const zoom = graph.split(";").find((p) => p.includes("zoompan"));
+    assert.match(zoom, /fps=30,scale=.*zoompan/, "the fps filter must precede zoompan");
+    assert.match(zoom, /zoompan=[^;]*:fps=30/, "zoompan must also be told the rate, or it uses 25");
+  });
+});
+
 // ─── 8. the programme level ─────────────────────────────────────────────────
 
 describe("8. the programme is levelled before anything is mixed under it", () => {
