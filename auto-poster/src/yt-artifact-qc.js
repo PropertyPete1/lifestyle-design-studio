@@ -106,6 +106,16 @@ export function decodePcm(path, { rate = PCM_RATE, run = execFileSync } = {}) {
   return new Int16Array(new Uint8Array(aligned).slice().buffer);
 }
 
+/** Mean absolute amplitude over a sample range — the level either side of a step. */
+export function meanAbs(samples, from, to) {
+  const a = Math.max(0, Math.floor(from));
+  const b = Math.min(samples.length, Math.ceil(to));
+  if (b <= a) return 0;
+  let sum = 0;
+  for (let i = a; i < b; i++) sum += Math.abs(samples[i]);
+  return sum / (b - a);
+}
+
 /** RMS of a sample range, in dBFS. -Infinity for digital silence. */
 export function rmsDb(samples, from, to) {
   const a = Math.max(0, Math.floor(from));
@@ -248,10 +258,68 @@ export function checkAudioLevels({ voicePath, bedPath, duration, margin = MIN_VO
  * said it would — so a scan that only looked where the plan pointed would be
  * asking the suspect for its own alibi.
  *
- * A click is a STEP: one sample far from its neighbour. Speech cannot do that —
- * it is band-limited, so consecutive samples at 48 kHz are necessarily close. A
- * plosive rises over about a millisecond, which is fifty samples, so comparing
- * each step against the median step nearby separates the two cleanly.
+ * A click is a STEP: one sample far from its neighbour. That much was the first
+ * version of this check, and measured against a real render it was wrong two
+ * times in three.
+ *
+ * ─── WHAT THE PRESERVED RENDER TAUGHT IT ────────────────────────────────────
+ *
+ * The 2026-08-12 build flagged three. Read off the actual samples:
+ *
+ *   3:21.8  [-2927,-7581,-8651,-4133,3716,9913,10643,6050]
+ *           energy 10ms either side: 2282 / 1155
+ *           A loud high-frequency transient. At 48 kHz an 8 kHz component moves
+ *           most of its amplitude between consecutive samples ALL BY ITSELF —
+ *           the band-limit argument bounds the step at roughly the peak, not
+ *           near zero. FALSE POSITIVE.
+ *
+ *   4:57.5  [7941,6992,7228,6023,383,-372,350,-268]
+ *           energy 10ms either side: 4562 / 28
+ *           Signal running at full tilt and then nothing, in one sample. REAL.
+ *
+ *   6:07.3  [-3279,-2475,-697,2191,5346,7726,9072,9754]
+ *           energy 10ms either side: 3185 / 2990
+ *           A smooth rising crest. FALSE POSITIVE.
+ *
+ * The step size does not separate these, and neither does a level change across
+ * it — that was tried and it rejects a phase splice between two passages at the
+ * same volume, which is a real click.
+ *
+ * WHAT SEPARATES THEM IS THE STEP MEASURED AGAINST WHAT THE SIGNAL ITSELF DOES.
+ * Take the 95th percentile of every other step within 30 ms. That number is this
+ * recording's own bandwidth and level expressed in the only units that matter —
+ * how far it actually travels between samples around here. A transient does not
+ * beat it, because the transient IS the neighbourhood. A splice does, by an
+ * order of magnitude, because the discontinuity belongs to no signal at all.
+ *
+ * Measured across every case available, real and synthetic:
+ *
+ *   3:21.8 loud transient    0.8x    FALSE
+ *   clean tone               1.0x    FALSE
+ *   clean speech             1.0x    FALSE
+ *   6:07.3 rising crest      2.4x    FALSE
+ *  10:30.7 rising crest      6.0x    FALSE   <- the one that set the threshold
+ *   ── the gap ──
+ *   4:57.5 real splice      10.2x    TRUE
+ *   planted phase splice    18.4x    TRUE
+ *
+ * The threshold is 8. That is a narrower margin than the first pass suggested:
+ * a 6 was tried and 10:30.7 went through it, whose samples read
+ * [-8149,-7700,-6823,-5603,-4150,-2590,-1079,239,1285] — a smooth curve with
+ * equal energy either side, which is a waveform and not a join.
+ *
+ * SO THIS ONE IS CALIBRATED ON SIX POINTS AND SHOULD BE TREATED AS PROVISIONAL.
+ * The clean side is well established; the true side rests on two examples, one
+ * of them synthetic. If a future render reports a click, look at the samples
+ * before believing it — and if it reports none on a render with audible joins,
+ * this number is why.
+ *
+ * A NOTE ON THE TIMESTAMPS. These are positions in the DECODED audio, which is
+ * the same thing as presentation time for any well-formed file. On the render
+ * that produced the examples above it was not — 669s of samples inside a file
+ * claiming 1231s — so the reported times did not point where the clicks were.
+ * `checkDuration` now fails on that disagreement first, which is the right place
+ * for it: a file whose streams disagree has a bigger problem than a click.
  */
 export function checkJoinClicks({ path, decode = decodePcm, threshold = 8, minAbs = 0.08 }) {
   if (!path || !existsSync(path)) {
@@ -262,41 +330,63 @@ export function checkJoinClicks({ path, decode = decodePcm, threshold = 8, minAb
     return { name: "join-clicks", ok: true, skipped: "less than a second of audio", failures: [] };
   }
 
-  const win = Math.round(PCM_RATE * 0.005); // 5 ms either side
+  // 30 ms of context either side of a candidate, and 1 ms around the candidate
+  // excluded from it — a splice's own ring must not be allowed to raise the bar
+  // it is being measured against.
+  const context = Math.round(PCM_RATE * 0.03);
+  const guard = Math.round(PCM_RATE * 0.001);
+  const step = Math.round(PCM_RATE * 0.005);
   const failures = [];
   const found = [];
   let lastAt = -1;
 
-  // Stepped in half-windows: a click is one sample wide, so nothing is missed by
-  // computing the local median once per block rather than per sample.
-  for (let base = win; base + win < s.length; base += win) {
-    let localMax = 0;
-    let localSum = 0;
-    let localAt = base;
-    for (let i = base; i < base + win; i++) {
-      const d = Math.abs(s[i] - s[i - 1]);
-      localSum += d;
-      if (d > localMax) { localMax = d; localAt = i; }
+  const diffAt = (i) => Math.abs(s[i] - s[i - 1]);
+
+  // Stepped in 5 ms blocks: a click is one sample wide, so nothing is missed by
+  // finding the block's biggest step and then examining only that.
+  for (let base = context + 1; base + context < s.length; base += step) {
+    let candidate = 0;
+    let at = base;
+    for (let i = base; i < base + step; i++) {
+      const d = diffAt(i);
+      if (d > candidate) { candidate = d; at = i; }
     }
-    const mean = localSum / win;
-    // A block of digital silence has mean 0 and any step in it is a real event,
-    // so the absolute floor carries the decision there instead of the ratio.
-    const ratio = mean > 0 ? localMax / mean : (localMax > 0 ? Infinity : 0);
-    const abs = localMax / 32768;
-    if (ratio > threshold && abs > minAbs) {
-      const at = localAt / PCM_RATE;
-      // One click per 0.25s, so a single splice reported once rather than as the
-      // three blocks its ring happened to touch.
-      if (at - lastAt < 0.25) continue;
-      lastAt = at;
-      found.push({ at: Math.round(at * 1000) / 1000, step: Math.round(abs * 1000) / 1000, ratio: Math.round(ratio) });
+    if (candidate / 32768 <= minAbs) continue;
+
+    // What this recording's own bandwidth and level do around here, as the 95th
+    // percentile of every OTHER step within the context window.
+    const neighbourhood = [];
+    for (let i = at - context; i < at + context; i++) {
+      if (i < 1 || i >= s.length) continue;
+      if (Math.abs(i - at) <= guard) continue;
+      neighbourhood.push(diffAt(i));
     }
+    if (neighbourhood.length === 0) continue;
+    neighbourhood.sort((a, b) => a - b);
+    const p95 = neighbourhood[Math.floor(neighbourhood.length * 0.95)] || 1;
+    const ratio = candidate / Math.max(1, p95);
+    if (ratio < threshold) continue;
+
+    const seconds = at / PCM_RATE;
+    // One click per 0.25s, so a single splice is reported once rather than as
+    // the several blocks its ring happened to touch.
+    if (seconds - lastAt < 0.25) continue;
+    lastAt = seconds;
+    found.push({
+      at: Math.round(seconds * 1000) / 1000,
+      stepFs: Math.round((candidate / 32768) * 1000) / 1000,
+      neighbourhoodFs: Math.round((p95 / 32768) * 10000) / 10000,
+      ratio: Math.round(ratio * 10) / 10,
+    });
   }
 
   for (const f of found) {
     failures.push({
       at: f.at,
-      reason: `a click at ${timestamp(f.at)} — the waveform steps by ${f.step} of full scale in one sample (${f.ratio}x the local average). A join's declick did not land.`,
+      reason:
+        `a click at ${timestamp(f.at)} of the decoded audio — the waveform steps by ${f.stepFs} of full scale in one sample, ` +
+        `${f.ratio}x what this recording does anywhere else within 30 ms (${f.neighbourhoodFs}). ` +
+        `A loud syllable does not beat its own neighbourhood; two recordings meeting do. A join's declick did not land.`,
     });
   }
 

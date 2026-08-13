@@ -630,11 +630,46 @@ export function pieceArgs(input, output, piece, dim, { fps = 30, treatment = nul
 
   if (terms.length > 0) {
     const z = `${base}+${terms.join("+")}`;
+    // THE RATE IS FIXED BEFORE zoompan, NOT INSIDE IT, AND THAT ORDER IS THE
+    // WHOLE DIFFERENCE BETWEEN A 3-SECOND PIECE AND A 1536-SECOND ONE.
+    //
+    // `zoompan` does not merely filter frames — with an `fps` parameter it
+    // GENERATES an output timeline at that rate and fills it, and it decides how
+    // much to fill from the timestamps of the frames arriving. Handed a
+    // 60fps source it produced 512 output frames for every input frame.
+    //
+    // Measured on a 60fps source, one 3-second piece, ffmpeg 7.1.1:
+    //
+    //   fps inside zoompan, input-side seek    1536.000s   74% duplicate frames
+    //   fps BEFORE zoompan, input-side seek       3.000s    3% duplicate frames
+    //
+    // THIS IS OLDER THAN THE SEEK FIX AND WAS HIDDEN BY IT. With the seek on the
+    // output side, ffmpeg trimmed the inflated stream back to `srcEnd` — the
+    // right DURATION containing a sliver of the intended content, stretched.
+    // That is why every on-camera piece carrying a push or a pulse has rendered
+    // in heavy slow motion since the retention edit shipped, why the duplicate
+    // frame ratio sat at 74%, and almost certainly what "the whole video feels
+    // laggy" was in revision 8 — the graphics layer was investigated and the
+    // cause was here.
+    //
     // Upscaled before zoompan so the move lives inside real pixels rather than
     // resampling the delivery frame.
-    graph += `;[comp]scale=${dim.w * 2}:${dim.h * 2},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${dim.w}x${dim.h}:fps=${fps}[zoomed]`;
+    // BOTH the leading `fps` and zoompan's own `fps` are required, and dropping
+    // either one is a different defect:
+    //
+    //   fps only inside zoompan   input arrives at 60, zoompan generates a
+    //                             30fps timeline to cover it -> 1536s, 512x
+    //   fps only before zoompan   zoompan falls back to its DEFAULT of 25fps
+    //                             and the trailing fps=30 pads it -> 108 frames
+    //                             for 90, a 20% overrun
+    //   both                      input and output agree at 30 -> 90 frames
+    //
+    // The pair is what makes it 1:1. Neither number is redundant.
+    graph += `;[comp]fps=${fps},scale=${dim.w * 2}:${dim.h * 2},zoompan=z='${z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${dim.w}x${dim.h}:fps=${fps}[zoomed]`;
     tail = "[zoomed]";
   }
+  // Idempotent: `fps` on a stream already at that rate passes it through, so the
+  // zoom branch above having set it costs nothing here.
   graph += `;${tail}fps=${fps},setsar=1[v]`;
 
   // A DECLICK AT BOTH EDGES OF EVERY PIECE.
