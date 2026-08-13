@@ -3436,6 +3436,31 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1K9OHmekguiv64dBlHoPScQJ3NfJfu1fs/view"
+    },
+    {
+      "driveFileId": "1sRYELCM63VQY8jyPiHjj0UrhzNz-nZkH",
+      "fileName": "02C6175B-7C22-4ADA-88EF-9F212746720A.mp4",
+      "city": "austin",
+      "caption": "I've never seen finishes like this at $450,000 in Austin new construction. This might be the best value I've walked through all month.\n\nNew construction like this doesn't sit around long. Builder ince",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-13T17:14:21.358Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "Austin",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "You guys want to house under 500,000 right on like Travis Let's go Nice this",
+      "voiceover_persona": "rapid_fire_hype",
+      "content_hash": "000000f2f0f0ff1f:000000f2f0f0ff1f:ffffeffe813f0000:fffcfdfbf9d81800:fff0fff1f7c30100",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1Gg9KWEyXGkAAtW8ALMEkyE4NzC46DjAC/view"
     }
   ],
   "lastTemplateIndex": -1
