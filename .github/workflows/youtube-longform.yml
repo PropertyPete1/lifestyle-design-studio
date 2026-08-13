@@ -430,6 +430,10 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           STOCK_PROBE_QUERIES: ${{ github.event.inputs.stock_queries }}
+          # The negative control runs with the sweep so a loosened criterion 3
+          # cannot pass unnoticed: it fails the job if a watermarked or
+          # wrong-subject clip is ever accepted.
+          STOCK_PROBE_CONTROL: 'true'
         run: node scripts/stock-probe.mjs
 
   resend-kit:
