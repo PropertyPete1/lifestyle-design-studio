@@ -27,7 +27,7 @@ import {
 import { assertRenderableText, describeTextProblem, isRenderableText } from "../src/yt-text-safety.js";
 import { punchSvg, renderPunchPng, punchCandidatesFor, selectPunches, PUNCH_CLASS } from "../src/yt-punch.js";
 import { pieceArgs, pieceExtension } from "../src/yt-oncamera-edit.js";
-import { programmeGainDb, bedRelativeGainDb, parseLoudnessJson, duckArgs, levelProgrammeArgs, concatArgs, muxNarrationArgs } from "../src/yt-assemble.js";
+import { programmeGainDb, bedRelativeGainDb, parseLoudnessJson, duckArgs, levelProgrammeArgs, concatArgs, muxNarrationArgs, segmentDeclickArgs } from "../src/yt-assemble.js";
 
 const ff = (args) => execFileSync("ffmpeg", args, { stdio: ["pipe", "pipe", "pipe"] });
 const have = (bin) => !spawnSync(bin, ["-version"], { encoding: "utf-8" }).error;
@@ -714,6 +714,45 @@ describe("7c. a piece with a camera move is the length it was cut to", () => {
     const zoom = graph.split(";").find((p) => p.includes("zoompan"));
     assert.match(zoom, /fps=30,scale=.*zoompan/, "the fps filter must precede zoompan");
     assert.match(zoom, /zoompan=[^;]*:fps=30/, "zoompan must also be told the rate, or it uses 25");
+  });
+});
+
+// ─── 7d. the seam between segments ──────────────────────────────────────────
+
+describe("7d. segment boundaries are declicked too, not just piece boundaries", () => {
+  test("A SEGMENT FADES AT BOTH EDGES", (t) => {
+    if (!have("ffmpeg")) return t.skip("ffmpeg not installed");
+    // THE ONE CLICK THE 2026-08-13 RENDER WAS FLAGGED FOR, at 297.523s — which
+    // is 0.16s into segment s4t1, the seam where a voiceover segment meets an
+    // on-camera take. pieceArgs fades the joins INSIDE a take; nothing faded the
+    // join between takes, and that seam splices two unrelated recordings.
+    const pic = join(dir, "seam-pic.mp4");
+    const narr = join(dir, "seam-narr.wav");
+    ff(["-y", "-v", "error", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=30:duration=4",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-an", pic]);
+    // A tone that is at full amplitude at both ends, so an unfaded edge is a step.
+    ff(["-y", "-v", "error", "-f", "lavfi", "-i", "aevalsrc=0.7*cos(2*PI*440*t):d=4:s=48000",
+        "-c:a", "pcm_s16le", narr]);
+    const out = join(dir, "seam-seg.mp4");
+    ff(muxNarrationArgs(pic, narr, out, { seconds: 4 }));
+
+    const s = decodePcm(out);
+    const head = rmsDb(s, 0, 48000 * 0.004);
+    const body = rmsDb(s, 48000 * 1.0, 48000 * 1.1);
+    const tail = rmsDb(s, s.length - 48000 * 0.004, s.length);
+    assert.ok(head < body - 6, `the segment opens on a fade: ${head.toFixed(1)} vs ${body.toFixed(1)} dBFS`);
+    assert.ok(tail < body - 6, `the segment closes on a fade: ${tail.toFixed(1)} vs ${body.toFixed(1)} dBFS`);
+  });
+
+  test("a segment too short to fade gets none rather than being all fade", () => {
+    assert.deepEqual(segmentDeclickArgs(0.03), []);
+    assert.deepEqual(segmentDeclickArgs(0), []);
+  });
+
+  test("the fade lands at the segment's own end", () => {
+    const a = segmentDeclickArgs(12.5);
+    assert.match(a[1], /afade=t=in:st=0:d=0\.015/);
+    assert.match(a[1], /afade=t=out:st=12\.485:d=0\.015/);
   });
 });
 

@@ -87,7 +87,7 @@ import {
   isUploaded,
   recentBrollHashes,
 } from "./yt-log.js";
-import { RESOLUTION, renderLayerSummary, layerKnobs } from "./yt-config.js";
+import { RESOLUTION, renderLayerSummary, layerKnobs, BEAT_BRIDGE_MAX_SECONDS } from "./yt-config.js";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 
@@ -519,6 +519,63 @@ async function buildFromRecordings(approvals, record) {
   if ((gen.stockWindows || []).length > 0) {
     console.log(`[YTPipeline] stock windows: ${windowsMatched}/${gen.stockWindows.length} matched a clip`);
   }
+
+  // ── WHY EACH WINDOW CAME UP EMPTY, WHICH NOTHING PRINTED ────────────────
+  //
+  // `stockAttempts` records every rung of every window — the query, the stage it
+  // died at, and the reason — and the build has been collecting it and throwing
+  // it away. On 2026-08-13 that cost a whole diagnosis: 0 of 13 windows matched,
+  // and the log could say which QUERIES were used but not whether Pexels
+  // returned nothing or returned clips the vision check rejected. Those two have
+  // completely different fixes and the evidence to tell them apart was already
+  // in memory.
+  //
+  // Same class as the stock credits that logged as "[object Object]" nine times:
+  // collected, returned, never surfaced. A build report that cannot answer "why
+  // not" is a build report that costs another render to ask.
+  const byStage = {};
+  for (const w of gen.stockAttempts || []) {
+    const last = w.attempts[w.attempts.length - 1];
+    for (const a of w.attempts) byStage[a.stage] = (byStage[a.stage] || 0) + 1;
+    console.log(
+      `[YTPipeline] stock ${w.takeId}#${w.phase}: ${w.attempts.length} attempt(s) — ` +
+        w.attempts.map((a) => `${a.stage}${a.keyword ? ` "${a.keyword}"` : ""}: ${a.reason}`).join(" | ") +
+        ` -> gave up at ${last?.stage ?? "?"}`
+    );
+  }
+  if ((gen.stockAttempts || []).length > 0) {
+    // The distribution is the actionable half. Every window dying at `search`
+    // means the queries are unsearchable; every window dying at `vision` means
+    // the queries are fine and the check is rejecting what comes back. Those are
+    // opposite fixes and this line is what says which.
+    console.log(`[YTPipeline] stock attempts by stage: ${JSON.stringify(byStage)}`);
+  }
+
+  // ── WHETHER THE BEAT CAP COULD ACT, WHICH ALSO PRINTED NOTHING ──────────
+  //
+  // `bridgeBeats` caps a beat at BEAT_BRIDGE_MAX_SECONDS and hands the overflow
+  // to the neighbouring stock or graphic scene — the beat as a bridge rather
+  // than a layer, exactly as designed. It can only do that when there IS a
+  // neighbour, and it records `capped: false` with a reason when there is not.
+  //
+  // That distinction is the whole diagnosis for "why is the beat 64%". A cap
+  // that is enforced and cannot bind looks identical, in the coverage split, to
+  // a cap nobody wired up — and on 2026-08-13 it was the first: every FOOTAGE
+  // take had all its windows come back empty, so the take was beats end to end
+  // with nothing to extend into. Tightening the cap would have changed nothing.
+  const bridges = gen.beatBridges || [];
+  if (bridges.length > 0) {
+    const capped = bridges.filter((b) => b.capped);
+    const orphaned = bridges.filter((b) => !b.capped);
+    console.log(
+      `[YTPipeline] beat bridges: ${capped.length} capped to ${BEAT_BRIDGE_MAX_SECONDS}s ` +
+        `(${Math.round(capped.reduce((n, b) => n + (b.gaveSeconds || 0), 0) * 10) / 10}s given back to real visuals), ` +
+        `${orphaned.length} could NOT be capped`
+    );
+    for (const b of orphaned) {
+      console.log(`::warning::${b.takeId}: a ${b.seconds}s beat could not be bridged — ${b.reason}`);
+    }
+  }
   // The property the whole classification exists to guarantee, asserted rather
   // than assumed: no proper noun the script named may appear in a search query.
   const leaked = (gen.stockWindows || []).filter((w) =>
@@ -596,8 +653,17 @@ async function buildFromRecordings(approvals, record) {
     console.log(`::warning::take ${r.takeId} asked for a ${r.type || "?"} visual and it was rejected — ${r.reason}`);
   }
   // The old report had a `failures` array and a "falls back to footage" message.
-  // Both are gone: falls are reported above with their layer and reason, and
-  // footage is no longer what a segment falls back TO — typography is.
+  // Both are gone: falls are reported above with their layer and reason.
+  //
+  // THIS COMMENT USED TO SAY TYPOGRAPHY IS WHAT A SEGMENT FALLS BACK TO. That is
+  // stale by a whole design decision: Peter killed the typography layer on
+  // sight, because word slides duplicate the burned captions — two pieces of
+  // text saying the same thing, which is card 7's defect wearing a different
+  // hat. Nothing falls back to typography, and nothing should be built that
+  // does. The chain for a failed FOOTAGE window is: a map when the window names
+  // a place, a widened stock search when it does not, the neighbouring scene
+  // extended when stock still comes up empty, and the beat only as a bridge
+  // under BEAT_BRIDGE_MAX_SECONDS.
   if (gen.intents.requested === 0) {
     console.log("::warning::the writer requested no graphics for this script — every segment is carried by typography");
   }
