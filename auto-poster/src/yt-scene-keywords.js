@@ -350,19 +350,45 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   // visual that can actually show a place.
   const placeDominated = properPhrases.length > 0 && proper.length >= 2 && proper.length >= common.length;
 
-  // WHAT THE VISION CHECK IS ASKED TO CONFIRM: the sentence, minus the names.
+  // WHAT THE VISION CHECK IS ASKED TO CONFIRM: a thing that could be filmed.
   //
   // Never the place name — the check has never been allowed to know one and
   // still is not, so a clip can never be accepted as being a specific place.
-  // But the two-word search query is a bad description of a moment, and
-  // verifying against it is what let a goat farm through for "animal well".
-  const verifySubject = tokens
-    .map((t) => bare(t))
-    .filter((t) => t && !proper.includes(t))
-    .join(" ")
-    .trim() || null;
+  //
+  // AND NEVER THE SENTENCE. This used to be every token minus the proper nouns,
+  // which handed the check a narrative claim — "just south and west of that
+  // hospital cluster" — and asked whether a clip was plausibly that. Nothing
+  // can be. A probe of all sixteen windows returned 48 vision rejections and
+  // zero search misses: Pexels had footage every time and the question had no
+  // possible yes. See depictionSubject for the structural argument.
+  //
+  // The two-word query alone is the other failure and is not what this is
+  // either: verifying against "animal well" is what let a goat farm through.
+  // The noun phrase around the head word is narrower than the sentence and
+  // wider than the query.
+  const verifySubject = depictionSubject(tokens, ranked[0], { proper }) || null;
 
-  if (ordered.length > 0) {
+  // A WINDOW NEEDS A NOUN PHRASE, NOT A WORD.
+  //
+  // `depictionSubject` returns the run of content words around the head. When
+  // that run is a single bare word — "matters", "growth", "closest", "heading" —
+  // the window has not described a thing; it has offered one word that happens
+  // to be rare in this script. Asking a camera for "growth" is the same category
+  // of mistake as asking it for "just south of that hospital cluster", one
+  // abstraction rather than one relation.
+  //
+  // A compound or a modified noun ("hospital cluster", "smaller payment") is a
+  // picture. A bare content word is not, so the window falls to the rungs below
+  // — widen to the take, then the take's intent, then the generic establishing
+  // shot. That floor is a real photograph of a real thing, which beats both a
+  // query nobody can film and the wordless beat.
+  //
+  // Structural, not tuned: the test is how many content words the phrase has,
+  // and the boundaries are the same closed-class list the rest of the module
+  // uses. It costs "hill" and "hospitals" a specific query and gives them an
+  // establishing shot instead, which is the right way to lose.
+  const depictable = verifySubject && verifySubject.split(/\s+/).length >= 2;
+  if (ordered.length > 0 && depictable) {
     return {
       verifySubject,
       placeDominated,
@@ -390,8 +416,11 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   // this script at build time — nothing here knows what the video is about.
   const widened = widenToSegment(seg, { counts, total, lexicon: lex, exclude: new Set(common) });
   if (widened.length > 0) {
+    // The widened rung looks past the window, so its subject must come from the
+    // take rather than from the window that had nothing.
+    const wideSubject = depictionSubject(String(seg?.text || "").split(/\s+/).filter(Boolean), widened[0], { proper });
     return {
-      verifySubject,
+      verifySubject: (wideSubject && wideSubject.split(/\s+/).length >= 2) ? wideSubject : PLACE_ESTABLISHING_CONCEPT,
       placeDominated,
       keywords: [widened.join(" ")],
       subject: widened.join(" "),
@@ -413,7 +442,10 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   // is still enormously better than geometry that means nothing.
   if (properPhrases.length > 0) {
     return {
-      verifySubject,
+      // The floor searches for a generic establishing shot, so that is exactly
+      // what the check should be asked to see. Handing it the sentence here was
+      // the same defect one rung down.
+      verifySubject: PLACE_ESTABLISHING_CONCEPT,
       placeDominated,
       keywords: [PLACE_ESTABLISHING_CONCEPT],
       subject: PLACE_ESTABLISHING_CONCEPT,
@@ -425,6 +457,81 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   }
 
   return { verifySubject, placeDominated, keywords: [], subject: null, dropped: proper, properPhrases, phrase, source: "none" };
+}
+
+/**
+ * Direction and relation words: real English, and unfilmable as a subject.
+ *
+ * "South" is not a thing a camera can point at. These appear in a sentence to
+ * position something relative to something else, which is precisely the kind of
+ * claim stock footage must never be asked to support — so they are removed from
+ * what the clip is asked to depict, while staying available to the search query
+ * where they cost nothing.
+ */
+const SPATIAL = new Set(
+  "north south east west northeast northwest southeast southwest inner outer left right nearby beyond further farther closer nearer above below upper lower".split(/\s+/)
+);
+
+/**
+ * WHAT THE CLIP SHOULD SHOW, as opposed to what the sentence claims.
+ *
+ * THE DEFECT THIS REPLACES, measured rather than argued. `verifySubject` used to
+ * be the whole spoken phrase with the proper nouns taken out, and the vision
+ * check's third criterion asks whether the footage is plausibly that. So the
+ * check was being asked things like:
+ *
+ *   "just south and west of that hospital cluster"
+ *   "a specific hillside location starting north of 1604"
+ *
+ * and answering, correctly, that it could not verify them. A stock clip cannot
+ * demonstrate a spatial relationship to a named landmark, and it must never be
+ * accepted as doing so — that is the whole reason proper nouns are stripped in
+ * the first place. The check was refusing to certify a geographic claim, which
+ * is right; the mistake was asking it one.
+ *
+ * A probe of all sixteen windows on 2026-08-13 returned 48 vision rejections and
+ * ZERO search misses. Pexels had footage for every query. Nothing could pass a
+ * question with no possible yes.
+ *
+ * SO THE SUBJECT IS A NOUN PHRASE, DERIVED STRUCTURALLY. A noun phrase in
+ * English is a run of content words bounded by function words — determiners,
+ * prepositions and conjunctions all close one. Taking the run that contains the
+ * query's head word yields "hospital cluster" from "…west of that hospital
+ * cluster" and "bigger homes" from "Bigger homes, more yard", because the
+ * preposition and the comma are the boundaries. It cannot express a relation,
+ * because a relation needs the preposition that ended the run.
+ *
+ * Nothing here knows what the video is about. The bounding set is the same
+ * closed-class function-word list the rest of the module uses, plus the
+ * direction words, and both are properties of English.
+ */
+export function depictionSubject(tokens, head, { proper = [] } = {}) {
+  const properSet = new Set((proper || []).map((p) => normalise(p)));
+  const isBoundary = (t) => {
+    const n = normalise(t);
+    return !n || FUNCTION_WORDS.has(n) || properSet.has(n) || SPATIAL.has(n) || FIGURE.test(bare(t)) || ACRONYM.test(bare(t));
+  };
+  const headWord = normalise(head);
+  if (!headWord) return null;
+
+  // Every maximal run of content words, then the one holding the head.
+  const runs = [];
+  let run = [];
+  for (const t of tokens) {
+    if (isBoundary(t)) {
+      if (run.length) runs.push(run);
+      run = [];
+      continue;
+    }
+    run.push(bare(t).toLowerCase());
+  }
+  if (run.length) runs.push(run);
+
+  const owning = runs.find((r) => r.includes(headWord));
+  if (!owning) return null;
+  // Three words is a noun phrase; more is a clause that lost its verb.
+  const phrase = owning.slice(0, 3).join(" ").trim();
+  return phrase || null;
 }
 
 /**

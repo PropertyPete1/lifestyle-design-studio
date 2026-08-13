@@ -231,16 +231,34 @@ export async function visionCheckClip(framePaths, { subject, client, model = "cl
     return { ok: false, reason: `could not read extracted frames: ${err.message}` };
   }
 
-  const prompt = `These frames are from a stock video clip being considered as B-roll for an educational real-estate video. The clip was requested to show: "${subject}".
+  // CRITERION 3 ASKS WHAT THE FOOTAGE DEPICTS, NOT WHAT THE NARRATION CLAIMS.
+  //
+  // It used to be handed the spoken sentence with the names removed, so it was
+  // asked whether a clip was plausibly "just south and west of that hospital
+  // cluster" — and it answered, correctly, that it could not tell. A probe of
+  // sixteen windows produced 48 rejections and zero search misses: there was
+  // footage every time and the question had no possible yes.
+  //
+  // The clip is GENERIC B-ROLL standing in for a description. It is never
+  // evidence about a specific place — that is why proper nouns are stripped
+  // before any of this — so requiring it to establish a location, a distance or
+  // a direction is requiring the one thing it must never be taken to prove.
+  //
+  // Criteria 1, 2, 4 and 5 are unchanged and stay strict. Those are what stop a
+  // watermark, a title card or somebody presenting a product reaching the
+  // video, and the probe showed them working exactly as intended.
+  const prompt = `These frames are from a stock video clip being considered as generic B-roll for an educational real-estate video. It should depict: "${subject}".
 
 Reject the clip if ANY of these is true:
 1. There is a watermark, logo, or stock-agency mark anywhere in the frame.
 2. There is burned-in text, a caption, a title card, or on-screen writing of any kind.
-3. The subject is not plausibly "${subject}".
+3. The footage does not plausibly depict "${subject}".
 4. The frames are black, corrupted, heavily blurred, or a solid colour.
 5. A person appears to be endorsing or presenting a product or service (a person speaking to camera, holding a sign, or gesturing at branding). Scenery and candid activity are fine.
 
-Be strict. If you are unsure, reject.
+On criterion 3, judge ONLY what is visible. This clip is illustrative stock, not evidence about a real location: do NOT require it to establish any specific place, distance, direction, neighbourhood, or claim made elsewhere in the video. "A hospital campus" is satisfied by any hospital campus. Ask only whether a viewer would accept these frames as a shot of "${subject}".
+
+Be strict on 1, 2, 4 and 5 — if you are unsure, reject.
 
 Respond with ONLY valid JSON: {"ok": true/false, "reason": "brief explanation"}`;
 
