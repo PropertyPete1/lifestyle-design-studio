@@ -70,6 +70,36 @@ export function segmentAudioArgs() {
   return ["-c:a", "aac", "-b:a", AUDIO_BITRATE, "-ar", AUDIO_RATE, "-ac", AUDIO_CHANNELS];
 }
 
+/** How long the fade at each segment edge is. Matches the piece declick. */
+export const SEGMENT_DECLICK_SECONDS = 0.015;
+
+/**
+ * A fade at both ends of a SEGMENT, for the same reason the pieces have one.
+ *
+ * THE JOIN THE PIECE DECLICK NEVER COVERED. `pieceArgs` fades the edges of every
+ * piece inside an on-camera take, so the cuts within a take are silent. Nothing
+ * did the same for the boundary BETWEEN segments — and that boundary splices two
+ * completely unrelated recordings: a voiceover take's narration butting straight
+ * against a phone take's room tone, concatenated with `-c copy`.
+ *
+ * The 2026-08-13 render was flagged for one click, at 297.523s. That is 0.16s
+ * into segment `s4t1`, which is to say it is the seam where the preceding
+ * voiceover segment meets the on-camera take — the one kind of join in the whole
+ * timeline that had no fade on it. The detector had already been recalibrated
+ * against this render and stands by it at 10.2x its own neighbourhood.
+ *
+ * 15ms, the same as the pieces: inaudible on speech, long enough to take any
+ * step down to zero.
+ */
+export function segmentDeclickArgs(seconds, { fade = SEGMENT_DECLICK_SECONDS } = {}) {
+  const total = Number(seconds) || 0;
+  // A segment shorter than three fades would be mostly fade. It gets none — the
+  // same rule pieceArgs applies, and for the same reason.
+  if (total <= fade * 3) return [];
+  const out = Math.round((total - fade) * 1000) / 1000;
+  return ["-af", `afade=t=in:st=0:d=${fade},afade=t=out:st=${out}:d=${fade}`];
+}
+
 /**
  * How far under the narration the music bed sits.
  *
@@ -149,7 +179,12 @@ export function muxNarrationArgs(videoIn, audioIn, output, { seconds = null } = 
   return [
     "-y", "-i", videoIn, "-i", audioIn,
     "-map", "0:v", "-map", "1:a",
-    "-c:v", "copy", ...segmentAudioArgs(),
+    "-c:v", "copy",
+    // The same 15ms edge fade the on-camera segments get. A voiceover segment's
+    // narration ends abruptly against whatever the next segment opens with, and
+    // that seam is exactly where the one confirmed click landed.
+    ...segmentDeclickArgs(seconds),
+    ...segmentAudioArgs(),
     // `-t` MAKES THE SEGMENT THE LENGTH THE PLAN SAYS, which is a different
     // guarantee from the one `-shortest` gives and the one that actually matters
     // here.
@@ -659,7 +694,13 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
           // pieces is close to two seconds by the close. See PIECE_AUDIO.
           const jointed = `${base}_joined.${ext}`;
           ffmpeg(concatArgs(listFile, jointed));
-          ffmpeg(["-y", "-i", jointed, "-c:v", "copy", ...segmentAudioArgs(), withAudio]);
+          // The declick at the segment's own edges goes on here, where the take
+          // is already being re-encoded to AAC — see segmentDeclickArgs.
+          ffmpeg([
+            "-y", "-i", jointed, "-c:v", "copy",
+            ...segmentDeclickArgs(mediaDuration(jointed)),
+            ...segmentAudioArgs(), withAudio,
+          ]);
           rmSync(jointed, { force: true });
           pieceFiles.forEach((p) => rmSync(p, { force: true }));
           rmSync(listFile, { force: true });
