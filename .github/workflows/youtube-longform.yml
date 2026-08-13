@@ -45,6 +45,14 @@ on:
           - send-test-approval
           - reoutline
           - resend-kit
+          - stock-probe
+      stock_queries:
+        # Hand it the exact queries a past build used and read off which stage
+        # each one dies at. Empty derives them from the current script instead.
+        description: 'stock-probe: space-separated queries to test, or blank to use the current script'
+        required: false
+        default: ''
+        type: string
       request_id:
         description: 'reoutline / resend-kit: the requestId to act on'
         required: false
@@ -387,6 +395,43 @@ jobs:
   # Rebuild and re-send a recording kit for a request whose kit already went out
   # — after a narration-mode change, or when the first delivery had no card to
   # open. Clears no acted marker and changes no decision. Publishes nothing.
+  # ── WHY STOCK CAME UP EMPTY, WITHOUT RENDERING ANYTHING ───────────────────
+  #
+  # A build that reports "0/13 windows matched a clip" leaves one question
+  # standing: did Pexels return nothing, or did it return clips the vision check
+  # rejected? Those have opposite fixes and answering it used to cost a
+  # fifty-five minute render.
+  #
+  # Nothing about the question needs a render. The windows come from the
+  # transcript, the queries from the windows, and the rest is network calls. This
+  # job runs exactly that much — no takes, no encoding, no upload, no state
+  # written — and prints the verdict. Minutes, not an hour.
+  stock-probe:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'stock-probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg
+        # fetchStockClip grades every candidate and pulls frames for the vision
+        # check, so the probe needs ffmpeg even though it renders no video.
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Probe the stock ladder
+        working-directory: auto-poster
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          QUERIES: ${{ github.event.inputs.stock_queries }}
+        run: node scripts/stock-probe.mjs $QUERIES
+
   resend-kit:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'resend-kit'
     runs-on: ubuntu-latest
