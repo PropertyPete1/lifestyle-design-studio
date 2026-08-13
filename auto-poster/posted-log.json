@@ -3482,6 +3482,31 @@
       "timestamp": "2026-08-13T19:09:23.778Z",
       "runId": "31733827391",
       "success": true
+    },
+    {
+      "driveFileId": "1Dk8-gIkwd8rt7We5XN_oVNlgNYubtGf1",
+      "fileName": "E3356B42-092A-49EB-93F0-0B685162C55A.mp4",
+      "city": "san_antonio",
+      "caption": "this is what new construction is supposed to feel like\n\nnew construction like this doesn't sit long in San Antonio. these homes are moving fast.\n\n✨ everyday living hits\nopen floor plan, natural light ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-13T19:09:23.280Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_transcript": "Let me stand in the pouring rain. Now I've got to have these diamonds changed. My pockets getting thicker. The watch is moving quicker. Money talk is much louder now.",
+      "voiceover_persona": "deadpan_comedian",
+      "content_hash": "ffffff87003e0000:f8fffdfffcb0b000:1f0f0ffb3e2f070f:e4c1c3fc1dcf4420:a136e0f07ee0f84e",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1AEVyU7owvIQUHFnTH87Ks_Ka2D_6MieA/view"
     }
   ],
   "lastTemplateIndex": -1
