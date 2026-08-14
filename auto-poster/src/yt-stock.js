@@ -35,6 +35,68 @@ import { STOCK_GRADE_SLACK_SECONDS } from "./yt-config.js";
 
 const PEXELS_API = "https://api.pexels.com/videos/search";
 
+/**
+ * Thrown when Pexels' quota is exhausted and waiting it out inside the run is
+ * not possible. Typed, so the layers above can tell "the well is dry, come
+ * back at :10 past" from every other way a search can fail — the distinction
+ * run 31766707987 could not make.
+ */
+export class StockQuotaError extends Error {
+  constructor(message, retryAfterSeconds = null) {
+    super(message);
+    this.name = "StockQuotaError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
+
+/**
+ * The longest a run will sleep waiting for the Pexels quota window to reset.
+ *
+ * Fifteen minutes: Pexels resets hourly, a build spends about that long on its
+ * other work anyway, and one bounded wait is far cheaper than a failed run.
+ * Waits longer than this fail immediately instead — "quota exhausted, retry
+ * after X" is an honest answer and silent degradation into beat-covered takes
+ * is the dishonest one this policy replaces.
+ */
+const QUOTA_MAX_WAIT_SECONDS = Number.parseFloat(process.env.YT_STOCK_QUOTA_MAX_WAIT || "900");
+
+/**
+ * One wait per run. A second 429 after a full quota-window wait means the
+ * window is being consumed faster than this build can use it (another consumer
+ * on the same key); more sleeping cannot fix that and the run should say so.
+ */
+const quota = { waits: 0, hits429: 0 };
+
+/** For the build report: how often the quota bit during this run. */
+export function stockQuotaStats() {
+  return { ...quota };
+}
+
+/**
+ * The counters assume one build per process. The test process runs many
+ * scenarios; each resets between them so "one wait per run" means one wait per
+ * SCENARIO rather than one wait per suite.
+ */
+export function resetStockQuotaState() {
+  quota.waits = 0;
+  quota.hits429 = 0;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Seconds until the quota window resets, best effort from Pexels' headers.
+ * `X-Ratelimit-Reset` is a unix timestamp; `Retry-After` is seconds. Null when
+ * the response says neither, which callers treat as "longer than we wait".
+ */
+export function quotaResetSeconds(res, now = Date.now()) {
+  const reset = Number.parseInt(res?.headers?.get?.("X-Ratelimit-Reset") || "", 10);
+  if (Number.isFinite(reset) && reset > 0) return Math.max(0, Math.ceil(reset - now / 1000));
+  const after = Number.parseInt(res?.headers?.get?.("Retry-After") || "", 10);
+  if (Number.isFinite(after) && after >= 0) return after;
+  return null;
+}
+
 /** Below this a clip is too short to cut into a segment. */
 const MIN_CLIP_SECONDS = 5;
 
@@ -56,14 +118,21 @@ export function stockEnabled() {
 /**
  * Search Pexels for one query.
  *
- * Returns [] on ANY failure — no key, network down, rate limited, malformed
- * payload, HTML error page where JSON was promised. The caller's response to
- * every one of those is the same (try the next keyword, then fall back), so
- * distinguishing them in the return type would only invite a caller to treat
- * one as fatal. They are distinguished in the log, which is where a human
- * debugging a build actually looks.
+ * Returns [] on ordinary failure — no key, network down, malformed payload,
+ * HTML error page where JSON was promised. The caller's response to those is
+ * the same (try the next keyword, then fall back), so distinguishing them in
+ * the return type would only invite a caller to treat one as fatal.
+ *
+ * A 429 IS NOT ORDINARY AND IS NOT ALLOWED TO LOOK ORDINARY ANYMORE. The old
+ * behaviour — warn once, return [] — made an exhausted quota byte-identical to
+ * "Pexels has no such footage", and run 31766707987 turned that into takes
+ * covered end to end by the wordless beat, then a failed build with no way to
+ * tell quota from content. Now: one bounded in-run wait for the window to
+ * reset (Pexels resets hourly; the wait is capped by YT_STOCK_QUOTA_MAX_WAIT),
+ * and past that a typed StockQuotaError that names when to come back. The
+ * build fails fast and honestly instead of degrading quietly.
  */
-export async function searchPexels(query, { perPage = 8, orientation = "landscape", fetchImpl = fetch } = {}) {
+export async function searchPexels(query, { perPage = 8, orientation = "landscape", fetchImpl = fetch, maxWaitSeconds = QUOTA_MAX_WAIT_SECONDS, sleepImpl = sleep } = {}) {
   const key = process.env.PEXELS_API_KEY;
   if (!key) return [];
 
@@ -76,10 +145,30 @@ export async function searchPexels(query, { perPage = 8, orientation = "landscap
 
   let data;
   try {
-    const res = await fetchImpl(`${PEXELS_API}?${params}`, { headers: { Authorization: key } });
+    let res = await fetchImpl(`${PEXELS_API}?${params}`, { headers: { Authorization: key } });
     if (res.status === 429) {
-      console.warn("[Stock] Pexels rate limit reached — falling back for the rest of this build");
-      return [];
+      quota.hits429++;
+      const resetIn = quotaResetSeconds(res);
+      const canWait = quota.waits === 0 && resetIn !== null && resetIn <= maxWaitSeconds;
+      if (!canWait) {
+        const when = resetIn !== null ? `${resetIn}s` : "up to an hour (Pexels sent no reset header)";
+        throw new StockQuotaError(
+          `Pexels quota exhausted${quota.waits > 0 ? " again after an in-run wait" : ""} — retry after ${when}`,
+          resetIn
+        );
+      }
+      quota.waits++;
+      console.log(`[Stock] Pexels quota exhausted — waiting ${resetIn + 2}s in-run for the window to reset (once per build)`);
+      await sleepImpl((resetIn + 2) * 1000);
+      res = await fetchImpl(`${PEXELS_API}?${params}`, { headers: { Authorization: key } });
+      if (res.status === 429) {
+        quota.hits429++;
+        const again = quotaResetSeconds(res);
+        throw new StockQuotaError(
+          `Pexels quota exhausted again immediately after a full window wait — another consumer is on this key; retry after ${again ?? "?"}s`,
+          again
+        );
+      }
     }
     if (!res.ok) {
       console.warn(`[Stock] Pexels returned ${res.status} for "${query}"`);
@@ -87,6 +176,7 @@ export async function searchPexels(query, { perPage = 8, orientation = "landscap
     }
     data = await res.json();
   } catch (err) {
+    if (err instanceof StockQuotaError) throw err;
     console.warn(`[Stock] Pexels request failed for "${query}": ${err.message}`);
     return [];
   }

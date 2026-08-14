@@ -30,6 +30,10 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { requireLiveAck } from "./live-guard.mjs";
 import { briefSystem, callModel, applyGuards, resolveTopicSelection } from "../src/yt-brief.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 // TOUCHES LIVE: rewrites yt-approvals.json, the committed record the pipeline
 // reads to decide what to write next, and bills the Anthropic API.

@@ -36,6 +36,10 @@ import { getAccessToken, listFolderFiles, uploadAndShare } from "../src/drive.js
 import { loadApprovals, saveApprovals, findRequest, TEST_REQUEST_PREFIX } from "../src/yt-approvals.js";
 import { mergeYtApprovals } from "../merge-strategies.mjs";
 import { loadQueue, saveQueue, findVideo, STATUS, VIDEOS_TO_EDIT_FOLDER } from "../src/edit-queue.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const ROOT = join(import.meta.dirname, "..");
 const STAGE = process.env.SWEEP_STAGE || "full";

@@ -21,6 +21,10 @@ import { appendFileSync } from "node:fs";
 import { loadApprovals } from "../src/yt-approvals.js";
 import { awaitingReview, awaitingStart, loadQueue, reclaimStale, summarise } from "../src/edit-queue.js";
 import { approvedAndUnacted, decidedAndUnacted } from "../src/edit-queue-gates.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const queue = loadQueue();
 const approvals = loadApprovals();

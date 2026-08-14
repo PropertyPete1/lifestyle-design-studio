@@ -93,6 +93,10 @@ import {
 // would write the same file twice per item for no reason.
 import { loadLog, recordPost } from "./state.js";
 import { loadTrialHistory, saveTrialHistory } from "./trial-variant.js";
+import { routeWarnChannel } from "./yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 

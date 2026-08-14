@@ -28,6 +28,10 @@ import {
   loadCarouselLog, recentEntries, alreadyPostedToday, appendEntry, saveCarouselLog, buildEntry,
 } from "./carousel-state.js";
 import { verifyAfterSettling, applyVerification, recheckPending } from "./carousel-verify.js";
+import { routeWarnChannel } from "./yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 const SAMPLE_OUT = process.env.SAMPLE_OUT || "";

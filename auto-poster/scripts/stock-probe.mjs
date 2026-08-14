@@ -45,6 +45,10 @@ import { planVisuals } from "../src/yt-visual-plan.js";
 import { fetchStockClip, stockEnabled } from "../src/yt-stock.js";
 import { deriveConcept } from "../src/yt-concept-fallback.js";
 import { ffmpeg } from "../src/yt-assemble.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 /**
  * The script's voiceover takes, as segments the planner understands.

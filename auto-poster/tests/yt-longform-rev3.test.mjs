@@ -83,7 +83,12 @@ describe("1. a script with zero visual intents", () => {
 describe("2. Pexels is down, or returns garbage", () => {
   const badPayloads = [
     { name: "500", impl: async () => ({ ok: false, status: 500, json: async () => ({}) }) },
-    { name: "429 rate limit", impl: async () => ({ ok: false, status: 429, json: async () => ({}) }) },
+    // 429 IS DELIBERATELY NOT IN THIS TABLE ANY MORE. An exhausted quota used
+    // to degrade to [] like any outage — indistinguishable from "Pexels has no
+    // such footage" — and run 31766707987 turned that into takes covered end
+    // to end by the beat, then a failed build with no way to tell quota from
+    // content. A 429 now waits once (bounded) or throws StockQuotaError with
+    // the retry time; the sweep in yt-rev10-feel.test.mjs pins all four paths.
     { name: "network throw", impl: async () => { throw new Error("ECONNREFUSED"); } },
     { name: "HTML where JSON was promised", impl: async () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError("Unexpected token <"); } }) },
     { name: "valid JSON, wrong shape", impl: async () => ({ ok: true, status: 200, json: async () => ({ nonsense: true }) }) },

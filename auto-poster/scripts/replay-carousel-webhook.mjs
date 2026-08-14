@@ -18,6 +18,10 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { buildSocialCaption } from "../src/carousel-content.js";
 import { requireLiveAck } from "./live-guard.mjs";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 // TOUCHES LIVE: sends a real delivery webhook to the live dashboard, which
 // creates a delivery record and notifies the owner. Publishes nothing to any

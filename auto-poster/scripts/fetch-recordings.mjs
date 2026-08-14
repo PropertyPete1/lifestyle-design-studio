@@ -15,6 +15,10 @@ import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { findRecordingsFolder, listRecordings } from "../src/yt-ingest.js";
 import { getAccessToken, listCityVideos, downloadVideo } from "../src/drive.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const requestId = process.argv[2];
 const dest = process.argv[3] || "/tmp/dryrun-recordings";

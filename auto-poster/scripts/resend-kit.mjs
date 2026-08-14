@@ -35,6 +35,10 @@ import { getAccessToken } from "../src/drive.js";
 import { ensureRecordingsFolder } from "../src/yt-ingest.js";
 import { NARRATION_MODE, disclosureRequired } from "../src/yt-config.js";
 import { KIND_TOPIC_PICK } from "../src/yt-approvals.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 // TOUCHES LIVE: sends a real recording kit to the dashboard and Peter's inbox,
 // and ensures the Drive folder exists. Publishes nothing and changes no decision.
