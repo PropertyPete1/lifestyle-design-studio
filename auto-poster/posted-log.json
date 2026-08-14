@@ -3679,6 +3679,30 @@
       "timestamp": "2026-08-14T19:07:56.817Z",
       "runId": "31831648579",
       "success": true
+    },
+    {
+      "driveFileId": "1BI68DxyeR8BtRJ8eBZqNcM3OdqeiwncD",
+      "fileName": "0A19605A-FFE2-4213-909B-21BC63F3CACA.mp4",
+      "city": "san_antonio",
+      "caption": "Wait until you see the kitchen in this one 😮‍💨\n\nNew construction like this doesn't sit long in San Antonio. Starting at $427,990, these are built for families ready to make a move.\n\n✨ Open floor pla",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-14T19:07:56.314Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Aah... Someone's calling you to play! I watched her show.",
+      "content_hash": "ffffe7000eff0000:e3e367e64242c200:fe1fffc6c408c080:ffff3f1f1c040c00:ff7efcf8f8181818",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1fFL-j72wta_xPypgl8qT8NjEJH3yUnSA/view"
     }
   ],
   "lastTemplateIndex": -1
