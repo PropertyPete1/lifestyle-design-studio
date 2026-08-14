@@ -3582,6 +3582,21 @@
       "variantNumber": 1,
       "window": "pm",
       "deliveryDriveLink": "https://drive.google.com/file/d/1ZYGobd3B3kFwYNSS_BTqaOIDmoATwozG/view"
+    },
+    {
+      "driveFileId": "18qcKpwlpnH32-_8uskwBDMJGGK1lq7PB",
+      "fileName": "D7C38435-4F40-46EC-837B-7CCC50536777.mp4",
+      "city": "austin",
+      "caption": "The monthly payment on this one is lower than most people guess.\n\nNew construction in Georgetown at $520,000 starting price moves fast. Builder incentives are real right now if you're ready to move.\n\n",
+      "voiceover": true,
+      "platforms": [],
+      "timestamp": "2026-08-14T14:27:23.486Z",
+      "success": true,
+      "type": "trial_variant",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "window": "am",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1_EqntkPAObeYs6AmiAWWl6HI5uisX_Mq/view"
     }
   ],
   "lastTemplateIndex": -1
