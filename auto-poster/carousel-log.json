@@ -1686,6 +1686,198 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-14",
+      "timestamp": "2026-08-14T14:47:29.879Z",
+      "pillar": "texas_lifestyle",
+      "topic": "Cedar fever: the winter allergy season that blindsides Texas transplants",
+      "hook": "Transplants in Austin and San Antonio get sick every January. It is not the flu.",
+      "closeType": "question",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "Cedar fever: the winter allergy season that blindsides Texas transplants",
+        "hook": "Transplants in Austin and San Antonio get sick every January. It is not the flu.",
+        "map": [
+          "One tree, one season",
+          "Pollen counts, insane",
+          "Feels like the flu",
+          "Why year one hurts",
+          "Four local habits",
+          "Cedar by city"
+        ],
+        "points": [
+          {
+            "title": "One Tree Does This",
+            "body": [
+              "Central Texas is covered in ashe juniper, which everyone here calls mountain cedar.",
+              "It releases pollen in the cold months, not the spring. Peak is mid December through February."
+            ],
+            "loop": "The pollen counts tell you why."
+          },
+          {
+            "title": "The Numbers Are Insane",
+            "body": [
+              "Most pollens peak somewhere around 1,500 grains.",
+              "On a bad cedar day around Austin and San Antonio, counts blow past 20,000. You can see the yellow haze come off the trees when the wind picks up."
+            ],
+            "loop": "That is why people misdiagnose it."
+          },
+          {
+            "title": "It Copies The Flu",
+            "body": [
+              "Body aches. Low fever. Total exhaustion. Sinus pressure that makes your teeth hurt.",
+              "Urgent care rooms here fill up in January with people who are sure they caught something."
+            ],
+            "loop": "Your first winter is the worst one."
+          },
+          {
+            "title": "Year One Hits Hardest",
+            "body": [
+              "Your body has never seen this pollen before, so the reaction is loud.",
+              "Most transplants tell me season two was easier and season three was manageable."
+            ],
+            "loop": "Four habits cut it way down."
+          },
+          {
+            "title": "What Locals Actually Do",
+            "body": [
+              "Windows stay shut on dry windy days after a cold front. That is when the trees dump.",
+              "Fresh filters in December. Shower and change clothes before bed. Start your medicine two weeks before you feel anything, not after."
+            ],
+            "loop": "Location changes the dose completely."
+          },
+          {
+            "title": "It Depends Where You Land",
+            "body": [
+              "The heaviest cedar sits in the Hill Country west of Austin and north of San Antonio.",
+              "DFW gets a fraction of it. Their rough stretch is spring, with oak and grass instead."
+            ],
+            "loop": "Most buyers never think to ask."
+          }
+        ],
+        "cta": {
+          "question": "Cedar season in the Hill Country or spring pollen in DFW?"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 8,
+        "cta": 7,
+        "worst_problem": "The final loop 'Most buyers never think to ask' introduces a real-estate 'buyer' frame that appears nowhere else in the deck, so the last swipe lands on an unearned pivot.",
+        "fix": "Replace 'Most buyers never think to ask' with a loop that stays in the deck's own language, e.g. 'One question before you sign', and drop 'Save this for later' from the CTA so the either/or question stands alone."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 362187183,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-14T14:50:30.513Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673899038185426189"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 362187187,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-14T14:50:30.671Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7494042239862743040"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 362187241,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-14T14:50:30.831Z",
+          "publicUrl": "https://www.instagram.com/p/DcBkPnRiPmC/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 362187285,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-14T14:50:30.975Z",
+          "publicUrl": "https://www.instagram.com/p/DcBkOqSiuB7/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 362187288,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-14T14:50:31.132Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7494042239182987264"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 362187341,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-14T14:50:31.297Z",
+          "publicUrl": "https://www.instagram.com/p/DcBkPGhCPxP/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 362187345,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-14T14:50:31.443Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122113926867400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 362187351,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-14T14:50:31.590Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7494042238197526528"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-14T14:50:31.591Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
