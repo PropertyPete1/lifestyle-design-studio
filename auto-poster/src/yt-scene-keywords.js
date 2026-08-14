@@ -379,7 +379,8 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   // noun is a fine thing to ask a camera for — "is this plausibly a hill" has an
   // answer — and a window whose phrase yields nothing at all is better served by
   // its own two words than by a question with no possible yes.
-  const verifySubject = depictionSubject(tokens, ranked[0], { proper }) || ordered.join(" ") || null;
+  const derivedSubject = depictionSubject(tokens, ranked[0], { proper });
+  const verifySubject = derivedSubject || ordered.join(" ") || null;
 
   // THE QUERY LADDER IS DELIBERATELY UNTOUCHED BY THIS CHANGE.
   //
@@ -397,6 +398,14 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   if (ordered.length > 0) {
     return {
       verifySubject,
+      // WHETHER THE SUBJECT IS A REAL NOUN PHRASE OR THE QUERY IN A HAT.
+      //
+      // When depictionSubject cannot form a phrase, the check is handed the
+      // raw two-word query — and those are the proven pun-magnets: "animal
+      // well" accepted a rooster twice, "closest base" accepted a baseball
+      // field. The flag lets the build treat a degenerate subject as what it
+      // is: a window whose question is unsafe to ask, concept rung first.
+      subjectDerived: Boolean(derivedSubject),
       placeDominated,
       keywords: [ordered.join(" ")],
       subject: ordered.join(" "),
@@ -427,6 +436,7 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
     const wideSubject = depictionSubject(String(seg?.text || "").split(/\s+/).filter(Boolean), widened[0], { proper });
     return {
       verifySubject: wideSubject || widened.join(" "),
+      subjectDerived: Boolean(wideSubject),
       placeDominated,
       keywords: [widened.join(" ")],
       subject: widened.join(" "),
@@ -439,7 +449,8 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
 
   const fb = (fallbackKeywords || []).filter(Boolean).slice(0, MAX_KEYWORDS);
   if (fb.length) {
-    return { verifySubject, placeDominated, keywords: fb, subject: fb[0], dropped: proper, properPhrases, phrase, source: "take-intent" };
+    // Curated by the writer, not derived from a fragment — safe to ask as-is.
+    return { verifySubject, subjectDerived: true, placeDominated, keywords: fb, subject: fb[0], dropped: proper, properPhrases, phrase, source: "take-intent" };
   }
 
   // THE FLOOR, and it only ever carries a window that named a place and said
@@ -452,6 +463,7 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
       // what the check should be asked to see. Handing it the sentence here was
       // the same defect one rung down.
       verifySubject: PLACE_ESTABLISHING_CONCEPT,
+      subjectDerived: true,
       placeDominated,
       keywords: [PLACE_ESTABLISHING_CONCEPT],
       subject: PLACE_ESTABLISHING_CONCEPT,
@@ -462,7 +474,7 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
     };
   }
 
-  return { verifySubject, placeDominated, keywords: [], subject: null, dropped: proper, properPhrases, phrase, source: "none" };
+  return { verifySubject, subjectDerived: false, placeDominated, keywords: [], subject: null, dropped: proper, properPhrases, phrase, source: "none" };
 }
 
 /**

@@ -258,13 +258,14 @@ export async function buildVisuals(plan, {
   const stockWindows = [];
   const beatBridges = [];
   const conceptCalls = { asked: 0, answered: 0, matched: 0 };
+  const leftoverRetries = { asked: 0, matched: 0 };
 
   const segments = [];
   // Everything the evidence file needs if a gate fires mid-build. Assembled
   // incrementally so even a failure on take 3 of 24 leaves takes 1-3's ladder
   // decisions on disk.
   const evidenceSoFar = () => ({
-    stockWindows, stockAttempts, conceptCalls, beatBridges, animationFailures,
+    stockWindows, stockAttempts, conceptCalls, leftoverRetries, beatBridges, animationFailures,
     quota: stockQuotaStats(),
   });
 
@@ -318,6 +319,55 @@ export async function buildVisuals(plan, {
       takeId: seg.takeId,
       beatBridges,
     });
+
+    // ── PASS 2b: A LEFTOVER GETS A SECOND FETCH, NOT GEOMETRY ───────────────
+    //
+    // Run 31808464092: three takes held a MATCHED clip right beside an
+    // unbridgeable beat, because the clip had no unseen tail to extend into.
+    // The bridge was right to refuse the loop — but surrendering the span to
+    // arcs when the stock layer is alive was the wrong surrender. Each
+    // over-cap beat that survives bridging becomes a fresh stock window over
+    // ITS OWN span: the window arithmetic hands the ladder the words actually
+    // spoken during the beat, the no-repeat hashes exclude every clip already
+    // used, and a second 7-second clip is a real scene where gold circles are
+    // not. One retry per beat, then one re-bridge — a matched retry brings its
+    // own graded slack, which is exactly what a neighbouring still-stranded
+    // beat needs.
+    if (stockLive) {
+      let retried = false;
+      let cursor = 0;
+      for (let bi = 0; bi < blocks.length; bi++) {
+        const b = blocks[bi];
+        const startAt = cursor;
+        cursor = Math.round((cursor + (b.seconds || 0)) * 1000) / 1000;
+        if (b.kind !== "beat" || b.seconds <= BEAT_BRIDGE_MAX_SECONDS + 0.05) continue;
+        leftoverRetries.asked++;
+        const resolved = await resolveStockWindow(
+          seg,
+          { kind: "stock", seconds: b.seconds, startAt, phase: 900 + bi, retry: true },
+          {
+            frequencies, lexicon, mapSession, market, visionClient, dir,
+            timings, ffmpeg, usedHashes, driveGet, drivePut, stockFetcher,
+            index: () => index++,
+            stockWindows, stockAttempts, animationFailures, stockCredits, conceptCalls,
+          }
+        );
+        if (resolved.kind !== "beat") {
+          leftoverRetries.matched++;
+          blocks[bi] = resolved;
+          retried = true;
+        }
+      }
+      if (retried) {
+        bridgeBeats(blocks, {
+          max: BEAT_BRIDGE_MAX_SECONDS,
+          sceneMax: SCENE_MAX_SECONDS,
+          graphicSeconds: seg.graphicSeconds || 0,
+          takeId: seg.takeId,
+          beatBridges,
+        });
+      }
+    }
 
     // ── PASS 3: MATERIALISE files against the final numbers ─────────────────
     const broll = await materialiseBlocks(seg, blocks, {
@@ -417,6 +467,7 @@ export async function buildVisuals(plan, {
     stockWindows,
     beatBridges,
     conceptCalls,
+    leftoverRetries,
     // Drives the map attribution line in the description. Computed from what
     // actually reached the timeline rather than from what was requested: a MAP
     // intent that fell back must not credit a map source for a map the video
@@ -513,6 +564,10 @@ async function resolveStockWindow(seg, block, {
     dropped: win.dropped,
     source: win.source,
     matched: false,
+    // Set on the second-chance window a surviving beat becomes, so the report
+    // reads "this span was rescued on retry" rather than looking like a
+    // fifteenth ordinary window.
+    retry: Boolean(block.retry),
   };
 
   // ── A PLACE WINDOW IS THE MAP'S TERRITORY ────────────────────────────────
@@ -555,9 +610,15 @@ async function resolveStockWindow(seg, block, {
     drivePut,
   };
 
-  // ── RUNG 1: the window's own words ───────────────────────────────────────
+  // The two searching rungs, as callables so their ORDER can depend on what
+  // the window's own derivation produced.
   let clip = null;
-  if (win.keywords.length > 0) {
+
+  const mechanicalRung = async () => {
+    if (clip || win.keywords.length === 0) {
+      if (!clip && win.keywords.length === 0) attempts.push({ stage: "keywords", reason: "no searchable concept in this window" });
+      return;
+    }
     try {
       const r = await stockFetcher({
         keywords: win.keywords,
@@ -578,22 +639,10 @@ async function resolveStockWindow(seg, block, {
       console.warn(`[Visuals] stock lookup threw for ${seg.takeId} window ${block.phase}: ${err.message}`);
       attempts.push({ stage: "error", reason: err.message });
     }
-  } else {
-    attempts.push({ stage: "keywords", reason: "no searchable concept in this window" });
-  }
+  };
 
-  // ── RUNG 2: THE CONCEPT FALLBACK ─────────────────────────────────────────
-  //
-  // The window's own words either produced nothing or produced a query Pexels
-  // and the vision check between them refused. The mechanical ladder has no
-  // more rungs that look at THIS window — so the model that already grades the
-  // clips is asked what generic footage should show while these words play.
-  // "matters even if your kids are grown" becomes a family front yard;
-  // "five minutes on a normal morning" becomes commute traffic. Fails closed
-  // to the beat, and its output passes the same proper-noun stripping the
-  // transcript does — see yt-concept-fallback.js for why a misbehaving model
-  // cannot name a place here.
-  if (!clip && visionClient) {
+  const conceptRung = async () => {
+    if (clip || !visionClient) return;
     conceptCalls.asked++;
     const banned = new Set([
       ...(win.dropped || []).map((w) => String(w).toLowerCase()),
@@ -629,6 +678,31 @@ async function resolveStockWindow(seg, block, {
     } else {
       attempts.push({ stage: "concept", reason: "no filmable concept derived" });
     }
+  };
+
+  // ── RUNG ORDER: THE CONCEPT GOES FIRST WHEN THE SUBJECT IS THE QUERY IN A
+  // HAT ─────────────────────────────────────────────────────────────────────
+  //
+  // A window whose depiction subject could not be formed hands the vision
+  // check its own raw bigram — and those are the measured pun-magnets: subject
+  // "animal well" accepted a rooster on card 11 AND a second animal clip on
+  // run 31808464092; "closest base" accepted a baseball field. A check asked a
+  // nonsense question cannot protect the video, so when the derivation
+  // degenerates, the model names the subject BEFORE the mechanical query gets
+  // to shop with it. The mechanical rung still runs after — a concept miss
+  // should not cost a window the search it always had.
+  //
+  // "matters even if your kids are grown" becomes a family front yard;
+  // "five minutes on a normal morning" becomes commute traffic. The concept
+  // fails closed, and its output passes the same proper-noun stripping the
+  // transcript does — see yt-concept-fallback.js.
+  const degenerateSubject = win.keywords.length > 0 && win.subjectDerived === false;
+  if (degenerateSubject) {
+    await conceptRung();
+    await mechanicalRung();
+  } else {
+    await mechanicalRung();
+    await conceptRung();
   }
 
   stockWindows.push({ ...windowRow, matched: Boolean(clip), contentHash: clip?.contentHash || null, query: clip?.query || null });

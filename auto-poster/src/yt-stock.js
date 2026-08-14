@@ -27,6 +27,7 @@
  */
 
 import { createHash } from "crypto";
+import { execFileSync } from "child_process";
 import { join } from "path";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 
@@ -222,18 +223,29 @@ function normaliseVideo(v) {
 }
 
 /**
- * Rank candidates. Longer and larger wins, with a floor on both.
+ * Rank candidates. Coverage first, then larger, with a floor on both.
+ *
+ * COVERAGE OUTRANKS RESOLUTION, and run 31808464092 is the receipt. The old
+ * sort was width-first, so an 8-second window happily picked a wide clip
+ * exactly 8 seconds long — and the graded "slack" the bridge extends scenes
+ * into was then zero. Three takes had a matched clip sitting right beside an
+ * unbridgeable beat, every bridge record reading "out of unseen content", and
+ * the build failed at the gate with the footage layer nominally working.
+ * `preferSeconds` is the window plus the extension reserve; a candidate that
+ * covers it beats a wider one that does not. When nothing covers it, width
+ * decides as before — a clip with no spare is still a clip.
  *
  * No cleverness about content — that is the vision check's job, and it runs on
  * pixels rather than on metadata. Pexels' own relevance ordering is the only
  * signal here worth trusting, so ties break toward it by keeping the sort
  * stable.
  */
-export function rankCandidates(videos, { minSeconds = MIN_CLIP_SECONDS } = {}) {
+export function rankCandidates(videos, { minSeconds = MIN_CLIP_SECONDS, preferSeconds = 0 } = {}) {
+  const covers = (v) => (preferSeconds > 0 && v.durationSeconds >= preferSeconds ? 1 : 0);
   return videos
     .filter((v) => v.durationSeconds >= minSeconds && v.width >= MIN_WIDTH)
     .map((v, i) => ({ ...v, rank: i }))
-    .sort((a, b) => b.width - a.width || a.rank - b.rank);
+    .sort((a, b) => covers(b) - covers(a) || b.width - a.width || a.rank - b.rank);
 }
 
 /** Stable identity for a clip, for the cache and the no-repeat rules. */
@@ -447,7 +459,7 @@ export async function fetchStockClip({
       continue;
     }
 
-    const ranked = rankCandidates(results).slice(0, maxCandidates);
+    const ranked = rankCandidates(results, { preferSeconds: seconds + STOCK_GRADE_SLACK_SECONDS }).slice(0, maxCandidates);
     if (ranked.length === 0) {
       attempts.push({ keyword, stage: "rank", reason: `${results.length} result(s), none long or large enough` });
       continue;
@@ -502,17 +514,26 @@ export async function fetchStockClip({
       // only be extended by replaying itself — the restart jump card 11 wore
       // in the middle of its scenes. The slack seconds are the extension's
       // real footage; a clip shorter than window+slack simply grades whole.
-      const gradedSeconds = Math.min(
+      const askSeconds = Math.min(
         video.durationSeconds || seconds,
         seconds + STOCK_GRADE_SLACK_SECONDS
       );
       const graded = join(dir, `stock-${String(index).padStart(3, "0")}-${video.id}.mp4`);
       try {
-        ffmpeg(gradeArgs(cached.path, graded, { seconds: gradedSeconds }));
+        ffmpeg(gradeArgs(cached.path, graded, { seconds: askSeconds }));
       } catch (err) {
         attempts.push({ keyword, videoId: video.id, stage: "grade", reason: err.message });
         continue;
       }
+      // MEASURED, NOT TRUSTED. Pexels' `duration` metadata is what the bridge's
+      // whole capacity model rested on, and it can be wrong in either
+      // direction (zero on some entries, longer than the file on others). The
+      // graded file on disk is the thing extensions actually play, so ITS
+      // duration is the capacity — same measurement-over-metadata rule as
+      // every check in this pipeline. Falls back to the ask when ffprobe
+      // cannot read the file; capacity can survive a probe failure, a lie
+      // cannot be caught without one.
+      const gradedSeconds = measuredSeconds(graded) || askSeconds;
 
       const frames = extractFrames(graded, { seconds, dir, index, ffmpeg });
       const verdict = await visionCheckClip(frames, { subject: subject || keyword, client });
@@ -541,6 +562,28 @@ export async function fetchStockClip({
   }
 
   return { clip: null, attempts };
+}
+
+/**
+ * What a media file actually holds, in seconds — 0 when unreadable.
+ *
+ * The bridge's capacity model runs on this number, so it comes from the file
+ * rather than from anybody's metadata. Sync, like every other probe in the
+ * fetch path.
+ */
+export function measuredSeconds(path) {
+  try {
+    return (
+      Number.parseFloat(
+        execFileSync("ffprobe", [
+          "-v", "error", "-select_streams", "v:0",
+          "-show_entries", "stream=duration", "-of", "csv=p=0", path,
+        ], { encoding: "utf-8", timeout: 60_000 }).trim()
+      ) || 0
+    );
+  } catch {
+    return 0;
+  }
 }
 
 /** Two frames, a quarter and two thirds in. Enough to catch a watermark. */
