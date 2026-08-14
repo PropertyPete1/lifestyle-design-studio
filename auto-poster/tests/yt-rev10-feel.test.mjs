@@ -467,6 +467,24 @@ describe("card-11 sweep: queries and concepts", () => {
     assert.ok(!/stone|oak/i.test(concept.subject), concept.subject);
   });
 
+  test("the concept prompt forbids text-as-subject — the run-31821882201 dead end", async () => {
+    // s6t3 ("that charge shows up on the same statement, in the same
+    // envelope") drove the concept rung to document subjects three runs
+    // running, and every honest clip of a bill IS readable text — criterion 2
+    // rejects it by design. The constraint that steers the model to the
+    // surrounding human scene lives in the prompt; this pins that it ships,
+    // so it cannot be refactored away silently.
+    let seen = null;
+    const client = fakeClient((prompt) => {
+      seen = prompt;
+      return { content: [{ type: "text", text: JSON.stringify({ filmable: true, query: "hands opening envelopes", subject: "hands opening mail at a table" }) }] };
+    });
+    const concept = await deriveConcept({ phrase: "that charge shows up on the same statement", client });
+    assert.ok(concept);
+    assert.match(seen, /itself readable text/i, "the text-as-subject ban reaches the model");
+    assert.match(seen, /surrounding human scene/i, "and the steer toward filmable scenes goes with it");
+  });
+
   test("a model error fails closed to null — the ladder moves on", async () => {
     const client = fakeClient(() => { throw new Error("boom"); });
     assert.equal(await deriveConcept({ phrase: "anything", client }), null);
