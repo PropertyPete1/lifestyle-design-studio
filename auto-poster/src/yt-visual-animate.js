@@ -920,12 +920,21 @@ export async function assertClipCovers(clipPath, { seconds, dir, ffmpeg, index =
 
   // Two frames, apart in time, must differ. A clip of one repeated frame is
   // exactly what the frozen tails looked like from inside a piece.
+  //
+  // ONE SPAWN, SMALL FRAMES. This runs once per beat in every build and once
+  // per beat in every scenario of the suite, and the first version — two
+  // full-resolution extractions — priced the rev3 file within a slow runner's
+  // reach of its budget. Output-side `-ss` decodes the clip once for both
+  // grabs, and 384px is plenty to tell a still from a moving beat.
   if (failures.length === 0 && seconds >= 0.8) {
     const a = join(dir, `cover-${String(index).padStart(3, "0")}-a.png`);
     const b = join(dir, `cover-${String(index).padStart(3, "0")}-b.png`);
     try {
-      ffmpeg(["-y", "-ss", String(round(seconds * 0.2)), "-i", clipPath, "-frames:v", "1", "-q:v", "2", a]);
-      ffmpeg(["-y", "-ss", String(round(seconds * 0.8)), "-i", clipPath, "-frames:v", "1", "-q:v", "2", b]);
+      ffmpeg([
+        "-y", "-i", clipPath,
+        "-ss", String(round(seconds * 0.2)), "-frames:v", "1", "-vf", "scale=384:-2", "-q:v", "5", a,
+        "-ss", String(round(seconds * 0.8)), "-frames:v", "1", "-vf", "scale=384:-2", "-q:v", "5", b,
+      ]);
       const d = await frameDifference(a, b);
       if (d < 0.02) {
         failures.push(`frames at 20% and 80% are identical (difference ${round(d)}) — the clip is a still`);
