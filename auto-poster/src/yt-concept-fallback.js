@@ -108,7 +108,8 @@ Rules:
 - Concrete physical subjects only — things a camera can film. No abstractions, no emotions, no wordplay.
 - NEVER name a specific place, city, neighbourhood, business, or brand. The footage stands in; it must not claim to BE anywhere.
 - No spatial or directional claims (north of, closest, beyond) — footage cannot prove geography.
-- Prefer everyday residential imagery when the words allow it: homes, yards, streets, families, commutes, documents.
+- NEVER name a subject that is itself readable text — documents, forms, bills, statements, screens, signs, letters. Footage of those IS text on screen, and any clip showing readable words is rejected downstream without exception. When the spoken words are about paperwork or money arriving, name the surrounding human scene instead: hands opening envelopes at a kitchen table, a mailbox in front of a house, a person at a desk with unopened mail.
+- Prefer everyday residential imagery when the words allow it: homes, yards, streets, families, commutes.
 - If the words genuinely support no footage, say so.
 
 Respond with ONLY valid JSON:
