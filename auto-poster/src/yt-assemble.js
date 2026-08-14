@@ -50,6 +50,26 @@ export const CANVAS = {
 const CRF = 20;
 const PRESET = "veryfast";
 const FPS = 30;
+
+/**
+ * ONE video timescale for every segment and every join, and it is not a
+ * preference — it is the fix for the six frozen tails that survived three
+ * builds.
+ *
+ * Measured through the real command graph: on-camera segments copied their
+ * video from the .mov piece chain and arrived at the join carrying a 1/16000
+ * timescale; everything x264 wrote natively carried 1/15360. The `-c copy`
+ * segment concat then rescaled packet-by-packet between the two, and 30fps is
+ * NOT representable in integer ticks at 16000 (533.33 per frame) — the
+ * rounding accumulated into manufactured multi-second frame durations at the
+ * boundaries and a video stream that outran its audio by seconds. The caption
+ * burn honoured those durations faithfully: picture and burned caption frozen
+ * up to 25 seconds at every voiceover-to-on-camera cut, three renders running.
+ * 15360 divides 30 (512 ticks exactly), every writer below pins it, and the
+ * concat has nothing left to rescale.
+ */
+const VIDEO_TIMESCALE = 15360;
+const TIMESCALE_ARGS = ["-video_track_timescale", String(VIDEO_TIMESCALE)];
 const AUDIO_BITRATE = "192k";
 
 /**
@@ -143,6 +163,7 @@ export function normalizeArgs(input, output, dim, { seconds = null, startAt = 0,
     "-preset", PRESET,
     "-crf", String(CRF),
     "-pix_fmt", "yuv420p",
+    ...TIMESCALE_ARGS,
     "-an",
     output
   );
@@ -189,6 +210,7 @@ export function conformArgs(input, output, dim, { seconds, fps = FPS, grain = 0 
     "-preset", PRESET,
     "-crf", String(CRF),
     "-pix_fmt", "yuv420p",
+    ...TIMESCALE_ARGS,
     "-an",
     output,
   ];
@@ -199,7 +221,7 @@ export function muxNarrationArgs(videoIn, audioIn, output, { seconds = null } = 
   return [
     "-y", "-i", videoIn, "-i", audioIn,
     "-map", "0:v", "-map", "1:a",
-    "-c:v", "copy",
+    "-c:v", "copy", ...TIMESCALE_ARGS,
     // The same 15ms edge fade the on-camera segments get. A voiceover segment's
     // narration ends abruptly against whatever the next segment opens with, and
     // that seam is exactly where the one confirmed click landed.
@@ -241,7 +263,10 @@ export function muxNarrationArgs(videoIn, audioIn, output, { seconds = null } = 
 
 /** Concat pre-normalised segments. Same codec and canvas throughout, so this is a copy. */
 export function concatArgs(listFile, output) {
-  return ["-y", "-f", "concat", "-safe", "0", "-i", listFile, "-c", "copy", output];
+  // The timescale rides along even under -c copy: it is a container property,
+  // and pinning it here means a stray intermediate written by anything else
+  // still leaves the concat output uniform.
+  return ["-y", "-f", "concat", "-safe", "0", "-i", listFile, "-c", "copy", ...TIMESCALE_ARGS, output];
 }
 
 /**
@@ -291,7 +316,7 @@ export function duckArgs(videoIn, musicIn, output, { envelope = null, bedOnlyOut
     "-y", "-i", videoIn, "-i", musicIn,
     "-filter_complex", graph,
     "-map", "0:v", "-map", "[aout]",
-    "-c:v", "copy", "-c:a", "aac", "-b:a", AUDIO_BITRATE,
+    "-c:v", "copy", ...TIMESCALE_ARGS, "-c:a", "aac", "-b:a", AUDIO_BITRATE,
     "-movflags", "+faststart",
     output,
   ];
@@ -423,7 +448,7 @@ export function levelProgrammeArgs(videoIn, output, gainDb) {
     "-y", "-i", videoIn,
     "-af", `volume=${gainDb.toFixed(2)}dB`,
     "-map", "0:v", "-map", "0:a",
-    "-c:v", "copy", ...segmentAudioArgs(),
+    "-c:v", "copy", ...TIMESCALE_ARGS, ...segmentAudioArgs(),
     output,
   ];
 }
@@ -448,8 +473,15 @@ export function burnArgs(videoIn, assPath, output, { punches = [] } = {}) {
   if (usable.length === 0) {
     return [
       "-y", "-i", videoIn,
-      "-vf", `ass=${assPath}`,
+      // `fps` BEFORE the captions: the burn is the encode that turned three
+      // renders' timestamp debt into frozen pictures, honouring multi-second
+      // frame durations exactly as stated. With honest input this is a
+      // pass-through; with a dishonest frame it flattens the hold onto the
+      // 30fps grid instead of amplifying it — the last belt behind the pinned
+      // timescale and the timestamp probes.
+      "-vf", `fps=${FPS},ass=${assPath}`,
       "-c:v", "libx264", "-preset", PRESET, "-crf", String(CRF), "-pix_fmt", "yuv420p",
+      ...TIMESCALE_ARGS,
       "-c:a", "copy", "-movflags", "+faststart",
       output,
     ];
@@ -461,7 +493,8 @@ export function burnArgs(videoIn, assPath, output, { punches = [] } = {}) {
   // The captions burn FIRST so a punch sits over them rather than under them.
   // A caption drawn on top of the plate would be the card 7 picture exactly:
   // two pieces of text fighting in the middle of the frame.
-  const chains = [`[0:v]ass=${assPath}[cap]`];
+  // Same fps normalisation as the no-punches path, same reason.
+  const chains = [`[0:v]fps=${FPS},ass=${assPath}[cap]`];
   let last = "[cap]";
   usable.forEach((p, i) => {
     const fade = Math.min(0.2, p.seconds / 4);
@@ -490,6 +523,7 @@ export function burnArgs(videoIn, assPath, output, { punches = [] } = {}) {
     "-filter_complex", chains.join(";"),
     "-map", "[v]", "-map", "0:a?",
     "-c:v", "libx264", "-preset", PRESET, "-crf", String(CRF), "-pix_fmt", "yuv420p",
+    ...TIMESCALE_ARGS,
     "-c:a", "copy", "-movflags", "+faststart",
     output,
   ];
@@ -660,6 +694,64 @@ export function streamDuration(path, kind /* "v" | "a" */) {
 }
 
 /**
+ * Fail the build when a media file's video timestamps are dishonest.
+ *
+ * THE CLASS THIS CLOSES, measured on three renders and finally reproduced
+ * through the real command graph: segments that probed perfectly — right
+ * frame count, right stream ends — entered a `-c copy` concat with mismatched
+ * video timescales, and the join manufactured frames whose STATED durations
+ * ran to whole seconds. Every frame-counting gate passed (the frames all
+ * differ), every stream-end gate passed (the last timestamp is right), and
+ * the caption burn then honoured the stated durations: picture frozen up to
+ * 25 seconds over live narration, six spans, three builds running.
+ *
+ * So this probe reads what nothing else read: the per-frame durations. A
+ * frame claiming more than `maxFrameSeconds` of screen time, or a video
+ * stream running past its audio by more than `maxSkewSeconds`, fails with the
+ * offender's timestamp in the message. Runs per segment AND on the joined
+ * file — the defect assembles at the join, and both ends deserve a gate.
+ *
+ * THE FRAME LIMIT IS TEN FRAMES, NOT TWO, and the slack is measured: an
+ * honest mux legitimately pads a boundary frame to ~0.1s where a segment's
+ * video rounds against its `-t`. A third of a second at a cut is invisible;
+ * the manufactured frames this probe exists for claimed 2 to 25 seconds.
+ * Tightening the limit into the boundary-rounding noise would fail every
+ * honest join to catch nothing extra.
+ */
+export function assertHonestTimestamps(path, label, { maxFrameSeconds = 0.34, maxSkewSeconds = 0.25 } = {}) {
+  let rows;
+  try {
+    rows = execFileSync("ffprobe", [
+      "-v", "error", "-select_streams", "v:0",
+      "-show_entries", "frame=pts_time,duration_time", "-of", "csv=p=0", path,
+    ], { encoding: "utf-8", timeout: 300_000, maxBuffer: 128 * 1024 * 1024 }).trim().split("\n").filter(Boolean);
+  } catch (err) {
+    throw new Error(`${label}: could not read frame timestamps from ${path} (${err.message}) — nobody verified this file's clock`);
+  }
+  if (rows.length === 0) {
+    throw new Error(`${label}: ${path} has no video frames — nobody verified this file's clock`);
+  }
+  let worst = { at: 0, dur: 0 };
+  for (const r of rows) {
+    const [pts, dur] = r.split(",").map((x) => Number.parseFloat(x) || 0);
+    if (dur > worst.dur) worst = { at: pts, dur };
+  }
+  const video = streamDuration(path, "v");
+  const audio = streamDuration(path, "a");
+  const skew = audio > 0 ? video - audio : 0;
+  if (worst.dur > maxFrameSeconds || skew > maxSkewSeconds) {
+    throw new Error(
+      `${label}: dishonest video timestamps — ` +
+      (worst.dur > maxFrameSeconds ? `a frame at ${Math.round(worst.at * 100) / 100}s claims ${Math.round(worst.dur * 1000) / 1000}s of screen time (limit ${maxFrameSeconds}s)` : "") +
+      (worst.dur > maxFrameSeconds && skew > maxSkewSeconds ? "; " : "") +
+      (skew > maxSkewSeconds ? `video runs ${Math.round(skew * 100) / 100}s past its audio (limit ${maxSkewSeconds}s)` : "") +
+      ` — a later encode would honour this as a frozen picture`
+    );
+  }
+  return { frames: rows.length, worstFrameSeconds: Math.round(worst.dur * 1000) / 1000, skewSeconds: Math.round(skew * 100) / 100 };
+}
+
+/**
  * Fail the build when a segment's picture ends before its narration.
  *
  * The tolerance is two frames: codec padding legitimately differs between an
@@ -758,7 +850,7 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
           // The declick at the segment's own edges goes on here, where the take
           // is already being re-encoded to AAC — see segmentDeclickArgs.
           ffmpeg([
-            "-y", "-i", jointed, "-c:v", "copy",
+            "-y", "-i", jointed, "-c:v", "copy", ...TIMESCALE_ARGS,
             ...segmentDeclickArgs(mediaDuration(jointed)),
             ...segmentAudioArgs(), withAudio,
           ]);
@@ -777,7 +869,7 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
             "-y", "-i", visual, "-i", seg.source,
             "-map", "0:v", "-map", "1:a?",
             "-t", String(seg.seconds),
-            "-c:v", "copy", ...segmentAudioArgs(),
+            "-c:v", "copy", ...TIMESCALE_ARGS, ...segmentAudioArgs(),
             withAudio,
           ]);
           rmSync(visual, { force: true });
@@ -787,6 +879,16 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
         // that segment is on-camera — which planOpening has already guaranteed.
         // Burning here rather than after the concat keeps the filter operating
         // on a 20-second file instead of a twelve-minute one.
+        // The on-camera copy-mux is where the foreign timescale entered the
+        // chain three renders running — its clock is probed like everyone
+        // else's, with the take's name on the failure.
+        try {
+          assertHonestTimestamps(withAudio, seg.takeId);
+        } catch (err) {
+          preserveGateEvidence("segment-timestamps", { takeId: seg.takeId, error: err.message }, { files: [withAudio] });
+          throw err;
+        }
+
         if (i === 0 && overlayPngPath) {
           const burned = `${base}_burned.mp4`;
           ffmpeg(burnOverlayArgs(withAudio, overlayPngPath, burned));
@@ -884,6 +986,7 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       // a tmpdir the runner is about to destroy.
       try {
         assertPictureCoversAudio(withAudio, seg.takeId);
+        assertHonestTimestamps(withAudio, seg.takeId);
       } catch (err) {
         preserveGateEvidence("picture-covers-audio", {
           takeId: seg.takeId,
@@ -948,6 +1051,23 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
   // still on disk and the take names still mean something. The threshold is
   // the same one the artifact gate uses; passing here and failing there would
   // mean a later stage froze the picture, which is its own diagnosis.
+  // ── 2a. the clock gate on the joined file ────────────────────────────────
+  //
+  // The defect ASSEMBLES at the join even when every segment is individually
+  // honest — mismatched timescales are a property of the pair, not of either
+  // file. One frame-duration scan of the joined file catches the class
+  // wherever it originates, before forty minutes of audio work and a caption
+  // burn are spent amplifying it.
+  t("clock-gate", () => {
+    try {
+      const clock = assertHonestTimestamps(joined, "joined");
+      console.log(`[Assemble] clock gate: clean (worst frame ${clock.worstFrameSeconds}s, video-audio skew ${clock.skewSeconds}s across ${clock.frames} frames)`);
+    } catch (err) {
+      preserveGateEvidence("clock-gate", { error: err.message }, { files: [joined] });
+      throw err;
+    }
+  });
+
   t("motion-gate", () => {
     const { checkMotion } = motionGate;
     const verdict = checkMotion({ path: joined, duration: mediaDuration(joined) });

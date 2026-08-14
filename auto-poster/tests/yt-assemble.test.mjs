@@ -157,8 +157,11 @@ describe("duckArgs — the bed moves under the voice", () => {
 describe("burnArgs", () => {
   const args = burnArgs("/v.mp4", "/c.ass", "/out.mp4");
 
-  test("burns the ass track", () => {
-    assert.equal(args[args.indexOf("-vf") + 1], "ass=/c.ass");
+  test("burns the ass track, behind a clock normaliser", () => {
+    // `fps` first: the burn is the encode that amplified three renders'
+    // timestamp debt into frozen pictures. See yt-rev10-feel for the chain
+    // proof; this pins the argument shape.
+    assert.equal(args[args.indexOf("-vf") + 1], "fps=30,ass=/c.ass");
   });
 
   test("copies the audio — this stage is a video re-encode only", () => {

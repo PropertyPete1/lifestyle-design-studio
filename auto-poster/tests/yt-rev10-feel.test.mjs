@@ -27,8 +27,8 @@ import { deriveConcept, sanitiseConcept } from "../src/yt-concept-fallback.js";
 import { buildStates, assertClipCovers } from "../src/yt-visual-animate.js";
 import { planReveals } from "../src/yt-reveal-timing.js";
 import {
-  conformArgs, assertPictureCoversAudio, buildCaptionChunks,
-  muxNarrationArgs, concatArgs, ffmpeg as runFfmpeg, canvasFor,
+  conformArgs, assertPictureCoversAudio, assertHonestTimestamps, buildCaptionChunks,
+  muxNarrationArgs, concatArgs, burnArgs, normalizeArgs, ffmpeg as runFfmpeg, canvasFor,
 } from "../src/yt-assemble.js";
 import { checkMotion } from "../src/yt-artifact-qc.js";
 import { EMPTY_CARD_MAX_HOLD, GRAPHIC_GRAIN_STRENGTH, BEAT_BRIDGE_MAX_SECONDS } from "../src/yt-config.js";
@@ -172,6 +172,95 @@ describe("card-11 sweep: the fallback ladder", () => {
     });
     const beats = built.segments[0].broll.filter((b) => b.kind === "beat");
     assert.ok(beats.length >= 1, "the dry run's floor is still the beat");
+  });
+});
+
+describe("run-31828718136 sweep: one clock for every segment, and a probe that reads it", () => {
+  test("every mp4-writing builder pins the video timescale", () => {
+    const dim = canvasFor("1080p");
+    for (const [name, args] of [
+      ["muxNarrationArgs", muxNarrationArgs("v.mp4", "a.m4a", "o.mp4", { seconds: 5 })],
+      ["conformArgs", conformArgs("i.mp4", "o.mp4", dim, { seconds: 5 })],
+      ["normalizeArgs", normalizeArgs("i.mp4", "o.mp4", dim, { seconds: 5 })],
+      ["concatArgs", concatArgs("l.txt", "o.mp4")],
+      ["burnArgs (no punches)", burnArgs("i.mp4", "c.ass", "o.mp4")],
+    ]) {
+      const s = args.join(" ");
+      assert.match(s, /-video_track_timescale 15360/, `${name} must pin the timescale`);
+    }
+    assert.match(burnArgs("i.mp4", "c.ass", "o.mp4").join(" "), /fps=30,ass=/, "the burn normalises the clock before it draws");
+  });
+
+  test("the fixed chain joins with an honest clock; the unpinned chain is refused by the probe", (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const dim = { w: 640, h: 360 };
+
+    // A voiceover-style segment through the real builders…
+    const still = join(dir, "src.mp4");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc=size=640x360:rate=30:duration=6", "-pix_fmt", "yuv420p", still]);
+    const voPiece = join(dir, "vo_b0.mp4");
+    runFfmpeg(conformArgs(still, voPiece, dim, { seconds: 6, fps: 30 }));
+    const narr = join(dir, "n.m4a");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "sine=frequency=300:duration=6:sample_rate=44100", "-c:a", "aac", narr]);
+    const voSeg = join(dir, "seg_vo.mp4");
+    runFfmpeg(muxNarrationArgs(voPiece, narr, voSeg, { seconds: 6 }));
+
+    // …and an on-camera-style segment whose video comes from the mov piece
+    // path. The FIXED mux pins 15360; the BROKEN control writes the foreign
+    // 16000 clock that three renders imported through `-c:v copy`.
+    const ocSrc = join(dir, "oc.mov");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc2=size=640x360:rate=30:duration=6",
+      "-f", "lavfi", "-i", "sine=frequency=200:duration=6:sample_rate=48000",
+      "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-c:a", "pcm_s16le", "-shortest", ocSrc]);
+    const mkOc = (out, pinned) => runFfmpeg([
+      "-y", "-i", ocSrc, "-c:v", "copy",
+      ...(pinned ? ["-video_track_timescale", "15360"] : ["-video_track_timescale", "16000"]),
+      "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2", out,
+    ]);
+    const ocGood = join(dir, "seg_oc_good.mp4");
+    const ocBad = join(dir, "seg_oc_bad.mp4");
+    mkOc(ocGood, true);
+    mkOc(ocBad, false);
+
+    const joinChain = (oc, out) => {
+      const list = join(dir, `list_${out}`);
+      writeFileSync(list, [voSeg, oc, voSeg, oc].map((p) => `file '${p}'`).join("\n"));
+      const joined = join(dir, out);
+      runFfmpeg(concatArgs(list, joined));
+      return joined;
+    };
+
+    const good = joinChain(ocGood, "joined_good.mp4");
+    // An honest boundary frame may pad to ~0.1s where a segment rounds
+    // against its -t; the manufactured frames ran 2-25s. The probe's own
+    // bound is the assertion — what separates the chains is the 20x gap.
+    const clock = assertHonestTimestamps(good, "joined-good");
+    assert.ok(clock.worstFrameSeconds <= 0.34, `pinned chain still has a ${clock.worstFrameSeconds}s frame`);
+    assert.ok(Math.abs(clock.skewSeconds) <= 0.25, `pinned chain skews ${clock.skewSeconds}s`);
+
+    const bad = joinChain(ocBad, "joined_bad.mp4");
+    assert.throws(
+      () => assertHonestTimestamps(bad, "joined-bad"),
+      /dishonest video timestamps.*(claims|past its audio)/s,
+      "the probe must refuse the mismatched-timescale join that froze three renders"
+    );
+  });
+
+  test("a sparse-timestamp file is named before any encode can amplify it", (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const png = join(dir, "f.png");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "color=c=0x224466:s=320x180:d=1", "-frames:v", "1", png]);
+    // The concat demuxer with a long `duration` writes exactly the shape the
+    // join manufactured: one frame claiming seconds of screen time.
+    const list = join(dir, "l.txt");
+    writeFileSync(list, `file '${png}'\nduration 3\nfile '${png}'\nduration 0.033\nfile '${png}'\n`);
+    const sparse = join(dir, "sparse.mp4");
+    runFfmpeg(["-y", "-f", "concat", "-safe", "0", "-i", list, "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-fps_mode", "passthrough", sparse]);
+    assert.throws(() => assertHonestTimestamps(sparse, "sparse"), /claims .* of screen time/);
   });
 });
 
