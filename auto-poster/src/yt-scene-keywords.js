@@ -327,7 +327,16 @@ export function keywordsForWindow(seg, block, { frequencies, lexicon, fallbackKe
   const nounCue = new Map();
   for (const c of cues || []) nounCue.set(c.word, nounCue.get(c.word) || c.nounCue);
 
+  // SPATIAL WORDS ARE OUT OF THE QUERY, NOT JUST THE SUBJECT. The old comment
+  // on the SPATIAL set said direction words could stay in the search "where
+  // they cost nothing", and card 11 priced that claim: "northeast" is rare in
+  // any script, so rarity ranked it FIRST and the window about bigger homes
+  // and yards searched Pexels for [northeast anybody]. A direction word does
+  // not merely fail to help a search — it wins a slot from a word that could
+  // have, because rarity is exactly the score an unfilmable oddity does best
+  // on.
   const ranked = [...new Set(common)]
+    .filter((w) => !SPATIAL.has(w))
     .map((w) => ({ w, score: specificity(w, counts, total) + (nounCue.get(w) ? 1.2 : 0) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_KEYWORDS)
@@ -562,6 +571,8 @@ export function widenToSegment(seg, { counts, total, lexicon, exclude = new Set(
 
   return [...new Set(common)]
     .filter((w) => !exclude.has(w))
+    // Same rule as the window rung, same measured reason.
+    .filter((w) => !SPATIAL.has(w))
     .map((w) => ({ w, score: specificity(w, counts, total) + (nounCue.get(w) ? 1.2 : 0) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_KEYWORDS)

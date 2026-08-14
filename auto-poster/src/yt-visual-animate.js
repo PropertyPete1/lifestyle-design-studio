@@ -275,7 +275,14 @@ export function buildStates({ type, labels, reveals, beats, seconds, roadIds = [
     //
     // So: an empty frame, then the figure landing on it. Measured at 0.12 mean
     // absolute difference, six times the dead-state floor.
-    if (!/\d/.test(value)) {
+    //
+    // A CLOCK TIME ARRIVES TOO. countUp eases DIGITS, and digits are only a
+    // quantity when the value is one: "Tuesday, 7:15 AM" counted up put
+    // "Tuesday, 0:15 AM" on screen for real — card 11, 4:12, a time of day
+    // that was never true, rendered mid-ease. A time is an identity, not an
+    // amount; it lands whole. Token shape, not topic knowledge: any value
+    // containing digit:digit is a time wherever the script is about.
+    if (!/\d/.test(value) || /\d{1,2}:\d{2}/.test(value)) {
       push(0, { visible: 0, current: -1, pulse: 0, progress: 0 });
       push(start, { visible: 1, current: 0, pulse: 1, progress: 1 });
       push(start + LAND_SECONDS, { visible: 1, current: 0, pulse: 0, progress: 1 });
@@ -875,6 +882,69 @@ export async function assertAnimated(clipPath, { seconds, reveals = [], maxStati
     landed,
     revealRatio: revealDiffs.length && ambient > 0 ? round(median(revealDiffs.map((r) => r.diff)) / ambient) : null,
   };
+}
+
+/**
+ * Prove a generated clip is the length it claims and is not one frame in a
+ * trench coat.
+ *
+ * THE BEAT ENTERED THE TIMELINE ON TRUST AND CARD 11 PRICED THE TRUST: the
+ * artifact spent 84 seconds frozen, and the QC gate that finally said so runs
+ * fifty minutes after the clip that could have been checked in half a second
+ * here. This is the half-second version: ffprobe says the file really has
+ * ~`seconds` of video ON ITS VIDEO STREAM (a container duration is the max of
+ * its streams and hides a short picture), and two frames from different
+ * moments actually differ. Every failure names itself; the caller decides
+ * whether a failed clip costs the build or falls to another layer.
+ *
+ * @returns {{ ok, failures, videoSeconds }}
+ */
+export async function assertClipCovers(clipPath, { seconds, dir, ffmpeg, index = 0, tolerance = 0.15 }) {
+  const failures = [];
+  let videoSeconds = null;
+  try {
+    const { execFileSync } = await import("child_process");
+    const out = execFileSync("ffprobe", [
+      "-v", "error", "-select_streams", "v:0",
+      "-show_entries", "stream=duration", "-of", "csv=p=0", clipPath,
+    ], { encoding: "utf-8" });
+    videoSeconds = Number.parseFloat(String(out).trim());
+  } catch (err) {
+    return { ok: false, failures: [`ffprobe could not read ${clipPath}: ${err.message}`], videoSeconds };
+  }
+  if (!Number.isFinite(videoSeconds)) {
+    failures.push(`the video stream reports no duration — the encode produced no usable picture`);
+  } else if (videoSeconds < seconds - tolerance) {
+    failures.push(`the video stream is ${round(videoSeconds)}s against a ${round(seconds)}s slot — the picture would run out and freeze or loop`);
+  }
+
+  // Two frames, apart in time, must differ. A clip of one repeated frame is
+  // exactly what the frozen tails looked like from inside a piece.
+  //
+  // ONE SPAWN, SMALL FRAMES. This runs once per beat in every build and once
+  // per beat in every scenario of the suite, and the first version — two
+  // full-resolution extractions — priced the rev3 file within a slow runner's
+  // reach of its budget. Output-side `-ss` decodes the clip once for both
+  // grabs, and 384px is plenty to tell a still from a moving beat.
+  if (failures.length === 0 && seconds >= 0.8) {
+    const a = join(dir, `cover-${String(index).padStart(3, "0")}-a.png`);
+    const b = join(dir, `cover-${String(index).padStart(3, "0")}-b.png`);
+    try {
+      ffmpeg([
+        "-y", "-i", clipPath,
+        "-ss", String(round(seconds * 0.2)), "-frames:v", "1", "-vf", "scale=384:-2", "-q:v", "5", a,
+        "-ss", String(round(seconds * 0.8)), "-frames:v", "1", "-vf", "scale=384:-2", "-q:v", "5", b,
+      ]);
+      const d = await frameDifference(a, b);
+      if (d < 0.02) {
+        failures.push(`frames at 20% and 80% are identical (difference ${round(d)}) — the clip is a still`);
+      }
+    } catch (err) {
+      failures.push(`could not extract frames to verify motion: ${err.message}`);
+    }
+  }
+
+  return { ok: failures.length === 0, failures, videoSeconds: Number.isFinite(videoSeconds) ? round(videoSeconds) : null };
 }
 
 function median(xs) {

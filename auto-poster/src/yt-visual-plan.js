@@ -188,6 +188,19 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
     // a designed fall to a verification failure sends the reader hunting for a
     // bug that is not there.
     reason = graphicReason || REASON.GRAPHIC_FAILED;
+    // A FAILED GRAPHIC FALLS TO STOCK, NOT PAST IT. Card 11's four worst
+    // stretches — 14 to 22 seconds of wordless geometry — were all takes whose
+    // graphic declined and whose coverage then went straight to the beat floor,
+    // because stock was only ever offered to FOOTAGE intents. The footage layer
+    // sat configured and idle while the one visual that says nothing carried
+    // the take. The fall is still recorded with the graphic's reason; what
+    // changes is where the fall LANDS.
+    if (stockSeconds > 0) {
+      const chained = chainBlocks(remaining, sources, { sceneMax, startAfter });
+      blocks.push(...chained.blocks);
+      remaining = chained.remaining;
+      primary = "stock";
+    }
   } else if (seg.visual === FOOTAGE) {
     if (stockSeconds > 0) {
       const chained = chainBlocks(remaining, sources, { sceneMax, startAfter });
@@ -206,12 +219,18 @@ export function planSegmentCoverage(seg, { graphicOk = false, stockSeconds = 0, 
       reason = stockReason || ((seg.visualSpec?.keywords || []).length === 0 ? REASON.NO_KEYWORDS : REASON.STOCK_NO_MATCH);
     }
   } else {
-    // No intent at all. Owned footage if it exists, a beat otherwise —
-    // and either way this is a take the writer said nothing about, which is
-    // worth reporting even though the picture will be fine.
+    // No intent at all. Stock if it can serve (same argument as the failed
+    // graphic above), then owned footage, then the beat — and either way this
+    // is a take the writer said nothing about, which is worth reporting even
+    // though the picture will be fine.
     fellBack = true;
     reason = REASON.NO_INTENT;
-    if (ownedSeconds > 0) {
+    if (stockSeconds > 0) {
+      const chained = chainBlocks(remaining, sources, { sceneMax, startAfter });
+      blocks.push(...chained.blocks);
+      remaining = chained.remaining;
+      primary = "stock";
+    } else if (ownedSeconds > 0) {
       const take = Math.min(ownedSeconds, remaining);
       pushFootageBlocks(blocks, take);
       remaining = round(remaining - take);
@@ -414,9 +433,13 @@ export async function planVisuals(segments, {
 
     let stockSeconds = 0;
     let stockReason = null;
-    if (seg.visual === FOOTAGE && !graphicOk) {
+    // ANY take without a working graphic may draw on stock — FOOTAGE intents,
+    // failed graphics, and takes with no intent at all. Stock was gated to
+    // FOOTAGE intents only, which is how card 11's failed-graphic takes went
+    // straight to the beat floor with the footage layer configured and idle.
+    if (!graphicOk) {
       stockSeconds = (await stockAvailable(seg)) || 0;
-      if (!stockSeconds) stockReason = REASON.STOCK_UNAVAILABLE;
+      if (!stockSeconds && seg.visual === FOOTAGE) stockReason = REASON.STOCK_UNAVAILABLE;
     }
 
     const ownedSeconds = ownedFor(seg) || 0;

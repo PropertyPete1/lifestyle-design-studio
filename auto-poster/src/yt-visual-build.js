@@ -2,10 +2,26 @@
  * yt-visual-build.js — the wiring between the visual planner and ffmpeg.
  *
  * yt-visual-plan.js decides WHAT covers each second and is pure. This module is
- * the impure half: it renders the graphics, fetches the stock, builds the
- * typography, and hands the pipeline a plan whose `broll` lists point at real
- * files. Keeping the two apart is what lets the entire decision table be tested
- * without ffmpeg, a network, or an API key.
+ * the impure half: it renders the graphics, fetches the stock, and hands the
+ * pipeline a plan whose `broll` lists point at real files. Keeping the two
+ * apart is what lets the entire decision table be tested without ffmpeg, a
+ * network, or an API key.
+ *
+ * THREE PASSES, IN ORDER, AND THE ORDER IS THE FIX.
+ *
+ * Card 11 resolved sources, CUT the graphic phases, rendered the beats, and
+ * only then ran the bridge that moves seconds between blocks — so every number
+ * the bridge changed was already baked into a file. A stock clip graded to
+ * exactly its window looped from the start when its window grew; a graphic
+ * phase sliced at plan-time startAt regressed to earlier content when the
+ * blocks around it moved; an 8-second beat was rendered and then capped to
+ * two. The card visibly rebuilt itself at 6:12 and the bridge's "137.5s given
+ * back to real visuals" was 137.5s of replayed footage.
+ *
+ * So now: RESOLVE every block's source (network, renders — the slow, impure
+ * part), then BRIDGE on the resolved blocks (pure arithmetic over seconds and
+ * capacities), then MATERIALISE files against the final numbers (slices,
+ * beats, verification). Nothing is encoded until nothing will move again.
  *
  * WORD TIMINGS COME FROM THE NARRATION THAT WILL ACTUALLY PLAY. Whisper runs on
  * `narrationSource` when Peter recorded the take himself and on
@@ -18,8 +34,10 @@ import { join } from "path";
 import { existsSync, writeFileSync } from "fs";
 
 import { planVisuals, REASON, coverageReport } from "./yt-visual-plan.js";
+import { MIN_BLOCK_SECONDS } from "./yt-visual-plan.js";
 import { SCENE_MAX_SECONDS, BEAT_BRIDGE_MAX_SECONDS } from "./yt-config.js";
 import { documentFrequencies, properLexicon, keywordsForWindow } from "./yt-scene-keywords.js";
+import { deriveConcept } from "./yt-concept-fallback.js";
 
 /**
  * The longest graphic animation we will render for one take.
@@ -30,7 +48,18 @@ import { documentFrequencies, properLexicon, keywordsForWindow } from "./yt-scen
 const GRAPHIC_RENDER_MAX_SECONDS = 40;
 
 /**
- * Trim one phase window out of a rendered graphic.
+ * How far past the scene cap a bridged scene may grow IN PLACE before the
+ * overflow becomes a new scene instead.
+ *
+ * The stub-merge tolerance the planner already uses: under a fifth of the
+ * default cap, invisible as a held shot. Growth past this is not refused — it
+ * becomes a CONTINUATION block, a real cut to later content from the same
+ * source, which is what the variety rule wanted all along.
+ */
+const SCENE_GROW_TOLERANCE = 1.6;
+
+/**
+ * Trim one window out of a longer rendered clip.
  *
  * `-ss` AFTER `-i` and a re-encode, both deliberate. Seeking before the input
  * lands on the nearest keyframe, which for a graphic whose reveals are ~0.14s
@@ -47,7 +76,7 @@ export function phaseArgs(input, output, from, seconds) {
     output,
   ];
 }
-import { renderAnimatedGraphic, renderBeatClip, assertAnimated } from "./yt-visual-animate.js";
+import { renderAnimatedGraphic, renderBeatClip, assertAnimated, assertClipCovers } from "./yt-visual-animate.js";
 import { fetchStockClip, stockEnabled } from "./yt-stock.js";
 import { MAP } from "./yt-visual-intent.js";
 import { mapSpecForIntent, MapSession } from "./yt-map-render.js";
@@ -87,6 +116,11 @@ export async function buildVisuals(plan, {
   usedHashes = new Set(),
   driveGet = null,
   drivePut = null,
+  // Injected for the scenario sweep, defaulted for the build — the same
+  // dependency shape renderGraphic has always had, for the same reason: the
+  // whole ladder (search dies, vision refuses, concept rescues, everything
+  // fails at once) has to be drivable in a test without Pexels or a network.
+  stockFetcher = fetchStockClip,
 } = {}) {
   const dir = workDir;
   const timings = new Map();
@@ -116,8 +150,8 @@ export async function buildVisuals(plan, {
       // "Timberwood Park") and this is where those become ids we actually hold
       // geometry for. A script can legitimately name a suburb the TIGER extract
       // does not include, and when nothing resolves there is no map to draw —
-      // that is a content gap, not a bug, and it falls to typography with a
-      // reason that says which names failed rather than a bare null.
+      // that is a content gap, not a bug, and it falls through with a reason
+      // that says which names failed rather than a bare null.
       let spec = seg.visualSpec;
       if (seg.visual === MAP) {
         spec = mapSpecForIntent(seg.visualSpec, { market });
@@ -194,6 +228,7 @@ export async function buildVisuals(plan, {
     if (!stockEnabled() || !visionClient) return 0;
     return seg.seconds || 0;
   };
+  const stockLive = stockEnabled() && Boolean(visionClient);
 
   // Owned footage is allocated from whatever is in the long-form folder — which
   // is empty by default, so this is normally zero and the other layers cover
@@ -221,231 +256,65 @@ export async function buildVisuals(plan, {
   const stockAttempts = [];
   const stockWindows = [];
   const beatBridges = [];
+  const conceptCalls = { asked: 0, answered: 0, matched: 0 };
 
-  // ── turn the coverage blocks into broll entries the renderer understands ──
   const segments = [];
   for (const seg of planned.segments) {
     if (seg.kind !== "voiceover") { segments.push(seg); continue; }
 
-    const broll = [];
+    // ── PASS 1: RESOLVE each block to a source, no files cut yet ────────────
+    const blocks = [];
     for (const block of seg.visualBlocks) {
       if (block.kind === "graphic" && seg.graphicClip) {
-        // Slice this phase's window out of the one render. Without this every
-        // phase points at the same file and plays it from zero — the build/cut/
-        // rebuild loop that made revision 6 cap the graphic at a single scene.
-        const from = Math.min(block.startAt ?? 0, Math.max(0, (seg.graphicSeconds || 0) - 0.1));
-        const dur = Math.min(block.seconds, Math.max(0.1, (seg.graphicSeconds || block.seconds) - from));
-        let phasePath = seg.graphicClip;
-        if ((block.phaseOf || 1) > 1) {
-          phasePath = join(dir, `phase-${seg.takeId}-${block.phase}.mp4`);
-          try {
-            ffmpeg(phaseArgs(seg.graphicClip, phasePath, from, dur));
-          } catch (err) {
-            // A failed slice must not cost the segment its picture: fall back to
-            // the whole clip, which is the pre-phase behaviour, and say so.
-            animationFailures.push({ takeId: seg.takeId, type: seg.visual, reason: `phase ${block.phase} slice failed (${err.message}) — phase plays from the start` });
-            phasePath = seg.graphicClip;
-          }
-        }
-        broll.push({ generated: true, preRendered: true, kind: "graphic", visual: seg.visual, sourcePath: phasePath, seconds: block.seconds, phase: block.phase, fileName: `${seg.visual}.mp4` });
+        blocks.push({ kind: "graphic", seconds: block.seconds });
         continue;
       }
       if (block.kind === "stock") {
-        // EACH WINDOW IS ITS OWN SEARCH, AGAINST ITS OWN SENTENCE.
-        //
-        // Card 7 fetched one clip per take and sliced it, so a take that moved
-        // from a hospital to houses from the eighties showed the hospital
-        // throughout. Now the window's words choose the window's footage:
-        // "Audie Murphy VA hospital" searches for a hospital campus and the
-        // proper noun is dropped before the query is built, so the clip is never
-        // presented as that specific place.
-        const win = keywordsForWindow(seg, block, {
-          frequencies,
-          lexicon,
-          fallbackKeywords: seg.visualSpec?.keywords || [],
+        const resolved = await resolveStockWindow(seg, block, {
+          frequencies, lexicon, mapSession, market, visionClient, dir,
+          timings, ffmpeg, usedHashes, driveGet, drivePut, stockFetcher,
+          index: () => index++,
+          stockWindows, stockAttempts, animationFailures, stockCredits, conceptCalls,
         });
-        const wi = index++;
-        let clip = null;
-        let attempts = [{ stage: "keywords", reason: "no searchable concept in this window" }];
-
-        // ── A PLACE WINDOW IS THE MAP'S TERRITORY ──────────────────────────
-        //
-        // When a window's own words yield nothing, it is almost always because
-        // the window IS a name: "Stone Oak is the big one", "Shavano Park sits
-        // right against it". Revision 8 answered those with the wordless beat —
-        // abstract gold arcs playing over the passages that name the
-        // neighbourhoods the video is about, which is the worst available
-        // answer and the one Peter called the blocker.
-        //
-        // A named place is a map's subject by definition, and the geometry is
-        // already vendored. So the window asks for a map of itself before it
-        // asks for stock, and only a place this video has not already drawn —
-        // otherwise the same neighbourhood gets introduced three times.
-        if (win.placeDominated) {
-          const placeSpec = mapSpecForIntent({ places: win.properPhrases, lines: [] }, { market });
-          if (placeSpec && !mapSession.coversPlaces(placeSpec)) {
-            const mi = index++;
-            try {
-              const r = await renderAnimatedGraphic({
-                session: mapSession, type: MAP, spec: placeSpec,
-                seconds: block.seconds, words: timings.get(seg.takeId),
-                dir, index: mi, ffmpeg, writeFileSync,
-              });
-              if (r.deadStates.length === 0) {
-                broll.push({
-                  generated: true, preRendered: true, kind: "graphic", visual: MAP,
-                  sourcePath: r.path, seconds: block.seconds, phase: 0, fileName: "MAP.mp4",
-                });
-                stockWindows.push({
-                  takeId: seg.takeId, phase: block.phase ?? 0, startAt: block.startAt ?? 0,
-                  seconds: block.seconds, phrase: win.phrase, keywords: [], subject: null,
-                  dropped: win.dropped, source: "map-of-place", matched: true,
-                  resolved: "MAP", places: win.properPhrases,
-                });
-                block.kind = "graphic";
-                continue;
-              }
-              animationFailures.push({ takeId: seg.takeId, type: MAP, reason: `place map rendered ${r.deadStates.length} dead state(s)` });
-            } catch (err) {
-              animationFailures.push({ takeId: seg.takeId, type: MAP, reason: `place map failed: ${err.message}` });
-            }
-          }
-        }
-
-        if (win.keywords.length > 0) {
-          try {
-            const r = await fetchStockClip({
-              keywords: win.keywords,
-              seconds: block.seconds,
-              // THE SEARCH AND THE CHECK ASK DIFFERENT QUESTIONS.
-              //
-              // Two keywords are what a stock search can use; they are a poor
-              // description of a moment. Revision 8 verified against them, so
-              // the check asked "is this plausibly 'animal well'?" of a goat
-              // farm and correctly said yes — under a sentence about a suburb.
-              // "closest base" returned a baseball field and passed for the
-              // same reason: the check was answering a question I invented
-              // rather than the one the video asks.
-              //
-              // So the clip is verified against what is actually SPOKEN while
-              // it is on screen, with the proper nouns stripped — the check has
-              // never been allowed to know a place name and still is not. A
-              // goat farm is not plausibly "is further north, past, and it's a
-              // little more spread out"; a baseball field is not plausibly a
-              // sentence about a base's front gate.
-              subject: win.verifySubject || win.subject,
-              dir,
-              index: wi,
-              orientation: seg.visualSpec?.orientation || "landscape",
-              usedHashes,
-              client: visionClient,
-              ffmpeg,
-              driveGet,
-              drivePut,
-            });
-            clip = r?.clip || null;
-            attempts = r?.attempts || [];
-          } catch (err) {
-            console.warn(`[Visuals] stock lookup threw for ${seg.takeId} window ${block.phase}: ${err.message}`);
-            attempts = [{ stage: "error", reason: err.message }];
-          }
-        }
-
-        stockWindows.push({
-          takeId: seg.takeId,
-          phase: block.phase ?? 0,
-          startAt: block.startAt ?? 0,
-          seconds: block.seconds,
-          phrase: win.phrase,
-          keywords: win.keywords,
-          subject: win.subject,
-          dropped: win.dropped,
-          source: win.source,
-          matched: Boolean(clip),
-          contentHash: clip?.contentHash || null,
-          query: clip?.query || null,
-        });
-        if (attempts.length) stockAttempts.push({ takeId: seg.takeId, phase: block.phase ?? 0, attempts });
-
-        if (clip) {
-          // NO CLIP TWICE IN ONE VIDEO. `usedHashes` arrives holding what recent
-          // videos used and was only ever READ — nothing added to it during a
-          // build, so two windows could independently pick the same clip and the
-          // no-repeat rule silently covered only the history. Adding here is what
-          // makes it hold within this video as well.
-          usedHashes.add(clip.contentHash);
-          stockCredits.push(clip.credit);
-          broll.push({
-            generated: true, preRendered: true, kind: "stock",
-            sourcePath: clip.path, seconds: block.seconds,
-            contentHash: clip.contentHash, query: clip.query, fileName: "stock.mp4",
-          });
-          continue;
-        }
-
-        // Nothing survived for this window. The beat carries it, and the reason
-        // is recorded per window rather than per take — "take 4 got no stock" was
-        // true of four windows for four different reasons.
-        block.kind = "beat";
-        block.reason = win.keywords.length === 0 ? REASON.NO_KEYWORDS : REASON.STOCK_NO_MATCH;
+        blocks.push(resolved);
+        continue;
       }
       if (block.kind === "owned") {
         const owned = ownedSeconds.get(seg.takeId);
         if (owned?.clip) {
-          broll.push({ driveFileId: owned.clip.id, fileName: owned.clip.name, contentHash: owned.clip.contentHash || null, seconds: block.seconds, reused: false });
-          continue;
-        }
-        // The allocator promised footage and the pool could not deliver. Rather
-        // than emit a broll entry pointing at nothing — which renderTimeline
-        // would skip, leaving the segment short — fall through to typography.
-        block.kind = "typography";
-        block.reason = REASON.NO_OWNED_FOOTAGE;
-      }
-
-      // BEAT — the wordless floor, and anything that fell through to it.
-      if (block.kind === "beat") {
-        const bi = index++;
-        try {
-          const beat = await renderBeatClip({
-            seconds: block.seconds, dir, index: bi, ffmpeg, writeFileSync,
-            // Phase carries across the video so two beats are never the same
-            // geometry, the way two stock blocks are never the same window.
-            startPhase: beatPhase,
-          });
-          beatPhase += 313;
-          broll.push({ generated: true, preRendered: true, kind: "beat", sourcePath: beat.path, seconds: block.seconds, fileName: "beat.mp4" });
-        } catch (err) {
-          animationFailures.push({ takeId: seg.takeId, type: "BEAT", reason: err.message });
+          blocks.push({ kind: "owned", seconds: block.seconds, clip: owned.clip });
+        } else {
+          // The allocator promised footage and the pool could not deliver. The
+          // beat carries it — bridged like any other beat, rather than the old
+          // fall to a typography branch that no longer exists.
+          blocks.push({ kind: "beat", seconds: block.seconds, reason: REASON.NO_OWNED_FOOTAGE });
         }
         continue;
       }
-
-      // NOTHING ELSE SETS THE NARRATION AS PROSE.
-      //
-      // The typography branch lived here and is gone. Every block kind is handled
-      // above, and the plan's floor is a beat, so reaching this line means the
-      // planner emitted a kind the builder does not know — which is a wiring bug
-      // and must be loud rather than silently leaving the segment short.
+      if (block.kind === "beat") {
+        blocks.push({ kind: "beat", seconds: block.seconds, reason: block.reason || REASON.REMAINDER });
+        continue;
+      }
+      // NOTHING ELSE EXISTS. Reaching this line means the planner emitted a
+      // kind the builder does not know — a wiring bug, and loud.
       animationFailures.push({ takeId: seg.takeId, type: String(block.kind || "?").toUpperCase(), reason: `no builder for block kind "${block.kind}"` });
     }
 
-    // ── THE BEAT IS A BRIDGE, NOT A LAYER ────────────────────────────────
-    //
-    // Applied here rather than in the planner because a beat can be born in two
-    // places: the planner's floor, and a stock window whose fetch came back
-    // empty a few lines above. Only after both have run is it known how much of
-    // this take the wordless geometry actually ends up holding.
-    //
-    // Revision 8 gave it 56% of the runtime. Extending the neighbouring scene is
-    // strictly better than abstract arcs: a stock clip or a graphic held two
-    // seconds longer is a shot that ran a beat long, which nobody notices, while
-    // gold circles over the passage naming a neighbourhood is the thing Peter
-    // called the blocker.
-    //
-    // A take with NOTHING else in it keeps its beats — there is no neighbour to
-    // extend, and a hole in the picture is not an improvement. That case is
-    // reported rather than hidden.
-    bridgeBeats(broll, { max: BEAT_BRIDGE_MAX_SECONDS, takeId: seg.takeId, beatBridges });
+    // ── PASS 2: BRIDGE on the resolved blocks — pure arithmetic ─────────────
+    bridgeBeats(blocks, {
+      max: BEAT_BRIDGE_MAX_SECONDS,
+      sceneMax: SCENE_MAX_SECONDS,
+      graphicSeconds: seg.graphicSeconds || 0,
+      takeId: seg.takeId,
+      beatBridges,
+    });
+
+    // ── PASS 3: MATERIALISE files against the final numbers ─────────────────
+    const broll = await materialiseBlocks(seg, blocks, {
+      dir, ffmpeg, index: () => index++,
+      beatPhaseRef: { get: () => beatPhase, advance: () => { beatPhase += 313; } },
+      animationFailures,
+    });
 
     // A take PLANNED for stock whose every window came back empty is a fall, and
     // it did not used to look like one. The planner set `visualPrimary: "stock"`
@@ -463,6 +332,35 @@ export async function buildVisuals(plan, {
     segments.push({ ...seg, broll });
   }
 
+  // ── THE FULL-WINDOW BEAT IS EXTINCT, AND THIS IS WHERE THAT IS ENFORCED ───
+  //
+  // Not hoped for, not reported into a warning nobody reads — asserted. After
+  // the ladder (map, window words, sentence, concept, establishing shot) and a
+  // take-wide bridge, a beat still holding more than a bridge means every rung
+  // failed for every window of a take, which with stock live is a systemic
+  // failure (a dead key, a rate limit, a network hole) that should stop the
+  // build while the reasons are one screen up, rather than ship twenty seconds
+  // of wordless geometry over the passage that names the video's subject.
+  //
+  // The dry run — no Pexels key or no vision client — keeps beats by design,
+  // and the assertion stands down: enforcement matches capability.
+  if (stockLive) {
+    const overheld = [];
+    for (const seg of segments) {
+      for (const b of seg.broll || []) {
+        if (b.kind === "beat" && b.seconds > BEAT_BRIDGE_MAX_SECONDS + 0.05) {
+          overheld.push(`${seg.takeId}: a ${b.seconds}s beat survived the ladder`);
+        }
+      }
+    }
+    if (overheld.length > 0) {
+      throw new Error(
+        `full-window beats survived with stock live — ${overheld.join("; ")}. ` +
+        `Every fallback rung failed; the per-window reasons are in the stock attempts log above.`
+      );
+    }
+  }
+
   const report = {
     // RECOMPUTED, not the planner's. Windows that failed their fetch became
     // beats a moment ago, and the coverage split has to describe what the video
@@ -473,10 +371,11 @@ export async function buildVisuals(plan, {
     intents: planned.intents,
     stockWindows,
     beatBridges,
+    conceptCalls,
     // Drives the map attribution line in the description. Computed from what
     // actually reached the timeline rather than from what was requested: a MAP
-    // intent that fell back to typography must not credit a map source for a
-    // map the video does not contain.
+    // intent that fell back must not credit a map source for a map the video
+    // does not contain.
     mapsUsed: segments.some((s) => (s.broll || []).some((b) => b.visual === MAP)),
     animationFailures,
     stockAttempts,
@@ -486,25 +385,30 @@ export async function buildVisuals(plan, {
       takes: timings.size,
       withTiming: [...timings.values()].filter(Boolean).length,
     },
-    // REVEAL SYNC, the number Peter kept asking for and the build kept not
-    // printing. Per-graphic sync was collected from the start and only ever
-    // returned, never logged, so the report said "24/24 takes transcribed" —
-    // which is about AVAILABILITY of timing — and left "how many reveals
-    // actually landed on a spoken word" invisible. They are different numbers
-    // and the second one is the one that says whether the animation is doing
-    // what it claims.
     // SCENE STATS. The cadence audit measures motion INSIDE a visual; this
     // measures how often the visual itself changes, which is the thing card 5
     // got wrong while passing every in-graphic check.
+    //
+    // ADJACENCY COUNTS DISTINCT SOURCES. Two phases of one graphic, or a scene
+    // and its continuation cut, are the same visual deliberately shown across a
+    // scene boundary — counting them as a "same-kind run" made the number
+    // unreadable: card 11 reported 12 while the real complaint was five
+    // DIFFERENT cards in a row reading as a slideshow.
     scenes: (() => {
-      const all = segments.flatMap((sg) => (sg.broll || []).filter((b) => b.seconds > 0).map((b) => ({ kind: b.kind || (b.generated ? "generated" : "footage"), seconds: b.seconds })));
+      const all = segments.flatMap((sg) => (sg.broll || []).filter((b) => b.seconds > 0).map((b) => ({
+        kind: b.kind || (b.generated ? "generated" : "footage"),
+        seconds: b.seconds,
+        source: b.sourcePath || b.driveFileId || null,
+      })));
       const lengths = all.map((b) => b.seconds);
-      const runs = all.reduce((n, b, i) => (i > 0 && b.kind === all[i - 1].kind ? n + 1 : n), 0);
+      const runs = all.reduce((n, b, i) => (
+        i > 0 && b.kind === all[i - 1].kind && b.source !== all[i - 1].source ? n + 1 : n
+      ), 0);
       return {
         count: all.length,
         averageSeconds: lengths.length ? round2(lengths.reduce((a, b) => a + b, 0) / lengths.length) : 0,
         longestSeconds: lengths.length ? round2(Math.max(...lengths)) : 0,
-        overCap: lengths.filter((l) => l > SCENE_MAX_SECONDS + 1.6).length,
+        overCap: lengths.filter((l) => l > SCENE_MAX_SECONDS + SCENE_GROW_TOLERANCE).length,
         sameKindRuns: runs,
         cap: SCENE_MAX_SECONDS,
       };
@@ -533,37 +437,441 @@ export async function buildVisuals(plan, {
   return { plan: { ...plan, segments, visuals: report }, report };
 }
 
+/**
+ * Resolve one stock window: map moment, then the window's own words, then a
+ * derived concept, and only then a beat.
+ *
+ * EACH WINDOW IS ITS OWN SEARCH, AGAINST ITS OWN SENTENCE. Card 7 fetched one
+ * clip per take and sliced it, so a take that moved from a hospital to houses
+ * from the eighties showed the hospital throughout.
+ */
+async function resolveStockWindow(seg, block, {
+  frequencies, lexicon, mapSession, market, visionClient, dir,
+  timings, ffmpeg, usedHashes, driveGet, drivePut, index, stockFetcher = fetchStockClip,
+  stockWindows, stockAttempts, animationFailures, stockCredits, conceptCalls,
+}) {
+  const win = keywordsForWindow(seg, block, {
+    frequencies,
+    lexicon,
+    fallbackKeywords: seg.visualSpec?.keywords || [],
+  });
+  const attempts = [];
+  const windowRow = {
+    takeId: seg.takeId,
+    phase: block.phase ?? 0,
+    startAt: block.startAt ?? 0,
+    seconds: block.seconds,
+    phrase: win.phrase,
+    keywords: win.keywords,
+    subject: win.subject,
+    dropped: win.dropped,
+    source: win.source,
+    matched: false,
+  };
+
+  // ── A PLACE WINDOW IS THE MAP'S TERRITORY ────────────────────────────────
+  //
+  // When a window's own words yield nothing, it is almost always because the
+  // window IS a name: "Stone Oak is the big one", "Shavano Park sits right
+  // against it". A named place is a map's subject by definition, and the
+  // geometry is already vendored. So the window asks for a map of itself
+  // before it asks for stock — and only a place this video has not already
+  // drawn, otherwise the same neighbourhood gets introduced three times.
+  if (win.placeDominated) {
+    const placeSpec = mapSpecForIntent({ places: win.properPhrases, lines: [] }, { market });
+    if (placeSpec && !mapSession.coversPlaces(placeSpec)) {
+      const mi = index();
+      try {
+        const r = await renderAnimatedGraphic({
+          session: mapSession, type: MAP, spec: placeSpec,
+          seconds: block.seconds, words: timings.get(seg.takeId),
+          dir, index: mi, ffmpeg, writeFileSync,
+        });
+        if (r.deadStates.length === 0) {
+          stockWindows.push({ ...windowRow, keywords: [], subject: null, source: "map-of-place", matched: true, resolved: "MAP", places: win.properPhrases });
+          return { kind: "mapmoment", seconds: block.seconds, path: r.path, renderedSeconds: r.seconds };
+        }
+        animationFailures.push({ takeId: seg.takeId, type: MAP, reason: `place map rendered ${r.deadStates.length} dead state(s)` });
+      } catch (err) {
+        animationFailures.push({ takeId: seg.takeId, type: MAP, reason: `place map failed: ${err.message}` });
+      }
+    }
+  }
+
+  const fetchOpts = {
+    seconds: block.seconds,
+    dir,
+    orientation: seg.visualSpec?.orientation || "landscape",
+    usedHashes,
+    client: visionClient,
+    ffmpeg,
+    driveGet,
+    drivePut,
+  };
+
+  // ── RUNG 1: the window's own words ───────────────────────────────────────
+  let clip = null;
+  if (win.keywords.length > 0) {
+    try {
+      const r = await stockFetcher({
+        keywords: win.keywords,
+        // THE SEARCH AND THE CHECK ASK DIFFERENT QUESTIONS. The query is what a
+        // stock search can use; the subject is what is actually SPOKEN while
+        // the clip is on screen, proper nouns stripped — the check has never
+        // been allowed to know a place name and still is not.
+        subject: win.verifySubject || win.subject,
+        index: index(),
+        ...fetchOpts,
+      });
+      clip = r?.clip || null;
+      attempts.push(...(r?.attempts || []));
+    } catch (err) {
+      console.warn(`[Visuals] stock lookup threw for ${seg.takeId} window ${block.phase}: ${err.message}`);
+      attempts.push({ stage: "error", reason: err.message });
+    }
+  } else {
+    attempts.push({ stage: "keywords", reason: "no searchable concept in this window" });
+  }
+
+  // ── RUNG 2: THE CONCEPT FALLBACK ─────────────────────────────────────────
+  //
+  // The window's own words either produced nothing or produced a query Pexels
+  // and the vision check between them refused. The mechanical ladder has no
+  // more rungs that look at THIS window — so the model that already grades the
+  // clips is asked what generic footage should show while these words play.
+  // "matters even if your kids are grown" becomes a family front yard;
+  // "five minutes on a normal morning" becomes commute traffic. Fails closed
+  // to the beat, and its output passes the same proper-noun stripping the
+  // transcript does — see yt-concept-fallback.js for why a misbehaving model
+  // cannot name a place here.
+  if (!clip && visionClient) {
+    conceptCalls.asked++;
+    const banned = new Set([
+      ...(win.dropped || []).map((w) => String(w).toLowerCase()),
+      ...lexicon,
+    ]);
+    const concept = await deriveConcept({
+      phrase: win.phrase,
+      takeText: seg.text,
+      sectionTitle: seg.section || "",
+      banned,
+      client: visionClient,
+    });
+    if (concept) {
+      conceptCalls.answered++;
+      try {
+        const r = await stockFetcher({
+          keywords: [concept.query],
+          subject: concept.subject,
+          index: index(),
+          ...fetchOpts,
+        });
+        if (r?.clip) {
+          clip = r.clip;
+          windowRow.source = "concept";
+          windowRow.keywords = [concept.query];
+          windowRow.subject = concept.subject;
+        }
+        attempts.push(...(r?.attempts || []).map((a) => ({ ...a, stage: `concept-${a.stage}` })));
+      } catch (err) {
+        attempts.push({ stage: "concept-error", reason: err.message });
+      }
+    } else {
+      attempts.push({ stage: "concept", reason: "no filmable concept derived" });
+    }
+  }
+
+  stockWindows.push({ ...windowRow, matched: Boolean(clip), contentHash: clip?.contentHash || null, query: clip?.query || null });
+  if (attempts.length) stockAttempts.push({ takeId: seg.takeId, phase: block.phase ?? 0, attempts });
+
+  if (clip) {
+    conceptCalls.matched += windowRow.source === "concept" ? 1 : 0;
+    // NO CLIP TWICE IN ONE VIDEO. `usedHashes` arrives holding what recent
+    // videos used; adding here is what makes the rule hold within this video
+    // as well.
+    usedHashes.add(clip.contentHash);
+    stockCredits.push(clip.credit);
+    return {
+      kind: "stock", seconds: block.seconds, clip,
+      // The graded file deliberately runs longer than the window — see
+      // STOCK_GRADE_SLACK_SECONDS — and the spare is this block's capacity to
+      // absorb a bridged beat with footage the viewer has not seen.
+      sourceSeconds: clip.gradedSeconds || block.seconds,
+    };
+  }
+
+  // Nothing survived for this window. The beat carries it — for now; the
+  // bridge caps it and the neighbouring scenes absorb the difference.
+  return {
+    kind: "beat", seconds: block.seconds,
+    reason: win.keywords.length === 0 ? REASON.NO_KEYWORDS : REASON.STOCK_NO_MATCH,
+  };
+}
 
 /**
- * Cap every wordless beat at a bridge, handing the overflow to a real scene.
+ * Cap every wordless beat at a bridge, handing the overflow to real scenes.
  *
  * PURE, and separate from the build loop so the rule can be argued with in a
  * test rather than by rendering a video and watching for circles.
  *
- * The overflow goes to the PREVIOUS scene by preference: extending a shot the
- * viewer is already watching is invisible, while extending the next one delays
- * its arrival and can pull a reveal off the word it was timed to. A beat with no
- * real scene on either side is left alone and recorded — that take has nothing
- * else to show, and a gap would be worse than geometry.
+ * WHAT CHANGED FROM CARD 11, each line paid for by a defect in the artifact:
+ *
+ *   ADJACENT BEATS MERGE FIRST. The floor emits an 17s remainder as 8+4.5+4.5,
+ *   and the old bridge then asked each of the three who its neighbours were —
+ *   beats, both sides — and gave up on all three while a real scene sat one
+ *   slot away. Thirteen of card 11's beats "could NOT be capped" this way.
+ *
+ *   THE HOST SEARCH IS TAKE-WIDE. A beat bridges to the NEAREST real scene,
+ *   preferring the earlier side (extending a shot the viewer is already
+ *   watching is invisible), but a beat with beats for immediate neighbours no
+ *   longer strands.
+ *
+ *   HOSTS HAVE CAPACITY, IN CONTENT. A scene can only absorb seconds its
+ *   source actually holds — the graphic's one render, the stock clip's graded
+ *   slack. The old bridge grew `seconds` unconditionally and `-stream_loop`
+ *   papered over the difference by replaying the clip from the start.
+ *
+ *   THE SCENE CAP HOLDS. Growth past cap+tolerance becomes a CONTINUATION
+ *   block — a real cut to later content from the same source — instead of the
+ *   18-second scenes the report warned about while the bridge created them.
+ *
+ * A take with NOTHING else in it keeps its beats and is recorded — there is no
+ * neighbour to extend, and a hole in the picture is not an improvement. When
+ * stock is live the build then fails loudly upstream, because with the full
+ * ladder in place that take means a systemic fetch failure.
  */
-export function bridgeBeats(broll, { max, takeId = null, beatBridges = [] } = {}) {
-  const isReal = (b) => b && b.kind !== "beat" && (b.seconds || 0) > 0;
-  for (let i = 0; i < broll.length; i++) {
-    const b = broll[i];
-    if (!b || b.kind !== "beat") continue;
-    const over = round2((b.seconds || 0) - max);
-    if (over <= 0.01) continue;
+export function bridgeBeats(blocks, {
+  max,
+  sceneMax = SCENE_MAX_SECONDS,
+  graphicSeconds = 0,
+  takeId = null,
+  beatBridges = [],
+} = {}) {
+  // ── 1. adjacent beats are one beat ────────────────────────────────────────
+  for (let i = blocks.length - 1; i > 0; i--) {
+    if (blocks[i]?.kind === "beat" && blocks[i - 1]?.kind === "beat") {
+      blocks[i - 1].seconds = round2(blocks[i - 1].seconds + blocks[i].seconds);
+      blocks[i - 1].reason = blocks[i - 1].reason || blocks[i].reason;
+      blocks.splice(i, 1);
+    }
+  }
 
-    const prev = broll[i - 1];
-    const next = broll[i + 1];
-    const host = isReal(prev) ? prev : isReal(next) ? next : null;
-    if (!host) {
-      beatBridges.push({ takeId, seconds: round2(b.seconds), capped: false, reason: "no other visual in this take to extend" });
+  // ── 2. capacity: how many seconds of UNSEEN content each source still has ─
+  //
+  // Graphics share one render across all their blocks, so their capacity is
+  // pooled; a stock or owned block's capacity is its own file's spare tail.
+  const graphicDisplayed = blocks.filter((b) => b.kind === "graphic").reduce((n, b) => n + b.seconds, 0);
+  let graphicSpare = Math.max(0, round2(graphicSeconds - graphicDisplayed));
+  const capacityOf = (b) => {
+    if (b.kind === "graphic") return graphicSpare;
+    if (b.kind === "stock") return Math.max(0, round2((b.sourceSeconds || b.seconds) - b.seconds - (b.spent || 0)));
+    if (b.kind === "owned") return Math.max(0, round2((b.clip?.durationSeconds || b.seconds) - b.seconds - (b.spent || 0)));
+    // A map moment is rendered to exactly its window; extending it would loop.
+    return 0;
+  };
+  const spend = (b, take) => {
+    if (b.kind === "graphic") graphicSpare = round2(graphicSpare - take);
+    else b.spent = round2((b.spent || 0) + take);
+  };
+
+  // ── 3. cap each beat, distributing the overflow ───────────────────────────
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (!b || b.kind !== "beat") continue;
+    let over = round2((b.seconds || 0) - max);
+    if (over <= 0.01) continue;
+    b.seconds = round2(max);
+
+    const isReal = (x) => x && x.kind !== "beat" && (x.seconds || 0) > 0;
+    // Nearest real block, earlier side winning ties.
+    const hostOrder = [];
+    for (let d = 1; d < blocks.length; d++) {
+      if (i - d >= 0 && isReal(blocks[i - d])) hostOrder.push(blocks[i - d]);
+      if (i + d < blocks.length && isReal(blocks[i + d])) hostOrder.push(blocks[i + d]);
+    }
+    if (hostOrder.length === 0) {
+      b.seconds = round2(max + over);
+      beatBridges.push({ takeId, seconds: b.seconds, capped: false, reason: "no other visual in this take to extend" });
       continue;
     }
-    b.seconds = round2(max);
-    host.seconds = round2((host.seconds || 0) + over);
-    beatBridges.push({ takeId, seconds: max, capped: true, gaveSeconds: over, to: host.kind || "footage" });
+
+    let gave = 0;
+    // Round one: each host takes the overflow either IN PLACE (when it fits
+    // under the cap's tolerance) or as a CONTINUATION scene — a real cut to
+    // the source's unseen tail, itself cap-sized. Preferring the whole
+    // overflow as one continuation over topping a scene up to its limit is
+    // what keeps sub-scene stubs from forcing anybody past the cap.
+    for (const host of hostOrder) {
+      while (over >= 0.01 && capacityOf(host) >= 0.01) {
+        const room = round2(sceneMax + SCENE_GROW_TOLERANCE - host.seconds);
+        if (over <= room + 0.01) {
+          const g = round2(Math.min(over, capacityOf(host)));
+          host.seconds = round2(host.seconds + g);
+          spend(host, g);
+          over = round2(over - g);
+          gave = round2(gave + g);
+          break;
+        }
+        if (over >= MIN_BLOCK_SECONDS && capacityOf(host) >= MIN_BLOCK_SECONDS) {
+          const take = round2(Math.min(over, capacityOf(host), sceneMax));
+          const continuation = { kind: host.kind, seconds: take, continuesFrom: host, continuation: true };
+          if (host.kind === "stock" || host.kind === "owned") continuation.clip = host.clip;
+          blocks.splice(blocks.indexOf(host) + 1, 0, continuation);
+          spend(host, take);
+          over = round2(over - take);
+          gave = round2(gave + take);
+          continue;
+        }
+        break;
+      }
+      if (over < 0.01) break;
+    }
+
+    // Round two: a stub too short to be a scene of its own. The nearest host
+    // with any content left holds it — a shot running a second long is
+    // invisible; a beat running a second past its bridge is the thing being
+    // retired.
+    if (over >= 0.01 && over < MIN_BLOCK_SECONDS) {
+      const host = hostOrder.find((h) => capacityOf(h) >= over);
+      if (host) {
+        host.seconds = round2(host.seconds + over);
+        spend(host, over);
+        gave = round2(gave + over);
+        over = 0;
+      }
+    }
+
+    if (over >= 0.01) {
+      // Every source in the take is out of unseen content. The tail goes back
+      // to the beat rather than looping somebody — recorded, so the build's
+      // own assertion can decide whether that is fatal.
+      b.seconds = round2(b.seconds + over);
+      beatBridges.push({ takeId, seconds: b.seconds, capped: false, reason: "every source in this take is out of unseen content" });
+      continue;
+    }
+    beatBridges.push({ takeId, seconds: max, capped: true, gaveSeconds: gave, to: hostOrder[0].kind });
+  }
+  return blocks;
+}
+
+/**
+ * Turn the bridged blocks into broll entries pointing at real files.
+ *
+ * Runs AFTER the bridge, so every `seconds` here is final — which is the whole
+ * point of the pass structure. Graphic phases are sliced against a cursor into
+ * the one continuous render (a phase opens exactly where the previous one
+ * closed, wherever the bridge moved the boundaries); stock continuations are
+ * cut from the graded file's spare tail; beats are rendered at their final
+ * bridge length and verified before they may enter the timeline.
+ */
+async function materialiseBlocks(seg, blocks, { dir, ffmpeg, index, beatPhaseRef, animationFailures }) {
+  const broll = [];
+  let graphicCursor = 0;
+  const stockCursor = new Map(); // clip.path -> seconds of the file already scheduled
+  const graphicBlocks = blocks.filter((b) => b.kind === "graphic");
+  let phaseNo = 0;
+
+  for (const block of blocks) {
+    if (block.kind === "graphic" && seg.graphicClip) {
+      const from = round2(Math.min(graphicCursor, Math.max(0, (seg.graphicSeconds || 0) - 0.1)));
+      const dur = round2(Math.min(block.seconds, Math.max(0.1, (seg.graphicSeconds || block.seconds) - from)));
+      graphicCursor = round2(from + dur);
+      let phasePath = seg.graphicClip;
+      const thisPhase = phaseNo++;
+      if (graphicBlocks.length > 1) {
+        phasePath = join(dir, `phase-${seg.takeId}-${thisPhase}.mp4`);
+        try {
+          ffmpeg(phaseArgs(seg.graphicClip, phasePath, from, dur));
+        } catch (err) {
+          // A failed slice must not cost the segment its picture: fall back to
+          // the whole clip, which is the pre-phase behaviour, and say so.
+          animationFailures.push({ takeId: seg.takeId, type: seg.visual, reason: `phase ${thisPhase} slice failed (${err.message}) — phase plays from the start` });
+          phasePath = seg.graphicClip;
+        }
+      }
+      broll.push({
+        generated: true, preRendered: true, kind: "graphic", visual: seg.visual,
+        sourcePath: phasePath, seconds: block.seconds, sourceSeconds: dur,
+        phase: thisPhase, phaseOf: graphicBlocks.length, fileName: `${seg.visual}.mp4`,
+      });
+      continue;
+    }
+
+    if (block.kind === "mapmoment") {
+      broll.push({
+        generated: true, preRendered: true, kind: "graphic", visual: MAP,
+        sourcePath: block.path, seconds: block.seconds, sourceSeconds: block.renderedSeconds || block.seconds,
+        phase: 0, fileName: "MAP.mp4",
+      });
+      continue;
+    }
+
+    if (block.kind === "stock") {
+      const clip = block.clip || block.continuesFrom?.clip;
+      if (!clip) {
+        animationFailures.push({ takeId: seg.takeId, type: "STOCK", reason: "a stock block lost its clip between resolve and materialise" });
+        continue;
+      }
+      const already = stockCursor.get(clip.path) || 0;
+      let sourcePath = clip.path;
+      let sourceSeconds = round2((clip.gradedSeconds || block.seconds) - already);
+      if (block.continuation) {
+        // The continuation plays the graded file's unseen tail — a real cut to
+        // later footage, not a replay. Sliced here because conform cuts from
+        // the head of whatever file it is given.
+        const contPath = join(dir, `stockcont-${seg.takeId}-${broll.length}.mp4`);
+        try {
+          ffmpeg(phaseArgs(clip.path, contPath, already, block.seconds));
+          sourcePath = contPath;
+          sourceSeconds = block.seconds;
+        } catch (err) {
+          animationFailures.push({ takeId: seg.takeId, type: "STOCK", reason: `continuation slice failed (${err.message})` });
+          continue;
+        }
+      }
+      stockCursor.set(clip.path, round2(already + block.seconds));
+      broll.push({
+        generated: true, preRendered: true, kind: "stock",
+        sourcePath, seconds: block.seconds, sourceSeconds,
+        contentHash: clip.contentHash, query: clip.query, fileName: "stock.mp4",
+        continuation: Boolean(block.continuation),
+      });
+      continue;
+    }
+
+    if (block.kind === "owned") {
+      broll.push({ driveFileId: block.clip.id, fileName: block.clip.name, contentHash: block.clip.contentHash || null, seconds: block.seconds, reused: false });
+      continue;
+    }
+
+    if (block.kind === "beat") {
+      const bi = index();
+      try {
+        const beat = await renderBeatClip({
+          seconds: block.seconds, dir, index: bi, ffmpeg, writeFileSync,
+          // Phase carries across the video so two beats are never the same
+          // geometry, the way two stock blocks are never the same window.
+          startPhase: beatPhaseRef.get(),
+        });
+        beatPhaseRef.advance();
+        // THE BEAT IS VERIFIED LIKE EVERYTHING ELSE. It was the one generated
+        // clip that entered the timeline on trust, and card 11 spent 84 frozen
+        // seconds finding out what that trust was worth. The assertion reads
+        // the encoded file back: right length, and actually moving.
+        const verdict = await assertClipCovers(beat.path, { seconds: block.seconds, dir, ffmpeg, index: bi });
+        if (!verdict.ok) {
+          throw new Error(`beat failed verification: ${verdict.failures.join("; ")}`);
+        }
+        broll.push({ generated: true, preRendered: true, kind: "beat", sourcePath: beat.path, seconds: block.seconds, sourceSeconds: beat.seconds, fileName: "beat.mp4" });
+      } catch (err) {
+        animationFailures.push({ takeId: seg.takeId, type: "BEAT", reason: err.message });
+        // A beat that cannot render or verify must not silently shorten the
+        // picture — that is the exact hole the frozen tails came through. The
+        // segment renderer asserts picture-covers-narration and will name this
+        // take; the failure above says why.
+      }
+      continue;
+    }
   }
   return broll;
 }

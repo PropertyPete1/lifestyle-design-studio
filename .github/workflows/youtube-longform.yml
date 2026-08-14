@@ -409,7 +409,14 @@ jobs:
   stock-probe:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'stock-probe'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 60, was 20: the ladder gained the concept rung (a model call and a second
+    # fetch per failing window) AND the probe fixture now offers stock to every
+    # take, because failed graphics fall to stock in a real build — 38 windows
+    # where there were 16. Runs at 20 and at 35 were both cancelled mid-table;
+    # the second streamed 24/24 matches before dying at window 25. Budget what
+    # the job actually costs. Pexels' 200/hour rate limit is the real ceiling —
+    # do not re-dispatch this twice in one hour and trust the second answer.
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:

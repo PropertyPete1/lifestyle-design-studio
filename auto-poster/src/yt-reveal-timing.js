@@ -30,6 +30,8 @@
  */
 export const MAX_STATIC_SECONDS = 2;
 
+import { EMPTY_CARD_MAX_HOLD } from "./yt-config.js";
+
 /** A reveal closer than this to the previous one reads as one event, not two. */
 export const MIN_REVEAL_GAP = 0.35;
 
@@ -198,6 +200,8 @@ export function planReveals({ labels = [], words = null, seconds = 0, leadIn = 0
         const min = reveals[i - 1].at + MIN_REVEAL_GAP;
         if (reveals[i].at < min) reveals[i] = { ...reveals[i], at: round(Math.min(min, last)), nudged: true };
       }
+      // Same empty-card bound as the given-order path below, same argument.
+      if (clampFirstReveal(reveals)) syncedCount = reveals.filter((r) => r.synced).length;
       return {
         reveals,
         synced: syncedCount > 0,
@@ -233,6 +237,18 @@ export function planReveals({ labels = [], words = null, seconds = 0, leadIn = 0
     redistributeUnsynced(reveals, first, last);
   }
 
+  // ── THE CARD MAY NOT SIT EMPTY WAITING FOR ITS WORD ──────────────────────
+  //
+  // Reveals anchor to the words that name them, and a narrator routinely
+  // spends ten seconds of framing before naming item one. Card 11 held "What
+  // the inspection is really for" as a title over bare rule lines for twelve
+  // seconds — twice — because the first row's word landed twelve seconds in
+  // and nothing on the card is allowed to exist before its reveal. An editor
+  // cuts this the obvious way: the first item is simply on screen early,
+  // standing, when its word arrives. Only the FIRST reveal is pulled; the
+  // rest keep the narration's clock, which is where the sync actually shows.
+  if (clampFirstReveal(reveals)) syncedCount = reveals.filter((r) => r.synced).length;
+
   return {
     reveals,
     synced: syncedCount > 0,
@@ -240,6 +256,21 @@ export function planReveals({ labels = [], words = null, seconds = 0, leadIn = 0
     source,
     beats: motionBeats(reveals, total),
   };
+}
+
+/**
+ * Pull reveal one inside the empty-card bound; later reveals keep their words.
+ *
+ * The pulled reveal loses its `synced` flag — it is no longer on its word, and
+ * the sync number must not claim otherwise. @returns whether anything moved.
+ */
+function clampFirstReveal(reveals, { bound = EMPTY_CARD_MAX_HOLD } = {}) {
+  if (reveals.length === 0) return false;
+  if (reveals[0].at > bound) {
+    reveals[0] = { ...reveals[0], at: round(bound), pulled: true, synced: false };
+    return true;
+  }
+  return false;
 }
 
 /**

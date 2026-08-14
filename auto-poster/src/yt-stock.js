@@ -31,6 +31,7 @@ import { join } from "path";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 
 import { assertNoReelsReach } from "./yt-footage-source.js";
+import { STOCK_GRADE_SLACK_SECONDS } from "./yt-config.js";
 
 const PEXELS_API = "https://api.pexels.com/videos/search";
 
@@ -405,9 +406,19 @@ export async function fetchStockClip({
       // Grade FIRST, then check the graded frames — the vision check should see
       // what will actually be on screen, not the source. A watermark survives
       // grading; so does a caption.
+      //
+      // GRADED PAST THE WINDOW, ON PURPOSE. The bridge that retires a beat
+      // extends a neighbouring scene, and a clip cut to exactly its window can
+      // only be extended by replaying itself — the restart jump card 11 wore
+      // in the middle of its scenes. The slack seconds are the extension's
+      // real footage; a clip shorter than window+slack simply grades whole.
+      const gradedSeconds = Math.min(
+        video.durationSeconds || seconds,
+        seconds + STOCK_GRADE_SLACK_SECONDS
+      );
       const graded = join(dir, `stock-${String(index).padStart(3, "0")}-${video.id}.mp4`);
       try {
-        ffmpeg(gradeArgs(cached.path, graded, { seconds }));
+        ffmpeg(gradeArgs(cached.path, graded, { seconds: gradedSeconds }));
       } catch (err) {
         attempts.push({ keyword, videoId: video.id, stage: "grade", reason: err.message });
         continue;
@@ -424,6 +435,9 @@ export async function fetchStockClip({
         clip: {
           path: graded,
           seconds,
+          // What the file actually holds, so the bridge knows how much unseen
+          // footage an extension can draw on before it would loop.
+          gradedSeconds,
           contentHash,
           credit: creditFor(video),
           video,
