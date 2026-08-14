@@ -3622,6 +3622,17 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1kYzf9NLnbfj-kIkK4COrtpYSuWhBYKIN/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-08-14T16:26:06.079Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1kYzf9NLnbfj-kIkK4COrtpYSuWhBYKIN",
+      "captionSnippet": "Wait until you see the kitchen in this one 😮‍💨\n\nNew construction in San Antonio like this doesn't sit on the market lo",
+      "mainIgPostedAt": "2026-08-14T16:26:06.079Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
