@@ -409,7 +409,11 @@ jobs:
   stock-probe:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'stock-probe'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 35, was 20: the ladder gained the concept rung, so a fully-failing window
+    # now costs its mechanical attempts PLUS a model call and a second fetch —
+    # the first post-rung probe was cancelled at 20 with its whole per-window
+    # table unprinted, which is the one output the job exists to produce.
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:

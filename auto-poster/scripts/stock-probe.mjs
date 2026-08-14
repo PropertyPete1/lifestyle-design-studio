@@ -274,14 +274,23 @@ async function main() {
 
       for (const a of attempts) byStage[a.stage] = (byStage[a.stage] || 0) + 1;
       const last = attempts[attempts.length - 1];
-      rows.push({
+      const row = {
         window: `${w.takeId}#${w.phase}`,
         query,
         source: w.source,
         stage: clip ? (via === "window" ? "MATCHED" : "MATCHED*") : last?.stage || "none",
         reason: clip ? (via === "window" ? `${clip.query}` : `via ${via}`) : last?.reason || "no attempts recorded",
         attempts: attempts.length,
-      });
+      };
+      rows.push(row);
+      // PRINTED AS IT RESOLVES, not only in the summary table. The first
+      // post-concept probe ran past its job budget and was cancelled with the
+      // entire table unprinted — thirty minutes of verdicts, zero evidence. A
+      // row that exists only in memory is a row a timeout can eat.
+      console.log(
+        `[StockProbe] ${String(row.window).padEnd(10)} ${String(row.source || "").padEnd(19)} ` +
+          `${JSON.stringify(row.query).padEnd(34)} -> ${String(row.stage).padEnd(9)} ${String(row.reason).slice(0, 160)}`
+      );
       // The clip file is not wanted — only the verdict.
       if (clip?.path) rmSync(clip.path, { force: true });
     }
@@ -289,13 +298,6 @@ async function main() {
     rmSync(dir, { recursive: true, force: true });
   }
 
-  console.log("");
-  for (const r of rows) {
-    console.log(
-      `[StockProbe] ${String(r.window).padEnd(10)} ${String(r.source || "").padEnd(19)} ` +
-        `${JSON.stringify(r.query).padEnd(34)} -> ${String(r.stage).padEnd(9)} ${r.reason}`
-    );
-  }
   console.log("");
   console.log(`[StockProbe] stages: ${JSON.stringify(byStage)}`);
   const direct = rows.filter((r) => r.stage === "MATCHED").length;
