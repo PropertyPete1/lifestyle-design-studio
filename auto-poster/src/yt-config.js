@@ -426,6 +426,55 @@ export const BEAT_BRIDGE_MAX_SECONDS = clampFloat(process.env.YT_BEAT_BRIDGE_MAX
 export const SCENE_MAX_SECONDS = clampFloat(process.env.YT_SCENE_MAX_SECONDS, 8, 3, 20);
 
 /**
+ * How many seconds past its own window a stock clip is graded for.
+ *
+ * The bridge that retires a beat hands its seconds to a neighbouring scene —
+ * and on card 11 that neighbour was a clip cut to EXACTLY its window, so the
+ * extension replayed it from the start under `-stream_loop`: a visible restart
+ * jump in the middle of a scene, reported as "137.5s given back to real
+ * visuals". Grading a few spare seconds costs one slightly longer encode per
+ * clip and means an extended scene plays footage the viewer has not seen yet,
+ * which is what "extend the neighbouring scene" was always supposed to mean.
+ */
+export const STOCK_GRADE_SLACK_SECONDS = clampFloat(process.env.YT_STOCK_GRADE_SLACK, 8, 0, 20);
+
+/**
+ * Film grain on generated graphics and the beat, 0 to disable.
+ *
+ * WHY GENERATED CLIPS CARRY GRAIN AND STOCK DOES NOT. The motion gate measures
+ * duplicate frames, and real footage never duplicates — sensor noise makes
+ * every frame unique. A rasterised card holding between two reveals is the
+ * same PNG for every one of those frames, and the 4.5% camera push moves it
+ * less than a pixel per frame, so to the measurement — and to the eye reading
+ * texture — a held card is a freeze-frame. The grain is that missing texture,
+ * applied at conform time: film-stock noise on the luma plane only (chroma
+ * grain sparkles; luma grain reads as stock), a fresh pattern every frame,
+ * which is honest per-frame motion because every frame genuinely differs
+ * everywhere. Stock arrives with a sensor's own noise and gets none.
+ *
+ * The value is ffmpeg noise luma strength, and the default is MEASURED, not
+ * chosen: on a held 1080p card through the real conform encode, mpdecimate
+ * drops 299 of 300 frames at 14 and ZERO at 18 — the flip is that sharp —
+ * and at 18 a 2x blow-up shows fine dark-field texture with the gold elements
+ * clean. 18 is the measured floor plus nothing, because the point is honest
+ * texture, not headroom against the gate.
+ */
+export const GRAPHIC_GRAIN_STRENGTH = clampFloat(process.env.YT_GRAPHIC_GRAIN, 18, 0, 40);
+
+/**
+ * The longest a card may sit with no content revealed, in seconds.
+ *
+ * Reveals anchor to the words that name them, and narration routinely spends
+ * ten seconds of preamble before naming item one — card 11 held "What the
+ * inspection is really for" as a title over bare rule lines for twelve
+ * seconds, twice. The first reveal is pulled forward to this bound when its
+ * word lands later; the item is simply on screen early, still standing when
+ * named, which is how every human editor cuts the same material. Later
+ * reveals keep their word timing.
+ */
+export const EMPTY_CARD_MAX_HOLD = clampFloat(process.env.YT_EMPTY_CARD_MAX_HOLD, 3.5, 1, 10);
+
+/**
  * Every render layer and whether this build will draw it.
  *
  * EXISTS SO A DISPATCH CAN BE CONFIRMED FROM THE LOG RATHER THAN FROM THE

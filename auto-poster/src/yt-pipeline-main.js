@@ -576,6 +576,14 @@ async function buildFromRecordings(approvals, record) {
       console.log(`::warning::${b.takeId}: a ${b.seconds}s beat could not be bridged — ${b.reason}`);
     }
   }
+  // The concept rung's own line, so a run answers "did the model rescue any
+  // windows" without diffing the stock table against the ladder by hand.
+  if (gen.conceptCalls?.asked > 0) {
+    console.log(
+      `[YTPipeline] concept fallback: ${gen.conceptCalls.asked} window(s) asked, ` +
+        `${gen.conceptCalls.answered} got a filmable concept, ${gen.conceptCalls.matched} matched a clip with it`
+    );
+  }
   // The property the whole classification exists to guarantee, asserted rather
   // than assumed: no proper noun the script named may appear in a search query.
   const leaked = (gen.stockWindows || []).filter((w) =>

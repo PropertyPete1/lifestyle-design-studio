@@ -73,13 +73,49 @@ describe("1. a window about a place never falls to the beat", () => {
   });
 
   test("the beat is capped at a bridge and the neighbour takes the rest", () => {
-    const broll = [{ kind: "stock", seconds: 6 }, { kind: "beat", seconds: 7 }, { kind: "graphic", seconds: 5 }];
-    bridgeBeats(broll, { max: BEAT_BRIDGE_MAX_SECONDS });
-    assert.equal(broll[1].seconds, BEAT_BRIDGE_MAX_SECONDS);
-    assert.equal(broll[0].seconds, 6 + (7 - BEAT_BRIDGE_MAX_SECONDS), "the previous scene absorbs the overflow");
+    // THE HOST MUST HAVE THE FOOTAGE IT IS BEING HANDED. Card 11's bridge grew
+    // scenes unconditionally and `-stream_loop` replayed the clip from the
+    // start to cover the difference — a visible restart jump sold as "given
+    // back to real visuals". Capacity now travels with the block: the stock
+    // clip's graded slack (sourceSeconds past its window) is what an extension
+    // may spend.
+    const broll = [
+      { kind: "stock", seconds: 6, sourceSeconds: 14 },
+      { kind: "beat", seconds: 7 },
+      { kind: "graphic", seconds: 5 },
+    ];
+    bridgeBeats(broll, { max: BEAT_BRIDGE_MAX_SECONDS, sceneMax: 8 });
+    // By kind, not by index: the continuation scene inserts itself beside its
+    // host, so positions shift — which is the point.
+    const beat = broll.find((b) => b.kind === "beat");
+    assert.equal(beat.seconds, BEAT_BRIDGE_MAX_SECONDS);
+    // The previous scene absorbs the overflow — in place up to the scene cap's
+    // tolerance, and the rest as a CONTINUATION scene cut from the same clip's
+    // unseen tail, never as a replay.
+    const stockTotal = broll.filter((b) => b.kind === "stock").reduce((n, b) => n + b.seconds, 0);
+    assert.equal(stockTotal, 6 + (7 - BEAT_BRIDGE_MAX_SECONDS), "the stock side absorbs the whole overflow");
+    assert.ok(
+      broll.filter((b) => b.kind === "stock").every((b) => b.seconds <= 8 + 1.6),
+      "no absorbed scene may grow past the cap's tolerance — growth becomes a continuation cut"
+    );
     // The take is still exactly as long as it was: the picture may change, the
     // clock may not.
     assert.equal(broll.reduce((n, b) => n + b.seconds, 0), 18);
+  });
+
+  test("a host with no unseen footage is not extended — the beat stays and says so", () => {
+    // The other side of the capacity rule: a stock block graded to exactly its
+    // window has nothing left to show. Extending it would loop; the bridge
+    // refuses, keeps the beat, and records why, so the build's own assertion
+    // can decide whether that is fatal.
+    const broll = [{ kind: "stock", seconds: 6, sourceSeconds: 6 }, { kind: "beat", seconds: 7 }];
+    const bridges = [];
+    bridgeBeats(broll, { max: 2, beatBridges: bridges });
+    assert.equal(broll.reduce((n, b) => n + b.seconds, 0), 13, "the clock is preserved");
+    assert.equal(broll[0].seconds, 6, "a capacity-less host is never grown");
+    const uncapped = bridges.filter((b) => !b.capped);
+    assert.equal(uncapped.length, 1);
+    assert.match(uncapped[0].reason, /out of unseen content/);
   });
 
   test("a take with NOTHING else keeps its beat, and says so", () => {
@@ -291,12 +327,38 @@ describe("4. the new paths, pushed until they break", () => {
     assert.equal(broll.reduce((n, b) => n + b.seconds, 0), 7, "the runtime is preserved whatever the cap");
   });
 
-  test("consecutive beats with no real neighbour anywhere are all left alone", () => {
+  test("consecutive beats with no real neighbour anywhere merge and are left alone", () => {
+    // ADJACENT BEATS ARE ONE BEAT. The floor emits 17s as 8+4.5+4.5 and card
+    // 11's bridge asked each of the three who its neighbours were — beats,
+    // both sides — and stranded all three while it reported "could NOT be
+    // capped" thirteen times. Merged first, a beat run is a single hold with
+    // a single record; with no real scene anywhere in the take it stays, once.
     const broll = [{ kind: "beat", seconds: 5 }, { kind: "beat", seconds: 5 }];
     const bridges = [];
     bridgeBeats(broll, { max: 2, beatBridges: bridges });
     assert.equal(broll.reduce((n, b) => n + b.seconds, 0), 10);
-    assert.equal(bridges.filter((b) => !b.capped).length, 2);
+    assert.equal(broll.length, 1, "adjacent beats merge before the bridge looks for hosts");
+    assert.equal(bridges.filter((b) => !b.capped).length, 1);
+  });
+
+  test("beats separated by beats still reach a real scene across the take", () => {
+    // The host search is take-wide: a beat whose immediate neighbours are
+    // beats must not strand while a graphic with spare render sits one slot
+    // over. graphicSeconds is the one continuous render's length — for a
+    // graphic take it spans the whole narration, so its spare is exactly what
+    // the beats are holding.
+    const broll = [
+      { kind: "graphic", seconds: 8 },
+      { kind: "beat", seconds: 5 },
+      { kind: "beat", seconds: 5 },
+    ];
+    const bridges = [];
+    bridgeBeats(broll, { max: 2, sceneMax: 8, graphicSeconds: 18, beatBridges: bridges });
+    assert.equal(broll.reduce((n, b) => n + b.seconds, 0), 18, "the clock is preserved");
+    const beats = broll.filter((b) => b.kind === "beat");
+    assert.equal(beats.length, 1, "the run merged");
+    assert.ok(beats[0].seconds <= 2.01, `the merged beat is a bridge, not a hold (${beats[0].seconds}s)`);
+    assert.ok(broll.some((b) => b.kind === "graphic" && b.continuation), "the overflow became a continuation scene of the graphic");
   });
 
   test("a counted-noun punch cannot be built from a function word", () => {

@@ -40,9 +40,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { loadApprovals } from "../src/yt-approvals.js";
 import { orderedTakes, estimateSpeechSeconds } from "../src/yt-timeline.js";
 import { VOICEOVER } from "../src/yt-script.js";
-import { planWindowKeywords } from "../src/yt-scene-keywords.js";
+import { planWindowKeywords, properLexicon } from "../src/yt-scene-keywords.js";
 import { planVisuals } from "../src/yt-visual-plan.js";
 import { fetchStockClip, stockEnabled } from "../src/yt-stock.js";
+import { deriveConcept } from "../src/yt-concept-fallback.js";
 import { ffmpeg } from "../src/yt-assemble.js";
 
 /**
@@ -180,8 +181,10 @@ async function main() {
   }
 
   let windows;
+  let segmentByTake = new Map();
+  let lexicon = new Set();
   if (explicit.length > 0) {
-    windows = explicit.map((q, i) => ({ takeId: "arg", phase: i, seconds: 8, keywords: [q], subject: q, verifySubject: q, source: "argument" }));
+    windows = explicit.map((q, i) => ({ takeId: "arg", phase: i, seconds: 8, keywords: [q], subject: q, verifySubject: q, source: "argument", phrase: q, dropped: [] }));
     console.log(`[StockProbe] ${windows.length} query(ies) supplied on the command line`);
   } else {
     const { script, requestId } = currentScript();
@@ -192,8 +195,8 @@ async function main() {
     const segments = segmentsFromScript(script);
     // The real planner, with the graphic layer declined and stock offered the
     // whole take. Declining graphics is not a distortion of the question: a take
-    // whose graphic renders never reaches stock in a real build either, so the
-    // windows this produces are exactly the ones stock is ever asked to fill.
+    // whose graphic FAILS falls to stock in a real build too, so the windows
+    // this produces are exactly the ones stock can ever be asked to fill.
     const planned = await planVisuals(segments, {
       renderGraphic: async () => ({ ok: false, reason: "the probe does not render graphics" }),
       stockAvailable: (seg) => seg.seconds,
@@ -201,6 +204,8 @@ async function main() {
     });
     const withBlocks = (planned.segments || planned || []).filter((s) => s.kind === "voiceover");
     windows = planWindowKeywords(withBlocks);
+    segmentByTake = new Map(withBlocks.map((s) => [s.takeId, s]));
+    lexicon = properLexicon(withBlocks);
     console.log(
       `[StockProbe] ${windows.length} window(s) derived from ${requestId}'s script ` +
         `(${segments.length} voiceover take(s), ${withBlocks.filter((s) => (s.visualBlocks || []).some((b) => b.kind === "stock")).length} carrying stock)`
@@ -213,28 +218,68 @@ async function main() {
   try {
     for (const [i, w] of windows.entries()) {
       const query = (w.keywords || []).join(" | ") || "(none)";
+      let clip = null;
+      const attempts = [];
       if ((w.keywords || []).length === 0) {
         byStage.keywords = (byStage.keywords || 0) + 1;
-        rows.push({ window: `${w.takeId}#${w.phase}`, query, stage: "keywords", reason: "no searchable concept in this window", source: w.source });
-        continue;
+        attempts.push({ stage: "keywords", reason: "no searchable concept in this window" });
+      } else {
+        const r = await fetchStockClip({
+          keywords: w.keywords,
+          seconds: w.seconds || 8,
+          subject: w.verifySubject || w.subject || null,
+          dir,
+          index: i,
+          client,
+          ffmpeg,
+        });
+        clip = r?.clip || null;
+        attempts.push(...(r?.attempts || []));
       }
-      const { clip, attempts } = await fetchStockClip({
-        keywords: w.keywords,
-        seconds: w.seconds || 8,
-        subject: w.verifySubject || w.subject || null,
-        dir,
-        index: i,
-        client,
-        ffmpeg,
-      });
+
+      // ── THE CONCEPT RUNG, exactly as the build runs it ────────────────────
+      //
+      // The probe answers "would this window get a clip", and after the
+      // concept fallback shipped the honest answer includes it: a window whose
+      // mechanical query dies at search or vision is put to the model for a
+      // filmable stand-in, with the same name-stripping the build applies.
+      // The row says which rung matched, so before/after tables stay readable.
+      let via = "window";
+      if (!clip && (w.keywords || []).length >= 0) {
+        const seg = segmentByTake.get(w.takeId);
+        const banned = new Set([...(w.dropped || []).map((x) => String(x).toLowerCase()), ...lexicon]);
+        const concept = await deriveConcept({
+          phrase: w.phrase,
+          takeText: seg?.text || "",
+          sectionTitle: seg?.section || "",
+          banned,
+          client,
+        });
+        if (concept) {
+          const r = await fetchStockClip({
+            keywords: [concept.query],
+            seconds: w.seconds || 8,
+            subject: concept.subject,
+            dir,
+            index: 1000 + i,
+            client,
+            ffmpeg,
+          });
+          if (r?.clip) { clip = r.clip; via = `concept "${concept.query}"`; }
+          attempts.push(...(r?.attempts || []).map((a) => ({ ...a, stage: `concept-${a.stage}` })));
+        } else {
+          attempts.push({ stage: "concept", reason: "no filmable concept derived" });
+        }
+      }
+
       for (const a of attempts) byStage[a.stage] = (byStage[a.stage] || 0) + 1;
       const last = attempts[attempts.length - 1];
       rows.push({
         window: `${w.takeId}#${w.phase}`,
         query,
         source: w.source,
-        stage: clip ? "MATCHED" : last?.stage || "none",
-        reason: clip ? `${clip.query}` : last?.reason || "no attempts recorded",
+        stage: clip ? (via === "window" ? "MATCHED" : "MATCHED*") : last?.stage || "none",
+        reason: clip ? (via === "window" ? `${clip.query}` : `via ${via}`) : last?.reason || "no attempts recorded",
         attempts: attempts.length,
       });
       // The clip file is not wanted — only the verdict.
@@ -253,8 +298,12 @@ async function main() {
   }
   console.log("");
   console.log(`[StockProbe] stages: ${JSON.stringify(byStage)}`);
-  const matched = rows.filter((r) => r.stage === "MATCHED").length;
-  console.log(`[StockProbe] ${matched}/${rows.length} window(s) would have got a clip`);
+  const direct = rows.filter((r) => r.stage === "MATCHED").length;
+  const viaConcept = rows.filter((r) => r.stage === "MATCHED*").length;
+  console.log(
+    `[StockProbe] ${direct + viaConcept}/${rows.length} window(s) would have got a clip` +
+      (viaConcept > 0 ? ` (${direct} from their own words, ${viaConcept} via the concept fallback — marked *)` : "")
+  );
 
   // THE ANSWER, STATED RATHER THAN LEFT AS A TABLE. This probe exists to settle
   // one question and it should say which way it came out.

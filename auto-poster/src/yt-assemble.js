@@ -26,7 +26,11 @@ import { writeFileSync, existsSync, mkdirSync, statSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { generateTTS, postProcessVoiceoverAudio } from "./voiceover.js";
-import { RESOLUTION, PROGRAMME_LUFS, MUSIC_DB } from "./yt-config.js";
+import { RESOLUTION, PROGRAMME_LUFS, MUSIC_DB, GRAPHIC_GRAIN_STRENGTH } from "./yt-config.js";
+// The early motion gate borrows the artifact QC's own measurement — one
+// threshold, two moments. Imported as a namespace so tests can stub the gate
+// without reaching into the QC module's internals.
+import * as motionGate from "./yt-artifact-qc.js";
 import { kenBurnsArgs } from "./yt-visual-broll.js";
 import { renderOverlayPng, burnOverlayArgs } from "./yt-opening.js";
 import { pieceArgs, pieceExtension } from "./yt-oncamera-edit.js";
@@ -155,8 +159,23 @@ export function normalizeArgs(input, output, dim, { seconds = null, startAt = 0,
  * fraction short of its slot repeats instead of leaving a black tail, which is
  * the same rule owned footage follows. The loop is bounded by `-t`, so a clip
  * longer than its slot is simply cut.
+ *
+ * GRAIN, on the generated layers only. The motion gate measures duplicate
+ * frames and real footage never duplicates: sensor noise makes every frame
+ * unique. A rasterised card holding between reveals is the same PNG frame
+ * after frame — to the measurement AND to the eye reading texture, a held card
+ * is a freeze-frame however smooth its reveals were. The grain is that missing
+ * texture: film-stock noise on the LUMA plane only (chroma grain sparkles in
+ * colour; luma grain reads as stock), a fresh pattern every frame, so every
+ * generated frame genuinely differs everywhere the way a filmed one does.
+ * Stock arrives with a sensor's own noise and gets none; on-camera never
+ * comes through here. `t+u` is temporal (the fresh-pattern part — the whole
+ * point) mixed uniform/gaussian so it reads organic rather than digital.
+ * Strength is measured against the gate's own tool — see
+ * GRAPHIC_GRAIN_STRENGTH in yt-config.js for the numbers.
  */
-export function conformArgs(input, output, dim, { seconds, fps = FPS } = {}) {
+export function conformArgs(input, output, dim, { seconds, fps = FPS, grain = 0 } = {}) {
+  const texture = grain > 0 ? `,noise=c0s=${grain}:c0f=t+u` : "";
   return [
     "-y",
     "-stream_loop", "-1",
@@ -164,7 +183,7 @@ export function conformArgs(input, output, dim, { seconds, fps = FPS } = {}) {
     "-t", String(seconds),
     "-vf",
     `scale=${dim.w}:${dim.h}:force_original_aspect_ratio=decrease,` +
-      `pad=${dim.w}:${dim.h}:(ow-iw)/2:(oh-ih)/2:color=black,fps=${fps},setsar=1`,
+      `pad=${dim.w}:${dim.h}:(ow-iw)/2:(oh-ih)/2:color=black,fps=${fps}${texture},setsar=1`,
     "-c:v", "libx264",
     "-preset", PRESET,
     "-crf", String(CRF),
@@ -623,6 +642,47 @@ export function mediaDuration(path) {
   }
 }
 
+/** One stream's duration, not the container's — the container hides a short one. */
+export function streamDuration(path, kind /* "v" | "a" */) {
+  try {
+    return (
+      parseFloat(
+        execFileSync("ffprobe", [
+          "-v", "error", "-select_streams", `${kind}:0`,
+          "-show_entries", "stream=duration", "-of", "csv=p=0", path,
+        ], { encoding: "utf-8", timeout: 60_000 }).trim()
+      ) || 0
+    );
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Fail the build when a segment's picture ends before its narration.
+ *
+ * The tolerance is two frames: codec padding legitimately differs between an
+ * AAC audio stream and an x264 video stream, and a picture two frames short
+ * displays as nothing at all. A picture SECONDS short displays as the last
+ * frame frozen with the captions dead under live narration — the defect this
+ * assertion exists to make loud and early.
+ */
+export function assertPictureCoversAudio(path, takeId, { tolerance = 0.15 } = {}) {
+  const video = streamDuration(path, "v");
+  const audio = streamDuration(path, "a");
+  if (audio > 0 && video > 0 && video < audio - tolerance) {
+    throw new Error(
+      `${takeId}: the picture ends ${Math.round((audio - video) * 100) / 100}s before the narration ` +
+      `(video stream ${video}s, audio stream ${audio}s) — a piece is missing or short, ` +
+      `and the join would freeze the last frame over live narration`
+    );
+  }
+  if (video <= 0 || audio <= 0) {
+    throw new Error(`${takeId}: could not read stream durations from ${path} (video ${video}s, audio ${audio}s) — nobody verified this segment`);
+  }
+  return { video, audio };
+}
+
 /**
  * Render a planned timeline.
  *
@@ -740,35 +800,46 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       }
 
       // Voiceover: B-roll for the picture, cloned voice (or his own) for the sound.
+      //
+      // A MISSING PIECE IS A BUILD FAILURE, NOT A SHRUG. These `existsSync`
+      // checks used to `return`, silently dropping the block — and a dropped
+      // block is a video stream shorter than its narration, which the concat
+      // carries as a hole and the final encode fills by freezing the last real
+      // frame, caption and all. Card 11 shipped 84 seconds of that. Every
+      // sourcePath here was written by this very process minutes ago; one that
+      // is gone is a bug that must stop the build while its name is on screen.
       const pieces = [];
       seg.broll.forEach((b, bi) => {
         const piece = `${base}_b${bi}.mp4`;
 
-        // A generated map or card is a still, so it gets a slow push rather
-        // than the normalise-and-pillarbox path — it is already the right
-        // aspect and the right size, and running it through `scale` would only
-        // cost a resample.
-        // Revision 3: animated graphics, kinetic typography and graded stock
-        // arrive as finished CLIPS rather than stills. They are already the
-        // right size, rate and length, so they are conformed for concat and
-        // nothing else — pushing a clip that already moves would be a second
-        // camera move fighting the first.
+        // Revision 3: animated graphics, graded stock and the beat arrive as
+        // finished CLIPS. They are already the right size, rate and length, so
+        // they are conformed for concat — plus film grain on the generated
+        // layers, which is what lets a held card read (and measure) as footage
+        // rather than as a freeze. See conformArgs.
         if (b.preRendered) {
-          if (!existsSync(b.sourcePath)) return;
-          ffmpeg(conformArgs(b.sourcePath, piece, dim, { seconds: b.seconds, fps: FPS }));
+          if (!existsSync(b.sourcePath)) {
+            throw new Error(`${seg.takeId} block ${bi} (${b.kind || "generated"}): source missing at ${b.sourcePath}`);
+          }
+          const grain = b.kind === "stock" ? 0 : GRAPHIC_GRAIN_STRENGTH;
+          ffmpeg(conformArgs(b.sourcePath, piece, dim, { seconds: b.seconds, fps: FPS, grain }));
           pieces.push(piece);
           return;
         }
 
         if (b.generated) {
-          if (!existsSync(b.sourcePath)) return;
+          if (!existsSync(b.sourcePath)) {
+            throw new Error(`${seg.takeId} block ${bi} (still): source missing at ${b.sourcePath}`);
+          }
           ffmpeg(kenBurnsArgs(b.sourcePath, piece, { seconds: b.seconds, dim, fps: FPS }));
           pieces.push(piece);
           return;
         }
 
         const src = resolveBrollPath(b.driveFileId);
-        if (!src) return;
+        if (!src) {
+          throw new Error(`${seg.takeId} block ${bi}: Drive clip ${b.driveFileId} did not resolve to a local file`);
+        }
         // -stream_loop covers a clip shorter than its slot; the -t cut still
         // governs, so a 4s clip filling a 6s slot repeats rather than gapping.
         ffmpeg(normalizeArgs(src, piece, dim, { seconds: b.seconds, loop: true }));
@@ -799,6 +870,16 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       if (!narration) throw new Error(`voiceover take ${seg.takeId} has no narration audio`);
       const withAudio = `${base}.mp4`;
       ffmpeg(muxNarrationArgs(picture, narration, withAudio, { seconds: seg.seconds }));
+
+      // THE PICTURE COVERS THE NARRATION, PROVED PER SEGMENT. A segment whose
+      // video stream runs out while its audio continues is invisible to every
+      // duration check — the container reports the longer stream — and it is
+      // exactly the shape of card 11's six frozen tails: `-shortest` under
+      // `-c:v copy` did not reliably cut, the concat carried the hole, and the
+      // caption encode froze the last frame over 25 seconds of live narration.
+      // One ffprobe per segment converts that whole class into a named failure
+      // thirty seconds after the segment renders.
+      assertPictureCoversAudio(withAudio, seg.takeId);
 
       pieces.forEach((p) => rmSync(p, { force: true }));
       rmSync(picture, { force: true });
@@ -844,6 +925,26 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
   writeFileSync(concatList, segmentFiles.map((p) => `file '${p}'`).join("\n"));
   const joined = join(dir, "joined.mp4");
   t("concat", () => ffmpeg(concatArgs(concatList, joined)));
+
+  // ── 2b. the motion gate, HERE, not only at the end ───────────────────────
+  //
+  // The artifact QC runs the same measurement on the finished file — after the
+  // levelling, the mix and the caption burn, which is forty minutes of work on
+  // top of a picture that may already be dead. Card 11's fifty-five minute
+  // build failed on frames that were frozen at THIS stage. Running the check on
+  // the joined file costs two minutes and fails while every intermediate is
+  // still on disk and the take names still mean something. The threshold is
+  // the same one the artifact gate uses; passing here and failing there would
+  // mean a later stage froze the picture, which is its own diagnosis.
+  t("motion-gate", () => {
+    const { checkMotion } = motionGate;
+    const verdict = checkMotion({ path: joined, duration: mediaDuration(joined) });
+    if (!verdict.ok) {
+      const worst = verdict.failures.slice(0, 6).map((f) => f.reason).join("; ");
+      throw new Error(`the joined picture fails the motion gate before captions: ${worst}${verdict.failures.length > 6 ? ` (+${verdict.failures.length - 6} more)` : ""}`);
+    }
+    console.log(`[Assemble] motion gate: clean (${verdict.stats.duplicates}/${verdict.stats.frames} duplicate frames, worst window ${Math.round((verdict.stats.worstWindow?.ratio || 0) * 100)}%)`);
+  });
 
   // ── 3. level the programme ───────────────────────────────────────────────
   // BEFORE ANY OF THE THREE THINGS THAT MIX SOMETHING UNDER IT. The hits, the
