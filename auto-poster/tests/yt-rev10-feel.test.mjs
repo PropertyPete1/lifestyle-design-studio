@@ -32,7 +32,7 @@ import {
 } from "../src/yt-assemble.js";
 import { checkMotion } from "../src/yt-artifact-qc.js";
 import { EMPTY_CARD_MAX_HOLD, GRAPHIC_GRAIN_STRENGTH, BEAT_BRIDGE_MAX_SECONDS } from "../src/yt-config.js";
-import { searchPexels, StockQuotaError, stockQuotaStats, resetStockQuotaState } from "../src/yt-stock.js";
+import { searchPexels, StockQuotaError, stockQuotaStats, resetStockQuotaState, rankCandidates, measuredSeconds } from "../src/yt-stock.js";
 import { preserveGateEvidence, routeWarnChannel, evidenceDir } from "../src/yt-evidence.js";
 import { readdirSync, readFileSync } from "node:fs";
 
@@ -312,6 +312,119 @@ describe("run-31766707987 sweep: no gate fails without leaving its evidence", ()
     routeWarnChannel();
     console.warn("the quota", "bit");
     assert.deepEqual(seen, ["[warn] the quota bit"]);
+  });
+});
+
+describe("run-31808464092 sweep: slack is real, leftovers get footage, degenerate subjects get a concept", () => {
+  test("coverage outranks width: a clip that can host an extension beats a wider one that cannot", () => {
+    const videos = [
+      { id: "wide-exact", width: 2400, height: 1350, durationSeconds: 8 },
+      { id: "narrower-long", width: 1900, height: 1080, durationSeconds: 20 },
+      { id: "widest-short", width: 2600, height: 1462, durationSeconds: 6 },
+    ];
+    const ranked = rankCandidates(videos, { preferSeconds: 16 });
+    assert.equal(ranked[0].id, "narrower-long", "the only candidate covering window+reserve leads");
+    assert.equal(ranked[1].id, "widest-short", "past coverage, width decides as before");
+    // And with no preference, the old ordering is untouched.
+    assert.equal(rankCandidates(videos)[0].id, "widest-short");
+  });
+
+  test("measuredSeconds reads the file, not anybody's metadata", (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const clip = join(dir, "c.mp4");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc=size=160x90:rate=30:duration=3", "-pix_fmt", "yuv420p", clip]);
+    const m = measuredSeconds(clip);
+    assert.ok(Math.abs(m - 3) < 0.2, `measured ${m}s for a 3s file`);
+    assert.equal(measuredSeconds(join(dir, "missing.mp4")), 0, "an unreadable file measures 0, never lies");
+  });
+
+  test("a matched clip with no slack no longer strands the take: the leftover beat gets its own second fetch", async (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    process.env.PEXELS_API_KEY = "sweep-test-key";
+    t.after(() => { delete process.env.PEXELS_API_KEY; });
+
+    // Clip one covers exactly its window — zero unseen tail, the run-31808464092
+    // shape. Clip two arrives only for the retry window and brings real slack.
+    const clipA = join(dir, "a.mp4");
+    const clipB = join(dir, "b.mp4");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=30:duration=8", "-pix_fmt", "yuv420p", clipA]);
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=30:duration=16", "-pix_fmt", "yuv420p", clipB]);
+    const fetcher = fakeFetcher((opts, n) =>
+      n === 1
+        ? { clip: { path: clipA, seconds: opts.seconds, gradedSeconds: 8, contentHash: "hA", credit: { line: "a" }, query: opts.keywords[0] }, attempts: [] }
+        : { clip: { path: clipB, seconds: opts.seconds, gradedSeconds: 16, contentHash: "hB", credit: { line: "b" }, query: opts.keywords[0] }, attempts: [] }
+    );
+
+    const plan = { segments: [vo("t1", "The kitchen has a big island and the yard has oak trees over the patio out back there.", 17)] };
+    const { report, plan: built } = await buildVisuals(plan, {
+      workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords,
+      visionClient: fakeClient({ filmable: false }), stockFetcher: fetcher,
+    });
+
+    const broll = built.segments[0].broll;
+    const stocks = broll.filter((b) => b.kind === "stock");
+    assert.ok(stocks.length >= 2, `the leftover became footage: ${JSON.stringify(broll.map((b) => ({ k: b.kind, s: b.seconds })))}`);
+    for (const b of broll.filter((x) => x.kind === "beat")) {
+      assert.ok(b.seconds <= BEAT_BRIDGE_MAX_SECONDS + 0.05, `a ${b.seconds}s beat survived despite a live retry rung`);
+    }
+    assert.deepEqual(report.leftoverRetries, { asked: 1, matched: 1 });
+    assert.ok(report.stockWindows.some((w) => w.retry && w.matched), "the retry window is labelled in the report");
+    const total = broll.reduce((n, b) => n + b.seconds, 0);
+    assert.ok(Math.abs(total - 17) < 0.06, `the clock held: ${total}`);
+  });
+
+  test("a degenerate subject sends the concept rung in FIRST; a derived one keeps the mechanical order", async (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    process.env.PEXELS_API_KEY = "sweep-test-key";
+    t.after(() => { delete process.env.PEXELS_API_KEY; });
+
+    // The possessive head: "family's" normalises to "familys", which never
+    // matches its own run token, so depictionSubject cannot form a phrase and
+    // the subject degenerates to the raw query — the rooster-class shape.
+    const degenerateText = "the family's backyard matters plenty honestly whenever anybody visits during summer evenings.";
+    const seg = { takeId: "t1", kind: "voiceover", seconds: 8, text: degenerateText };
+    const w = keywordsForWindow(seg, { startAt: 0, seconds: 8 }, {
+      frequencies: documentFrequencies([seg]), lexicon: properLexicon([seg]),
+    });
+    assert.equal(w.subjectDerived, false, `fixture must degenerate (got subject ${JSON.stringify(w.verifySubject)})`);
+
+    const clip = join(dir, "c.mp4");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=30:duration=16", "-pix_fmt", "yuv420p", clip]);
+    const fetcher = fakeFetcher((opts) => ({
+      clip: { path: clip, seconds: opts.seconds, gradedSeconds: 16, contentHash: `h${fetcher.calls.length}`, credit: { line: "x" }, query: opts.keywords[0] },
+      attempts: [],
+    }));
+    const client = fakeClient({ filmable: true, query: "suburban backyard family", subject: "a family in a backyard" });
+
+    const plan = { segments: [{ ...vo("t1", degenerateText, 8) }] };
+    await buildVisuals(plan, {
+      workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords,
+      visionClient: client, stockFetcher: fetcher,
+    });
+    assert.deepEqual(fetcher.calls[0].keywords, ["suburban backyard family"], "the concept shops before the pun-magnet query");
+
+    // Control: a healthy noun-phrase subject keeps mechanical-first.
+    const healthy = "Oak Hills sits just south of that hospital cluster on the main road.";
+    const seg2 = { takeId: "t2", kind: "voiceover", seconds: 8, text: healthy };
+    const w2 = keywordsForWindow(seg2, { startAt: 0, seconds: 8 }, {
+      frequencies: documentFrequencies([seg2]), lexicon: properLexicon([seg2]),
+    });
+    assert.equal(w2.subjectDerived, true);
+    const fetcher2 = fakeFetcher((opts) => ({
+      clip: { path: clip, seconds: opts.seconds, gradedSeconds: 16, contentHash: "h9", credit: { line: "x" }, query: opts.keywords[0] },
+      attempts: [],
+    }));
+    await buildVisuals({ segments: [{ ...vo("t2", healthy, 8) }] }, {
+      workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords,
+      visionClient: client, stockFetcher: fetcher2,
+    });
+    assert.deepEqual(fetcher2.calls[0].keywords, w2.keywords, "a derived subject keeps the window's own words first");
   });
 });
 
