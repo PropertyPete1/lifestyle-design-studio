@@ -42,6 +42,10 @@ import { applyRetentionStage, renderRetentionSummary } from "../src/yt-retention
 import { canvasFor } from "../src/yt-assemble.js";
 import { renderTimeline, generateNarration, mediaDuration } from "../src/yt-assemble.js";
 import { pickMoments, cutShorts } from "../src/yt-shorts.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);

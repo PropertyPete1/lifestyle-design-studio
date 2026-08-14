@@ -43,6 +43,12 @@
  * blog ids never reach the log, in URLs or in echoed response bodies.
  */
 
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
+
+
 const BASE = "https://app.metricool.com/api";
 const TOKEN = process.env.METRICOOL_API_TOKEN;
 const USER_ID = process.env.METRICOOL_USER_ID;

@@ -23,6 +23,10 @@ import { WIDTH } from "../src/carousel-render.js";
 import { writeFileSync, mkdirSync, existsSync, rmSync, readdirSync, readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "samples");

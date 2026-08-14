@@ -45,6 +45,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { writeSocialAnalytics, ANALYTICS_FILENAME } from "../src/social-analytics.js";
 import { STATUS_DIRNAME } from "../src/social-telemetry.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const MAX_ATTEMPTS = 5;
 const REPO_DIR = process.cwd(); // auto-poster/

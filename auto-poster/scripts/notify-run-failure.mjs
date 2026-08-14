@@ -18,6 +18,12 @@
  *   node scripts/notify-run-failure.mjs <job-name>
  */
 
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
+
+
 const job = process.argv[2] || "unknown-job";
 const runUrl =
   process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID

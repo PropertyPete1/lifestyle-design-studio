@@ -12,6 +12,12 @@
  * READ ONLY. Reports what Drive currently holds; changes nothing.
  */
 
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
+
+
 // These IDs are committed deliberately, and this repo is public. They are carousel
 // slides that uploadToReadyFolder explicitly shares as {type:'anyone', role:'reader'}
 // so the dashboard and the owner's email can render thumbnails — public by design,

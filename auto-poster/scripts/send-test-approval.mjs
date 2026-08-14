@@ -34,6 +34,10 @@ requireLiveAck(
 );
 import { getAccessToken } from "../src/drive.js";
 import { briefPayload, renderBriefText } from "../src/yt-brief.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 import {
   loadApprovals,
   saveApprovals,

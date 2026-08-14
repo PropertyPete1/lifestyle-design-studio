@@ -16,6 +16,10 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { scoreDeck, scoresPass, scoreHookClarity } from "../src/carousel-content.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const LOG = join(ROOT, "carousel-log.json");

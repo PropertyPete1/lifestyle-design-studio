@@ -32,6 +32,9 @@ import {
 } from "../src/yt-assemble.js";
 import { checkMotion } from "../src/yt-artifact-qc.js";
 import { EMPTY_CARD_MAX_HOLD, GRAPHIC_GRAIN_STRENGTH, BEAT_BRIDGE_MAX_SECONDS } from "../src/yt-config.js";
+import { searchPexels, StockQuotaError, stockQuotaStats, resetStockQuotaState } from "../src/yt-stock.js";
+import { preserveGateEvidence, routeWarnChannel, evidenceDir } from "../src/yt-evidence.js";
+import { readdirSync, readFileSync } from "node:fs";
 
 const have = (bin) => {
   const res = spawnSync(bin, ["-version"], { encoding: "utf-8" });
@@ -169,6 +172,146 @@ describe("card-11 sweep: the fallback ladder", () => {
     });
     const beats = built.segments[0].broll.filter((b) => b.kind === "beat");
     assert.ok(beats.length >= 1, "the dry run's floor is still the beat");
+  });
+});
+
+describe("run-31766707987 sweep: quota is a fact, not a theory", () => {
+  const res429 = (headers = {}) => ({ status: 429, headers: { get: (k) => headers[k] ?? null } });
+  const resOk = (videos = []) => ({ status: 200, ok: true, headers: { get: () => null }, json: async () => ({ videos }) });
+
+  test("a 429 with the reset in reach waits once, in-run, and then succeeds", async (t) => {
+    resetStockQuotaState();
+    process.env.PEXELS_API_KEY = "q";
+    t.after(() => { delete process.env.PEXELS_API_KEY; resetStockQuotaState(); });
+    let calls = 0;
+    const slept = [];
+    const fetchImpl = async () => (++calls === 1 ? res429({ "Retry-After": "1" }) : resOk([]));
+    const out = await searchPexels("homes", { fetchImpl, maxWaitSeconds: 10, sleepImpl: async (ms) => slept.push(ms) });
+    assert.deepEqual(out, []);
+    assert.equal(calls, 2, "retried after the wait");
+    assert.equal(slept.length, 1, "slept exactly once");
+    assert.deepEqual(stockQuotaStats(), { waits: 1, hits429: 1 });
+  });
+
+  test("a 429 past the wait budget fails immediately, with the retry time in the error", async (t) => {
+    resetStockQuotaState();
+    process.env.PEXELS_API_KEY = "q";
+    t.after(() => { delete process.env.PEXELS_API_KEY; resetStockQuotaState(); });
+    const fetchImpl = async () => res429({ "Retry-After": "3000" });
+    await assert.rejects(
+      () => searchPexels("homes", { fetchImpl, maxWaitSeconds: 900, sleepImpl: async () => { throw new Error("must not sleep"); } }),
+      (err) => err instanceof StockQuotaError && /retry after 3000s/.test(err.message) && err.retryAfterSeconds === 3000
+    );
+  });
+
+  test("a 429 with no reset header fails immediately and says so", async (t) => {
+    resetStockQuotaState();
+    process.env.PEXELS_API_KEY = "q";
+    t.after(() => { delete process.env.PEXELS_API_KEY; resetStockQuotaState(); });
+    await assert.rejects(
+      () => searchPexels("homes", { fetchImpl: async () => res429() }),
+      (err) => err instanceof StockQuotaError && /no reset header/.test(err.message)
+    );
+  });
+
+  test("still starved after a full window wait: fail, and name the second consumer", async (t) => {
+    resetStockQuotaState();
+    process.env.PEXELS_API_KEY = "q";
+    t.after(() => { delete process.env.PEXELS_API_KEY; resetStockQuotaState(); });
+    const fetchImpl = async () => res429({ "Retry-After": "1" });
+    await assert.rejects(
+      () => searchPexels("homes", { fetchImpl, maxWaitSeconds: 10, sleepImpl: async () => {} }),
+      (err) => err instanceof StockQuotaError && /another consumer/.test(err.message)
+    );
+    assert.equal(stockQuotaStats().hits429, 2);
+  });
+
+  test("quota exhaustion propagates out of the build — never silently degrades into beats — and leaves evidence", async (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    const prevRT = process.env.RUNNER_TEMP;
+    process.env.RUNNER_TEMP = dir;
+    process.env.PEXELS_API_KEY = "sweep-test-key";
+    t.after(() => {
+      rmSync(dir, { recursive: true, force: true });
+      if (prevRT === undefined) delete process.env.RUNNER_TEMP; else process.env.RUNNER_TEMP = prevRT;
+      delete process.env.PEXELS_API_KEY;
+    });
+    const fetcher = async () => { throw new StockQuotaError("Pexels quota exhausted — retry after 1740s", 1740); };
+    const plan = { segments: [vo("t1", "Anything at all that would go looking for stock footage here.", 8)] };
+    await assert.rejects(
+      () => buildVisuals(plan, { workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords, visionClient: fakeClient({ filmable: false }), stockFetcher: fetcher }),
+      /quota exhausted.*retry after 1740s/s
+    );
+    const kept = readdirSync(join(dir, "yt-diagnostics")).filter((f) => f.startsWith("visual-build-aborted"));
+    assert.equal(kept.length, 1, "the abort left its ladder record behind");
+    const record = JSON.parse(readFileSync(join(dir, "yt-diagnostics", kept[0]), "utf-8"));
+    assert.match(record.error, /quota exhausted/);
+    assert.ok(Array.isArray(record.stockWindows), "the partial ladder state is in the record");
+  });
+});
+
+describe("run-31766707987 sweep: no gate fails without leaving its evidence", () => {
+  test("preserveGateEvidence writes the report, copies files, and never throws", (t) => {
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    const prevRT = process.env.RUNNER_TEMP;
+    const prevQC = process.env.YT_QC_FAILED_DIR;
+    process.env.RUNNER_TEMP = dir;
+    t.after(() => {
+      rmSync(dir, { recursive: true, force: true });
+      if (prevRT === undefined) delete process.env.RUNNER_TEMP; else process.env.RUNNER_TEMP = prevRT;
+      if (prevQC === undefined) delete process.env.YT_QC_FAILED_DIR; else process.env.YT_QC_FAILED_DIR = prevQC;
+    });
+    const media = join(dir, "clip.bin");
+    writeFileSync(media, "not really a video");
+    const out = preserveGateEvidence("sweep-gate", { hello: "world" }, { files: [media, join(dir, "missing.mp4")], log: () => {} });
+    assert.ok(out.reportPath && existsSync(out.reportPath));
+    assert.equal(JSON.parse(readFileSync(out.reportPath, "utf-8")).hello, "world");
+    // FAILED_RENDER_DIR is captured at module load, so the copy lands in the
+    // real default dir — what this asserts is the contract: one copied, one
+    // named as already-gone, nothing thrown.
+    assert.equal(out.copied.length, 1);
+    assert.equal(out.errors.length, 1);
+    for (const c of out.copied) rmSync(c, { force: true });
+  });
+
+  test("the full-window-beat gate's message carries its reasons, and the report file carries the rest", async (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    const prevRT = process.env.RUNNER_TEMP;
+    process.env.RUNNER_TEMP = dir;
+    process.env.PEXELS_API_KEY = "sweep-test-key";
+    t.after(() => {
+      rmSync(dir, { recursive: true, force: true });
+      if (prevRT === undefined) delete process.env.RUNNER_TEMP; else process.env.RUNNER_TEMP = prevRT;
+      delete process.env.PEXELS_API_KEY;
+    });
+    const fetcher = fakeFetcher(() => ({ clip: null, attempts: [{ stage: "vision", reason: "sweep: the model said no" }] }));
+    const client = fakeClient({ filmable: false });
+    const plan = { segments: [vo("t1", "Nothing here can be filmed and nothing will be found for it either way.", 10)] };
+    await assert.rejects(
+      () => buildVisuals(plan, { workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords, visionClient: client, stockFetcher: fetcher }),
+      (err) =>
+        /full-window beats survived/.test(err.message) &&
+        /the model said no|no filmable concept/.test(err.message) &&
+        /Quota this run: 0 rate-limit/.test(err.message) &&
+        /Full ladder record: .*full-window-beats/.test(err.message)
+    );
+    const kept = readdirSync(join(dir, "yt-diagnostics")).filter((f) => f.startsWith("full-window-beats"));
+    assert.equal(kept.length, 1);
+    const record = JSON.parse(readFileSync(join(dir, "yt-diagnostics", kept[0]), "utf-8"));
+    assert.ok(record.overheld.length >= 1 && record.stockAttempts.length >= 1 && record.coverage);
+  });
+
+  test("routeWarnChannel puts warns where this repo's runners can see them", (t) => {
+    const prevWarn = console.warn;
+    const prevLog = console.log;
+    const seen = [];
+    console.log = (...a) => seen.push(a.join(" "));
+    t.after(() => { console.warn = prevWarn; console.log = prevLog; });
+    routeWarnChannel();
+    console.warn("the quota", "bit");
+    assert.deepEqual(seen, ["[warn] the quota bit"]);
   });
 });
 

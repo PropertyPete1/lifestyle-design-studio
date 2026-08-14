@@ -19,6 +19,10 @@
 
 import { loadApprovals, saveApprovals, markActed, decisionState, KIND_VIDEO_REVIEW } from "../src/yt-approvals.js";
 import { loadLog, saveLog, recordRework, findByRequest, isUploaded } from "../src/yt-log.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const notes = process.argv.slice(2).join(" ").trim();
 if (!notes) {

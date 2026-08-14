@@ -31,6 +31,7 @@ import { RESOLUTION, PROGRAMME_LUFS, MUSIC_DB, GRAPHIC_GRAIN_STRENGTH } from "./
 // threshold, two moments. Imported as a namespace so tests can stub the gate
 // without reaching into the QC module's internals.
 import * as motionGate from "./yt-artifact-qc.js";
+import { preserveGateEvidence } from "./yt-evidence.js";
 import { kenBurnsArgs } from "./yt-visual-broll.js";
 import { renderOverlayPng, burnOverlayArgs } from "./yt-opening.js";
 import { pieceArgs, pieceExtension } from "./yt-oncamera-edit.js";
@@ -878,8 +879,19 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
       // `-c:v copy` did not reliably cut, the concat carried the hole, and the
       // caption encode froze the last frame over 25 seconds of live narration.
       // One ffprobe per segment converts that whole class into a named failure
-      // thirty seconds after the segment renders.
-      assertPictureCoversAudio(withAudio, seg.takeId);
+      // thirty seconds after the segment renders — and the failing segment
+      // file itself is kept, because the file IS the evidence and it lives in
+      // a tmpdir the runner is about to destroy.
+      try {
+        assertPictureCoversAudio(withAudio, seg.takeId);
+      } catch (err) {
+        preserveGateEvidence("picture-covers-audio", {
+          takeId: seg.takeId,
+          error: err.message,
+          broll: (seg.broll || []).map((b) => ({ kind: b.kind, seconds: b.seconds, sourceSeconds: b.sourceSeconds, sourcePath: b.sourcePath })),
+        }, { files: [withAudio] });
+        throw err;
+      }
 
       pieces.forEach((p) => rmSync(p, { force: true }));
       rmSync(picture, { force: true });
@@ -940,8 +952,15 @@ export async function renderTimeline(plan, { workDir, resolveBrollPath, musicPat
     const { checkMotion } = motionGate;
     const verdict = checkMotion({ path: joined, duration: mediaDuration(joined) });
     if (!verdict.ok) {
+      // The joined file is the evidence, and it is about to die with the
+      // runner's tmpdir — kept, with the measurement, same rule as every gate.
+      const kept = preserveGateEvidence("motion-gate", { failures: verdict.failures, stats: verdict.stats }, { files: [joined] });
       const worst = verdict.failures.slice(0, 6).map((f) => f.reason).join("; ");
-      throw new Error(`the joined picture fails the motion gate before captions: ${worst}${verdict.failures.length > 6 ? ` (+${verdict.failures.length - 6} more)` : ""}`);
+      throw new Error(
+        `the joined picture fails the motion gate before captions: ${worst}` +
+        `${verdict.failures.length > 6 ? ` (+${verdict.failures.length - 6} more)` : ""}. ` +
+        `Evidence: ${kept.reportPath || "unwritable"}${kept.copied.length ? ` + ${kept.copied.length} file(s) in the failed-render artifact` : ""}`
+      );
     }
     console.log(`[Assemble] motion gate: clean (${verdict.stats.duplicates}/${verdict.stats.frames} duplicate frames, worst window ${Math.round((verdict.stats.worstWindow?.ratio || 0) * 100)}%)`);
   });

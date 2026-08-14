@@ -42,6 +42,10 @@ import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistanc
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { routeWarnChannel } from "./yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 // Prevent unhandled EPIPE crashes from Anthropic SDK's keepalive agent.
 // These occur when a stale TLS socket is reused after a failed request (e.g., 413).

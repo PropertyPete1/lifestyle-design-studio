@@ -77,7 +77,8 @@ export function phaseArgs(input, output, from, seconds) {
   ];
 }
 import { renderAnimatedGraphic, renderBeatClip, assertAnimated, assertClipCovers } from "./yt-visual-animate.js";
-import { fetchStockClip, stockEnabled } from "./yt-stock.js";
+import { fetchStockClip, stockEnabled, stockQuotaStats, StockQuotaError } from "./yt-stock.js";
+import { preserveGateEvidence } from "./yt-evidence.js";
 import { MAP } from "./yt-visual-intent.js";
 import { mapSpecForIntent, MapSession } from "./yt-map-render.js";
 
@@ -259,6 +260,15 @@ export async function buildVisuals(plan, {
   const conceptCalls = { asked: 0, answered: 0, matched: 0 };
 
   const segments = [];
+  // Everything the evidence file needs if a gate fires mid-build. Assembled
+  // incrementally so even a failure on take 3 of 24 leaves takes 1-3's ladder
+  // decisions on disk.
+  const evidenceSoFar = () => ({
+    stockWindows, stockAttempts, conceptCalls, beatBridges, animationFailures,
+    quota: stockQuotaStats(),
+  });
+
+  try {
   for (const seg of planned.segments) {
     if (seg.kind !== "voiceover") { segments.push(seg); continue; }
 
@@ -331,16 +341,34 @@ export async function buildVisuals(plan, {
 
     segments.push({ ...seg, broll });
   }
+  } catch (err) {
+    // A quota exhaustion — or anything else that stops the build mid-ladder —
+    // leaves every decision made so far on disk before it propagates. Run
+    // 31766707987 died here with thirty-three minutes of ladder decisions in
+    // memory and zero artifacts; that class of exit is banned.
+    preserveGateEvidence("visual-build-aborted", { error: err.message, ...evidenceSoFar() });
+    throw err;
+  }
 
   // ── THE FULL-WINDOW BEAT IS EXTINCT, AND THIS IS WHERE THAT IS ENFORCED ───
   //
   // Not hoped for, not reported into a warning nobody reads — asserted. After
   // the ladder (map, window words, sentence, concept, establishing shot) and a
   // take-wide bridge, a beat still holding more than a bridge means every rung
-  // failed for every window of a take, which with stock live is a systemic
-  // failure (a dead key, a rate limit, a network hole) that should stop the
-  // build while the reasons are one screen up, rather than ship twenty seconds
-  // of wordless geometry over the passage that names the video's subject.
+  // failed for every window of a take, which with stock live means the content
+  // genuinely defeated the whole ladder — quota exhaustion now fails earlier,
+  // as its own typed error — and the build stops rather than shipping twenty
+  // seconds of wordless geometry over the passage that names the video's
+  // subject.
+  //
+  // THE EVIDENCE OUTLIVES THE THROW. Run 31766707987 fired this gate with an
+  // error message promising "the per-window reasons are in the stock attempts
+  // log above" — and the log had no such thing, because those lines print
+  // after this function returns, in a reporting block the throw skipped. Same
+  // rule as preserving a failed render: no gate may fail without leaving
+  // behind the data that explains it. The full ladder record goes to the
+  // diagnostics artifact, and each failing window's last recorded reason goes
+  // into the message itself.
   //
   // The dry run — no Pexels key or no vision client — keeps beats by design,
   // and the assertion stands down: enforcement matches capability.
@@ -349,14 +377,31 @@ export async function buildVisuals(plan, {
     for (const seg of segments) {
       for (const b of seg.broll || []) {
         if (b.kind === "beat" && b.seconds > BEAT_BRIDGE_MAX_SECONDS + 0.05) {
-          overheld.push(`${seg.takeId}: a ${b.seconds}s beat survived the ladder`);
+          overheld.push({ takeId: seg.takeId, seconds: b.seconds });
         }
       }
     }
     if (overheld.length > 0) {
+      const q = stockQuotaStats();
+      const lastReasonFor = (takeId) => {
+        const rows = stockAttempts.filter((a) => a.takeId === takeId);
+        const last = rows.flatMap((r) => r.attempts).slice(-2);
+        return last.length
+          ? last.map((a) => `${a.stage}: ${String(a.reason).slice(0, 110)}`).join(" | ")
+          : "no stock window was ever attempted for this take";
+      };
+      const detail = overheld
+        .map((o) => `${o.takeId} (${o.seconds}s beat) — ${lastReasonFor(o.takeId)}`)
+        .join("; ");
+      const kept = preserveGateEvidence("full-window-beats", {
+        overheld,
+        ...evidenceSoFar(),
+        coverage: coverageReport(segments),
+      });
       throw new Error(
-        `full-window beats survived with stock live — ${overheld.join("; ")}. ` +
-        `Every fallback rung failed; the per-window reasons are in the stock attempts log above.`
+        `full-window beats survived with stock live — ${detail}. ` +
+        `Quota this run: ${q.hits429} rate-limit hit(s), ${q.waits} in-run wait(s). ` +
+        `Full ladder record: ${kept.reportPath || "COULD NOT BE WRITTEN — " + kept.errors.join("; ")}`
       );
     }
   }
@@ -381,6 +426,7 @@ export async function buildVisuals(plan, {
     stockAttempts,
     stockCredits,
     stockConfigured: stockEnabled(),
+    quota: stockQuotaStats(),
     wordTimingCoverage: {
       takes: timings.size,
       withTiming: [...timings.values()].filter(Boolean).length,
@@ -526,6 +572,9 @@ async function resolveStockWindow(seg, block, {
       clip = r?.clip || null;
       attempts.push(...(r?.attempts || []));
     } catch (err) {
+      // Quota exhaustion is not a rung failure — it is the whole layer gone,
+      // and pretending otherwise is how a rate limit became all-beat takes.
+      if (err instanceof StockQuotaError) throw err;
       console.warn(`[Visuals] stock lookup threw for ${seg.takeId} window ${block.phase}: ${err.message}`);
       attempts.push({ stage: "error", reason: err.message });
     }
@@ -574,6 +623,7 @@ async function resolveStockWindow(seg, block, {
         }
         attempts.push(...(r?.attempts || []).map((a) => ({ ...a, stage: `concept-${a.stage}` })));
       } catch (err) {
+        if (err instanceof StockQuotaError) throw err;
         attempts.push({ stage: "concept-error", reason: err.message });
       }
     } else {

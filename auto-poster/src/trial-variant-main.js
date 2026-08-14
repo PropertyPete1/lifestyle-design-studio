@@ -14,6 +14,10 @@ import { loadLog, saveLog, recordPost } from "./state.js";
 import { cleanup } from "./voiceover.js";
 import { notifyDailyFailure, notifyDailyOutcome, OUTCOME } from "./daily-notify.js";
 import { remedyFor } from "./failure-remedy.js";
+import { routeWarnChannel } from "./yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 import {
   loadTrialHistory,
   saveTrialHistory,

@@ -30,6 +30,10 @@ import { fileURLToPath } from "url";
 import { normaliseIntent, GRAPHIC_TYPES, FOOTAGE } from "../src/yt-visual-intent.js";
 import { mapSpecForIntent } from "../src/yt-map-render.js";
 import { applyGuards, allTakes } from "../src/yt-script.js";
+import { routeWarnChannel } from "../src/yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const APPROVALS = join(HERE, "..", "yt-approvals.json");

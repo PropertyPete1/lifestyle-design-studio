@@ -40,6 +40,10 @@ import {
   tooShortReason,
 } from "./edit-queue.js";
 import { failureCardPayload, failureEmail, queueCardEmail, queueCardPayload } from "./edit-queue-cards.js";
+import { routeWarnChannel } from "./yt-evidence.js";
+// The Actions log drops the warn channel entirely (proven on two preserved
+// runs) — route it to stdout at every entrypoint. See yt-evidence.js.
+routeWarnChannel();
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 
