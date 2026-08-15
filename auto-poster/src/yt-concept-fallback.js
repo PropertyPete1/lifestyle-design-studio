@@ -83,6 +83,54 @@ export function sanitiseConcept(phrase, { banned = new Set(), maxWords = 4 } = {
 }
 
 /**
+ * Strip a model-proposed SUBJECT of everything unsafe — and nothing else.
+ *
+ * A QUERY AND A SUBJECT ARE DIFFERENT KINDS OF STRING, and run 31906386739
+ * proved what happens when one function serves both. `sanitiseConcept` removes
+ * function words because a stock search wants keywords; applied to the
+ * subject it turned "a sheriff vehicle on an open rural road" into "sheriff
+ * vehicle open" — and the vision check, asked whether footage "plausibly
+ * depicts 'sheriff vehicle open'", read the stray adjective as a literal
+ * requirement and rejected three genuine police clips because "the vehicle
+ * doors do not appear to be visibly open". A condition nobody meant to impose,
+ * invented by the sanitiser, failing footage that was exactly right.
+ *
+ * So the subject keeps its function words, its order, and its readability. It
+ * loses only what safety demands: any name the transcript pipeline already
+ * classified as proper (so a place name still cannot reach the check — the
+ * structural property is unchanged), and the direction words a clip can never
+ * prove. What survives is a sentence a human could answer about a frame,
+ * which is the only kind of question the check can answer honestly.
+ */
+export function sanitiseSubject(phrase, { banned = new Set(), maxWords = 10 } = {}) {
+  const kept = String(phrase || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((raw) => {
+      const n = normalise(raw);
+      if (!n) return false;
+      if (banned.has(n)) return false;
+      if (SPATIAL.has(n)) return false;
+      if (/^[\d$,.%-]+$/.test(n)) return false;
+      return true;
+    })
+    .slice(0, maxWords)
+    // Commas and stray punctuation survive the word filter and read fine; a
+    // trailing one does not.
+    .join(" ")
+    .replace(/\s*,\s*$/, "")
+    .trim();
+
+  if (!kept) return null;
+  // A subject that is nothing but function words asks the check nothing.
+  const hasContent = kept.split(/\s+/).some((w) => {
+    const n = normalise(w);
+    return n && !FUNCTION_WORDS.has(n);
+  });
+  return hasContent ? kept : null;
+}
+
+/**
  * Ask the model for a concrete, filmable stand-in for one window.
  *
  * @returns {{ query, subject, source: "concept" } | null}
@@ -143,9 +191,12 @@ or
   if (parsed.filmable !== true) return null;
 
   const query = sanitiseConcept(parsed.query, { banned });
-  // The subject may be a little longer than the query — it is a sentence for a
-  // reviewer, not a search — but it passes the same name/space stripping.
-  const subject = sanitiseConcept(parsed.subject, { banned, maxWords: 6 }) || query;
+  // The subject is a QUESTION FOR A REVIEWER, not a search string: it keeps
+  // its function words so it still reads as English. See sanitiseSubject for
+  // the run that paid for the distinction. Falls back to the query only when
+  // the model gave no usable subject at all — a bare noun phrase is a poor
+  // question but an answerable one.
+  const subject = sanitiseSubject(parsed.subject, { banned }) || query;
   if (!query) return null;
 
   return { query, subject, source: "concept" };
