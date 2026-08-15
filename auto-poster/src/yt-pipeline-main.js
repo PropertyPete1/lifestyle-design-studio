@@ -64,6 +64,7 @@ import { listLongformFootage } from "./yt-footage-source.js";
 import { creditsBlock } from "./yt-stock.js";
 import { selectPunches, captionTextFor } from "./yt-punch.js";
 import { runArtifactQc, preserveFailedRender } from "./yt-artifact-qc.js";
+import { preserveQcPassedRender } from "./yt-evidence.js";
 import { pickTrack, fetchMusicBed, musicReport, musicCreditsBlock, cacheKey as musicCacheKey, MUSIC_FOLDER } from "./yt-music.js";
 import { findInFolder, downloadFileById, uploadToFolder } from "./drive.js";
 import { getWordTimestamps } from "./burned-captions.js";
@@ -831,121 +832,149 @@ async function buildFromRecordings(approvals, record) {
     );
   }
 
-  const packaging = await buildPackaging({
-    topic: { title: result.selectedTitle, query: result.query, market: result.market, intent: result.intent },
-    script,
-    chapters,
-    // Only true when a map actually reached the timeline, so the credit line
-    // never claims something the video does not contain.
-    mapsUsed: gen.mapsUsed,
-    // Built from the clips that actually survived the vision check and reached
-    // the timeline — empty when none did, so a graphics-and-typography video
-    // carries no stock credit block at all.
-    stockCredits: creditsBlock(gen.stockCredits),
-    // Empty when no bed was fetched, so a narration-only video carries no music
-    // credit for music it does not contain.
-    musicCredits: musicCreditsBlock(music.used ? bed.track : null),
-  });
-
-  // ── the thumbnail ─────────────────────────────────────────────────────────
-  // Generated here because the review checklist tells Peter to upload "the
-  // thumbnail" in Studio — and until this block, nothing anywhere produced
-  // one. The checklist pointed at an artifact that did not exist, which is the
-  // silent-gap class: every piece tested, the whole disconnected.
+  // ── EVERYTHING PAST THIS POINT IS HOLDING A SHIPPABLE RENDER ─────────────
   //
-  // Non-fatal on purpose. A finished video without a thumbnail file is still
-  // deliverable (Peter sees the gap on the checklist); a finished video thrown
-  // away over its thumbnail is not.
-  let thumb = { hook: null, scores: null };
-  let thumbnailPath = null;
+  // Run 31842162416 produced the first file that ever passed every artifact
+  // check — "the render may ship" — and then died two seconds later building
+  // the review card, because the Anthropic account had run out of credit. The
+  // preservation rule only ever covered a render the GATE refused, so a run
+  // that failed while holding a PASSING render preserved nothing: eighty-five
+  // minutes of work, a publishable video, and the file went with the runner.
+  //
+  // The rule was always "no gate may fail without leaving the data that
+  // explains it". This is the same rule pointed at the other case: no failure
+  // after a passing QC may take the render with it. Packaging, thumbnail,
+  // logging, upload and the review card all live in here — an API balance, a
+  // network blip, a Metricool 500 — and every one of them now costs a retry
+  // instead of a rebuild.
   try {
-    thumb = await generateThumbnailHook({ title: packaging.title, script });
-    if (thumb.hook) {
-      // fitUnderLimit returns { buffer, converted } — NOT bytes. Writing the
-      // object threw on video 1's real build ("Received an instance of
-      // Object") and the run shipped without its thumbnail attachment. The
-      // fallback held, which is why this was a warning and not a dead build.
-      const fitted = await fitUnderLimit(
-        await renderThumbnail(thumb.hook, { kicker: result.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
-      );
-      thumbnailPath = join(workDir, fitted.converted ? "thumbnail.jpg" : "thumbnail.png");
-      writeFileSync(thumbnailPath, fitted.buffer);
-      console.log(
-        `[YTPipeline] thumbnail: "${thumb.hook}" ` +
-          `(curiosity=${thumb.scores?.curiosity} legibility=${thumb.scores?.legibility} emotion=${thumb.scores?.emotional_trigger}` +
-          `${thumb.belowBar ? ", BELOW BAR — best of what survived" : ""}, ${thumb.candidatesConsidered ?? "?"} candidate(s) considered)`
-      );
-    } else {
-      console.log(`::warning::no thumbnail line cleared the gates — Peter makes one in Studio (${thumb.reason || "no usable line"})`);
+    const packaging = await buildPackaging({
+      topic: { title: result.selectedTitle, query: result.query, market: result.market, intent: result.intent },
+      script,
+      chapters,
+      // Only true when a map actually reached the timeline, so the credit line
+      // never claims something the video does not contain.
+      mapsUsed: gen.mapsUsed,
+      // Built from the clips that actually survived the vision check and reached
+      // the timeline — empty when none did, so a graphics-and-typography video
+      // carries no stock credit block at all.
+      stockCredits: creditsBlock(gen.stockCredits),
+      // Empty when no bed was fetched, so a narration-only video carries no music
+      // credit for music it does not contain.
+      musicCredits: musicCreditsBlock(music.used ? bed.track : null),
+    });
+
+    // ── the thumbnail ─────────────────────────────────────────────────────────
+    // Generated here because the review checklist tells Peter to upload "the
+    // thumbnail" in Studio — and until this block, nothing anywhere produced
+    // one. The checklist pointed at an artifact that did not exist, which is the
+    // silent-gap class: every piece tested, the whole disconnected.
+    //
+    // Non-fatal on purpose. A finished video without a thumbnail file is still
+    // deliverable (Peter sees the gap on the checklist); a finished video thrown
+    // away over its thumbnail is not.
+    let thumb = { hook: null, scores: null };
+    let thumbnailPath = null;
+    try {
+      thumb = await generateThumbnailHook({ title: packaging.title, script });
+      if (thumb.hook) {
+        // fitUnderLimit returns { buffer, converted } — NOT bytes. Writing the
+        // object threw on video 1's real build ("Received an instance of
+        // Object") and the run shipped without its thumbnail attachment. The
+        // fallback held, which is why this was a warning and not a dead build.
+        const fitted = await fitUnderLimit(
+          await renderThumbnail(thumb.hook, { kicker: result.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
+        );
+        thumbnailPath = join(workDir, fitted.converted ? "thumbnail.jpg" : "thumbnail.png");
+        writeFileSync(thumbnailPath, fitted.buffer);
+        console.log(
+          `[YTPipeline] thumbnail: "${thumb.hook}" ` +
+            `(curiosity=${thumb.scores?.curiosity} legibility=${thumb.scores?.legibility} emotion=${thumb.scores?.emotional_trigger}` +
+            `${thumb.belowBar ? ", BELOW BAR — best of what survived" : ""}, ${thumb.candidatesConsidered ?? "?"} candidate(s) considered)`
+        );
+      } else {
+        console.log(`::warning::no thumbnail line cleared the gates — Peter makes one in Studio (${thumb.reason || "no usable line"})`);
+      }
+    } catch (err) {
+      console.log(`::warning::thumbnail generation failed — Peter makes one in Studio (${err.message})`);
     }
-  } catch (err) {
-    console.log(`::warning::thumbnail generation failed — Peter makes one in Studio (${err.message})`);
-  }
 
-  const videoId = videoIdFor(record.requestId);
-  let nextLog = recordRender(videoLog, {
-    videoId,
-    requestId: record.requestId,
-    title: packaging.title,
-    market: result.market,
-    intent: result.intent,
-    runtimeSeconds: rendered.seconds,
-    bytes: rendered.bytes,
-    resolution: RESOLUTION,
-    brollHashes: plan.segments.flatMap((s) => (s.broll || []).map((b) => b.contentHash).filter(Boolean)),
-    // A durable record of what licensed material this video contains, so the
-    // question "where did that clip come from" is answerable years later.
-    stockCredits: gen.stockCredits,
-    scriptScores: result.scores,
-    packagingScores: packaging.scores,
-    // C3: the chosen thumbnail text rides with the video record, so hook style
-    // can be correlated with CTR once analytics exist.
-    thumbnailText: thumb.hook,
-    thumbnailScores: thumb.scores,
-  });
-  saveVideoLog(nextLog);
-
-  if (DRY_RUN) {
-    console.log(`[YTPipeline] DRY RUN — built ${rendered.outputPath}, not uploading`);
-    return;
-  }
-
-  const upload = await uploadPrivate(readFileSync(rendered.outputPath), packaging, {
-    blogId: process.env.METRICOOL_BLOG_ID,
-    userId: process.env.METRICOOL_USER_ID,
-    token: process.env.METRICOOL_API_TOKEN,
-    publishAt: chicagoNow(),
-  });
-
-  nextLog = recordUpload(nextLog, videoId, {
-    youtubeUrl: upload.mediaUrl,
-    metricoolPostId: upload.postId,
-    blogId: upload.blogId,
-  });
-  saveVideoLog(nextLog);
-
-  const reviewRequestId = newRequestId(KIND_VIDEO_REVIEW);
-  const accessToken = await getAccessToken().catch(() => null);
-  await requestReview({
-    requestId: reviewRequestId,
-    videoId,
-    packaging,
-    youtubeUrl: upload.mediaUrl,
-    driveLink: null,
-    stats: { runtimeMinutes: Math.round((rendered.seconds / 60) * 10) / 10, resolution: RESOLUTION },
-    accessToken,
-    syntheticNarration,
-  });
-
-  saveApprovals(
-    appendRequest(approvals, {
-      requestId: reviewRequestId,
-      kind: KIND_VIDEO_REVIEW,
+    const videoId = videoIdFor(record.requestId);
+    let nextLog = recordRender(videoLog, {
       videoId,
-      payload: { videoId, title: packaging.title, requestId: record.requestId },
-    })
-  );
-  console.log(`[YTPipeline] uploaded PRIVATE and sent ${reviewRequestId} for review`);
+      requestId: record.requestId,
+      title: packaging.title,
+      market: result.market,
+      intent: result.intent,
+      runtimeSeconds: rendered.seconds,
+      bytes: rendered.bytes,
+      resolution: RESOLUTION,
+      brollHashes: plan.segments.flatMap((s) => (s.broll || []).map((b) => b.contentHash).filter(Boolean)),
+      // A durable record of what licensed material this video contains, so the
+      // question "where did that clip come from" is answerable years later.
+      stockCredits: gen.stockCredits,
+      scriptScores: result.scores,
+      packagingScores: packaging.scores,
+      // C3: the chosen thumbnail text rides with the video record, so hook style
+      // can be correlated with CTR once analytics exist.
+      thumbnailText: thumb.hook,
+      thumbnailScores: thumb.scores,
+    });
+    saveVideoLog(nextLog);
+
+    if (DRY_RUN) {
+      console.log(`[YTPipeline] DRY RUN — built ${rendered.outputPath}, not uploading`);
+      return;
+    }
+
+    const upload = await uploadPrivate(readFileSync(rendered.outputPath), packaging, {
+      blogId: process.env.METRICOOL_BLOG_ID,
+      userId: process.env.METRICOOL_USER_ID,
+      token: process.env.METRICOOL_API_TOKEN,
+      publishAt: chicagoNow(),
+    });
+
+    nextLog = recordUpload(nextLog, videoId, {
+      youtubeUrl: upload.mediaUrl,
+      metricoolPostId: upload.postId,
+      blogId: upload.blogId,
+    });
+    saveVideoLog(nextLog);
+
+    const reviewRequestId = newRequestId(KIND_VIDEO_REVIEW);
+    const accessToken = await getAccessToken().catch(() => null);
+    await requestReview({
+      requestId: reviewRequestId,
+      videoId,
+      packaging,
+      youtubeUrl: upload.mediaUrl,
+      driveLink: null,
+      stats: { runtimeMinutes: Math.round((rendered.seconds / 60) * 10) / 10, resolution: RESOLUTION },
+      accessToken,
+      syntheticNarration,
+    });
+
+    saveApprovals(
+      appendRequest(approvals, {
+        requestId: reviewRequestId,
+        kind: KIND_VIDEO_REVIEW,
+        videoId,
+        payload: { videoId, title: packaging.title, requestId: record.requestId },
+      })
+    );
+    console.log(`[YTPipeline] uploaded PRIVATE and sent ${reviewRequestId} for review`);
+  } catch (err) {
+    // The render passed its checks; whatever broke afterwards did not touch it.
+    // Keep it, say plainly that it is publishable, and rethrow the real error.
+    preserveQcPassedRender({
+      videoPath: rendered.outputPath,
+      error: err,
+      qc,
+      rendered,
+      videoId: videoIdFor(record.requestId),
+    });
+    throw err;
+  }
 }
 
 /**
