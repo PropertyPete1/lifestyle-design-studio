@@ -719,17 +719,26 @@ export function streamDuration(path, kind /* "v" | "a" */) {
  * honest join to catch nothing extra.
  */
 export function assertHonestTimestamps(path, label, { maxFrameSeconds = 0.34, maxSkewSeconds = 0.25 } = {}) {
+  // PACKETS, NOT FRAMES, and the difference is 108x. A frame-level scan makes
+  // ffprobe parse every frame: measured at 216 SECONDS on a 1987 MB render
+  // here, and on a slower runner with a 2378 MB file it blew through the
+  // 300s timeout and failed a build whose picture was fine (run 31893490615:
+  // "spawnSync ffprobe ETIMEDOUT"). Packets carry pts_time and duration_time
+  // straight from the container index — no decoding — and the same file scans
+  // in 2 seconds with byte-identical output: 20,068 rows either way, and the
+  // manufactured 0.783s duration in the broken-join control shows up
+  // identically in both. Same signal, none of the cost.
   let rows;
   try {
     rows = execFileSync("ffprobe", [
       "-v", "error", "-select_streams", "v:0",
-      "-show_entries", "frame=pts_time,duration_time", "-of", "csv=p=0", path,
-    ], { encoding: "utf-8", timeout: 300_000, maxBuffer: 128 * 1024 * 1024 }).trim().split("\n").filter(Boolean);
+      "-show_entries", "packet=pts_time,duration_time", "-of", "csv=p=0", path,
+    ], { encoding: "utf-8", timeout: 300_000, maxBuffer: 256 * 1024 * 1024 }).trim().split("\n").filter(Boolean);
   } catch (err) {
-    throw new Error(`${label}: could not read frame timestamps from ${path} (${err.message}) — nobody verified this file's clock`);
+    throw new Error(`${label}: could not read packet timestamps from ${path} (${err.message}) — nobody verified this file's clock`);
   }
   if (rows.length === 0) {
-    throw new Error(`${label}: ${path} has no video frames — nobody verified this file's clock`);
+    throw new Error(`${label}: ${path} has no video packets — nobody verified this file's clock`);
   }
   let worst = { at: 0, dur: 0 };
   for (const r of rows) {

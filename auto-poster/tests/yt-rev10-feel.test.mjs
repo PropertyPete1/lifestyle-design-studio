@@ -248,6 +248,28 @@ describe("run-31828718136 sweep: one clock for every segment, and a probe that r
     );
   });
 
+  test("the clock probe reads packets, not frames — a full-length file must not cost minutes", (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    // Run 31893490615 died on `spawnSync ffprobe ETIMEDOUT`: the frame-level
+    // scan this probe originally used took 216 SECONDS on a 1987 MB render
+    // here and blew a 300s budget on a slower runner with a bigger file — a
+    // build failed for a picture that was fine. Packets carry the same
+    // pts/duration from the container index without decoding: 2s for the same
+    // file, byte-identical rows. This pins the cheap path so nobody restores
+    // the expensive one.
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const clip = join(dir, "c.mp4");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc=size=640x360:rate=30:duration=20", "-pix_fmt", "yuv420p",
+      "-c:v", "libx264", "-preset", "ultrafast", clip]);
+    const t0 = Date.now();
+    const clock = assertHonestTimestamps(clip, "speed");
+    const elapsed = Date.now() - t0;
+    assert.equal(clock.frames, 600, "every packet is accounted for");
+    // Generous bound: this is a smoke test against re-introducing a decode.
+    assert.ok(elapsed < 15000, `the probe took ${elapsed}ms on 20s of video — it is decoding again`);
+  });
+
   test("a sparse-timestamp file is named before any encode can amplify it", (t) => {
     if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
     const dir = mkdtempSync(join(tmpdir(), "sweep-"));
