@@ -23,7 +23,7 @@ import { join } from "node:path";
 import { buildVisuals, bridgeBeats } from "../src/yt-visual-build.js";
 import { planSegmentCoverage } from "../src/yt-visual-plan.js";
 import { keywordsForWindow, documentFrequencies, properLexicon } from "../src/yt-scene-keywords.js";
-import { deriveConcept, sanitiseConcept } from "../src/yt-concept-fallback.js";
+import { deriveConcept, sanitiseConcept, sanitiseSubject } from "../src/yt-concept-fallback.js";
 import { buildStates, assertClipCovers } from "../src/yt-visual-animate.js";
 import { planReveals } from "../src/yt-reveal-timing.js";
 import {
@@ -652,6 +652,47 @@ describe("card-11 sweep: queries and concepts", () => {
     assert.ok(concept);
     assert.match(seen, /itself readable text/i, "the text-as-subject ban reaches the model");
     assert.match(seen, /surrounding human scene/i, "and the steer toward filmable scenes goes with it");
+  });
+
+  test("the subject stays a readable question — the 'sheriff vehicle open' regression", () => {
+    // Run 31906386739 gated its last take because the SUBJECT went through the
+    // query sanitiser: "a sheriff vehicle on an open rural road" became
+    // "sheriff vehicle open", and the vision check — asked whether footage
+    // depicted that — read the stray adjective as a requirement and rejected
+    // three genuine police clips because "the vehicle doors do not appear to
+    // be visibly open". A condition nobody imposed, invented by a sanitiser.
+    const banned = new Set(["bexar"]);
+    for (const phrase of [
+      "a sheriff vehicle on an open rural road",
+      "a sheriff patrol car with its door open",
+      "hands opening mail at a kitchen table",
+    ]) {
+      assert.equal(sanitiseSubject(phrase, { banned }), phrase, "a clean subject must survive untouched");
+    }
+    // The QUERY still gets keyword treatment — the two strings are different
+    // kinds of thing and that is the whole point.
+    assert.equal(sanitiseConcept("a sheriff vehicle on an open rural road", { banned }), "sheriff vehicle open rural");
+  });
+
+  test("a readable subject is still name-safe and claim-safe", () => {
+    const banned = new Set(["timberwood", "park"]);
+    const out = sanitiseSubject("a quiet street in Timberwood Park just north of the highway", { banned });
+    assert.ok(!/timberwood|park/i.test(out), `a place name survived: ${out}`);
+    assert.ok(!/\bnorth\b/i.test(out), `a direction survived: ${out}`);
+    assert.ok(/street/.test(out), "and the filmable subject is still there");
+    assert.equal(sanitiseSubject("the of a", {}), null, "a subject with no content asks nothing");
+    assert.equal(sanitiseSubject("", {}), null);
+  });
+
+  test("deriveConcept hands the check a sentence and the search a phrase", async () => {
+    const client = fakeClient({
+      filmable: true,
+      query: "sheriff patrol car",
+      subject: "a sheriff patrol car parked on a rural road",
+    });
+    const concept = await deriveConcept({ phrase: "county sheriff instead of city police", client });
+    assert.deepEqual(concept.query.split(/\s+/).length <= 4, true, "the query stays search-sized");
+    assert.equal(concept.subject, "a sheriff patrol car parked on a rural road", "the subject stays answerable");
   });
 
   test("a model error fails closed to null — the ladder moves on", async () => {
