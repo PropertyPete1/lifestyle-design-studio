@@ -112,10 +112,12 @@ export function reviewChecklist({ packaging, narrationMode = NARRATION_MODE, syn
  * half-finished upload must not look like a success, or the review request goes
  * out pointing at a video that is not there.
  */
-export async function uploadPrivate(videoBuffer, packaging, { blogId, userId, token, publishAt }) {
+export async function uploadPrivate(video, packaging, { blogId, userId, token, publishAt }) {
   console.log(`[YTPublish] uploading "${packaging.title}" as ${PRIVACY}`);
 
-  const mediaUrl = await uploadVideo(videoBuffer, { blogId, userId, token });
+  // `video` is a PATH for anything render-sized (see uploadVideo — a Buffer
+  // cannot hold 2 GiB); a Buffer is still accepted for small callers.
+  const mediaUrl = await uploadVideo(video, { blogId, userId, token });
 
   const body = buildPostBody({ mediaUrl, packaging, publishAt });
 
