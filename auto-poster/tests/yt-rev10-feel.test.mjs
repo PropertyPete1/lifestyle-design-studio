@@ -33,7 +33,7 @@ import {
 import { checkMotion } from "../src/yt-artifact-qc.js";
 import { EMPTY_CARD_MAX_HOLD, GRAPHIC_GRAIN_STRENGTH, BEAT_BRIDGE_MAX_SECONDS } from "../src/yt-config.js";
 import { searchPexels, StockQuotaError, stockQuotaStats, resetStockQuotaState, rankCandidates, measuredSeconds } from "../src/yt-stock.js";
-import { preserveGateEvidence, routeWarnChannel, evidenceDir } from "../src/yt-evidence.js";
+import { preserveGateEvidence, preserveQcPassedRender, routeWarnChannel, evidenceDir } from "../src/yt-evidence.js";
 import { readdirSync, readFileSync } from "node:fs";
 
 const have = (bin) => {
@@ -390,6 +390,64 @@ describe("run-31766707987 sweep: no gate fails without leaving its evidence", ()
     assert.equal(kept.length, 1);
     const record = JSON.parse(readFileSync(join(dir, "yt-diagnostics", kept[0]), "utf-8"));
     assert.ok(record.overheld.length >= 1 && record.stockAttempts.length >= 1 && record.coverage);
+  });
+
+  test("a run that dies AFTER a passing QC keeps the render and calls it publishable", (t) => {
+    // Run 31842162416: first file ever to clear every artifact check, then the
+    // API balance ran out two seconds later and the video went with the
+    // runner. The preservation rule covered gate REFUSALS only; this is the
+    // other half.
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    const prevRT = process.env.RUNNER_TEMP;
+    process.env.RUNNER_TEMP = dir;
+    t.after(() => {
+      rmSync(dir, { recursive: true, force: true });
+      if (prevRT === undefined) delete process.env.RUNNER_TEMP; else process.env.RUNNER_TEMP = prevRT;
+    });
+
+    const render = join(dir, "final.mp4");
+    writeFileSync(render, "the deliverable");
+    const said = [];
+    const kept = preserveQcPassedRender({
+      videoPath: render,
+      error: new Error("400 credit balance is too low"),
+      qc: { summary: "motion: clean" },
+      rendered: { seconds: 668.9, bytes: 2493440000 },
+      videoId: "v1",
+      log: (m) => said.push(String(m)),
+    });
+
+    assert.equal(kept.copied.length, 1, "the passing render is kept");
+    assert.ok(existsSync(kept.copied[0]));
+    assert.match(said.join(" "), /PASSED every artifact check.*publishable/s, "the message says it is a deliverable, not a defect");
+    assert.match(said.join(" "), /credit balance is too low/, "and names the real cause");
+
+    const report = readdirSync(join(dir, "yt-diagnostics")).filter((f) => f.startsWith("qc-passed-render"));
+    assert.equal(report.length, 1);
+    const record = JSON.parse(readFileSync(join(dir, "yt-diagnostics", report[0]), "utf-8"));
+    assert.equal(record.stage, "after artifact QC passed");
+    assert.equal(record.renderedSeconds, 668.9);
+
+    for (const c of kept.copied) rmSync(c, { force: true });
+  });
+
+  test("preserving a passing render never throws, even with the file already gone", (t) => {
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    const prevRT = process.env.RUNNER_TEMP;
+    process.env.RUNNER_TEMP = dir;
+    t.after(() => {
+      rmSync(dir, { recursive: true, force: true });
+      if (prevRT === undefined) delete process.env.RUNNER_TEMP; else process.env.RUNNER_TEMP = prevRT;
+    });
+    const said = [];
+    const kept = preserveQcPassedRender({
+      videoPath: join(dir, "vanished.mp4"),
+      error: new Error("network reset"),
+      log: (m) => said.push(String(m)),
+    });
+    assert.equal(kept.copied.length, 0);
+    assert.ok(kept.errors.length >= 1);
+    assert.match(said.join(" "), /could NOT be preserved/, "and it says so plainly rather than claiming a file exists");
   });
 
   test("routeWarnChannel puts warns where this repo's runners can see them", (t) => {

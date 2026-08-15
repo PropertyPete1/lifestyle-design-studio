@@ -79,6 +79,42 @@ export function preserveGateEvidence(gate, data, { files = [], log = console.log
 }
 
 /**
+ * Keep a render that PASSED its checks when the run died anyway.
+ *
+ * THE OTHER HALF OF THE PRESERVATION RULE, and run 31842162416 is why it
+ * exists. That run produced the first file ever to clear every artifact check
+ * — "the render may ship" — and died two seconds later building the review
+ * card on an exhausted API balance. Preservation only covered renders the GATE
+ * refused, so a passing render that outlived its run was thrown away: eighty
+ * -five minutes of compute and a publishable video, gone with the runner.
+ *
+ * Distinct from `preserveFailedRender` in the one way that matters to whoever
+ * reads the artifact: this file is not evidence of a defect, it is the
+ * deliverable. The gate name says so, and the message says so.
+ *
+ * Never throws — same contract as everything else here.
+ */
+export function preserveQcPassedRender({ videoPath, error, qc = null, rendered = null, videoId = null, log = console.log }) {
+  const kept = preserveGateEvidence("qc-passed-render", {
+    error: String(error?.message || error || "unknown"),
+    stage: "after artifact QC passed",
+    qcSummary: qc?.summary ?? null,
+    renderedSeconds: rendered?.seconds ?? null,
+    bytes: rendered?.bytes ?? null,
+    videoId,
+  }, { files: videoPath ? [videoPath] : [], log });
+
+  log(
+    `::error::the render PASSED every artifact check and the run failed afterwards ` +
+    `(${String(error?.message || error || "unknown")}). ` +
+    (kept.copied.length
+      ? `The video is publishable and is attached to this run as the "failed-render" artifact (${kept.copied[0]}).`
+      : `The video could NOT be preserved: ${kept.errors.join("; ")}`)
+  );
+  return kept;
+}
+
+/**
  * Route console.warn onto stdout, prefixed.
  *
  * Both preserved run logs — card 11's and 31766707987's — contain not one of
