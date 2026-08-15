@@ -3844,10 +3844,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "why_agents_leave",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-15T14:15:16"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-15T14:45:16"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-15T15:15:16"
+        }
+      ],
       "timestamp": "2026-08-15T19:13:42.751Z",
       "runId": "31903090173",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
