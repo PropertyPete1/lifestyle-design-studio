@@ -3862,6 +3862,30 @@
       "timestamp": "2026-08-15T19:13:42.751Z",
       "runId": "31903090173",
       "success": true
+    },
+    {
+      "driveFileId": "1HWPOJp4d_O2JFF4JLuvM907qkUOrvKey",
+      "fileName": "73617733-648E-4AC4-B625-E13C471B268F.mp4",
+      "city": "san_antonio",
+      "caption": "This might be the best new build value I've toured in San Antonio this month.\n\nNew construction at this price point moves fast, and builder incentives are still on the table right now.\n\n✨ everyday liv",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-15T19:13:42.559Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Did you think that raids in the threes were completely impossible? They're not. Come to think of it.",
+      "content_hash": "ffffff8120f00000:ff3f030100fcfeff:3c3e3f2d0d9dc980:bfabf78f9f1b0101:e0f4ecc8d07476ff",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1OLuuL842VO7WVgZpHlejWHRCxRnNkyYG/view"
     }
   ],
   "lastTemplateIndex": -1
