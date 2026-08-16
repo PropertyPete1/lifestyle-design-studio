@@ -4022,6 +4022,31 @@
       "timestamp": "2026-08-16T19:13:34.414Z",
       "runId": "31966673757",
       "success": true
+    },
+    {
+      "driveFileId": "1ispjYBGaQnKVIMI91dLb6QNrOv5kOQM0",
+      "fileName": "08B5FCB2-CF99-408A-B873-A88AE11B948F.mp4",
+      "city": "san_antonio",
+      "caption": "this is what new construction is supposed to feel like\n\nnew construction like this doesn't wait long in this market. $340,000 gets you a brand new home ready to move into.\n\n✨ everyday living hits\n\nope",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-16T19:13:34.249Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "Don't them about you, it mean I could face Trang to the chest Flight in the luxury today, minutes from LaClan with award winning schools Let's love the room the second If you want it, something like a beer drink Have it's after we can drink",
+      "voiceover_persona": "storyteller",
+      "content_hash": "0000ff00016f27ff:fbbf83838183ffff:fffffff3910e0400:fffffff4fc0c0800:fffefff7f7000000",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1u0R8_MOHEPQi8b6rv9UPKJjYfsUQgAK2/view"
     }
   ],
   "lastTemplateIndex": -1

@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "wish_i_knew",
-      "body": "I started in real estate thinking talent was enough. It wasn't. 1. I thought the split mattered more than the support. Turns out an agent will grind harder for someone who believes in them than for an extra half percent. Compensation is noise compared to culture. 2. I believed I had to know everything to lead. That's paralyzing. The agents I learned the most from weren't the smartest. They were the ones willing to say I don't know and figure it out together with their team. 3. I wasted years waiting for the \"right time\" to build something. There's no right time. You build it while you're working. You build it with the people next to you. You build it by staying committed when it's not profitable yet. The brokerage you work for should feel like it was built for you specifically. Not built for thousands. For you.",
-      "format": "list",
-      "ending": "dm_cta",
-      "date": "2026-08-09"
-    },
-    {
       "topic": "time_to_level_up",
       "body": "You're producing solid numbers but your brokerage treats you like a production unit, not a person.\n\nWhen was the last time your broker knew what you were actually struggling with. Not your closing count. Your struggle. When was the last time someone showed you a better way to work instead of just expecting you to figure it out. When did your wins get celebrated beyond a number on a board. Most agents don't leave because the market got harder. They leave because they realized they're grinding alone while their broker optimizes for volume, not growth. You've outgrown the idea that a commission split is enough. You want to work somewhere the infrastructure actually supports what you're building.\n\nThat's what we're building at Lifestyle Design Realty.",
       "format": "bold_statement",
@@ -48,6 +41,13 @@
       "format": "short_punchy",
       "ending": "dm_cta",
       "date": "2026-08-15"
+    },
+    {
+      "topic": "leadership_culture",
+      "body": "One of my agents closed a tough file last week. Multiple inspections. Two appraisal issues. The buyer got cold feet twice. By day ten she was running on fumes.\n\nAnother agent on the team picked up the phone. Not to take the deal. To ask what she needed. They worked the numbers together. Talked through the objections. Showed up at the final walkthrough even though it wasn't their commission.\n\nThat deal closed because she knew she wasn't carrying it alone.\n\nThat's the moment I realized leadership isn't about being the smartest person in the room. It's about building a place where agents show up for each other without being asked. Where the culture is so strong that backing someone up just feels like what you do.\n\nThat's what separates a brokerage from a team.",
+      "format": "story",
+      "ending": "strong_close",
+      "date": "2026-08-16"
     }
   ]
 }

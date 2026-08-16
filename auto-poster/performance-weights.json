@@ -1,48 +1,76 @@
 {
   "weights": {
-    "question": 0.99,
-    "bold_claim": 0.99,
-    "wait_tease": 1.11,
-    "reaction": 1.04,
-    "vibe": 1.02
+    "question": 0.66,
+    "bold_claim": 1.35,
+    "wait_tease": 1.03,
+    "reaction": 0.69,
+    "vibe": 1.12
   },
-  "lastUpdated": "2026-08-09T17:44:04.901Z",
-  "reelsAnalyzed": 1,
-  "classifiedCount": 1,
+  "lastUpdated": "2026-08-16T19:09:53.240Z",
+  "reelsAnalyzed": 25,
+  "classifiedCount": 12,
   "styleBreakdown": {
     "question": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 0.99
+      "count": 1,
+      "avgScore": 1038,
+      "weight": 0.66
     },
     "bold_claim": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 0.99
+      "count": 3,
+      "avgScore": 3044,
+      "weight": 1.35
     },
     "wait_tease": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 1.11
+      "count": 4,
+      "avgScore": 2027,
+      "weight": 1.03
     },
     "reaction": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 1.04
+      "count": 1,
+      "avgScore": 1097,
+      "weight": 0.69
     },
     "vibe": {
-      "count": 1,
-      "avgScore": 997,
-      "weight": 1.02
+      "count": 3,
+      "avgScore": 2349,
+      "weight": 1.12
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/Dby9J_yM0zB/",
+      "url": "https://www.instagram.com/reel/Db6NHZhsNER/",
+      "hookStyle": "bold_claim",
+      "score": 3823,
+      "views": 2501,
+      "firstLine": "I’ve never seen finishes like this at this price point in Austin right now."
+    },
+    {
+      "url": "https://www.instagram.com/reel/Db_gI4Ost9X/",
+      "hookStyle": "bold_claim",
+      "score": 3537,
+      "views": 2579,
+      "firstLine": "I’ve never seen finishes like this at $450,000 in Austin new construction. This "
+    },
+    {
+      "url": "https://www.instagram.com/reel/Db1SJRUMZLx/",
       "hookStyle": "vibe",
-      "score": 997,
-      "views": 882,
-      "firstLine": "🌳 Luxury, privacy, and Guadalupe River access all in one address… this River Ch"
+      "score": 3305,
+      "views": 2556,
+      "firstLine": "this is what new construction is supposed to feel like"
+    },
+    {
+      "url": "https://www.instagram.com/reel/Db8tw1xsxX4/",
+      "hookStyle": "wait_tease",
+      "score": 2449,
+      "views": 1799,
+      "firstLine": "wait until you see these 60 ft homesites with actual breathing room 😮‍💨"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DcEdGSRsEgN/",
+      "hookStyle": "vibe",
+      "score": 2420,
+      "views": 1863,
+      "firstLine": "brand new construction in San Antonio just hits different"
     }
   ],
   "history": [
@@ -89,6 +117,17 @@
         "vibe": 1.02
       },
       "reelsAnalyzed": 1
+    },
+    {
+      "date": "2026-08-16",
+      "weights": {
+        "question": 0.66,
+        "bold_claim": 1.35,
+        "wait_tease": 1.03,
+        "reaction": 0.69,
+        "vibe": 1.12
+      },
+      "reelsAnalyzed": 25
     }
   ]
 }
