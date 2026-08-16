@@ -1878,6 +1878,190 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-16",
+      "timestamp": "2026-08-16T14:13:35.665Z",
+      "pillar": "market_insight",
+      "topic": "Why the Texas average days on market number is misleading right now",
+      "hook": "The average Texas home sells in about 60 days. Almost no actual home does that.",
+      "closeType": "dm",
+      "keyword": "REPORT",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Why the Texas average days on market number is misleading right now",
+        "hook": "The average Texas home sells in about 60 days. Almost no actual home does that.",
+        "map": [
+          "The 60 day myth",
+          "Two markets, one number",
+          "The 14 day pile",
+          "The four month pile",
+          "The price cut trap",
+          "Where buyers have room"
+        ],
+        "points": [
+          {
+            "title": "The Average Is Fake",
+            "body": [
+              "That 60 day number comes from fast sales and stale listings added together.",
+              "Barely any home in Texas actually sells on day 60."
+            ],
+            "loop": "There are two piles."
+          },
+          {
+            "title": "Pile One Sells Fast",
+            "body": [
+              "Homes priced at what the last three sales actually closed for are moving in about two weeks.",
+              "Clean, empty, photographed well, and priced under the neighbor who is still sitting."
+            ],
+            "loop": "The other pile is bigger."
+          },
+          {
+            "title": "Pile Two Just Sits",
+            "body": [
+              "Homes priced five percent over the comps are running past 100 days.",
+              "Buyers see the day count first and assume something is wrong with the house."
+            ],
+            "loop": "Time is not the real cost."
+          },
+          {
+            "title": "The Price Cut Trap",
+            "body": [
+              "Most sellers cut in small amounts, a few thousand at a time, once a month.",
+              "Three small cuts almost always net less than one honest price on day one."
+            ],
+            "loop": "Buyers are reading those cuts."
+          },
+          {
+            "title": "Where Buyers Have Room",
+            "body": [
+              "A home past 90 days is where you ask for closing costs, a rate buydown, or repairs.",
+              "Sellers in that pile stopped defending the price weeks ago."
+            ],
+            "loop": "The numbers shifted again this month."
+          }
+        ],
+        "cta": {
+          "payoff": "this month's Texas market numbers, broken down by days on market and inventory"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 8,
+        "worst_problem": "The final point slide's loop, \"The numbers shifted again this month,\" teases nothing in the deck — it is a vague pivot to the CTA rather than a genuine reason to swipe.",
+        "fix": "Replace that loop with a content tease that pays off in the close, e.g. \"One pile is growing fast,\" so the CTA report answers a question the deck actually raised."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 362717430,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-16T14:16:36.372Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674632512181718285"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 362717431,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-16T14:16:36.498Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7494758543330553856"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 362717445,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-16T14:16:36.610Z",
+          "publicUrl": "https://www.instagram.com/p/DcGp9TvCHEk/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 362717451,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-16T14:16:36.723Z",
+          "publicUrl": "https://www.instagram.com/p/DcGp4XdDcqk/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 362717452,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-16T14:16:36.835Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7494758540104966144"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 362717464,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-16T14:18:07.609Z",
+          "publicUrl": "https://www.instagram.com/p/DcGp9xNCMAs/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 362717465,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-16T14:16:37.063Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122114450595400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 362717467,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-16T14:16:37.176Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7494758538574131200"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-16T14:18:07.610Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
