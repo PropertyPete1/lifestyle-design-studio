@@ -3922,6 +3922,21 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/10dFeQKp2ltqhQ8kvxEXlJJaTemaWjhgX/view"
+    },
+    {
+      "driveFileId": "1HWPOJp4d_O2JFF4JLuvM907qkUOrvKey",
+      "fileName": "73617733-648E-4AC4-B625-E13C471B268F.mp4",
+      "city": "san_antonio",
+      "caption": "three hundred forty-nine thousand nine hundred ninety-nine for brand new construction in San Antonio. This is the price point everyone's been waiting for.\n\nNew construction like this doesn't stay on t",
+      "voiceover": true,
+      "platforms": [],
+      "timestamp": "2026-08-16T00:00:27.283Z",
+      "success": true,
+      "type": "trial_variant",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "window": "pm",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1ibQj6-iKS0YOjNyNCt1lT6bS0bVOgQWK/view"
     }
   ],
   "lastTemplateIndex": -1
