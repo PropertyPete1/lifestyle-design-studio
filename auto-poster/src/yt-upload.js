@@ -34,6 +34,7 @@
  */
 
 import { createHash } from "crypto";
+import { openSync, readSync, closeSync, statSync } from "fs";
 
 const BASE = "https://app.metricool.com/api";
 
@@ -161,24 +162,85 @@ async function api(path, token, opts = {}) {
  * that half-worked is worse than one that clearly did not, because the caller
  * would otherwise schedule a post against a URL serving a truncated file.
  *
- * @param {Buffer} buffer
+ * @param {string|Buffer} video  a file path (read per part) or bytes in hand
  * @param {object} opts  { blogId, userId, token, onProgress }
  */
-export async function uploadVideo(buffer, { blogId, userId, token, onProgress = () => {} } = {}) {
+
+/**
+ * A byte source that can hand out one range at a time.
+ *
+ * The path variant never allocates more than the range asked for, which is
+ * what keeps a 2.36 GiB render inside a 50 MB working set. The buffer variant
+ * exists so callers that already hold bytes — and every existing test — keep
+ * working unchanged.
+ */
+export function openSource(video) {
+  if (typeof video === "string") {
+    const size = statSync(video).size;
+    if (!Number.isInteger(size) || size <= 0) throw new Error(`uploadVideo: ${video} is empty or unreadable`);
+    const fd = openSync(video, "r");
+    return {
+      kind: "path",
+      size,
+      read(start, end) {
+        const length = end - start;
+        const buf = Buffer.allocUnsafe(length);
+        let filled = 0;
+        while (filled < length) {
+          const n = readSync(fd, buf, filled, length - filled, start + filled);
+          if (n <= 0) throw new Error(`uploadVideo: short read at byte ${start + filled} of ${video}`);
+          filled += n;
+        }
+        return buf;
+      },
+      close() { closeSync(fd); },
+    };
+  }
+  if (Buffer.isBuffer(video) || video instanceof Uint8Array) {
+    return { kind: "buffer", size: video.length, read: (start, end) => video.subarray(start, end), close() {} };
+  }
+  throw new Error("uploadVideo needs a file path or a Buffer");
+}
+
+export async function uploadVideo(video, { blogId, userId, token, onProgress = () => {} } = {}) {
   if (!blogId || !userId || !token) throw new Error("uploadVideo needs blogId, userId and token");
-  const total = buffer.length;
+
+  // A PATH, NOT A BUFFER, and the 2 GiB wall is why.
+  //
+  // Run 31909360969 rendered a video that passed every artifact check and then
+  // died on `readFileSync`: Node cannot return a Buffer larger than 2 GiB, and
+  // an eleven-minute 1080p render with film grain is 2.36. The whole file was
+  // never needed in memory — this is an S3 multipart upload whose parts are
+  // ~50 MB each, so the file is read one part at a time and no allocation is
+  // ever larger than a single part.
+  //
+  // A STREAMED BODY IS THE WRONG SHAPE HERE, and that was checked rather than
+  // assumed: the transaction is opened with a SHA-256 of EVERY part up front,
+  // and each part is then PUT to a presigned URL carrying that checksum and an
+  // exact Content-Length. A chunked or streamed body has neither, so S3
+  // rejects it. Per-part reads satisfy the contract exactly as written.
+  //
+  // Buffers are still accepted, unchanged, for callers that legitimately have
+  // one in hand (the tests, and any file small enough to have been read).
+  const source = openSource(video);
+  const total = source.size;
   const parts = planParts(total);
   const multipart = parts.length > 1;
 
   console.log(
     `[YTUpload] ${(total / 1024 / 1024).toFixed(1)} MB as ${parts.length} part(s) ` +
-    `(${multipart ? "multipart" : "single"})`
+    `(${multipart ? "multipart" : "single"}${source.kind === "path" ? ", read per part" : ""})`
   );
 
-  const withHashes = parts.map((p) => {
-    const bytes = buffer.subarray(p.start, p.end);
-    return { ...p, bytes, hash: sha256b64(bytes) };
-  });
+  // PASS ONE: hash every part. The transaction cannot be opened without all of
+  // them, so the file is walked once for checksums and once for the upload —
+  // two passes over disk, one part in memory at a time.
+  let withHashes;
+  try {
+    withHashes = parts.map((p) => ({ ...p, hash: sha256b64(source.read(p.start, p.end)) }));
+  } finally {
+    if (source.kind === "path") source.close();
+  }
 
   // 1. open the transaction
   const txRes = await api(`/v2/media/s3/upload-transactions?${authParams(blogId, userId)}`, token, {
@@ -201,8 +263,13 @@ export async function uploadVideo(buffer, { blogId, userId, token, onProgress = 
 
   // 2. upload every part
   const uploaded = [];
+  // PASS TWO: send them. Reopened here so the handle is not held across the
+  // transaction round-trip, and each part's bytes are read, sent and dropped.
+  const sending = openSource(video);
+  try {
   for (let i = 0; i < withHashes.length; i++) {
     const p = withHashes[i];
+    const bytes = sending.read(p.start, p.end);
     const res = await fetch(urls[i], {
       method: "PUT",
       headers: {
@@ -210,7 +277,7 @@ export async function uploadVideo(buffer, { blogId, userId, token, onProgress = 
         "Content-Length": String(p.size),
         "x-amz-checksum-sha256": p.hash,
       },
-      body: new Uint8Array(p.bytes),
+      body: new Uint8Array(bytes),
     });
     if (!res.ok) {
       const err = await res.text().catch(() => "");
@@ -219,6 +286,9 @@ export async function uploadVideo(buffer, { blogId, userId, token, onProgress = 
     uploaded.push({ partNumber: p.partNumber, etag: (res.headers.get("etag") || "").replace(/"/g, "") });
     onProgress({ part: p.partNumber, of: parts.length, bytes: p.size });
     console.log(`[YTUpload] part ${p.partNumber}/${parts.length} ok`);
+  }
+  } finally {
+    if (sending.kind === "path") sending.close();
   }
 
   // 3. complete

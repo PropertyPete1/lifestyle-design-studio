@@ -927,7 +927,11 @@ async function buildFromRecordings(approvals, record) {
       return;
     }
 
-    const upload = await uploadPrivate(readFileSync(rendered.outputPath), packaging, {
+    // THE PATH, NOT THE BYTES. readFileSync on the finished render threw
+    // ERR_FS_FILE_TOO_LARGE on run 31909360969 — Node caps a Buffer at 2 GiB
+    // and a grained eleven-minute 1080p render is 2.36. The uploader reads it
+    // one ~50 MB part at a time.
+    const upload = await uploadPrivate(rendered.outputPath, packaging, {
       blogId: process.env.METRICOOL_BLOG_ID,
       userId: process.env.METRICOOL_USER_ID,
       token: process.env.METRICOOL_API_TOKEN,
