@@ -1032,6 +1032,168 @@
         "requestId": "topic_pick-2026-08-07-d5cddf9d"
       },
       "videoId": "vid-2026-08-07-d5cddf9d"
+    },
+    {
+      "requestId": "topic_pick-2026-08-17-f60982b7",
+      "kind": "topic_pick",
+      "requestedAt": "2026-08-17T14:23:38.595Z",
+      "payload": {
+        "requestId": "topic_pick-2026-08-17-f60982b7",
+        "kind": "topic_pick",
+        "generatedAt": "2026-08-17T14:23:34.828Z",
+        "candidates": [
+          {
+            "index": 1,
+            "title": "Cost of living in San Antonio: what a $100k salary covers",
+            "intent": "cost_of_living",
+            "market": "san_antonio",
+            "query": "cost of living in san antonio texas salary",
+            "hook": "In San Antonio the mortgage is rarely what breaks the budget. the tax bill and the homeowners insurance premium are. Two houses at the same price on opposite sides of Loop 1604 can carry very different annual costs, and nobody tells you that until you're under contract.",
+            "outline": [
+              "No state income tax. what Texas takes back instead",
+              "Housing: what your money rents vs. buys in Stone Oak, Alamo Ranch and Converse",
+              "The tax bill: why the rate follows the address, not the price",
+              "Insurance, utilities and hail season. the line item newcomers forget",
+              "Cars, tolls and the 281/1604 commute tax on your time",
+              "Who actually lives comfortably here on that number, and who doesn't"
+            ],
+            "why": "For the transferee or remote worker weighing a Texas offer this month who needs to know if the raise is real once Bexar County property taxes and Texas insurance land on top of the loan.",
+            "footage": "H-E-B parking lot and interior, Stone Oak retail strips along 281, Alamo Ranch big-box corridor, older ranch homes in Converse, rush hour on Loop 1604, a Bexar County tax statement on a kitchen table with numbers blurred",
+            "proposedClips": [
+              {
+                "driveFileId": "1PCUXAl0Ic9HRiJgznGhkTHPtY0o0vbtF",
+                "fileName": "01F4C007-1610-4820-96C7-DA9F3B04C18E.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1OfV7aePdeAUCNW9WalLHA-G9t4J66k-C",
+                "fileName": "0ADF5F6D-2142-46B8-B7FF-92A47E26BBBA.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1AZEmO_PhCEBihd3aAGxLrVCPjGItXh7D",
+                "fileName": "0DD30D6E-844B-4927-9DF1-B8B7C97BC3A6.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1myE-M7tZy2FdxIqxqET020MI_0-emu0u",
+                "fileName": "0E10E0D1-9C5B-448E-AE06-2C0A75CE59A1.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1KSUmrce9sOq90aUkKmMbq-1Sq9ZIa8wq",
+                "fileName": "13527 Henri Castro, 78253.mov",
+                "reused": false
+              },
+              {
+                "driveFileId": "12z20Q19sKmJ9W457ykytyv6Xj6lkjik8",
+                "fileName": "136D8B22-84C0-4972-96E7-C5CE6EABF123.mp4",
+                "reused": false
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "title": "East of Austin: Manor, Elgin, Hutto and Taylor compared",
+            "intent": "neighborhood",
+            "market": "austin",
+            "query": "best suburbs east of austin manor hutto elgin taylor",
+            "hook": "Everybody moving to Austin looks west first, then finds out what west costs. The east side of the metro. Manor, Elgin, Hutto, Taylor. is where the same square footage is still reachable, but the four towns are not interchangeable and the difference is mostly schools and drive time.",
+            "outline": [
+              "Why buyers who started in Cedar Park end up looking east",
+              "Manor: closest in, US 290 and FM 973 commutes, Manor ISD",
+              "Elgin: small-town core, more land per dollar, longest drive downtown",
+              "Hutto and Pflugerville: SH 130 and I-35 access, Hutto ISD growth",
+              "Taylor: the Samsung effect and what it did to demand",
+              "Which one fits a downtown commuter, a hybrid worker, and a full remote buyer"
+            ],
+            "why": "For the family that priced out the western suburbs after a couple of weekends of showings and needs an honest read on the east side before writing it off on school ratings alone.",
+            "footage": "Downtown Elgin's brick main street, Manor subdivisions off 290, SH 130 toll traffic, new rooftops in Hutto, Taylor's courthouse square and industrial construction on the edge of town, wide open farmland between the towns",
+            "proposedClips": [
+              {
+                "driveFileId": "1P8zBnXRH39iBCRltI0SGm3OsnPM2D1rS",
+                "fileName": "43F026AE-08BC-49B4-9FA4-874AC786EA24.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "11lfUvvb6EN8D4EupsLuOfETdlYQ-JwCV",
+                "fileName": "55230395-251B-4699-9EA1-6FC5C6DD89BE.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1CDCKZ613tCnDj3vSMX9CAic0ONMB4Ld2",
+                "fileName": "59961A71-7309-493E-B0A2-EA1B219A4EBE.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1jEUxHWWJV8CTJVzZ2Lb81Zo0XDqoFzz_",
+                "fileName": "61757A2C-6A0C-4414-8FB3-ED97F77B39D7.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1rjDOfPXR6CdqxlYMlu_Gy9N5HNtZ7UVL",
+                "fileName": "7896A69E-AB0E-4C38-8050-2F2DB6A38E06.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1C7PWE8pRhCbEKK0CNigjVuflWA7bJYHD",
+                "fileName": "7E7FE1A5-D35A-4DFE-A1C3-7292FE5A777C.mp4",
+                "reused": false
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "title": "New construction under $400k near Austin. where is it left?",
+            "intent": "new_build",
+            "market": "austin",
+            "query": "new construction homes under 400k austin texas",
+            "hook": "There is still new construction under $400,000 in the Austin metro, but almost none of it is in Austin. The trade is roughly thirty to fifty minutes of highway for every hundred thousand dollars, and there's a second cost buried in the closing documents that most buyers don't read.",
+            "outline": [
+              "Where the price band actually exists now: Kyle, Buda, San Marcos, Jarrell, Hutto, Manor",
+              "What you give up first. lot size, garage, or drive time",
+              "MUD and PID districts: the tax line that makes a cheap house expensive",
+              "Spec homes vs. build-to-order, and why finished inventory prices differently",
+              "The I-35 and SH 130 commute reality from each of these towns",
+              "What to ask about before you sign in a section that isn't finished yet"
+            ],
+            "why": "For the first-time buyer who set a hard ceiling at $400k, keeps seeing Austin listings above it, and is deciding this week whether to widen the search radius or keep renting.",
+            "footage": "walkthrough of a finished spec home, framed houses and dirt lots in a Kyle or Jarrell section, subdivision entrance signs, I-35 southbound traffic, a plat map or community site plan on a phone screen",
+            "proposedClips": [
+              {
+                "driveFileId": "1P8zBnXRH39iBCRltI0SGm3OsnPM2D1rS",
+                "fileName": "43F026AE-08BC-49B4-9FA4-874AC786EA24.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "11lfUvvb6EN8D4EupsLuOfETdlYQ-JwCV",
+                "fileName": "55230395-251B-4699-9EA1-6FC5C6DD89BE.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1CDCKZ613tCnDj3vSMX9CAic0ONMB4Ld2",
+                "fileName": "59961A71-7309-493E-B0A2-EA1B219A4EBE.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1jEUxHWWJV8CTJVzZ2Lb81Zo0XDqoFzz_",
+                "fileName": "61757A2C-6A0C-4414-8FB3-ED97F77B39D7.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1rjDOfPXR6CdqxlYMlu_Gy9N5HNtZ7UVL",
+                "fileName": "7896A69E-AB0E-4C38-8050-2F2DB6A38E06.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1C7PWE8pRhCbEKK0CNigjVuflWA7bJYHD",
+                "fileName": "7E7FE1A5-D35A-4DFE-A1C3-7292FE5A777C.mp4",
+                "reused": false
+              }
+            ]
+          }
+        ]
+      }
     }
   ]
 }
