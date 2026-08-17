@@ -4158,6 +4158,30 @@
       "timestamp": "2026-08-17T19:10:09.486Z",
       "runId": "32058246931",
       "success": true
+    },
+    {
+      "driveFileId": "199ETN0pfmYM7vAdVmQqGZ1mpKIOzjsui",
+      "fileName": "3D0AF121-FE41-45F9-B859-66FAF7B09B2D.mp4",
+      "city": "san_antonio",
+      "caption": "Wait until you see the kitchen in this one 😮‍💨\n\nNew construction in San Antonio like this doesn't sit long. Starting at $530,000.\n\n✨ Open floor plan with natural light, modern finishes, and kitchen ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-17T19:10:08.885Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "insider_secret",
+      "content_hash": "fefff100000080ff:f8d087c8007ffff9:dffffffe9e070000:9f1ebdbd007e78b0:7f3f3f3f3e3c0000",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1vGrVOHr6O69PL_RZjHEa3WbhgV7eDvs7/view"
     }
   ],
   "lastTemplateIndex": -1
