@@ -2062,6 +2062,198 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-17",
+      "timestamp": "2026-08-17T14:18:47.726Z",
+      "pillar": "real_estate_education",
+      "topic": "Why a fixed rate loan still has a rising monthly payment in year two (escrow reset)",
+      "hook": "Texas buyers lock a fixed rate and still get a payment increase in year two.",
+      "closeType": "dm",
+      "keyword": "MATH",
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "Why a fixed rate loan still has a rising monthly payment in year two (escrow reset)",
+        "hook": "Texas buyers lock a fixed rate and still get a payment increase in year two.",
+        "map": [
+          "Rate vs payment",
+          "The first year guess",
+          "Year two reset",
+          "Paying it twice",
+          "Insurance renewal",
+          "The April 30 fix"
+        ],
+        "points": [
+          {
+            "title": "Your Rate Is Not Your Payment",
+            "body": [
+              "A fixed rate only locks the loan part.",
+              "Property taxes and insurance ride in the same monthly draft."
+            ],
+            "loop": "One of those three gets guessed."
+          },
+          {
+            "title": "The First Year Is A Guess",
+            "body": [
+              "At closing, the lender estimates your tax bill.",
+              "On a new build they often use the value of an empty lot."
+            ],
+            "loop": "The real bill arrives in October."
+          },
+          {
+            "title": "Year Two Reset",
+            "body": [
+              "The county finally appraises the finished house.",
+              "Your escrow account comes up short by the whole difference."
+            ],
+            "loop": "You pay that gap twice."
+          },
+          {
+            "title": "How The Gap Hits Twice",
+            "body": [
+              "The lender collects the missed money, spread over the next twelve months.",
+              "It also raises the draft going forward to cover the correct tax bill."
+            ],
+            "loop": "Something else renews every year too."
+          },
+          {
+            "title": "Insurance Renewal",
+            "body": [
+              "Texas wind and hail premiums have been climbing fast.",
+              "When your policy renews higher, escrow adjusts again."
+            ],
+            "loop": "The deadline is April 30."
+          },
+          {
+            "title": "File Your Homestead Exemption",
+            "body": [
+              "It lowers the taxable value on your primary home.",
+              "It also caps how much that value can rise each year at 10 percent."
+            ],
+            "loop": "The true number is knowable upfront."
+          }
+        ],
+        "cta": {
+          "payoff": "the full payment breakdown, with taxes and insurance included"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 6,
+        "worst_problem": "The DM payoff — \"the full payment breakdown, with taxes and insurance included\" — is a vague deliverable rather than a named, picturable artefact, so it reads like a soft offer to talk rather than a thing worth typing for.",
+        "fix": "Name the artefact and bound it, e.g. \"Comment MATH and I'll DM you the Year-Two Escrow Worksheet: plug in your build's finished value and see the exact payment you'll be drafted in month 13\" — and sharpen the slide-1 loop from \"One of those three gets guessed\" to something that names the three parts, like \"Only one of the three is guessed.\""
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 363092542,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-17T14:21:48.312Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675004885628161293"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 363092547,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-17T14:21:48.452Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495122196449669120"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 363092588,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-17T14:21:48.596Z",
+          "publicUrl": "https://www.instagram.com/p/DcJPQQZjXMv/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 363092622,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-17T14:21:48.736Z",
+          "publicUrl": "https://www.instagram.com/p/DcJPVxNiGe1/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 363092628,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-17T14:21:48.869Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495122196139237376"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 363092685,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-17T14:21:48.998Z",
+          "publicUrl": "https://www.instagram.com/p/DcJPWmjiLY5/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 363092688,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-17T14:21:49.130Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122114683905400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 363092691,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-17T14:21:49.261Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495122192414908416"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-17T14:21:49.262Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
