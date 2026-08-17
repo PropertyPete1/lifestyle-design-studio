@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-08-16",
+      "window": "pm",
+      "sourceVideoId": "1HWPOJp4d_O2JFF4JLuvM907qkUOrvKey",
+      "sourceFileName": "73617733-648E-4AC4-B625-E13C471B268F.mp4",
+      "city": "san_antonio",
+      "hookAngle": "feature_callout",
+      "variantNumber": 3,
+      "caption": "Look at this kitchen island. This is the kind of space that actually works for real life.\n\nNew construction starting at $349,999 in San Antonio is moving fast. Builder incentives are live right now.\n\n",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1DAeo_F_byaTXcohWaf8XT4Ek_u9G93sp/view",
+      "generatedAt": "2026-08-17T00:00:03.637Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-08-16",
       "window": "am",
       "sourceVideoId": "1HWPOJp4d_O2JFF4JLuvM907qkUOrvKey",
       "sourceFileName": "73617733-648E-4AC4-B625-E13C471B268F.mp4",
