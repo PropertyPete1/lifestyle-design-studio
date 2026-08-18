@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "team_wins",
-      "body": "We just closed out a strong quarter. Not because we got lucky. Because we showed up consistently and backed each other up when it mattered.\n\n1. We took on deals other agents turned down. Harder files. Tougher negotiations. But we did them as a team. Someone jumped in when closing got messy. Someone else handled the problem solve. That's not heroic. That's just how we operate.\n\n2. The agents here aren't chasing splits. They're building something. They're learning systems that work. They're not repeating the same year five times. They're actually moving forward.\n\n3. We celebrate wins together. A close is a close. But when someone breaks through and does something new, we all feel it. That momentum carries into the next deal.\n\nThis is what winning feels like when you're not grinding alone. You're part of something that actually grows the people in it, not just the brokerage.",
-      "format": "list",
-      "ending": "strong_close",
-      "date": "2026-08-13"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We've got more buyer and lease leads than we can work right now.\n\nNew construction in San Antonio and Austin. Out-of-state relocations. They're warm but they need vetting and real follow-up. Most aren't ready to close today. But if you're built to nurture leads and take your time building relationships with people who are serious about moving, this is real work. Not a sprint. Not a gimmick.\n\nIf this sounds like something you'd take on, send me a DM.",
       "format": "bold_statement",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "dm_cta",
       "date": "2026-08-18"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We've got more buyer and lease leads than we can work right now. New construction in San Antonio and Austin. Out-of-state relocations. They're warm but need vetting and real follow-up. Most aren't ready to close today. If this sounds like something you'd take on, send me a DM.",
+      "format": "short_punchy",
+      "ending": "dm_cta",
+      "date": "2026-08-11"
     }
   ]
 }
