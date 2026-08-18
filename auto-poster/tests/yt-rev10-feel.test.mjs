@@ -62,7 +62,7 @@ function fakeClient(conceptAnswer) {
 function fakeFetcher(decide) {
   const calls = [];
   const fn = async (opts) => {
-    calls.push({ keywords: opts.keywords, subject: opts.subject, seconds: opts.seconds });
+    calls.push({ keywords: opts.keywords, subject: opts.subject, seconds: opts.seconds, context: opts.context ?? null });
     return decide(opts, calls.length);
   };
   fn.calls = calls;
@@ -594,6 +594,128 @@ describe("run-31808464092 sweep: slack is real, leftovers get footage, degenerat
       visionClient: client, stockFetcher: fetcher2,
     });
     assert.deepEqual(fetcher2.calls[0].keywords, w2.keywords, "a derived subject keeps the window's own words first");
+  });
+});
+
+
+describe("video-2 sweep: the bridge is a map, coverage is the video, and words carry their sense", () => {
+  test("a place-span bridge renders the road network; a connective bridge holds the previous scene", async (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    process.env.PEXELS_API_KEY = "sweep-test-key";
+    t.after(() => { delete process.env.PEXELS_API_KEY; });
+
+    const clip = join(dir, "clip.mp4");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=30:duration=16", "-pix_fmt", "yuv420p", clip]);
+    // Window 1 matches; window 2 fails everything so its remainder becomes the
+    // bridge. The take text puts a PROPER NAME under the failing span, so the
+    // bridge must be the map texture.
+    // The name sits at the sentence END so the surviving bridge span — the
+    // take's last two seconds — actually contains it. (First draft put the
+    // name mid-sentence; the continuation covered it and the held-frame
+    // branch fired correctly, which is the detector working, not failing.)
+    const placeText = "The kitchen has a big island and a nice yard, with quiet streets right past Timberwood Park.";
+    const fetcher = fakeFetcher((opts, n) =>
+      n === 1
+        ? { clip: { path: clip, seconds: opts.seconds, gradedSeconds: 14, contentHash: "h1", credit: { line: "t" }, query: opts.keywords[0] }, attempts: [] }
+        : { clip: null, attempts: [{ stage: "vision", reason: "sweep: no" }] }
+    );
+    const { plan: built } = await buildVisuals(
+      { segments: [vo("t1", placeText, 16)] },
+      { workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords, visionClient: fakeClient({ filmable: false }), stockFetcher: fetcher }
+    );
+    const beats = built.segments[0].broll.filter((b) => b.kind === "beat");
+    assert.ok(beats.length >= 1, "the failing span left a bridge");
+    for (const b of beats) {
+      assert.match(b.sourcePath, /beat-/, `a place-span bridge must be the rendered map texture, got ${b.sourcePath}`);
+    }
+
+    // Same shape, but the failing span is pure connective — the bridge must
+    // hold the previous real scene instead.
+    const connectiveText = "The kitchen has a big island and a nice yard. People get this wrong constantly whenever they look.";
+    const fetcher2 = fakeFetcher((opts, n) =>
+      n === 1
+        ? { clip: { path: clip, seconds: opts.seconds, gradedSeconds: 14, contentHash: "h2", credit: { line: "t" }, query: opts.keywords[0] }, attempts: [] }
+        : { clip: null, attempts: [{ stage: "vision", reason: "sweep: no" }] }
+    );
+    const { plan: built2 } = await buildVisuals(
+      { segments: [vo("t2", connectiveText, 16)] },
+      { workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords, visionClient: fakeClient({ filmable: false }), stockFetcher: fetcher2 }
+    );
+    const beats2 = built2.segments[0].broll.filter((b) => b.kind === "beat");
+    assert.ok(beats2.length >= 1);
+    assert.ok(
+      beats2.some((b) => /bridge-hold-/.test(b.sourcePath)),
+      `a connective bridge holds the previous scene's frame, got ${beats2.map((b) => b.sourcePath).join(", ")}`
+    );
+  });
+
+  test("coverage describes the FINAL broll, not the planner's blocks", async (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    process.env.PEXELS_API_KEY = "sweep-test-key";
+    t.after(() => { delete process.env.PEXELS_API_KEY; });
+    const clip = join(dir, "c.mp4");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=30:duration=20", "-pix_fmt", "yuv420p", clip]);
+    const fetcher = fakeFetcher((opts) => ({
+      clip: { path: clip, seconds: opts.seconds, gradedSeconds: 20, contentHash: `h${fetcher.calls.length}`, credit: { line: "x" }, query: opts.keywords[0] },
+      attempts: [],
+    }));
+    const { report, plan: built } = await buildVisuals(
+      { segments: [vo("t1", "The kitchen has a big island and the yard has oak trees over the patio out back there.", 17)] },
+      { workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords, visionClient: fakeClient({ filmable: false }), stockFetcher: fetcher }
+    );
+    const finalBeat = built.segments[0].broll.filter((b) => b.kind === "beat").reduce((n, b) => n + b.seconds, 0);
+    assert.equal(report.bySource.beat || 0, Math.round(finalBeat * 100) / 100,
+      "the coverage split must sum the broll the renderer plays, not the plan the bridge rewrote");
+    // The planner's own floor put far more beat in the BLOCKS than survives
+    // bridging — the old bug reported that stale number.
+    const plannedBeat = built.segments[0].visualBlocks.filter((b) => b.kind === "beat").reduce((n, b) => n + b.seconds, 0);
+    assert.ok(plannedBeat > finalBeat + 2, `fixture too tame to prove the distinction (planned ${plannedBeat}s vs final ${finalBeat}s)`);
+  });
+
+  test("the vision check hears the window's words for sense, with names stripped", async (t) => {
+    if (!HAVE_FFMPEG) return t.skip("ffmpeg not installed");
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    process.env.PEXELS_API_KEY = "sweep-test-key";
+    t.after(() => { delete process.env.PEXELS_API_KEY; });
+    const clip = join(dir, "c.mp4");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=30:duration=16", "-pix_fmt", "yuv420p", clip]);
+    const fetcher = fakeFetcher((opts) => ({
+      clip: { path: clip, seconds: opts.seconds, gradedSeconds: 16, contentHash: "h1", credit: { line: "x" }, query: opts.keywords[0] },
+      attempts: [],
+    }));
+    await buildVisuals(
+      // Mid-sentence, so the transcript pipeline can actually KNOW it is a
+      // name — a sentence-initial single-occurrence capital is structurally
+      // unknowable, and that is the classifier being honest, not lax.
+      { segments: [vo("t1", "Folks near Randolph keep the base gate busy during the morning commute every single day.", 8)] },
+      { workDir: dir, ffmpeg: runFfmpeg, getWordTimestamps: noWords, visionClient: fakeClient({ filmable: false }), stockFetcher: fetcher }
+    );
+    const ctx = fetcher.calls[0].context;
+    assert.ok(ctx && /base gate|commute/.test(ctx), `the sense context carries the window's words: ${JSON.stringify(ctx)}`);
+    assert.ok(!/randolph/i.test(ctx), "and the name is stripped before the check can hear it");
+  });
+
+  test("the sense line reaches the vision prompt and stays out when absent", async () => {
+    const { visionCheckClip } = await import("../src/yt-stock.js");
+    let seen = null;
+    const client = { messages: { create: async ({ messages }) => {
+      seen = messages[0].content.find((c) => c.type === "text").text;
+      return { content: [{ type: "text", text: '{"ok": false, "reason": "x"}' }] };
+    } } };
+    const dir = mkdtempSync(join(tmpdir(), "sweep-"));
+    const png = join(dir, "f.jpg");
+    runFfmpeg(["-y", "-f", "lavfi", "-i", "color=c=0x224466:s=64x36:d=1", "-frames:v", "1", png]);
+    await visionCheckClip([png], { subject: "a base", context: "the base gate during the morning commute", client });
+    assert.match(seen, /word sense only/, "the sense line is present");
+    assert.match(seen, /base gate during the morning commute/);
+    await visionCheckClip([png], { subject: "a base", client });
+    assert.doesNotMatch(seen, /word sense only/, "and absent when no context is given");
+    rmSync(dir, { recursive: true, force: true });
   });
 });
 

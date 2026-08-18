@@ -593,6 +593,55 @@ function resolveRoad(name, roads) {
  * silent fallback to footage rather than a map of the wrong city. Partial
  * matches are kept: naming four places and getting three is a good map.
  */
+
+/**
+ * The bridge texture: the market's whole road network, dim and label-free,
+ * drifting slowly.
+ *
+ * THIS RETIRES THE RADAR. The wordless bridge used to be concentric gold arcs
+ * with a pulsing dot — abstract geometry whose visual idiom is radar/sonar,
+ * and Peter's own read of it was "an alien-radar app, not my brand". Nineteen
+ * appearances a video taught viewers a rhythm: this shape means the video
+ * paused. The road network carries none of that: it is the same map the video
+ * lives in — real TIGER data, the channel's actual signature — with no labels
+ * and no claims, so a two-second hold reads as "still in the city" rather
+ * than "content missing".
+ *
+ * The drift is linear and slow — phase arrives in the beat's own units (92.5
+ * per second), and 0.35px of source travel per unit is about one output pixel
+ * per frame: alive to the eye and to the duplicate-frame gate, gentle enough
+ * to read as a settled camera rather than a move.
+ */
+export function mapTextureSvg({ market = "san_antonio", phase = 0 } = {}) {
+  const { roads } = loadMarket(market);
+  const bounds = boundsOf(roads.features);
+  const project = buildProjection(bounds, { padding: 60 });
+  const t = Number(phase) || 0;
+  const dx = -(t * 0.35);
+  const dy = -(t * 0.18);
+
+  const strokes = roads.features
+    .map((f) => `<path d="${pathFor(f, project)}" fill="none" stroke="${CONTEXT_STROKE}" stroke-width="${CONTEXT_WIDTH * 2.6}" stroke-linejoin="round" stroke-linecap="round"/>`)
+    .join("\n    ");
+
+  // Scaled about the frame centre so the network FILLS the frame the way the
+  // labelled maps do, then drifted. Visibly a road map at a glance — the whole
+  // point — while claiming nothing: no labels, no highlight, no places.
+  const cx = MAP_WIDTH / 2;
+  const cy = MAP_HEIGHT / 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" viewBox="0 0 ${MAP_WIDTH} ${MAP_HEIGHT}">
+  <rect width="${MAP_WIDTH}" height="${MAP_HEIGHT}" fill="${BG}"/>
+  <g transform="translate(${(cx + dx).toFixed(1)} ${(cy + dy).toFixed(1)}) scale(1.85) translate(${-cx} ${-cy})" opacity="0.85">
+    ${strokes}
+  </g>
+  <text x="${MAP_WIDTH - 96}" y="${MAP_HEIGHT - 72}" font-family="${SANS}" font-size="24" fill="${ACCENT_DIM}" fill-opacity="0.75" text-anchor="end">${esc(MAP_ATTRIBUTION)}</text>
+</svg>`;
+}
+
+export async function mapTexturePng({ market = "san_antonio", phase = 0 } = {}) {
+  return sharp(Buffer.from(mapTextureSvg({ market, phase }))).png({ compressionLevel: 9 }).toBuffer();
+}
+
 export function mapSpecForIntent(spec, { market = "san_antonio", maxLabels = 6 } = {}) {
   if (!spec) return null;
   let roads, places;

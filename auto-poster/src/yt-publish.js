@@ -156,7 +156,7 @@ export function assertPrivate(body) {
 }
 
 /** The review email — what he watched, what is left to do, and what to reply. */
-export function renderReviewText({ packaging, youtubeUrl, driveLink, checklist, stats = {} }) {
+export function renderReviewText({ packaging, youtubeUrl, driveLink, checklist, stats = {}, watchReport = null }) {
   const lines = [];
   lines.push(`READY FOR REVIEW — ${packaging.title}`);
   lines.push("");
@@ -165,6 +165,10 @@ export function renderReviewText({ packaging, youtubeUrl, driveLink, checklist, 
   lines.push("");
   if (stats.runtimeMinutes) lines.push(`${stats.runtimeMinutes} min, ${stats.resolution || "1080p"}`);
   lines.push("");
+  if (watchReport) {
+    lines.push(watchReport);
+    lines.push("");
+  }
   lines.push("BEFORE IT GOES PUBLIC — these are yours to do, the API cannot reach them:");
   checklist.forEach((item, i) => lines.push(`  ${i + 1}. ${item}`));
   lines.push("");
@@ -194,6 +198,7 @@ export async function requestReview({
   stats,
   accessToken = null,
   narrationMode = NARRATION_MODE,
+  watchReport = null,
   // What the render actually contained. Null when the caller did not look —
   // see disclosureRequired for why that falls back to the mode rather than
   // assuming the safe-sounding answer.
@@ -219,7 +224,7 @@ export async function requestReview({
       stats,
     },
     emailSubject: `Review: ${packaging.title}`,
-    emailBody: renderReviewText({ packaging, youtubeUrl, driveLink, checklist, stats }),
+    emailBody: renderReviewText({ packaging, youtubeUrl, driveLink, checklist, stats, watchReport }),
     accessToken,
   });
 }

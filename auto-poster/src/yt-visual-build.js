@@ -36,8 +36,8 @@ import { existsSync, writeFileSync } from "fs";
 import { planVisuals, REASON, coverageReport } from "./yt-visual-plan.js";
 import { MIN_BLOCK_SECONDS } from "./yt-visual-plan.js";
 import { SCENE_MAX_SECONDS, BEAT_BRIDGE_MAX_SECONDS } from "./yt-config.js";
-import { documentFrequencies, properLexicon, keywordsForWindow } from "./yt-scene-keywords.js";
-import { deriveConcept } from "./yt-concept-fallback.js";
+import { documentFrequencies, properLexicon, keywordsForWindow, windowTokens, classifyTokens } from "./yt-scene-keywords.js";
+import { deriveConcept, sanitiseSubject } from "./yt-concept-fallback.js";
 
 /**
  * The longest graphic animation we will render for one take.
@@ -77,6 +77,7 @@ export function phaseArgs(input, output, from, seconds) {
   ];
 }
 import { renderAnimatedGraphic, renderBeatClip, assertAnimated, assertClipCovers } from "./yt-visual-animate.js";
+import { kenBurnsArgs } from "./yt-visual-broll.js";
 import { fetchStockClip, stockEnabled, stockQuotaStats, StockQuotaError } from "./yt-stock.js";
 import { preserveGateEvidence } from "./yt-evidence.js";
 import { MAP } from "./yt-visual-intent.js";
@@ -373,7 +374,7 @@ export async function buildVisuals(plan, {
     const broll = await materialiseBlocks(seg, blocks, {
       dir, ffmpeg, index: () => index++,
       beatPhaseRef: { get: () => beatPhase, advance: () => { beatPhase += 313; } },
-      animationFailures,
+      animationFailures, market,
     });
 
     // A take PLANNED for stock whose every window came back empty is a fall, and
@@ -627,6 +628,10 @@ async function resolveStockWindow(seg, block, {
         // the clip is on screen, proper nouns stripped — the check has never
         // been allowed to know a place name and still is not.
         subject: win.verifySubject || win.subject,
+        // The window's own words, names stripped, so the check can tell which
+        // SENSE of an ambiguous noun the sentence means — the fix for the
+        // baseball diamond that matched "base" under military narration.
+        context: sanitiseSubject(win.phrase, { banned: new Set([...(win.dropped || []).map((w) => String(w).toLowerCase()), ...lexicon]) }),
         index: index(),
         ...fetchOpts,
       });
@@ -661,6 +666,7 @@ async function resolveStockWindow(seg, block, {
         const r = await stockFetcher({
           keywords: [concept.query],
           subject: concept.subject,
+          context: sanitiseSubject(win.phrase, { banned }),
           index: index(),
           ...fetchOpts,
         });
@@ -888,7 +894,7 @@ export function bridgeBeats(blocks, {
  * cut from the graded file's spare tail; beats are rendered at their final
  * bridge length and verified before they may enter the timeline.
  */
-async function materialiseBlocks(seg, blocks, { dir, ffmpeg, index, beatPhaseRef, animationFailures }) {
+async function materialiseBlocks(seg, blocks, { dir, ffmpeg, index, beatPhaseRef, animationFailures, market = "san_antonio" }) {
   const broll = [];
   let graphicCursor = 0;
   const stockCursor = new Map(); // clip.path -> seconds of the file already scheduled
@@ -971,12 +977,40 @@ async function materialiseBlocks(seg, blocks, { dir, ffmpeg, index, beatPhaseRef
     if (block.kind === "beat") {
       const bi = index();
       try {
-        const beat = await renderBeatClip({
-          seconds: block.seconds, dir, index: bi, ffmpeg, writeFileSync,
-          // Phase carries across the video so two beats are never the same
-          // geometry, the way two stock blocks are never the same window.
-          startPhase: beatPhaseRef.get(),
-        });
+        // WHICH BRIDGE, decided by what the words are doing. A span whose
+        // words name things (proper phrases present) gets the MAP TEXTURE —
+        // the geography is the subject, so the network is the honest hold. A
+        // pure connective ("get this wrong constantly,") holds the LAST FRAME
+        // of the previous real scene with a slow push instead: an editorial
+        // beat a viewer never questions, because it is the shot they were
+        // already watching. No previous scene → texture. Any failure on the
+        // held-frame path → texture. The radar appears nowhere.
+        let beat = null;
+        const cumulative = blocks.slice(0, blocks.indexOf(block)).reduce((n, b) => n + (b.seconds || 0), 0);
+        const span = windowTokens(seg, { startAt: cumulative, seconds: block.seconds });
+        const { properPhrases } = classifyTokens(span, { lexicon: properLexicon([seg]) });
+        const prevReal = [...broll].reverse().find((b) => b.sourcePath && b.kind !== "beat");
+        if (properPhrases.length === 0 && prevReal) {
+          try {
+            const still = join(dir, `bridge-still-${seg.takeId}-${bi}.png`);
+            ffmpeg(["-y", "-sseof", "-0.15", "-i", prevReal.sourcePath, "-frames:v", "1", "-q:v", "2", still]);
+            const clip = join(dir, `bridge-hold-${seg.takeId}-${bi}.mp4`);
+            ffmpeg(kenBurnsArgs(still, clip, { seconds: block.seconds, dim: { w: 1920, h: 1080 }, fps: 30 }));
+            beat = { path: clip, seconds: block.seconds };
+          } catch (err) {
+            console.warn(`[Visuals] held-frame bridge failed for ${seg.takeId} (${err.message}) — map texture instead`);
+            beat = null;
+          }
+        }
+        if (!beat) {
+          beat = await renderBeatClip({
+            seconds: block.seconds, dir, index: bi, ffmpeg, writeFileSync,
+            // Phase carries across the video so two bridges are never the same
+            // drift position, the way two stock blocks are never the same window.
+            startPhase: beatPhaseRef.get(),
+            market,
+          });
+        }
         beatPhaseRef.advance();
         // THE BEAT IS VERIFIED LIKE EVERYTHING ELSE. It was the one generated
         // clip that entered the timeline on trust, and card 11 spent 84 frozen

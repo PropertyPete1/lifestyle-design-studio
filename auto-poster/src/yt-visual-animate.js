@@ -42,8 +42,8 @@
 import { join } from "path";
 import sharp from "sharp";
 
-import { renderCardPng, revealLabels, countUp, renderBeatPng } from "./yt-card-render.js";
-import { renderMapPng, mapRevealLabels, mapRevealTargets, highlightedRoadIds } from "./yt-map-render.js";
+import { renderCardPng, revealLabels, countUp } from "./yt-card-render.js";
+import { renderMapPng, mapRevealLabels, mapRevealTargets, highlightedRoadIds, mapTexturePng } from "./yt-map-render.js";
 import { frameDifference } from "./yt-visual-qc.js";
 import { planReveals, planMapReveals, MAX_STATIC_SECONDS } from "./yt-reveal-timing.js";
 import { GRAPHIC_TWEEN_FPS, BEAT_MAX_FRAMES } from "./yt-config.js";
@@ -971,7 +971,7 @@ function round(n) {
  * so there is no transcript to read, no phrase to window, and nothing that could
  * ever contradict the caption underneath it.
  */
-export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FPS, ffmpeg, writeFileSync, startPhase = 0, push = true }) {
+export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FPS, ffmpeg, writeFileSync, startPhase = 0, push = true, market = "san_antonio" }) {
   const total = Math.max(0.2, Number(seconds) || 0);
   // THE BEAT MOVED AT 2.5 FRAMES A SECOND, and it carried more than half the
   // runtime. One state per 0.4s was chosen so "a long beat does not cost more
@@ -999,7 +999,15 @@ export async function renderBeatClip({ seconds, dir, index = 0, fps = GRAPHIC_FP
   // faster, which is not a smoother beat, it is a different and much worse one.
   const perFrame = (BEAT_PHASE_PER_SECOND * total) / count;
   for (let i = 0; i < count; i++) {
-    const png = await renderBeatPng(startPhase + i * perFrame);
+    // THE RADAR IS RETIRED. The bridge frame is now the market's own road
+    // network — dim, label-free, drifting — instead of concentric gold arcs.
+    // The arcs' visual idiom was radar/sonar; Peter's read of his own video
+    // was "an alien-radar app, not my brand", and nineteen appearances a
+    // video taught viewers that the shape meant the video had paused. The
+    // road texture is the same map the video lives in, so a two-second hold
+    // reads as "still in the city". Phase still walks so consecutive bridges
+    // differ, and the drift keeps every frame honestly distinct.
+    const png = await mapTexturePng({ market, phase: startPhase + i * perFrame });
     const p = join(dir, `${stem}-s${String(i).padStart(3, "0")}.png`);
     writeFileSync(p, png);
     framePaths.push(p);

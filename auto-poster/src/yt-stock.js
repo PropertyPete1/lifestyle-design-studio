@@ -320,7 +320,7 @@ export function gradeArgs(input, output, { seconds, dim = { w: 1920, h: 1080 }, 
  *
  * @returns {{ ok: boolean, reason: string }}
  */
-export async function visionCheckClip(framePaths, { subject, client, model = "claude-haiku-4-5-20251001" } = {}) {
+export async function visionCheckClip(framePaths, { subject, context = null, client, model = "claude-haiku-4-5-20251001" } = {}) {
   if (!client) return { ok: false, reason: "no vision client available" };
   if (!framePaths || framePaths.length === 0) return { ok: false, reason: "no frames could be extracted" };
 
@@ -350,8 +350,24 @@ export async function visionCheckClip(framePaths, { subject, client, model = "cl
   // Criteria 1, 2, 4 and 5 are unchanged and stay strict. Those are what stop a
   // watermark, a title card or somebody presenting a product reaching the
   // video, and the probe showed them working exactly as intended.
-  const prompt = `These frames are from a stock video clip being considered as generic B-roll for an educational real-estate video. It should depict: "${subject}".
+  // THE SENSE LINE, and the baseball field that made it necessary. "base" in
+  // a sentence about a military installation matched an aerial of a baseball
+  // diamond — twice, on two different windows, across two videos' worth of
+  // renders — because the check was handed a bare noun and a baseball field IS
+  // plausibly "a base". The subject stays a plain depiction question, but the
+  // check now also hears the words spoken while the clip plays (proper nouns
+  // already stripped by the caller) and must reject a clip whose subject is a
+  // DIFFERENT SENSE of the word than those words intend. Word-sense
+  // disambiguation is a property of English, not of real estate: "base" near
+  // "front gate, commute, service" is an installation; near "pitcher, innings"
+  // it is a diamond. Nothing here reintroduces the unanswerable-sentence
+  // problem — criterion 3 still asks only what the frames show.
+  const senseLine = context
+    ? `\nContext, for word sense only — the words spoken while this clip plays: "${String(context).slice(0, 160)}". If the clip shows a different sense of "${subject}" than these words intend (for example a sports "base" under words about a military base), that is a criterion 3 failure.\n`
+    : "";
 
+  const prompt = `These frames are from a stock video clip being considered as generic B-roll for an educational real-estate video. It should depict: "${subject}".
+${senseLine}
 Reject the clip if ANY of these is true:
 1. There is a watermark, logo, or stock-agency mark anywhere in the frame.
 2. There is burned-in text, a caption, a title card, or on-screen writing of any kind.
@@ -435,6 +451,9 @@ export async function fetchStockClip({
   keywords = [],
   seconds,
   subject = null,
+  // The spoken words for the window, proper nouns already stripped — the
+  // vision check reads them for word-sense only. See visionCheckClip.
+  context = null,
   dir,
   index = 0,
   orientation = "landscape",
@@ -536,7 +555,7 @@ export async function fetchStockClip({
       const gradedSeconds = measuredSeconds(graded) || askSeconds;
 
       const frames = extractFrames(graded, { seconds, dir, index, ffmpeg });
-      const verdict = await visionCheckClip(frames, { subject: subject || keyword, client });
+      const verdict = await visionCheckClip(frames, { subject: subject || keyword, context, client });
       if (!verdict.ok) {
         attempts.push({ keyword, videoId: video.id, stage: "vision", reason: verdict.reason });
         continue;
