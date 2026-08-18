@@ -4293,6 +4293,30 @@
       "timestamp": "2026-08-18T22:09:18.436Z",
       "runId": "32178566533",
       "success": true
+    },
+    {
+      "driveFileId": "1PY-4BXYhq5VV17XnkJro8mqb69Aw1yKr",
+      "fileName": "48AEE3B9-F224-4600-885D-FC93E0B1A7CA.mp4",
+      "city": "san_antonio",
+      "caption": "the floor plan in this one stopped me mid-tour\n\nnew construction in New Braunfels hits different when it's built this clean. these homes move fast.\n\n✨ everyday living hits\n\nopen concept flow, natural ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-18T22:09:18.271Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "New Braunfels",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "deadpan_comedian",
+      "content_hash": "c0fcff0000fcff7f:41415f594053dfff:c7c7c7c7c7c70787:e0f39f3f8c8c187b:fcff0f011e1feff8",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1yVvvGdni9UfM-R4Uy1Ouyyuk-T0ekzgC/view"
     }
   ],
   "lastTemplateIndex": -1
