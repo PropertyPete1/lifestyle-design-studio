@@ -2254,6 +2254,198 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-18",
+      "timestamp": "2026-08-18T14:24:02.457Z",
+      "pillar": "texas_lifestyle",
+      "topic": "Texas school district lines do not match city lines (DFW and Austin suburbs)",
+      "hook": "A Frisco address can land you in four different school districts. Most buyers find out late.",
+      "closeType": "question",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "Texas school district lines do not match city lines (DFW and Austin suburbs)",
+        "hook": "A Frisco address can land you in four different school districts. Most buyers find out late.",
+        "map": [
+          "One city, four districts",
+          "Address, not mailing city",
+          "The A is an average",
+          "Boundaries get redrawn",
+          "Transfer windows close",
+          "What buyers pay for"
+        ],
+        "points": [
+          {
+            "title": "One City, Four Districts",
+            "body": [
+              "A Frisco address can sit in Frisco ISD, Lewisville ISD, Prosper ISD or Little Elm ISD.",
+              "Same city on your mail. Four different school systems."
+            ],
+            "loop": "One street can split in two."
+          },
+          {
+            "title": "Your Address Decides",
+            "body": [
+              "Schools are assigned by your exact address, not by your city and not by distance.",
+              "The campus you can see from the porch may not be the one your kid attends."
+            ],
+            "loop": "The district rating hides more."
+          },
+          {
+            "title": "The A Is An Average",
+            "body": [
+              "A district rating is the average of every campus inside it.",
+              "In one A rated district, individual campuses can run from A down to C."
+            ],
+            "loop": "Even the right campus can move."
+          },
+          {
+            "title": "Boundaries Get Redrawn",
+            "body": [
+              "Fast growing suburbs in DFW and Austin open new schools, then move kids over to fill them.",
+              "Your street can get reassigned while you are still living in the same house."
+            ],
+            "loop": "There is a way out. It closes early."
+          },
+          {
+            "title": "Transfers Fill Up Fast",
+            "body": [
+              "Most Texas districts let you request a transfer to a different campus.",
+              "The window usually opens in winter, and the campuses everyone wants hit capacity in weeks."
+            ],
+            "loop": "Your buyer cares more than you did."
+          },
+          {
+            "title": "Buyers Pay For Zoning",
+            "body": [
+              "Two nearly identical houses can sell for different money based on which campus they feed.",
+              "If your street gets rezoned, that premium walks over to the house behind you."
+            ],
+            "loop": "Most buyers confirm their campus too late."
+          }
+        ],
+        "cta": {
+          "question": "Top rated campus or shorter commute?"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 6,
+        "loops": 8,
+        "cta": 6,
+        "worst_problem": "The closing question introduces \"shorter commute,\" a tradeoff the deck never raised, so it reads bolted on rather than earned by the six slides that preceded it.",
+        "fix": "Replace the close with an either/or drawn from the deck itself — e.g. \"Buy in the A district, or buy the A campus? One word.\" — and drop the competing \"save this\" ask."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 363566251,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-18T14:27:03.000Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675377296714321165"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 363566255,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-18T14:27:03.130Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495485934520442881"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 363566306,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-18T14:27:03.254Z",
+          "publicUrl": "https://www.instagram.com/p/DcL0vsbiAl7/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 363566342,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-18T14:27:03.385Z",
+          "publicUrl": "https://www.instagram.com/p/DcL0uo9iE6I/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 363566348,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-18T14:27:03.499Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495485934172286976"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 363566387,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-18T14:27:03.610Z",
+          "publicUrl": "https://www.instagram.com/p/DcL0vKwimnL/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 363566394,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-18T14:27:03.726Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122114932023400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 363566398,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-18T14:27:03.843Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495485932972699649"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-18T14:27:03.844Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
