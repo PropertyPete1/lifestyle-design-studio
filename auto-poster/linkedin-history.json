@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "leadership_culture",
-      "body": "You don't build a strong team with compensation. You build it by showing up for people.\n\nWhen an agent closes a deal here, we celebrate it. When they hit a rough patch, we don't disappear. We problem solve together. We share what works and what doesn't. We back each other up on the hard transactions. That's the difference between working at a brokerage and being part of something that actually feels like a team. Agents stay where they feel seen and supported, not where they chase the highest split.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
-      "format": "bold_statement",
-      "ending": "dm_cta",
-      "date": "2026-08-06"
-    },
-    {
       "topic": "why_agents_leave",
       "body": "Agents leave when splits feel bigger than support. When they're grinding solo. When nobody knows their actual struggle. When wins get filed away and losses pile up. They're not chasing commissions. They're chasing belief. Someone who actually has their back.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
       "format": "short_punchy",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "strong_close",
       "date": "2026-08-13"
+    },
+    {
+      "topic": "wish_i_knew",
+      "body": "I wish I'd known that having the best leads means nothing if you don't have a system to work them. I spent years chasing deals instead of building a process. Now our agents don't chase. They follow a rhythm. They know what works because they've documented it. They repeat it. That's the difference between busy and successful.",
+      "format": "short_punchy",
+      "ending": "strong_close",
+      "date": "2026-08-19"
     }
   ]
 }

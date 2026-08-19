@@ -4442,6 +4442,31 @@
       "timestamp": "2026-08-19T19:14:12.222Z",
       "runId": "32291323095",
       "success": true
+    },
+    {
+      "driveFileId": "1Pn3rR3IBIx2slt989C_9we5emHEcx5QV",
+      "fileName": "4504EC2B-67BD-4C8D-8FF2-949BBD8AAEF8.mp4",
+      "city": "san_antonio",
+      "caption": "the floor plan in this one made me stop mid-tour\n\nNew construction like this in New Braunfels doesn't sit long. Starting at $470,000 and built for how people actually live today.\n\n✨ everyday living hi",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-19T19:14:11.771Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "New Braunfels",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "Hey, Charlie, get cooked away in this house. Click pinning math prices 470,000, but 3.5% down at 452,000 rate is 4.99%. Taxes are $7,000 here, and shirts is 1,200 here. Haminess 3,279 a month.",
+      "voiceover_persona": "rapid_fire_hype",
+      "content_hash": "f0fef84060ffffff:f070780000f7ffff:fefede9edc9c1810:ffffffffc0c00000:7f7f7e7e30007e7f",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/16QrVRGmdgribeCPtdo6ePAN5WXpwxbfN/view"
     }
   ],
   "lastTemplateIndex": -1
