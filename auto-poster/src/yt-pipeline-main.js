@@ -51,6 +51,7 @@ import {
   markActed,
   newRequestId,
   decisionState,
+  pendingAnsweredReview,
   findRequest,
   KIND_TOPIC_PICK,
   KIND_VIDEO_REVIEW,
@@ -1213,6 +1214,18 @@ async function main() {
   await sweepDistribution();
 
   const approvals = loadApprovals();
+
+  // AN ANSWERED REVIEW OUTRANKS A WAITING BRIEF. Run 32201677539 proved the
+  // gap: video 1 sat APPROVED while video 2's brief sat unanswered, and the
+  // topic-keyed switch below exited "waiting on Peter" without publishing the
+  // decision he had already made. The review check now runs first,
+  // unconditionally — see pendingAnsweredReview for the account.
+  const answered = pendingAnsweredReview(approvals);
+  if (answered) {
+    await handleVideoReview(approvals, answered);
+    return;
+  }
+
   const topic = decisionState(approvals, KIND_TOPIC_PICK);
 
   switch (topic.state) {
@@ -1236,14 +1249,10 @@ async function main() {
       return;
 
     case "already-acted": {
-      // The kit is out. Everything downstream keys off the same requestId, so
-      // the review is checked first — if it has been answered, that is the
-      // newer news and building again would be wrong.
+      // The kit is out. An ANSWERED review never reaches this switch — it is
+      // acted above, before the topic is even consulted — so the states left
+      // here are waiting and already-acted.
       const review = decisionState(approvals, KIND_VIDEO_REVIEW);
-      if (review.state === "approved" || review.state === "rejected") {
-        await handleVideoReview(approvals, review);
-        return;
-      }
       if (review.state === "waiting") {
         console.log(
           `[YTPipeline] ${review.record.requestId} is waiting on Peter's review — exiting cleanly`

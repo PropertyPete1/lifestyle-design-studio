@@ -19,6 +19,7 @@ import {
   markActed,
   recordDecision,
   decisionState,
+  pendingAnsweredReview,
   isApproved,
   hasDecision,
   hasActed,
@@ -396,5 +397,50 @@ describe("a superseded (acted, undecided) request is closed, not waiting", () =>
     const { decisionState, KIND_VIDEO_REVIEW } = await import("../src/yt-approvals.js");
     const log = { requests: [{ requestId: "r", kind: KIND_VIDEO_REVIEW, requestedAt: "2026-08-09T17:13:18.000Z" }] };
     assert.equal(decisionState(log, KIND_VIDEO_REVIEW).state, "waiting");
+  });
+});
+
+describe("pendingAnsweredReview — a decision Peter made outranks a question he has not answered", () => {
+  const world = () => {
+    // The exact shape of run 32201677539's no-op: video 1's topic acted, its
+    // review APPROVED but unacted — and video 2's brief already out, waiting.
+    let log = { requests: [] };
+    log = appendRequest(log, { requestId: "topic_pick-old", kind: "topic_pick" });
+    log = recordDecision(log, "topic_pick-old", { decision: "approve" });
+    log = markActed(log, "topic_pick-old", { action: "kit_sent" });
+    log = appendRequest(log, { requestId: "video_review-old", kind: "video_review", videoId: "v1" });
+    log = recordDecision(log, "video_review-old", { decision: "approve" });
+    log = appendRequest(log, { requestId: "topic_pick-new", kind: "topic_pick" });
+    return log;
+  };
+
+  test("the approved review surfaces even though the NEWEST topic is waiting", () => {
+    const log = world();
+    // Pin the collision's precondition: the topic-keyed switch would exit here.
+    assert.equal(decisionState(log, "topic_pick").state, "waiting", "fixture must reproduce the waiting-brief state");
+    const answered = pendingAnsweredReview(log);
+    assert.ok(answered, "the approved review must outrank the waiting brief");
+    assert.equal(answered.state, "approved");
+    assert.equal(answered.record.requestId, "video_review-old");
+  });
+
+  test("once acted, it stops surfacing — the sweep owns it from there", () => {
+    let log = world();
+    log = markActed(log, "video_review-old", { action: "review_recorded" });
+    assert.equal(pendingAnsweredReview(log), null);
+  });
+
+  test("a rejection surfaces the same way — rework outranks the new brief too", () => {
+    let log = world();
+    log = { requests: log.requests.map((r) => r.requestId === "video_review-old" ? { ...r, decision: "reject", notes: "tighten the hook" } : r) };
+    const answered = pendingAnsweredReview(log);
+    assert.equal(answered?.state, "rejected");
+  });
+
+  test("no review, or a merely-waiting review, yields null", () => {
+    let log = { requests: [] };
+    assert.equal(pendingAnsweredReview(log), null);
+    log = appendRequest(log, { requestId: "video_review-x", kind: "video_review" });
+    assert.equal(pendingAnsweredReview(log), null, "an unanswered review is not actionable");
   });
 });
