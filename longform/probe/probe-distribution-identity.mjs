@@ -46,13 +46,25 @@
 const VIDEO_ID = process.env.PROBE_VIDEO_ID || "zVijHgm-rLc"; // video 1's resolved id
 const POST_ID = process.env.PROBE_POST_ID || "362618989"; //     video 1's Metricool post
 
-const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YT_REFRESH_TOKEN } = process.env;
+// The YouTube token has its own OAuth client (project "Youtube Auto Post" on
+// the channel-owning account); the GOOGLE_ pair is Drive/Gmail's and only a
+// fallback. Same resolution and same half-a-pair refusal as
+// yt-distribute.js ytOAuthClient — a refresh token only works with the
+// client that minted it, so mixing halves is a guaranteed invalid_client.
+const { YT_REFRESH_TOKEN } = process.env;
+if (Boolean(process.env.YT_CLIENT_ID) !== Boolean(process.env.YT_CLIENT_SECRET)) {
+  console.error("YT_CLIENT_ID and YT_CLIENT_SECRET must be set together — refusing to mix halves of two OAuth clients");
+  process.exit(1);
+}
+const CLIENT_ID = process.env.YT_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.YT_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+const CLIENT_SOURCE = process.env.YT_CLIENT_ID ? "YT_CLIENT_ID/YT_CLIENT_SECRET" : "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET (fallback)";
 const M_TOKEN = process.env.METRICOOL_API_TOKEN;
 const M_USER = process.env.METRICOOL_USER_ID;
 const M_BLOG = process.env.METRICOOL_BLOG_ID;
 
-if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !YT_REFRESH_TOKEN) {
-  console.error("Missing GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / YT_REFRESH_TOKEN");
+if (!CLIENT_ID || !CLIENT_SECRET || !YT_REFRESH_TOKEN) {
+  console.error("Missing OAuth client (YT_CLIENT_ID/YT_CLIENT_SECRET or the GOOGLE_ fallback pair) or YT_REFRESH_TOKEN");
   process.exit(1);
 }
 
@@ -63,8 +75,8 @@ async function accessToken() {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
       refresh_token: YT_REFRESH_TOKEN,
       grant_type: "refresh_token",
     }),
@@ -90,7 +102,7 @@ async function yt(token, path, query) {
 
 async function main() {
   const token = await accessToken();
-  console.log("token refresh: OK\n");
+  console.log(`token refresh: OK (client: ${CLIENT_SOURCE})\n`);
 
   // ── 1. who is the token? ──────────────────────────────────────────────────
   const chans = await yt(token, "channels", { part: "snippet,contentDetails", mine: "true" });

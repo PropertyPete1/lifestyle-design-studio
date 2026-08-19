@@ -291,7 +291,7 @@ describe("accessToken", () => {
   test("names every missing credential rather than failing downstream", async () => {
     await assert.rejects(
       () => accessToken({ fetchImpl: fakeYouTube().impl, env: {} }),
-      /GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and YT_REFRESH_TOKEN/
+      /YT_CLIENT_ID \+ YT_CLIENT_SECRET \(or the GOOGLE_ pair as fallback\) and YT_REFRESH_TOKEN/
     );
   });
 
@@ -299,6 +299,61 @@ describe("accessToken", () => {
     const tok = await accessToken({
       fetchImpl: fakeYouTube().impl,
       env: { GOOGLE_CLIENT_ID: "a", GOOGLE_CLIENT_SECRET: "b", YT_REFRESH_TOKEN: "c" },
+    });
+    assert.equal(tok, "tok");
+  });
+
+  // The YouTube token rides its own OAuth client (project "Youtube Auto
+  // Post") because the original client's account kept minting tokens as the
+  // wrong channel. A refresh token only exchanges against the client that
+  // minted it, so which pair goes on the wire is correctness, not plumbing.
+  test("prefers the YT_ client pair when it is present", async () => {
+    let sent;
+    const impl = async (url, opts) => {
+      sent = new URLSearchParams(String(opts.body));
+      return { ok: true, status: 200, json: async () => ({ access_token: "tok" }) };
+    };
+    const tok = await accessToken({
+      fetchImpl: impl,
+      env: { YT_CLIENT_ID: "yt-id", YT_CLIENT_SECRET: "yt-secret", GOOGLE_CLIENT_ID: "g-id", GOOGLE_CLIENT_SECRET: "g-secret", YT_REFRESH_TOKEN: "c" },
+    });
+    assert.equal(tok, "tok");
+    assert.equal(sent.get("client_id"), "yt-id");
+    assert.equal(sent.get("client_secret"), "yt-secret");
+  });
+
+  test("falls back to the GOOGLE_ pair when the YT_ pair is absent", async () => {
+    let sent;
+    const impl = async (url, opts) => {
+      sent = new URLSearchParams(String(opts.body));
+      return { ok: true, status: 200, json: async () => ({ access_token: "tok" }) };
+    };
+    await accessToken({ fetchImpl: impl, env: { GOOGLE_CLIENT_ID: "g-id", GOOGLE_CLIENT_SECRET: "g-secret", YT_REFRESH_TOKEN: "c" } });
+    assert.equal(sent.get("client_id"), "g-id");
+  });
+
+  test("refuses HALF a YT_ pair instead of silently mixing two clients", async () => {
+    // YT_CLIENT_ID with the old secret is a guaranteed invalid_client at the
+    // next sweep — hours after the misconfiguration, with a useless error.
+    // An unset secret arrives as an empty string in Actions env; both shapes
+    // must refuse.
+    for (const half of [
+      { YT_CLIENT_ID: "yt-id" },
+      { YT_CLIENT_SECRET: "yt-secret" },
+      { YT_CLIENT_ID: "yt-id", YT_CLIENT_SECRET: "" },
+    ]) {
+      await assert.rejects(
+        () => accessToken({ fetchImpl: fakeYouTube().impl, env: { ...half, GOOGLE_CLIENT_ID: "g", GOOGLE_CLIENT_SECRET: "g", YT_REFRESH_TOKEN: "c" } }),
+        /must be set together/,
+        JSON.stringify(half)
+      );
+    }
+  });
+
+  test("an EMPTY pair (secrets not created yet) is the fallback, not a refusal", async () => {
+    const tok = await accessToken({
+      fetchImpl: fakeYouTube().impl,
+      env: { YT_CLIENT_ID: "", YT_CLIENT_SECRET: "", GOOGLE_CLIENT_ID: "a", GOOGLE_CLIENT_SECRET: "b", YT_REFRESH_TOKEN: "c" },
     });
     assert.equal(tok, "tok");
   });

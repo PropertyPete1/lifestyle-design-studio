@@ -417,17 +417,22 @@ async function probeYoutubeDataApi() {
       console.log(`  ${name}: not set — skipped`);
       continue;
     }
-    const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
-    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-      console.log(`  ${name}: present but GOOGLE_CLIENT_ID/SECRET missing — cannot exchange`);
+    // A refresh token only exchanges against the client that minted it. The
+    // YouTube token has its own client (YT_CLIENT_ID/YT_CLIENT_SECRET, with
+    // the GOOGLE_ pair as fallback); the Drive token stays on the GOOGLE_ pair.
+    const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YT_CLIENT_ID, YT_CLIENT_SECRET } = process.env;
+    const clientId = name === "YT_REFRESH_TOKEN" ? YT_CLIENT_ID || GOOGLE_CLIENT_ID : GOOGLE_CLIENT_ID;
+    const clientSecret = name === "YT_REFRESH_TOKEN" ? YT_CLIENT_SECRET || GOOGLE_CLIENT_SECRET : GOOGLE_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      console.log(`  ${name}: present but its OAuth client id/secret is missing — cannot exchange`);
       continue;
     }
     const res = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
+        client_id: clientId,
+        client_secret: clientSecret,
         refresh_token: refresh,
         grant_type: "refresh_token",
       }),

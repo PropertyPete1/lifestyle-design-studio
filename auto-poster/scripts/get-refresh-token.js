@@ -51,15 +51,20 @@ const TOKEN_SETS = {
     warning: "This replaces the token EVERY scheduled job uses. Do it deliberately.",
   },
   youtube: {
-    label: "YouTube (thumbnails only)",
+    label: "YouTube (distribution)",
     secret: "YT_REFRESH_TOKEN",
-    // force-ssl is the narrowest scope that grants thumbnails.set. There is no
-    // thumbnail-only scope. It does grant more than we use — which is exactly
-    // why this token lives in its own secret and is read by one call site.
+    // force-ssl is the narrowest scope that grants thumbnails.set. It also
+    // covers everything else the distribution sweep does — playlists, the
+    // approve-is-publish privacy flip (Peter's call, 2026-08-19), the pinned
+    // comment — which is exactly why this token lives in its own secret and
+    // is read by one call site.
     scopes: ["https://www.googleapis.com/auth/youtube.force-ssl"],
     warning:
-      "Publishing stays with Metricool. This token is for thumbnails.set only —\n" +
-      "  it is NOT used to upload, publish, or change any video's privacy.",
+      "APPROVE IS PUBLISH rides this token: the sweep uses it to set thumbnails,\n" +
+      "  add playlists, flip approved videos PUBLIC, and post the pinned comment.\n" +
+      "  On Google's account chooser, pick the CHANNEL Metricool uploads to —\n" +
+      "  a token minted as the wrong identity passes every check against its own\n" +
+      "  channel and fails against the real one (see run 32202427105).",
   },
 };
 
@@ -80,12 +85,32 @@ requireLiveAck(
 // SECURITY: never hardcode credentials here. This file is committed to a PUBLIC repo.
 // Supply both values via environment variables when running the script:
 //   GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... node scripts/get-refresh-token.js
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+//   YT_CLIENT_ID=... YT_CLIENT_SECRET=... node scripts/get-refresh-token.js --youtube
+//
+// TWO MODES, TWO OAUTH CLIENTS. The YouTube token is minted against its own
+// client (project "Youtube Auto Post", on the Google account that owns the
+// channel) so the Drive/Gmail client — and the account it lives on — stays
+// untouched. --youtube prefers the YT_ pair and falls back to the GOOGLE_
+// pair; a refresh token only works with the client that minted it, so the
+// pair used HERE must be the same pair the workflow secrets carry.
+const USE_YT_PAIR = MODE === "youtube" && (process.env.YT_CLIENT_ID || process.env.YT_CLIENT_SECRET);
+if (USE_YT_PAIR && (!process.env.YT_CLIENT_ID || !process.env.YT_CLIENT_SECRET)) {
+  console.error("ERROR: YT_CLIENT_ID and YT_CLIENT_SECRET must be set together — refusing to mix halves of two OAuth clients.");
+  process.exit(1);
+}
+const CLIENT_ID = USE_YT_PAIR ? process.env.YT_CLIENT_ID : process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = USE_YT_PAIR ? process.env.YT_CLIENT_SECRET : process.env.GOOGLE_CLIENT_SECRET;
 if (!CLIENT_ID || !CLIENT_SECRET) {
-  console.error("ERROR: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in the environment.");
+  console.error(
+    MODE === "youtube"
+      ? "ERROR: set YT_CLIENT_ID and YT_CLIENT_SECRET (or the GOOGLE_ pair as fallback) in the environment."
+      : "ERROR: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in the environment."
+  );
   console.error("Get them from Google Cloud Console → APIs & Services → Credentials.");
   process.exit(1);
+}
+if (MODE === "youtube") {
+  console.log(`Using OAuth client from ${USE_YT_PAIR ? "YT_CLIENT_ID/YT_CLIENT_SECRET" : "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET (fallback)"}`);
 }
 const REDIRECT_URI = "http://localhost:3847/callback";
 
