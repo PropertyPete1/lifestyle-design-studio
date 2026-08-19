@@ -76,6 +76,7 @@ import { distributeVideo, completedSteps, videoIdFromPost, accessToken as ytApiT
 import { verifyPostStatus } from "./metricool.js";
 import { PIP_ENABLED } from "./yt-config.js";
 import { uploadPrivate, requestReview } from "./yt-publish.js";
+import { buildWatchReport } from "./yt-watch-report.js";
 import {
   loadLog as loadVideoLog,
   saveLog as saveVideoLog,
@@ -931,6 +932,22 @@ async function buildFromRecordings(approvals, record) {
     // ERR_FS_FILE_TOO_LARGE on run 31909360969 — Node caps a Buffer at 2 GiB
     // and a grained eleven-minute 1080p render is 2.36. The uploader reads it
     // one ~50 MB part at a time.
+    // ── the watch report: the pipeline watches its own video ─────────────
+    //
+    // Advisory by construction — buildWatchReport cannot throw, and a failed
+    // watcher costs the card a paragraph, never the build. It runs before the
+    // upload so the frames come from the exact file being shipped.
+    const watch = await buildWatchReport({
+      plan,
+      videoPath: rendered.outputPath,
+      ffmpeg,
+      client: visionClientOrNull(),
+      workDir,
+    });
+    console.log(`[YTPipeline] watch report: ${watch.judged} scene(s) judged` +
+      (watch.matchRate !== null ? `, match rate ${watch.matchRate}%` : "") +
+      (watch.flagged?.length ? `, ${watch.flagged.length} flagged` : ""));
+
     const upload = await uploadPrivate(rendered.outputPath, packaging, {
       blogId: process.env.METRICOOL_BLOG_ID,
       userId: process.env.METRICOOL_USER_ID,
@@ -956,6 +973,7 @@ async function buildFromRecordings(approvals, record) {
       stats: { runtimeMinutes: Math.round((rendered.seconds / 60) * 10) / 10, resolution: RESOLUTION },
       accessToken,
       syntheticNarration,
+      watchReport: watch.text,
     });
 
     saveApprovals(

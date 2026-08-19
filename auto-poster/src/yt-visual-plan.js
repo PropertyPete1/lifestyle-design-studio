@@ -348,14 +348,25 @@ export function coverageReport(planned) {
   for (const seg of planned) {
     if (seg.kind !== "voiceover") continue;
     voiceoverSeconds += seg.seconds || 0;
-    const covered = (seg.visualBlocks || []).reduce((n, b) => n + b.seconds, 0);
+    // THE FINAL PICTURE WHEN IT EXISTS, THE PLAN ONLY BEFORE IT DOES.
+    //
+    // This read `visualBlocks` unconditionally — the planner's layout, frozen
+    // before the bridge moved a single second. Every post-build number was
+    // stale by exactly the bridge's work: video 1's last run reported "46%
+    // beat" while the bridge's own line said 151.5s had been handed back to
+    // real visuals, and the shipped file measured 4.8% beat. A whole week of
+    // steering read the plan and called it the video. `broll` is what the
+    // renderer actually plays; when a segment has it, it is the truth.
+    const blocks = (seg.broll && seg.broll.length ? seg.broll : seg.visualBlocks) || [];
+    const kindOf = (b) => b.kind || (b.driveFileId ? "owned" : "beat");
+    const covered = blocks.reduce((n, b) => n + (b.seconds || 0), 0);
     // Floating point, not a real hole — but a real hole must not hide in the
     // rounding, so the tolerance is one frame rather than "close enough".
     if (Math.abs(covered - (seg.seconds || 0)) > 0.05) {
       uncovered += Math.max(0, (seg.seconds || 0) - covered);
     }
-    for (const b of seg.visualBlocks || []) {
-      bySource[b.kind] = round((bySource[b.kind] || 0) + b.seconds);
+    for (const b of blocks) {
+      bySource[kindOf(b)] = round((bySource[kindOf(b)] || 0) + (b.seconds || 0));
     }
     if (seg.visualFellBack) {
       fallbacks.push({
