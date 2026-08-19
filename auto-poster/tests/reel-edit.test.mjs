@@ -9,7 +9,7 @@
  * filter graph that renders a perfectly valid video of the wrong thing.
  */
 
-import { test } from "node:test";
+import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
@@ -333,4 +333,43 @@ test("describeEdit says what happened in numbers", () => {
 test("the declick is applied to pieces long enough to carry it", () => {
   assert.equal(PIECE_DECLICK_SECONDS, 0.015);
   assert.ok(PUNCH_INTERVAL_MIN > PIECE_DECLICK_SECONDS * 3, "the cadence floor must clear the declick threshold");
+});
+
+describe("speechSafe knows the planner's own short-span drop", async () => {
+  const { buildEditList } = await import("../src/yt-oncamera-edit.js");
+
+  test("VIDEO 1'S TEASER SHAPE: a pause then a sub-piece tail is safe", () => {
+    // Run 32298899242's refusal, reproduced deterministically: the take ends
+    // with a reported 0.6s pause and ~0.38s of post-pause audio; buildEditList
+    // drops that final span as too short to be a shot (its documented
+    // behaviour on every long-form video), and the old checker refused the
+    // resulting gap because silence-remainder + dropped-span exceeds the
+    // silence's own bounds.
+    const total = 19.095;
+    const silences = [{ start: 18.192, end: 18.792 }];
+    const plan = buildEditList(total, silences, { isOpening: false, punchIns: true, interval: 2.5, minKeep: 0 });
+    const safety = speechSafe(plan.pieces, silences, total);
+    assert.equal(safety.safe, true, JSON.stringify(safety.violations));
+  });
+
+  test("a gap ripped out of OPEN SPEECH still refuses — the guarantee did not move", () => {
+    const silences = [{ start: 18.192, end: 18.792 }];
+    const s = speechSafe([{ srcStart: 0, srcEnd: 5 }, { srcStart: 7, srcEnd: 19.095 }], silences, 19.095);
+    assert.equal(s.safe, false);
+  });
+
+  test("a tail drop BIGGER than the planner is allowed still refuses", () => {
+    // uncovered = 19.095 - 17.5 minus the 0.6s silence = ~0.995s — more than
+    // MIN_PIECE_SECONDS, so something other than the short-span filter ate it.
+    const silences = [{ start: 18.192, end: 18.792 }];
+    const s = speechSafe([{ srcStart: 0, srcEnd: 17.5 }], silences, 19.095);
+    assert.equal(s.safe, false);
+  });
+
+  test("a short gap that does NOT begin in a silence still refuses", () => {
+    // Same length as a legal drop, wrong anchor: it starts in open speech.
+    const silences = [{ start: 5.0, end: 5.6 }];
+    const s = speechSafe([{ srcStart: 0, srcEnd: 18.7 }], silences, 19.095);
+    assert.equal(s.safe, false);
+  });
 });
