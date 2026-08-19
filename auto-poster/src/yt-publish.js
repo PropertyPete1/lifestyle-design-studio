@@ -77,31 +77,32 @@ export function buildPostBody({ mediaUrl, packaging, publishAt, privacy = UPLOAD
  * automated on the current API surface.
  */
 export function reviewChecklist({ packaging, narrationMode = NARRATION_MODE, syntheticNarration = null }) {
+  // APPROVE IS PUBLISH — the card says what actually happens. The old list
+  // ended with "Then flip it to Public yourself. Nothing here can do that.",
+  // which was true of the record-only design and stopped being true on
+  // 2026-08-19, when Peter approved video 1, was sent to Studio by this very
+  // card, and overruled the design. On approval the pipeline now sets the
+  // thumbnail, adds the playlist, flips the video PUBLIC (declaring
+  // synthetic content when the render used the clone), and posts the pinned
+  // comment — same run. What remains below is only what the API genuinely
+  // cannot reach.
   const items = [];
-  if (disclosureRequired({ narrationMode, syntheticNarration })) {
-    items.push(
-      "Set 'Altered or synthetic content' to YES. " +
-      "At least one voiceover segment in THIS render was spoken by your voice clone rather than by you, " +
-      "and synthetic speech in a real person's voice is what the policy covers."
-    );
-  }
   items.push(
-    "Thumbnail: the sweep sets it via the API within one cron of approval — CONFIRM it took in Studio. " +
-    "If it is missing there, the account may need enabling for custom thumbnails, and the run log says why."
+    "APPROVE = PUBLISH. On your approval this video goes PUBLIC automatically: " +
+    "thumbnail set, playlist added, privacy flipped, pinned-comment text posted — within minutes, no Studio step." +
+    (disclosureRequired({ narrationMode, syntheticNarration })
+      ? " The 'Altered or synthetic content' declaration is set in the same call (this render used the voice clone) — CONFIRM it shows in Studio."
+      : "")
   );
-  items.push("Check the chapters render — the first one has to be 0:00 or YouTube ignores all of them.");
-  items.push(
-    "After you publish: the pinned-comment text posts itself within one cron (the API cannot post to a private video). " +
-    "PIN it when you see it — pinning is the one comment step the API cannot do."
-  );
+  items.push("PIN the comment when you see it — pinning is the one comment step the API cannot do.");
   items.push(
     "Add the end screen in Studio (last ~20s): your most recent video + a subscribe element. " +
     "The API cannot set end screens — see longform/probe/DISTRIBUTION-API.md."
   );
+  items.push("Sanity-check the chapters render — the first one has to be 0:00 or YouTube ignores all of them.");
   for (const missing of packaging.missingCta || []) {
     items.push(`MISSING FROM THE DESCRIPTION: ${missing}. Add it by hand, or set the secret and it fixes itself next time.`);
   }
-  items.push("Then flip it to Public yourself. Nothing here can do that.");
   return items;
 }
 
@@ -169,7 +170,7 @@ export function renderReviewText({ packaging, youtubeUrl, driveLink, checklist, 
     lines.push(watchReport);
     lines.push("");
   }
-  lines.push("BEFORE IT GOES PUBLIC — these are yours to do, the API cannot reach them:");
+  lines.push("WHAT APPROVE DOES, AND WHAT STAYS YOURS:");
   checklist.forEach((item, i) => lines.push(`  ${i + 1}. ${item}`));
   lines.push("");
   lines.push("PINNED COMMENT (copy this):");

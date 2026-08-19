@@ -138,9 +138,16 @@ describe("reviewChecklist", () => {
     assert.ok(items.some((i) => i.includes("YT_TEXT_NUMBER")));
   });
 
-  test("ends by making it explicit that publishing is his", () => {
+  test("opens by making it explicit that APPROVE IS PUBLISH — the Studio flip is gone", () => {
+    // The list used to END with "flip it to Public yourself"; Peter approved
+    // video 1, followed that line to Studio, and overruled the design
+    // (2026-08-19). The card now leads with what approval actually does.
     const items = reviewChecklist({ packaging: PACKAGING });
-    assert.ok(/flip it to Public yourself/i.test(items[items.length - 1]));
+    assert.match(items[0], /APPROVE = PUBLISH/);
+    assert.match(items[0], /goes PUBLIC automatically/i);
+    for (const item of items) {
+      assert.doesNotMatch(item, /flip it to Public yourself/i, "the Studio instruction may not survive anywhere in the list");
+    }
   });
 });
 
