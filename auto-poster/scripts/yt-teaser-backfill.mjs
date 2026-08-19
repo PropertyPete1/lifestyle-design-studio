@@ -32,7 +32,7 @@ import { loadLog as loadVideoLog, saveLog as saveVideoLog } from "../src/yt-log.
 import { ingestRecordings } from "../src/yt-ingest.js";
 import { takesToRecord } from "../src/yt-recording-kit.js";
 import { cutTeaser } from "../src/yt-teaser.js";
-import { uploadToFolder } from "../src/drive.js";
+import { uploadToFolder, ensureFolder } from "../src/drive.js";
 
 const REQUEST_ID = process.env.BACKFILL_REQUEST_ID || "topic_pick-2026-08-07-d5cddf9d";
 
@@ -72,7 +72,9 @@ async function main() {
     }
 
     const teaser = await cutTeaser({ script, recordings, workDir });
-    const up = await uploadToFolder(ingest.folderId, `teaser-${entry.videoId}.mp4`, readFileSync(teaser.path), "video/mp4");
+    // The outputs subfolder — an output among the takes becomes a fake
+    // "newest recording" on the next ingest (see isPipelineOutput).
+    const up = await uploadToFolder(await ensureFolder("outputs", ingest.folderId), `teaser-${entry.videoId}.mp4`, readFileSync(teaser.path), "video/mp4");
     if (!up?.id) throw new Error("Drive upload returned no file id");
 
     saveVideoLog({

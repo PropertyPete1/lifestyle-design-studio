@@ -329,12 +329,24 @@ export async function pickExpressiveFrame(candidates, { visionCall = defaultVisi
   }
 }
 
+/**
+ * The declared media type must match the actual bytes — the API validates.
+ *
+ * The frame judge started receiving sized-down JPEG copies (see judgingCopy in
+ * yt-thumbnail-face.js) while this call still declared image/png, and every
+ * expression contest died with a 400 (run 32300759856) — silently degrading
+ * to "take the middle frame". Extension-based, same rule setThumbnail uses.
+ */
+export function imageMediaType(path) {
+  return /\.jpe?g$/i.test(String(path || "")) ? "image/jpeg" : "image/png";
+}
+
 async function defaultVisionCall(candidates, system) {
   const { default: Anthropic } = await import("@anthropic-ai/sdk");
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const images = candidates.map((c) => ({
     type: "image",
-    source: { type: "base64", media_type: "image/png", data: readFileSync(c.path).toString("base64") },
+    source: { type: "base64", media_type: imageMediaType(c.path), data: readFileSync(c.path).toString("base64") },
   }));
   const res = await anthropic.messages.create({
     model: "claude-opus-5",
