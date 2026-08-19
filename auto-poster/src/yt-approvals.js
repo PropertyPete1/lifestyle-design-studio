@@ -263,6 +263,27 @@ export function decisionState(log, kind, opts = {}) {
   return { state: "rejected", record, notes: regenerationNotes(record) };
 }
 
+/**
+ * The answered review that outranks everything else, or null.
+ *
+ * THE COLLISION THIS RESOLVES, from the first approve-is-publish dispatch
+ * (run 32201677539): video 1's review sat APPROVED and unacted while video
+ * 2's brief sat unanswered — and main() keyed its whole stage machine off the
+ * NEWEST topic pick, so the run logged "waiting on Peter" for the new brief
+ * and exited without publishing the video he had just approved. The
+ * already-acted case even documented the principle — "if the review has been
+ * answered, that is the newer news" — but only applied it inside one branch
+ * of the topic switch.
+ *
+ * So the principle becomes a function and moves ABOVE the switch: an answered
+ * video review is always acted first, whatever the newest brief is doing. A
+ * decision Peter already made outranks a question he has not answered yet.
+ */
+export function pendingAnsweredReview(log) {
+  const review = decisionState(log, KIND_VIDEO_REVIEW);
+  return review.state === "approved" || review.state === "rejected" ? review : null;
+}
+
 // ─── writing the poster's half ──────────────────────────────────────────────
 
 export function newRequestId(kind) {
