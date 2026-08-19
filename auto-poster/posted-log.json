@@ -4467,6 +4467,21 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/16QrVRGmdgribeCPtdo6ePAN5WXpwxbfN/view"
+    },
+    {
+      "driveFileId": "1R8_A1in69_DtW-nrIJsJGfFCXGo8SB-A",
+      "fileName": "TEASER — North San Antonio Neighborhoods: Stone Oak, ISD Lines and MUD Fees",
+      "city": "san_antonio",
+      "caption": "If you're a veteran with a hundred percent rating, Texas can knock your property tax bill down to nothing.\n\nThe full breakdown — \"North San Antonio Neighborhoods: Stone Oak, ISD Lines and MUD Fees\" — ",
+      "voiceover": false,
+      "platforms": [],
+      "timestamp": "2026-08-19T21:22:12.551Z",
+      "success": true,
+      "type": "trial_variant",
+      "hookAngle": "yt_teaser",
+      "variantNumber": 1,
+      "window": "manual",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1kf4Pyy3UrXS8_jpukE5XHpgJoggjbv_U/view"
     }
   ],
   "lastTemplateIndex": -1

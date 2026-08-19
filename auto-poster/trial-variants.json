@@ -2,6 +2,20 @@
   "variants": [
     {
       "date": "2026-08-19",
+      "window": "manual",
+      "sourceVideoId": "vid-2026-08-07-d5cddf9d",
+      "sourceFileName": "TEASER-North_San_Antonio_Neighborhoods_Stone_Oak_ISD_Lines_and_MUD_",
+      "city": "san_antonio",
+      "hookAngle": "yt_teaser",
+      "hookLine": "If you're a veteran with a hundred percent rating, Texas can knock your property tax bill down to nothing. And I still watch veterans move to the north side of San Antonio and end up paying on something every year they never planned for. Because two of the three areas everybody points you to have a line on the bill that exemption does not touch.",
+      "variantNumber": 1,
+      "caption": "If you're a veteran with a hundred percent rating, Texas can knock your property tax bill down to nothing.\n\nThe full breakdown — \"North San Antonio Neighborhoods: Stone Oak, ISD Lines and MUD Fees\" — ",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1kf4Pyy3UrXS8_jpukE5XHpgJoggjbv_U/view",
+      "generatedAt": "2026-08-19T21:22:12.548Z",
+      "trigger": "yt_teaser"
+    },
+    {
+      "date": "2026-08-19",
       "window": "am",
       "sourceVideoId": "1PY-4BXYhq5VV17XnkJro8mqb69Aw1yKr",
       "sourceFileName": "48AEE3B9-F224-4600-885D-FC93E0B1A7CA.mp4",
