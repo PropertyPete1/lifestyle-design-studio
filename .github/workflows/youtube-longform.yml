@@ -195,7 +195,7 @@ jobs:
           # "libEGL.so.1: cannot open shared object file" (run 32298902764 —
           # which also means the PIP has been refusing itself on runners for
           # the same reason). Best-effort like the rest of this step.
-          sudo apt-get install -y libegl1 libgl1 || echo "::warning::GL libraries unavailable — mattes will fail"
+          sudo apt-get install -y libegl1 libgl1 libgles2 || echo "::warning::GL libraries unavailable — mattes will fail"
           python3 -m venv /tmp/segenv || true
           /tmp/segenv/bin/pip install --quiet mediapipe opencv-python-headless || echo "::warning::segmentation setup failed — PIP will report unavailable"
       - name: Install dependencies
@@ -353,7 +353,7 @@ jobs:
           # "libEGL.so.1: cannot open shared object file" (run 32298902764 —
           # which also means the PIP has been refusing itself on runners for
           # the same reason). Best-effort like the rest of this step.
-          sudo apt-get install -y libegl1 libgl1 || echo "::warning::GL libraries unavailable — mattes will fail"
+          sudo apt-get install -y libegl1 libgl1 libgles2 || echo "::warning::GL libraries unavailable — mattes will fail"
           python3 -m venv /tmp/segenv || true
           /tmp/segenv/bin/pip install --quiet mediapipe opencv-python-headless || echo "::warning::segmentation setup failed — PIP will report unavailable"
       - name: Install dependencies
