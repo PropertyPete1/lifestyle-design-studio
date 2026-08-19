@@ -92,9 +92,10 @@ describe("reviewChecklist — the item follows the render", () => {
     assert.equal(has(items), true);
   });
 
-  test("the wording describes THIS render rather than asserting it always applies", () => {
+  test("the wording describes THIS render, and says the declaration is set automatically", () => {
     const [item] = reviewChecklist({ packaging, narrationMode: "peter", syntheticNarration: true })
       .filter((i) => /Altered or synthetic content/.test(i));
-    assert.match(item, /THIS render/, "must not claim the clone is used on every video");
+    assert.match(item, /this render used the voice clone/i, "must not claim the clone is used on every video");
+    assert.match(item, /set in the same call/i, "the declaration rides the publish update now — the card says CONFIRM, not 'go set it'");
   });
 });

@@ -902,6 +902,10 @@ async function buildFromRecordings(approvals, record) {
 
     const videoId = videoIdFor(record.requestId);
     let nextLog = recordRender(videoLog, {
+      // The sweep's publish step needs this AFTER the build's workDir is
+      // gone: the synthetic-content declaration must ride the same
+      // videos.update that flips the video public.
+      syntheticNarration,
       videoId,
       requestId: record.requestId,
       title: packaging.title,
@@ -1068,10 +1072,24 @@ async function handleVideoReview(approvals, review) {
   const videoId = review.record.videoId || review.record.payload?.videoId;
 
   if (review.state === "approved") {
-    console.log(`[YTPipeline] ${review.record.requestId} APPROVED — recording it. This does not publish anything.`);
+    // APPROVE IS PUBLISH. Recording the approval is what arms the
+    // distribution sweep, which runs at the top of this same invocation on
+    // the next pass: thumbnail, playlist, the privacy flip to PUBLIC (with
+    // the synthetic-content declaration when the render needs one), and the
+    // pinned comment — no Studio trip. Peter overruled the record-only
+    // design on 2026-08-19 after approving video 1 and being told to go
+    // publish it himself.
+    console.log(`[YTPipeline] ${review.record.requestId} APPROVED — publishing on this run.`);
     saveVideoLog(recordReview(videoLog, videoId, { approved: true }));
     saveApprovals(markActed(approvals, review.record.requestId, { action: "review_recorded", result: { videoId, approved: true } }));
-    console.log("[YTPipeline] Shorts cutdowns are now eligible; publishing remains Peter's to do in Studio.");
+    // The sweep at the top of main() ran BEFORE this approval was recorded —
+    // deliberately, so an overnight publish gets its comment first. Run it
+    // again now that the entry is approved, or "Approve is publish" would
+    // quietly mean "publish on the NEXT cron", which is the Studio-era lag
+    // wearing a new hat. Idempotent by construction, so the double pass costs
+    // one no-op walk when there is nothing to do.
+    await sweepDistribution();
+    console.log("[YTPipeline] Shorts cutdowns are now eligible.");
     return;
   }
 
@@ -1102,14 +1120,16 @@ async function handleVideoReview(approvals, review) {
  * sweep rebuilds the identical PNG instead of depending on an artifact that no
  * longer exists — one less piece of state to lose.
  *
- * NOTHING HERE PUBLISHES. The comment step inside distributeVideo waits until
- * it can SEE that Peter made the video public in Studio.
+ * THE SWEEP IS WHERE APPROVE BECOMES PUBLISH: thumbnail and playlist land
+ * while the video is private, then the publish step flips it public, then the
+ * pinned comment posts — one pass, same cron. (This header used to say
+ * "NOTHING HERE PUBLISHES"; that design ended 2026-08-19.)
  */
 async function sweepDistribution() {
   const videoLog = loadVideoLog();
   const pending = (videoLog.videos || []).filter(
     (v) => v.approved && !String(v.requestId || "").startsWith("TEST-") &&
-      !(v.distribution?.thumbnail?.done && v.distribution?.playlist?.done && v.distribution?.comment?.done)
+      !(v.distribution?.thumbnail?.done && v.distribution?.playlist?.done && v.distribution?.publish?.done && v.distribution?.comment?.done)
   );
   if (pending.length === 0) return;
 
@@ -1157,6 +1177,7 @@ async function sweepDistribution() {
     const report = await distributeVideo(entry, {
       token,
       thumbnailPath,
+      declareSynthetic: entry.syntheticNarration === true,
       pinnedComment: buildPinnedComment(),
       market: entry.market,
       intent: entry.intent,

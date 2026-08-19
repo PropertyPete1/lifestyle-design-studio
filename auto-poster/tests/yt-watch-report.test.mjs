@@ -121,7 +121,7 @@ describe("the watcher's verdicts", () => {
     });
     const body = String(text);
     assert.ok(body.indexOf("WATCH REPORT") !== -1, "report present");
-    assert.ok(body.indexOf("WATCH REPORT") < body.indexOf("BEFORE IT GOES PUBLIC"), "report sits above the checklist");
+    assert.ok(body.indexOf("WATCH REPORT") < body.indexOf("WHAT APPROVE DOES"), "report sits above the checklist");
     // And without one, the card is unchanged.
     const plain = renderReviewText({ packaging: { title: "T", description: "", pinnedComment: "pc", tags: [] }, youtubeUrl: "https://x", driveLink: null, checklist: ["x"], stats: {} });
     assert.doesNotMatch(String(plain), /WATCH REPORT/);

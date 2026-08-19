@@ -113,7 +113,48 @@ export async function videoStatus(videoId, { fetchImpl = fetch, token }) {
   const res = await yt(fetchImpl, token, "GET", "videos", { query: { part: "status", id: videoId } });
   const item = res.items?.[0];
   if (!item) return { exists: false, privacy: null };
-  return { exists: true, privacy: item.status?.privacyStatus || null };
+  // The full status object rides along so a videos.update can send it BACK
+  // with one field changed — part=status REPLACES the whole part, and an
+  // update built from scratch silently resets embeddable, license, and the
+  // synthetic-media declaration to their defaults.
+  return { exists: true, privacy: item.status?.privacyStatus || null, status: item.status || {} };
+}
+
+/**
+ * Flip a private upload to PUBLIC — the step that makes Approve mean publish.
+ *
+ * THE DESIGN CHANGED HERE, on Peter's explicit call (2026-08-19). The shipped
+ * flow uploaded private, set the thumbnail and playlist by API, and then
+ * stopped: "publishing remains Peter's to do in Studio". He approved video 1,
+ * read that line on the card, and overruled it — Approve IS publish; the
+ * Studio trip is the violation, not the safety. The privacy flip is one
+ * videos.update away and uses the same token the thumbnail already uses.
+ *
+ * SAFETY DID NOT MOVE, IT MOVED HOUSES. assertPrivate still guards the
+ * UPLOAD — nothing reaches YouTube public by accident. What changed is what
+ * an explicit human approval does afterwards. This function is only ever
+ * reached from the sweep's approved-entries filter, TEST- ids excluded.
+ *
+ * The synthetic-content declaration rides the same update when the render
+ * used the voice clone: YouTube's policy wants it set before the video is
+ * public, and `containsSyntheticMedia` is exactly the field the manual
+ * checklist used to point at.
+ */
+export async function publishVideo(videoId, { declareSynthetic = false, fetchImpl = fetch, token }) {
+  const current = await videoStatus(videoId, { fetchImpl, token });
+  if (!current.exists) throw new Error("video not visible to the API yet");
+  if (current.privacy === "public") return { already: "public" };
+
+  const status = { ...current.status, privacyStatus: "public" };
+  delete status.publishAt; // a leftover schedule field conflicts with an immediate flip
+  if (declareSynthetic) status.containsSyntheticMedia = true;
+
+  const res = await yt(fetchImpl, token, "PUT", "videos", {
+    query: { part: "status" },
+    body: { id: videoId, status },
+  });
+  const got = res.items?.[0]?.status?.privacyStatus || res?.status?.privacyStatus;
+  return { published: true, privacy: got || "public", declaredSynthetic: Boolean(declareSynthetic) };
 }
 
 /**
@@ -255,8 +296,16 @@ export async function distributeVideo(entry, opts) {
     return { playlistId: playlist.id, playlistTitle: title, createdPlaylist: playlist.created, ...added };
   });
 
-  // The comment waits for Peter to publish. Not an error — the sweep just
-  // comes back on the next cron.
+  // APPROVE IS PUBLISH. Thumbnail and playlist have already landed above, so
+  // the video goes public wearing the right face. Runs only for entries the
+  // sweep already filtered to approved.
+  await step("publish", already.publish?.done, async () => {
+    return publishVideo(entry.youtubeVideoId, { declareSynthetic: Boolean(opts.declareSynthetic), fetchImpl, token });
+  });
+
+  // The comment lands in the SAME pass now — publish just made the video
+  // public one step up. The waiting branch survives for the odd propagation
+  // delay; the sweep comes back on the next cron.
   await step("comment", already.comment?.done, async () => {
     const status = await videoStatus(entry.youtubeVideoId, { fetchImpl, token });
     if (!status.exists) throw new Error("video not visible to the API yet");
