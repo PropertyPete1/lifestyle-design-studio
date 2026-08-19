@@ -529,4 +529,38 @@ describe("mergeYouTubeLog preserves fields it has never heard of", async () => {
     assert.deepEqual(m.someFutureField, { a: 1 });
     assert.equal(m.anotherNewThing, "kept");
   });
+
+  test("a value learned by this run beats the other side's initial null", () => {
+    // THE BUG THIS EXISTS TO KILL, found on video 1's first live distribution
+    // sweep (run 32202427105). The entry is created with youtubeVideoId: null;
+    // the sweep resolved the real watch id from the Metricool post and saved
+    // it; MergePush then merged against a remote that still carried the
+    // initial null — and the old passthrough preferred the REMOTE side on a
+    // definedness tie, so a defined null beat the freshly learned value and
+    // main recorded youtubeVideoId: null forever. Null is a placeholder, not
+    // information: a real value must win regardless of which side holds it.
+    const learned = { videos: [{ ...base, youtubeVideoId: "zVijHgm-rLc" }] };
+    const initial = { videos: [{ ...base, youtubeVideoId: null }] };
+    assert.equal(mergeYouTubeLog(learned, initial, () => {}).videos[0].youtubeVideoId, "zVijHgm-rLc", "local learned it");
+    assert.equal(mergeYouTubeLog(initial, learned, () => {}).videos[0].youtubeVideoId, "zVijHgm-rLc", "remote learned it (concurrent sibling)");
+  });
+
+  test("null still carries through when it is all either side has", () => {
+    const m = mergeYouTubeLog(
+      { videos: [{ ...base, youtubeVideoId: null }] },
+      { videos: [{ ...base }] },
+      () => {}
+    ).videos[0];
+    assert.ok("youtubeVideoId" in m, "the initialized shape is kept");
+    assert.equal(m.youtubeVideoId, null);
+  });
+
+  test("on a value-vs-value conflict the local side wins, like every other strategy here", () => {
+    const m = mergeYouTubeLog(
+      { videos: [{ ...base, youtubeVideoId: "localValue--" }] },
+      { videos: [{ ...base, youtubeVideoId: "remoteValue-" }] },
+      () => {}
+    ).videos[0];
+    assert.equal(m.youtubeVideoId, "localValue--");
+  });
 });

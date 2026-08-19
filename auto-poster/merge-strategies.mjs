@@ -476,12 +476,27 @@ function mergeVideoRecord(x, y) {
   // rebuilt records from named fields only, and every field added after it
   // was written (revision, reworks, distribution, youtubeVideoId,
   // thumbnailText) was silently dropped at every two-sided merge. Video 1's
-  // revision history vanished exactly that way. Unknown fields now carry
-  // through — defined-over-undefined, x (local) winning a tie — so the NEXT
-  // new field survives without anyone remembering this function exists.
+  // revision history vanished exactly that way.
+  //
+  // AND A NULL IS NOT A VALUE. The first passthrough preferred x on a
+  // definedness tie — but x here is the REMOTE side (mergeYouTubeLog spreads
+  // remote's videos first), and a field initialized as `null` at entry
+  // creation is defined on BOTH sides forever after. So the first field ever
+  // UPDATED from its initial null — video 1's youtubeVideoId, resolved to a
+  // real watch id by the sweep in run 32202427105 — was thrown away at the
+  // very next MergePush: remote's stale null "won the tie" over local's
+  // freshly learned value. The rule is now: a real value beats null, and on
+  // a value-vs-value tie the LOCAL side (y) wins, matching every other
+  // strategy in this file. Null still carries through when it is all either
+  // side has, so initialized-but-unlearned fields keep their shape.
   for (const key of new Set([...Object.keys(x), ...Object.keys(y)])) {
     if (key in out) continue;
-    const v = x[key] !== undefined ? x[key] : y[key];
+    const xv = x[key];
+    const yv = y[key];
+    let v;
+    if (yv !== undefined && yv !== null) v = yv;
+    else if (xv !== undefined && xv !== null) v = xv;
+    else v = yv !== undefined ? yv : xv;
     if (v !== undefined) out[key] = v;
   }
 

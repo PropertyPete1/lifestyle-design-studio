@@ -65,7 +65,7 @@ import { listLongformFootage } from "./yt-footage-source.js";
 import { creditsBlock } from "./yt-stock.js";
 import { selectPunches, captionTextFor } from "./yt-punch.js";
 import { runArtifactQc, preserveFailedRender } from "./yt-artifact-qc.js";
-import { preserveQcPassedRender } from "./yt-evidence.js";
+import { preserveQcPassedRender, preserveGateEvidence } from "./yt-evidence.js";
 import { pickTrack, fetchMusicBed, musicReport, musicCreditsBlock, cacheKey as musicCacheKey, MUSIC_FOLDER } from "./yt-music.js";
 import { findInFolder, downloadFileById, uploadToFolder } from "./drive.js";
 import { getWordTimestamps } from "./burned-captions.js";
@@ -1191,6 +1191,28 @@ async function sweepDistribution() {
       else console.log(`::warning::${entry.videoId}: ${name} FAILED — ${r.error} (retries next run)`);
     }
     if (report.blocked) console.log(`::warning::${entry.videoId}: distribution blocked — ${report.blocked}`);
+
+    // Visibility failures name the identity that was looking (evidence rule:
+    // no failure without the data that explains it). A private video invisible
+    // to this token means the token's channel is not the video's channel.
+    if (report.identity) {
+      const who = report.identity.noChannel
+        ? "the token's Google identity has NO YouTube channel"
+        : report.identity.id
+          ? `the token acts as channel "${report.identity.title}" (${report.identity.id})`
+          : "the token identity lookup itself failed";
+      console.log(
+        `::warning::${entry.videoId}: the video exists but is invisible to the API — ${who}. ` +
+          `If that is not the channel Metricool uploads to, re-mint YT_REFRESH_TOKEN as that channel ` +
+          `(scripts/get-refresh-token.js --youtube, pick the channel identity on Google's account chooser).`
+      );
+      preserveGateEvidence("distribution-identity", {
+        videoId: entry.videoId,
+        youtubeVideoId: entry.youtubeVideoId,
+        identity: report.identity,
+        steps: report.steps,
+      });
+    }
 
     const done = completedSteps(report);
     if (Object.keys(done).length > 0 || entry.youtubeVideoId) {

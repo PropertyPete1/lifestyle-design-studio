@@ -61,6 +61,10 @@ function fakeYouTube(state = {}) {
       if (state.thumbnailReject) return json({ error: { errors: [{ reason: "forbidden" }] } }, false, 403);
       return json({ kind: "youtube#thumbnailSetResponse" });
     }
+    if (u.includes("/channels?")) {
+      if (state.channelsError) return json({ error: { errors: [{ reason: "backendError" }] } }, false, 500);
+      return json({ items: state.noChannel ? [] : [{ id: "UC_TOKEN", snippet: { title: "Token Channel" } }] });
+    }
     throw new Error(`fake API has no route for ${method} ${u}`);
   };
   return { impl, calls, playlists, playlistItems, comments, state };
@@ -251,6 +255,35 @@ describe("distributeVideo — the sweep", () => {
     const r = await distributeVideo(entry, { token: "t", fetchImpl: api.impl, thumbnailPath: png, pinnedComment: "x" });
     assert.equal(r.steps.comment.done, false);
     assert.match(r.steps.comment.error, /not visible/);
+  });
+
+  // Run 32202427105 failed all four steps against a video that provably
+  // existed, and the logs could not say WHO the token was. The evidence rule:
+  // a visibility failure must carry the identity that was looking.
+  test("a visibility failure names the channel the token acts as", async () => {
+    const api = fakeYouTube({ videoMissing: true });
+    const r = await distributeVideo(entry, { token: "t", fetchImpl: api.impl, thumbnailPath: png, pinnedComment: "x" });
+    assert.deepEqual(r.identity, { id: "UC_TOKEN", title: "Token Channel" });
+  });
+
+  test("a token whose Google identity has no channel at all says exactly that", async () => {
+    const api = fakeYouTube({ videoMissing: true, noChannel: true });
+    const r = await distributeVideo(entry, { token: "t", fetchImpl: api.impl, thumbnailPath: png, pinnedComment: "x" });
+    assert.deepEqual(r.identity, { id: null, title: null, noChannel: true });
+  });
+
+  test("the identity lookup failing cannot break the sweep it is diagnosing", async () => {
+    const api = fakeYouTube({ videoMissing: true, channelsError: true });
+    const r = await distributeVideo(entry, { token: "t", fetchImpl: api.impl, thumbnailPath: png, pinnedComment: "x" });
+    assert.equal(r.identity, null, "lookup failure is a null identity, not a throw");
+    assert.equal(r.steps.comment.done, false, "the step report is intact");
+  });
+
+  test("a clean sweep never spends a call asking who the token is", async () => {
+    const api = fakeYouTube({ privacy: "private" });
+    const r = await distributeVideo(entry, { token: "t", fetchImpl: api.impl, thumbnailPath: png, pinnedComment: "Comment MATH and I'll reply." });
+    assert.equal(r.identity, undefined);
+    assert.ok(!api.calls.some((c) => c.url.includes("/channels?")), "no identity call on success");
   });
 });
 
