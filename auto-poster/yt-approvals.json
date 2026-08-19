@@ -1034,7 +1034,13 @@
       "videoId": "vid-2026-08-07-d5cddf9d",
       "decision": "approve",
       "notes": null,
-      "decidedAt": "2026-08-19T00:17:14.528Z"
+      "decidedAt": "2026-08-19T00:17:14.528Z",
+      "actedAt": "2026-08-19T00:50:55.120Z",
+      "actedAction": "review_recorded",
+      "actedResult": {
+        "videoId": "vid-2026-08-07-d5cddf9d",
+        "approved": true
+      }
     },
     {
       "requestId": "topic_pick-2026-08-17-f60982b7",

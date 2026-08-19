@@ -30,7 +30,9 @@
       "youtubeUrl": "https://static.metricool.com/video/3748462/202608/c905fd6728e540ae.mp4",
       "metricoolPostId": 362618989,
       "blogId": "4807109",
-      "approved": false,
+      "reviewedAt": "2026-08-19T00:50:55.120Z",
+      "reviewNotes": null,
+      "approved": true,
       "revision": 10,
       "reworks": [
         {
@@ -114,11 +116,9 @@
           "notes": "baseline rebuild (PR #86): the take audio comes back — output-side seek silenced every piece after the first, and an AAC encode per piece walked the audio ~2s behind the picture. Music, micro-punches, whooshes, impacts and the floating head are all OFF. The render is now gated on its own artifact checks."
         }
       ],
-      "reviewedAt": null,
-      "reviewNotes": null,
+      "distribution": {},
       "shortsCutAt": null,
       "shorts": [],
-      "distribution": null,
       "thumbnailText": "THE FEE NOBODY MENTIONS",
       "youtubeVideoId": null
     }
