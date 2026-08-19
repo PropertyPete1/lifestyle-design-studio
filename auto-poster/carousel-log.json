@@ -2446,6 +2446,198 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-19",
+      "timestamp": "2026-08-19T14:25:11.889Z",
+      "pillar": "motivation_business",
+      "topic": "The Friday number: tracking booked next steps instead of income",
+      "hook": "I run a real estate business. Every Friday I check one number. It is not income.",
+      "closeType": "share",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "The Friday number: tracking booked next steps instead of income",
+        "hook": "I run a real estate business. Every Friday I check one number. It is not income.",
+        "map": [
+          "Why income lies",
+          "One number, every Friday",
+          "My first count: two",
+          "The only part you control",
+          "Getting paid in lumps",
+          "The zero week"
+        ],
+        "points": [
+          {
+            "title": "Income Lies To You",
+            "body": [
+              "The money that hits your account this month came from work you did about 90 days ago.",
+              "Judging today by it is like driving while staring in the rear view mirror."
+            ],
+            "loop": "So I stopped keeping score that way."
+          },
+          {
+            "title": "The Friday Number",
+            "body": [
+              "Every Friday I count how many conversations ended with a real date on my calendar.",
+              "Not calls made. Not coffees had. Actual next steps booked with a time on them."
+            ],
+            "loop": "My first count embarrassed me."
+          },
+          {
+            "title": "Mine Started At Two",
+            "body": [
+              "Two. After a week where I felt busy from morning to night.",
+              "I wrote it down anyway. Ugly numbers only start moving once you are willing to look at them."
+            ],
+            "loop": "The count itself is not the point."
+          },
+          {
+            "title": "You Only Own The Input",
+            "body": [
+              "Rates, inventory, what a seller does on a Tuesday. None of that is yours.",
+              "How many next steps you booked this week is entirely yours. So that is the thing I grade."
+            ],
+            "loop": "It fixed a money problem too."
+          },
+          {
+            "title": "Pay Yourself On Purpose",
+            "body": [
+              "Commission comes in lumps. Three closings in April and nothing until July.",
+              "I pay myself the same amount every month off a rolling average. The rest sits and waits."
+            ],
+            "loop": "Then a week showed up empty."
+          },
+          {
+            "title": "The Zero Week",
+            "body": [
+              "Some weeks the number is zero. I still write the zero down.",
+              "A run of zeros is information, not a verdict. Two strong weeks wipe them out completely."
+            ],
+            "loop": "Most people quit one month early."
+          }
+        ],
+        "cta": {
+          "shareLine": "Send this to someone who checks their bank balance more often than their calendar."
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 9,
+        "worst_problem": "The final loop, \"Most people quit one month early,\" opens a promise the deck never pays off — it leads straight into the CTA, so the last swipe delivers nothing.",
+        "fix": "Replace the last slide's loop with a line that resolves the deck and hands off to the share close (e.g. \"Zero weeks are not the enemy — blind weeks are\"), and sharpen slide 1's transition loop from \"So I stopped keeping score that way\" into a real tease like \"I found a better number.\""
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 364029287,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-19T14:28:12.515Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675748772328049933"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364029290,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-19T14:28:12.750Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495848546206887936"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364029351,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-19T14:28:12.892Z",
+          "publicUrl": "https://www.instagram.com/p/DcOZkCMjVhI/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364029390,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-19T14:28:13.034Z",
+          "publicUrl": "https://www.instagram.com/p/DcOZo-piMar/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364029398,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-19T14:28:13.182Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495848551739211776"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364029444,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-19T14:28:13.331Z",
+          "publicUrl": "https://www.instagram.com/p/DcOZjawDVAJ/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 364029448,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-19T14:28:13.473Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122115233235400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364029453,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-19T14:28:13.616Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7495848545816735744"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-19T14:28:13.616Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
