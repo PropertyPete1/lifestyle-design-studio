@@ -38,6 +38,7 @@ import {
   editOnCameraTake,
   MIN_SILENCE_SECONDS,
   KEEP_SILENCE_SECONDS,
+  MIN_PIECE_SECONDS,
   PIECE_DECLICK_SECONDS,
   MIN_RETAINED_SHARE,
   pieceExtension,
@@ -127,7 +128,34 @@ export function speechSafe(pieces, silences, totalSeconds, { tolerance = 0.02 } 
   for (const gap of removedIntervals(pieces, totalSeconds)) {
     if (gap.end - gap.start <= tolerance) continue;
     const covered = (silences || []).some((s) => gap.start >= s.start - tolerance && gap.end <= s.end + tolerance);
-    if (!covered) {
+
+    // THE PLANNER'S OWN SHORT-SPAN DROP IS NOT A CLIPPED WORD. buildEditList
+    // deliberately discards a speech span shorter than MIN_PIECE_SECONDS
+    // ("too short to be a shot"), and every shipped long-form video already
+    // carries those drops — but this checker, written for reels, refused the
+    // first real teaser over one: video 1's hook take ends with a reported
+    // pause and then 0.4s of post-pause audio to the end of the file, and the
+    // resulting gap (silence remainder + dropped span) is not contained in
+    // any single reported silence. Run 32298899242 died on it; the exact
+    // shape is reproduced in reel-edit.test.mjs.
+    //
+    // The acceptance is precise, not loose: the gap must BEGIN inside a
+    // reported silence (dropped spans always start where a silence-cut
+    // ended), END inside one or at the take's end (they are silence-bounded
+    // by construction), and the part of the gap NO silence covers must be
+    // shorter than MIN_PIECE_SECONDS — the most the planner is allowed to
+    // drop. A removal failing any of those still refuses the render.
+    const startsInSilence = (silences || []).some((s) => gap.start >= s.start - tolerance && gap.start <= s.end + tolerance);
+    const endsBounded =
+      gap.end >= totalSeconds - tolerance ||
+      (silences || []).some((s) => gap.end >= s.start - tolerance && gap.end <= s.end + tolerance);
+    const uncovered = (silences || []).reduce((left, s) => {
+      const overlap = Math.max(0, Math.min(gap.end, s.end) - Math.max(gap.start, s.start));
+      return left - overlap;
+    }, gap.end - gap.start);
+    const plannedShortDrop = startsInSilence && endsBounded && uncovered < MIN_PIECE_SECONDS + tolerance;
+
+    if (!covered && !plannedShortDrop) {
       violations.push({
         start: round(gap.start),
         end: round(gap.end),

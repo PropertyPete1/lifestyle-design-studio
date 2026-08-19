@@ -25,6 +25,7 @@
 import { spawnSync } from "child_process";
 import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
+import sharp from "sharp";
 
 import { sampleFrames, pickExpressiveFrame, renderThumbnail } from "./yt-thumbnail.js";
 import { EMOTIONAL_TRIGGER_DEFINITION } from "./yt-thumbnail-hook.js";
@@ -110,6 +111,27 @@ export function selectCandidateFrames(ranked, sampled, { count = CANDIDATE_COUNT
   return chosen;
 }
 
+/**
+ * A copy sized for JUDGING, not for shipping.
+ *
+ * Nine full-resolution frames base64'd into one request blew the API's size
+ * ceiling on the first live run (413 request_too_large, run 32298902764) and
+ * the whole expression contest silently became "take the middle frame". The
+ * judge only needs what a viewer sees — a thumbnail is glanced at around 210
+ * pixels — so it gets a 640-wide JPEG while the matting and compositing keep
+ * the original. Falls back to the original path when the copy fails; a copy
+ * problem must never cost the contest more than the 413 already did.
+ */
+export async function judgingCopy(path) {
+  try {
+    const out = path.replace(/\.(png|jpe?g)$/i, "") + ".judge.jpg";
+    await sharp(path).resize({ width: 640, withoutEnlargement: true }).jpeg({ quality: 82 }).toFile(out);
+    return out;
+  } catch {
+    return path;
+  }
+}
+
 const COMPOSITE_CRITIC = `You are judging FINISHED YouTube thumbnails — an image of a person composited beside short hook text. They are variants of the same design: same text, different frame of the same person.
 
 Judge each at the size it is actually seen: about 210x118 pixels, in a search result, beside eleven competitors. Score each variant on two axes out of 10:
@@ -139,7 +161,11 @@ export async function pickWinningComposite(candidates, { visionCall = defaultCom
   if (usable.length === 1) return { winner: usable[0], ranked: usable, reason: "only one candidate" };
 
   try {
-    const scores = await visionCall(usable, COMPOSITE_CRITIC);
+    // The judge sees sized-down copies (see judgingCopy); the RANKING maps
+    // back to the originals by index, so the winner that ships is full-res.
+    const judged = [];
+    for (const c of usable) judged.push({ ...c, path: await judgingCopy(c.path) });
+    const scores = await visionCall(judged, COMPOSITE_CRITIC);
     const ranked = (scores || [])
       .filter((s) => Number.isFinite(Number(s?.emotional_trigger)) && usable[s.index])
       .map((s) => ({
@@ -207,18 +233,24 @@ export async function buildFaceThumbnail({
   const sampled = sampleFrames(source.path, source.seconds || 10, workDir, { count: SAMPLE_COUNT });
   if (sampled.length === 0) return { ...report, winner: null, reason: "no frames extracted" };
 
-  const expression = await pickExpressiveFrame(sampled, visionCall ? { visionCall } : {});
-  const frames = selectCandidateFrames(expression.scores, sampled);
+  // The expression judge sees sized-down copies; matting and compositing use
+  // the ORIGINAL frame (fullPath). See judgingCopy for the 413 this prevents.
+  const judged = [];
+  for (const f of sampled) judged.push({ ...f, path: await judgingCopy(f.path), fullPath: f.path });
+
+  const expression = await pickExpressiveFrame(judged, visionCall ? { visionCall } : {});
+  const frames = selectCandidateFrames(expression.scores, judged);
   report.frames = frames.map((f) => ({ at: f.at, score: f.score ?? null, why: f.why || null }));
 
   for (let i = 0; i < frames.length; i++) {
     const frame = frames[i];
+    const framePath = frame.fullPath || frame.path;
     const mattePath = join(workDir, `thumb-matte-${i}.png`);
-    const matte = cutout(frame.path, mattePath);
+    const matte = cutout(framePath, mattePath);
     if (!matte.ok) report.fallbacks.push({ candidate: i, reason: matte.reason });
 
     try {
-      const png = await renderThumbnail(hookText, { kicker, portraitPng: matte.ok ? mattePath : frame.path });
+      const png = await renderThumbnail(hookText, { kicker, portraitPng: matte.ok ? mattePath : framePath });
       const outPath = join(workDir, `thumb-candidate-${i}.png`);
       writeFileSync(outPath, png);
       report.candidates.push({

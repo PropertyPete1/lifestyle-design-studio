@@ -190,6 +190,12 @@ jobs:
         # it and the build ships without the floating head — a degraded video,
         # never a dead job.
         run: |
+          # mediapipe's segmenter dlopens libEGL even headless; the hosted
+          # runner does not ship it, and its absence fails EVERY matte with
+          # "libEGL.so.1: cannot open shared object file" (run 32298902764 —
+          # which also means the PIP has been refusing itself on runners for
+          # the same reason). Best-effort like the rest of this step.
+          sudo apt-get install -y libegl1 libgl1 || echo "::warning::GL libraries unavailable — mattes will fail"
           python3 -m venv /tmp/segenv || true
           /tmp/segenv/bin/pip install --quiet mediapipe opencv-python-headless || echo "::warning::segmentation setup failed — PIP will report unavailable"
       - name: Install dependencies
@@ -342,6 +348,12 @@ jobs:
         # it and the build ships without the floating head — a degraded video,
         # never a dead job.
         run: |
+          # mediapipe's segmenter dlopens libEGL even headless; the hosted
+          # runner does not ship it, and its absence fails EVERY matte with
+          # "libEGL.so.1: cannot open shared object file" (run 32298902764 —
+          # which also means the PIP has been refusing itself on runners for
+          # the same reason). Best-effort like the rest of this step.
+          sudo apt-get install -y libegl1 libgl1 || echo "::warning::GL libraries unavailable — mattes will fail"
           python3 -m venv /tmp/segenv || true
           /tmp/segenv/bin/pip install --quiet mediapipe opencv-python-headless || echo "::warning::segmentation setup failed — PIP will report unavailable"
       - name: Install dependencies
