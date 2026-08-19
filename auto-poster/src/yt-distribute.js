@@ -66,17 +66,45 @@ export function playlistTitleFor({ market, intent } = {}) {
 
 // ─── the API client, injectable everywhere ──────────────────────────────────
 
+/**
+ * Resolve the OAuth client for the YOUTUBE token.
+ *
+ * The YouTube path has its own OAuth client (YT_CLIENT_ID/YT_CLIENT_SECRET,
+ * project "Youtube Auto Post" on the Google account that owns the channel)
+ * because the original client lives on the account whose token kept minting
+ * as the wrong channel — twice. The Drive/Gmail pair (GOOGLE_CLIENT_ID/
+ * GOOGLE_CLIENT_SECRET) stays untouched and serves as the fallback so the
+ * change deploys ahead of the secrets existing.
+ *
+ * A refresh token only works with the client that minted it, so HALF a pair
+ * is worse than none: YT_CLIENT_ID with the old secret is a guaranteed
+ * invalid_client hours later. Refuse it loudly instead.
+ */
+export function ytOAuthClient(env = process.env) {
+  const hasId = Boolean(env.YT_CLIENT_ID);
+  const hasSecret = Boolean(env.YT_CLIENT_SECRET);
+  if (hasId !== hasSecret) {
+    throw new Error(
+      `YT_CLIENT_ID and YT_CLIENT_SECRET must be set together (${hasId ? "YT_CLIENT_SECRET" : "YT_CLIENT_ID"} is missing) — refusing to mix halves of two OAuth clients`
+    );
+  }
+  return hasId
+    ? { clientId: env.YT_CLIENT_ID, clientSecret: env.YT_CLIENT_SECRET, source: "YT_CLIENT_ID/YT_CLIENT_SECRET" }
+    : { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET, source: "GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET (fallback)" };
+}
+
 export async function accessToken({ fetchImpl = fetch, env = process.env } = {}) {
-  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, YT_REFRESH_TOKEN } = env;
-  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET || !YT_REFRESH_TOKEN) {
-    throw new Error("distribution needs GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and YT_REFRESH_TOKEN");
+  const { clientId, clientSecret } = ytOAuthClient(env);
+  const { YT_REFRESH_TOKEN } = env;
+  if (!clientId || !clientSecret || !YT_REFRESH_TOKEN) {
+    throw new Error("distribution needs YT_CLIENT_ID + YT_CLIENT_SECRET (or the GOOGLE_ pair as fallback) and YT_REFRESH_TOKEN");
   }
   const res = await fetchImpl(OAUTH_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
+      client_id: clientId,
+      client_secret: clientSecret,
       refresh_token: YT_REFRESH_TOKEN,
       grant_type: "refresh_token",
     }),

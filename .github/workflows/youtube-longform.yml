@@ -237,6 +237,11 @@ jobs:
           # threw, the sweep skipped itself with a log warning nobody reads,
           # and distribution would silently never have happened. The exact
           # drift class the YT_NARRATION_MODE incident already demonstrated.
+          # The YouTube token's OWN OAuth client (project "Youtube Auto Post" on
+          # the channel-owning account). Falls back to the GOOGLE_ pair when unset;
+          # a refresh token only works with the client that minted it.
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           YT_TEXT_NUMBER: ${{ secrets.YT_TEXT_NUMBER }}
           YT_LINKS_URL: ${{ secrets.YT_LINKS_URL }}

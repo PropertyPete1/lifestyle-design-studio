@@ -111,6 +111,16 @@ describe("the distribution sweep's credentials reach the job that runs it", () =
     assert.match(all.pipeline, /YT_REFRESH_TOKEN:/, "the sweep cannot authenticate without it");
   });
 
+  test("the pipeline job carries the YouTube token's OWN OAuth client pair", () => {
+    // The token is minted against project "Youtube Auto Post"; a refresh
+    // token only exchanges against the client that minted it, so a job with
+    // the token but not the pair falls back to the Drive client and dies
+    // with invalid_grant on every sweep.
+    const all = jobs();
+    assert.match(all.pipeline, /YT_CLIENT_ID:/, "the sweep would exchange against the wrong OAuth client");
+    assert.match(all.pipeline, /YT_CLIENT_SECRET:/, "the sweep would exchange against the wrong OAuth client");
+  });
+
   test("the cron collision is covered: brief and pipeline share a queueing group", () => {
     const all = jobs();
     for (const name of ["brief", "pipeline"]) {
