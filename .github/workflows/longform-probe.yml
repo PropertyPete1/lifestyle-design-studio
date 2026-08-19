@@ -36,6 +36,7 @@ on:
           - video-id
           - visual-intents
           - distribution-identity
+          - thumbnail-candidates
           - all
       resolutions:
         description: 'Assembly probe: comma-separated (1080p, 4k, or "1080p,4k")'
@@ -208,6 +209,55 @@ jobs:
           METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
         run: node probe-youtube-video-id.mjs
+
+  # What would the face-thumbnail contest have made for an already-shipped
+  # video? Recovers the takes from Drive, runs the exact production path
+  # (frame sampling -> expression contest -> matte -> composite -> scoring),
+  # and uploads all candidates + the winner + the contest report as an
+  # artifact. Peter's acceptance test for the feature, runnable on demand.
+  thumbnail-candidates:
+    if: >-
+      github.event.inputs.probe == 'thumbnail-candidates'
+      || contains(github.event.head_commit.message, '[probe-thumbnail]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg & whisper
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install openai-whisper --quiet
+      - name: Set up segmentation
+        # Best-effort, same as the pipeline: a failed venv means the composites
+        # use raw frames instead of mattes, and the report says so.
+        run: |
+          python3 -m venv /tmp/segenv || true
+          /tmp/segenv/bin/pip install --quiet mediapipe opencv-python-headless || echo "::warning::segmentation setup failed — composites will use raw frames"
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Run the thumbnail contest on recovered takes
+        env:
+          # Same mode as the pipeline, or recovery mismatches the takes.
+          YT_NARRATION_MODE: peter
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          YT_SEGMENTATION_PYTHON: /tmp/segenv/bin/python
+          PROBE_OUT_DIR: ${{ github.workspace }}/thumbnail-probe
+        run: node longform/probe/probe-thumbnail-candidates.mjs
+      - name: Upload candidates and contest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: thumbnail-candidates
+          path: ${{ github.workspace }}/thumbnail-probe
+          if-no-files-found: warn
+          retention-days: 30
 
   # Whose channel does YT_REFRESH_TOKEN act as, and does it own the video
   # Metricool created? Built for video 1's first live sweep, which failed all

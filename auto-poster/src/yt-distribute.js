@@ -390,6 +390,12 @@ export function completedSteps(report) {
   const out = {};
   for (const [name, r] of Object.entries(report.steps || {})) {
     // "waiting" is not done; "skipped" IS done — there is nothing to retry.
+    // "already" was done BEFORE this run: the log carries the original
+    // timestamp and detail, and re-stamping it here would overwrite when the
+    // step really happened with when a later sweep happened to glance at it —
+    // a teaser-only pass over a finished entry would silently rewrite all
+    // four steps' history.
+    if (r.already) continue;
     if (r.done && !r.waiting) out[name] = { done: true, at: new Date().toISOString(), detail: r };
   }
   return out;

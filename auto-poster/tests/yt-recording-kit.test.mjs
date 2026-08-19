@@ -8,7 +8,7 @@
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { buildKit, renderKitText, kitPayload, estimateSeconds, recordingsFolderPath, takesToRecord } from "../src/yt-recording-kit.js";
+import { buildKit, renderKitText, kitPayload, estimateSeconds, recordingsFolderPath, takesToRecord, THUMBNAIL, THUMBNAIL_TAKE } from "../src/yt-recording-kit.js";
 import { ON_CAMERA, VOICEOVER } from "../src/yt-script.js";
 
 function takeText(words) {
@@ -47,29 +47,41 @@ describe("buildKit", () => {
     const kit = buildKit(SCRIPT, { requestId: "req-1", narrationMode: "elevenlabs" });
     assert.equal(kit.stats.onCameraCount, 4);
     assert.equal(kit.stats.voiceoverCount, 0);
-    assert.ok(kit.takes.every((t) => t.mode === ON_CAMERA));
+    assert.ok(kit.takes.every((t) => t.mode === ON_CAMERA || t.mode === THUMBNAIL));
   });
 
   test('in "peter" mode the voiceover takes become his too', () => {
     const kit = buildKit(SCRIPT, { requestId: "req-1", narrationMode: "peter" });
     assert.equal(kit.stats.onCameraCount, 4);
     assert.equal(kit.stats.voiceoverCount, 2);
-    assert.equal(kit.stats.takeCount, 6);
+    assert.equal(kit.stats.takeCount, 7, "4 on-camera + the thumbnail take + 2 voiceover");
   });
 
   test("groups by camera setup, not by timeline order", () => {
     // s2t2 is on camera and comes after two voiceover takes in the script.
     // The kit must still shoot it in the on-camera block: one setup, one light.
+    // The thumbnail take closes that block — same setup, ten extra seconds.
     const kit = buildKit(SCRIPT, { requestId: "req-1", narrationMode: "peter" });
     const modes = kit.takes.map((t) => t.mode);
     const firstVoiceover = modes.indexOf(VOICEOVER);
-    assert.ok(modes.slice(0, firstVoiceover).every((m) => m === ON_CAMERA));
+    assert.ok(modes.slice(0, firstVoiceover).every((m) => m === ON_CAMERA || m === THUMBNAIL));
     assert.ok(modes.slice(firstVoiceover).every((m) => m === VOICEOVER));
+    assert.equal(modes[firstVoiceover - 1], THUMBNAIL, "the thumbnail take rides at the end of the camera block");
   });
 
   test("numbers takes continuously across the blocks", () => {
     const kit = buildKit(SCRIPT, { requestId: "req-1", narrationMode: "peter" });
-    assert.deepEqual(kit.takes.map((t) => t.number), [1, 2, 3, 4, 5, 6]);
+    assert.deepEqual(kit.takes.map((t) => t.number), [1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  test("the thumbnail take is in the kit, optional, with the spoken slate", () => {
+    const kit = buildKit(SCRIPT, { requestId: "req-1" });
+    const thumb = kit.takes.find((t) => t.mode === THUMBNAIL);
+    assert.ok(thumb, "the kit asks for the thumbnail take");
+    assert.equal(thumb.takeId, "thumbnail");
+    assert.equal(thumb.optional, true, "skipping it must never block a build");
+    assert.match(thumb.direction, /Say "thumbnail take"/, "the spoken slate is what the matcher finds");
+    assert.match(thumb.direction, /SURPRISED/, "the three expressions are the take");
   });
 
   test("keeps the takeId, which is what the ingest matches on", () => {
@@ -172,14 +184,31 @@ describe("kitPayload", () => {
 });
 
 describe("takesToRecord — the kit and the ingest must agree", () => {
-  test("default mode asks for the on-camera takes only", () => {
+  test("default mode asks for the on-camera takes plus the thumbnail take", () => {
     const takes = takesToRecord(SCRIPT, "elevenlabs");
-    assert.ok(takes.every((t) => t.mode === ON_CAMERA));
-    assert.equal(takes.length, 4);
+    assert.ok(takes.every((t) => t.mode === ON_CAMERA || t.mode === THUMBNAIL));
+    assert.equal(takes.length, 5);
   });
 
   test('"peter" mode asks for the voiceover takes too', () => {
-    assert.equal(takesToRecord(SCRIPT, "peter").length, 6);
+    assert.equal(takesToRecord(SCRIPT, "peter").length, 7, "4 on-camera + 2 voiceover + the thumbnail take");
+  });
+
+  test("the thumbnail take is the ONLY optional one — everything else can block a build", () => {
+    for (const mode of ["elevenlabs", "peter"]) {
+      const takes = takesToRecord(SCRIPT, mode);
+      const optional = takes.filter((t) => t.optional);
+      assert.equal(optional.length, 1, mode);
+      assert.equal(optional[0].id, "thumbnail", mode);
+    }
+  });
+
+  test("the thumbnail take's slate text is what a transcript will actually contain", () => {
+    // Matching is transcript-based; a silent expressions clip has no words, so
+    // the take's text IS the spoken slate. Two tokens, in order, that no
+    // script take contains — see THUMBNAIL_TAKE's header.
+    assert.equal(THUMBNAIL_TAKE.text, "Thumbnail take.");
+    assert.equal(THUMBNAIL_TAKE.optional, true);
   });
 
   test("THE BUG THE DRY RUN CAUGHT: this is exactly what the kit lists", () => {

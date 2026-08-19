@@ -51,8 +51,51 @@ export function recordingsFolderPath(requestId) {
  * every run and the build never proceeded. Caught by the dry-run gate.
  */
 export function takesToRecord(script, narrationMode = NARRATION_MODE) {
-  return allTakes(script).filter((t) => t.mode === ON_CAMERA || narrationMode === "peter");
+  return [
+    ...allTakes(script).filter((t) => t.mode === ON_CAMERA || narrationMode === "peter"),
+    // The thumbnail take is part of what Peter is asked to shoot, so it lives
+    // in THIS list — the single definition the kit and the ingest share. Its
+    // `optional: true` is what keeps it out of missing-take accounting
+    // (matchTakesToClips), so listing it here cannot block a build.
+    { ...THUMBNAIL_TAKE },
+  ];
 }
+
+/** The thumbnail take's mode — not on the timeline, not narration. */
+export const THUMBNAIL = "thumbnail";
+
+/**
+ * The thumbnail take — ten seconds of raw material for the video's face.
+ *
+ * A thumbnail with Peter's face on it out-clicks a text card, and the takes
+ * recorded FOR the timeline are the wrong place to harvest that face: he is
+ * mid-sentence in every frame, eyes wherever the read took them. This take is
+ * three deliberate expressions straight down the lens, and nothing else.
+ *
+ * WHY THE SPOKEN SLATE. Matching is by transcript (yt-take-match.js) — a
+ * silent clip of expressions has no words to match, so the take opens with
+ * Peter SAYING "thumbnail take". Two words, in order, that no script take
+ * will ever contain: recall 1.0 against this take, noise against everything
+ * else. No filename convention, no new matching machinery.
+ *
+ * OPTIONAL, STRUCTURALLY. `optional: true` is what keeps this take out of
+ * missing-take accounting (matchTakesToClips skips optional takes when
+ * deciding `complete`), so a kit Peter shot before this feature existed —
+ * video 1's, for one — still builds. The generator falls back to harvesting
+ * the best face frame from the on-camera takes instead.
+ */
+export const THUMBNAIL_TAKE = Object.freeze({
+  id: "thumbnail",
+  mode: THUMBNAIL,
+  section: "packaging",
+  optional: true,
+  text: "Thumbnail take.",
+  direction:
+    'Say "thumbnail take", then hold three BIG expressions straight down the lens, ' +
+    "about three seconds each: SURPRISED (eyebrows up, mouth open), CONCERNED " +
+    "(brow down, lips tight), CONFIDENT (slight smile, chin up). No words after " +
+    "the slate — the expressions are the take. Face the light, fill the frame.",
+});
 
 export function buildKit(scriptResult, { requestId, narrationMode = NARRATION_MODE } = {}) {
   if (!requestId) throw new Error("buildKit requires a requestId");
@@ -65,6 +108,7 @@ export function buildKit(scriptResult, { requestId, narrationMode = NARRATION_MO
   // running order — he is reading down a page.
   const onCamera = toRecord.filter((t) => t.mode === ON_CAMERA);
   const voiceover = toRecord.filter((t) => t.mode === VOICEOVER);
+  const thumbnailTakes = toRecord.filter((t) => t.mode === THUMBNAIL);
 
   const number = (list, offset) =>
     list.map((t, i) => ({
@@ -77,7 +121,14 @@ export function buildKit(scriptResult, { requestId, narrationMode = NARRATION_MO
       estimatedSeconds: estimateSeconds(t.text),
     }));
 
-  const numbered = [...number(onCamera, 0), ...number(voiceover, onCamera.length)];
+  // The thumbnail take rides at the end of the on-camera block — same setup,
+  // same light, ten extra seconds. It is numbered like the rest so "which one
+  // did I skip" stays answerable from the numbers alone.
+  const numbered = [
+    ...number(onCamera, 0),
+    ...number(thumbnailTakes, onCamera.length).map((t) => ({ ...t, estimatedSeconds: 10, optional: true })),
+    ...number(voiceover, onCamera.length + thumbnailTakes.length),
+  ];
   const totalSeconds = numbered.reduce((n, t) => n + t.estimatedSeconds, 0);
 
   return {
@@ -136,13 +187,15 @@ export function renderKitText(kit) {
       lines.push(
         take.mode === ON_CAMERA
           ? `ON CAMERA — ${kit.stats.onCameraCount} takes. This is you, on screen.`
-          : `VOICEOVER — ${kit.stats.voiceoverCount} takes. Audio only, plays over footage.`
+          : take.mode === THUMBNAIL
+            ? `THUMBNAIL — 1 take, 10 seconds. Your face becomes the thumbnail; skip it and the build harvests a frame from the takes above instead.`
+            : `VOICEOVER — ${kit.stats.voiceoverCount} takes. Audio only, plays over footage.`
       );
       lines.push("=".repeat(60));
       lastMode = take.mode;
     }
     lines.push("");
-    lines.push(`--- TAKE ${take.number} (${take.takeId}) — about ${take.estimatedSeconds}s ---`);
+    lines.push(`--- TAKE ${take.number} (${take.takeId}) — about ${take.estimatedSeconds}s${take.optional ? ", OPTIONAL" : ""} ---`);
     if (take.direction) lines.push(`    Direction: ${take.direction}`);
     lines.push("");
     lines.push(indent(take.text));

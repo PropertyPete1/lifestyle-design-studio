@@ -146,6 +146,20 @@ export function recordRender(log, entry) {
         // failed and Peter made one by hand in Studio.
         thumbnailText: entry.thumbnailText || null,
         thumbnailScores: entry.thumbnailScores || null,
+        // The face composite the contest chose, persisted to Drive so the
+        // sweep's thumbnails.set uses the CHOSEN image rather than quietly
+        // re-rendering a text-only card after the workDir is gone.
+        thumbnailDriveId: entry.thumbnailDriveId || null,
+        // The teaser cut from this render, waiting in Drive for the publish
+        // flip; the sweep delivers it to the Trial tab.
+        teaser: entry.teaser || null,
+        // OBSERVED at render time by syntheticNarrationUsed(plan) — the
+        // publish step's disclosure decision reads this, and it was silently
+        // dropped here (this list is an allowlist) while the call site set
+        // it: video 1's entry shipped without it and the disclosure decision
+        // fell back to configuration. Evidence beats configuration only if
+        // the evidence is actually recorded.
+        syntheticNarration: typeof entry.syntheticNarration === "boolean" ? entry.syntheticNarration : null,
         // Never true at render time. Only an explicit approval sets it.
         approved: false,
       },
