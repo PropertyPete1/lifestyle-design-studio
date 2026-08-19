@@ -116,7 +116,35 @@
           "notes": "baseline rebuild (PR #86): the take audio comes back — output-side seek silenced every piece after the first, and an AAC encode per piece walked the audio ~2s behind the picture. Music, micro-punches, whooshes, impacts and the floating head are all OFF. The render is now gated on its own artifact checks."
         }
       ],
-      "distribution": {},
+      "distribution": {
+        "thumbnail": {
+          "done": true,
+          "at": "2026-08-19T02:14:09.628Z",
+          "detail": {
+            "done": true,
+            "set": true
+          }
+        },
+        "publish": {
+          "done": true,
+          "at": "2026-08-19T02:14:09.628Z",
+          "detail": {
+            "done": true,
+            "published": true,
+            "privacy": "public",
+            "declaredSynthetic": false
+          }
+        },
+        "comment": {
+          "done": true,
+          "at": "2026-08-19T02:14:09.628Z",
+          "detail": {
+            "done": true,
+            "posted": true,
+            "commentId": "UgwK8I3r8MHTOtetL6p4AaABAg"
+          }
+        }
+      },
       "shortsCutAt": null,
       "shorts": [],
       "thumbnailText": "THE FEE NOBODY MENTIONS",
