@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-08-18",
+      "window": "pm",
+      "sourceVideoId": "1PY-4BXYhq5VV17XnkJro8mqb69Aw1yKr",
+      "sourceFileName": "48AEE3B9-F224-4600-885D-FC93E0B1A7CA.mp4",
+      "city": "san_antonio",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "caption": "Brand new construction in New Braunfels starting at $389,900. This is the kind of opportunity that moves fast.\n\nNew homes like this don't sit on the market long, especially with builder incentives in ",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1L9b_39n-exgTlv5SSStkuCspb_hl4z6k/view",
+      "generatedAt": "2026-08-19T00:00:52.892Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-08-18",
       "window": "am",
       "sourceVideoId": "199ETN0pfmYM7vAdVmQqGZ1mpKIOzjsui",
       "sourceFileName": "3D0AF121-FE41-45F9-B859-66FAF7B09B2D.mp4",
