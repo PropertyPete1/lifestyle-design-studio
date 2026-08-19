@@ -213,6 +213,22 @@ export const criticSystem = () => CRITIC_SYSTEM;
 /** The axes a thumbnail line must clear. */
 export const HOOK_AXES = ["curiosity", "legibility", "emotional_trigger"];
 
+/**
+ * The emotional-trigger axis, stated once.
+ *
+ * The composite scorer (yt-thumbnail-face.js) judges finished face+text
+ * thumbnails on THE SAME axis this critic judges the text line on — exporting
+ * the definition is what keeps "emotional trigger" meaning one thing across
+ * both judges instead of drifting into two private rubrics.
+ */
+export const EMOTIONAL_TRIGGER_DEFINITION =
+  `"emotional_trigger" — is there a consequence in it? What gets CLICKED is not what is interesting but what is threatening or surprising: a mistake being made, money being lost, a warning, a thing everyone else got wrong.
+  10  the viewer feels implicated — a mistake THEY might be making, money THEY are losing
+   8  a clear cost or warning, slightly impersonal
+   5  interesting but consequence-free. It informs; nothing is at stake
+   2  merely describes the topic, however cleanly — a label cannot trigger anything
+   1  neutral to the point of wallpaper`;
+
 export function scoresPass(scores, mark = PASS_MARK) {
   return Boolean(scores) && HOOK_AXES.every((a) => (scores[a] ?? 0) >= mark);
 }

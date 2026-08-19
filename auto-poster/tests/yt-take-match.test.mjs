@@ -247,3 +247,55 @@ describe("describeMatchResult — Peter has to be able to act on this", () => {
     assert.ok(text.includes("UNUSED CLIPS"));
   });
 });
+
+describe("optional takes — the thumbnail take must never hold a build hostage", async () => {
+  const { THUMBNAIL_TAKE } = await import("../src/yt-recording-kit.js");
+  const withThumb = [...TAKES, THUMBNAIL_TAKE];
+
+  test("an unrecorded optional take is ABSENT, not missing — the build stays complete", () => {
+    const clips = TAKES.map((t, i) => clip(`c${i}`, transcribed(t), `2026-08-12T15:0${i}:00Z`));
+    const r = matchTakesToClips(withThumb, clips);
+    assert.equal(r.complete, true, "video 1's kit predates the take and must still build");
+    assert.ok(!r.missingTakes.some((m) => m.takeId === "thumbnail"));
+  });
+
+  test("a recorded thumbnail take matches on its spoken slate", () => {
+    const clips = [
+      ...TAKES.map((t, i) => clip(`c${i}`, transcribed(t), `2026-08-12T15:0${i}:00Z`)),
+      clip("thumb-clip", "thumbnail take", "2026-08-12T15:30:00Z"),
+    ];
+    const r = matchTakesToClips(withThumb, clips);
+    assert.equal(r.complete, true);
+    assert.equal(r.matches.find((m) => m.takeId === "thumbnail")?.clipId, "thumb-clip");
+    assert.equal(r.strayClips.length, 0);
+  });
+
+  test("whisper hallucination on the silent stretch does not lose the slate", () => {
+    // Whisper reliably invents "Thank you." over silence; the expressions are
+    // silent by design, so the transcript is the slate plus invented filler.
+    const clips = [clip("thumb-clip", "thumbnail take thank you thank you", "2026-08-12T15:30:00Z")];
+    const r = matchTakesToClips(withThumb, clips);
+    assert.equal(r.matches.find((m) => m.takeId === "thumbnail")?.clipId, "thumb-clip");
+  });
+
+  test("a long script clip can never be stolen by the two-token thumbnail take", () => {
+    // Even a script that literally contains the words "thumbnail ... take" in
+    // order: recall against the 2-token take is 1.0, but precision over a
+    // 30-word transcript is tiny and the F1 floor rejects the claim.
+    const trap = clip(
+      "trap",
+      "here is the thumbnail everyone sees and the take nobody records " + transcribed(TAKES[0]),
+      "2026-08-12T15:00:00Z"
+    );
+    const r = matchTakesToClips(withThumb, [trap]);
+    assert.equal(r.matches.find((m) => m.takeId === "thumbnail"), undefined, "the F1 floor must reject the theft");
+    assert.equal(r.matches.find((m) => m.takeId === "s1t1")?.clipId, "trap");
+  });
+
+  test("a MANDATORY take that is missing still blocks, exactly as before", () => {
+    const clips = [clip("thumb-clip", "thumbnail take", "2026-08-12T15:30:00Z")];
+    const r = matchTakesToClips(withThumb, clips);
+    assert.equal(r.complete, false);
+    assert.equal(r.missingTakes.length, TAKES.length);
+  });
+});

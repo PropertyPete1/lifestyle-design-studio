@@ -45,6 +45,7 @@ on:
           - send-test-approval
           - reoutline
           - resend-kit
+          - teaser-backfill
           - stock-probe
       stock_queries:
         # Hand it the exact queries a past build used and read off which stage
@@ -447,6 +448,54 @@ jobs:
           # wrong-subject clip is ever accepted.
           STOCK_PROBE_CONTROL: 'true'
         run: node scripts/stock-probe.mjs
+
+  # Cut the ~20s vertical teaser for a video that shipped BEFORE the teaser
+  # feature existed (video 1 is the reason this job exists). Recovers the
+  # takes from Drive via the persisted script, cuts, uploads the teaser to
+  # Drive and records it on the log entry — DELIVERY stays with the
+  # distribution sweep, so the next pipeline run (or cron) puts it on the
+  # Trial tab once it sees the publish flip. Idempotent: an entry that
+  # already carries a teaser is left alone.
+  teaser-backfill:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'teaser-backfill'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    concurrency:
+      group: youtube-longform-approvals
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg & whisper
+        run: |
+          # ffmpeg cuts and burns; whisper re-transcribes the recovered takes
+          # for matching AND stamps the words the caption burn is timed from.
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          pip install openai-whisper --quiet
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Recover takes and cut the teaser
+        working-directory: auto-poster
+        env:
+          # MUST match the pipeline job (see resend-kit's identical note):
+          # takesToRecord keys off this, and recovering with the wrong mode
+          # would transcribe every voiceover clip into an unmatched stray.
+          YT_NARRATION_MODE: peter
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          BACKFILL_REQUEST_ID: ${{ github.event.inputs.request_id }}
+        run: node scripts/yt-teaser-backfill.mjs
+      - name: Commit the teaser record
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs YTTEASER "true"
 
   resend-kit:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'resend-kit'

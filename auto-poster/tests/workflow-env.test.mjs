@@ -111,6 +111,23 @@ describe("the distribution sweep's credentials reach the job that runs it", () =
     assert.match(all.pipeline, /YT_REFRESH_TOKEN:/, "the sweep cannot authenticate without it");
   });
 
+  test("micro-punches stay OFF — this week's A/B layers are thumbnails and teasers", () => {
+    // Peter's discipline: one experimental layer at a time. MICRO_PUNCHES_ENABLED
+    // is opt-in (yt-config reads === "true"), so the pin is that no job opts in.
+    const all = jobs();
+    for (const [name, body] of Object.entries(all)) {
+      assert.ok(!/YT_MICRO_PUNCHES:\s*['"]?true/.test(body), `${name} must not switch micro-punches on`);
+    }
+  });
+
+  test("the teaser-backfill job can reach Drive, and commits what it records", () => {
+    const all = jobs();
+    assert.ok(all["teaser-backfill"], "the backfill job exists");
+    assert.match(all["teaser-backfill"], /GOOGLE_REFRESH_TOKEN:/, "take recovery reads Drive");
+    assert.match(all["teaser-backfill"], /merge-log-push\.mjs/, "an uncommitted teaser record is a cut nobody delivers");
+    assert.match(all["teaser-backfill"], /group:\s*youtube-longform-approvals/, "must queue behind the crons, not race them");
+  });
+
   test("the pipeline job carries the YouTube token's OWN OAuth client pair", () => {
     // The token is minted against project "Youtube Auto Post"; a refresh
     // token only exchanges against the client that minted it, so a job with

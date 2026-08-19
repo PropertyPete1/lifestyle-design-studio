@@ -150,7 +150,15 @@ export function matchTakesToClips(takes, clips, { minRecall = MIN_RECALL, minF1 
   for (const take of takeList) {
     const claims = claimsByTake.get(take.id) || [];
     if (claims.length === 0) {
-      missingTakes.push({ takeId: take.id, mode: take.mode, section: take.section, text: take.text });
+      // An OPTIONAL take that nobody recorded is not missing — it is absent,
+      // which its consumers handle with a fallback (the thumbnail generator
+      // harvests a frame from the on-camera takes). Listing it in
+      // missingTakes would hold the whole build hostage to a ten-second
+      // nice-to-have, and would retroactively block every kit shot before
+      // the take existed.
+      if (!take.optional) {
+        missingTakes.push({ takeId: take.id, mode: take.mode, section: take.section, text: take.text });
+      }
       continue;
     }
     const ordered = [...claims].sort(byRecordedAtThenScore);

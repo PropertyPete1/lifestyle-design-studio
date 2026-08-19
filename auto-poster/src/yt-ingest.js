@@ -208,9 +208,9 @@ async function downloadTo(fileId, destPath, accessToken) {
  * and Peter can look at it. Throwing would take down a build over one corrupt
  * upload.
  */
-export function transcribeFile(path, { model = process.env.YT_WHISPER_MODEL || "base" } = {}) {
+export function transcribeFile(path, { model = process.env.YT_WHISPER_MODEL || "base", words = false } = {}) {
   try {
-    const out = execFileSync("python3", [TRANSCRIBE_SCRIPT, path, model], {
+    const out = execFileSync("python3", [TRANSCRIBE_SCRIPT, path, model, ...(words ? ["--words"] : [])], {
       encoding: "utf-8",
       timeout: 15 * 60_000,
       maxBuffer: 16 * 1024 * 1024,

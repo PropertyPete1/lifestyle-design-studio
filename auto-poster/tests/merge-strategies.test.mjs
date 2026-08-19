@@ -563,4 +563,29 @@ describe("mergeYouTubeLog preserves fields it has never heard of", async () => {
     ).videos[0];
     assert.equal(m.youtubeVideoId, "localValue--");
   });
+
+  test("a cut teaser survives the merge, and its delivery marker is never erased", () => {
+    // The teaser field is written by the build run; the delivery marker by a
+    // later sweep. A stale copy losing EITHER means a re-cut or a double
+    // delivery to the Trial tab.
+    const teaser = { driveFileId: "drv-teaser-1", seconds: 21.4, hookLine: "Everyone quotes the price.", cutAt: "2026-08-19T03:00:00Z" };
+    const cutSide = { videos: [{ ...base, teaser }] };
+    const staleSide = { videos: [{ ...base, teaser: null }] };
+    assert.deepEqual(mergeYouTubeLog(cutSide, staleSide, () => {}).videos[0].teaser, teaser);
+    assert.deepEqual(mergeYouTubeLog(staleSide, cutSide, () => {}).videos[0].teaser, teaser);
+
+    const delivered = { videos: [{ ...base, teaser, distribution: { teaser: { done: true, at: "x" } } }] };
+    const undelivered = { videos: [{ ...base, teaser, distribution: { teaser: { done: false } } }] };
+    assert.equal(mergeYouTubeLog(undelivered, delivered, () => {}).videos[0].distribution.teaser.done, true);
+    assert.equal(mergeYouTubeLog(delivered, undelivered, () => {}).videos[0].distribution.teaser.done, true);
+  });
+
+  test("the chosen face thumbnail's Drive id beats a stale null", () => {
+    const m = mergeYouTubeLog(
+      { videos: [{ ...base, thumbnailDriveId: "drv-thumb-1" }] },
+      { videos: [{ ...base, thumbnailDriveId: null }] },
+      () => {}
+    ).videos[0];
+    assert.equal(m.thumbnailDriveId, "drv-thumb-1");
+  });
 });

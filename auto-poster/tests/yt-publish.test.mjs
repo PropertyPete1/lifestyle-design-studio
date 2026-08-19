@@ -88,6 +88,27 @@ describe("nothing can make a video public", () => {
     const log = recordRender({ videos: [] }, { videoId: "v1", title: "t" });
     assert.throws(() => recordUpload(log, "v1", { privacy: "public" }), /only uploads private/);
   });
+
+  test("recordRender PERSISTS what the render observed — the allowlist drop class", () => {
+    // recordRender builds the entry from named fields, which is an allowlist:
+    // PR #104 set syntheticNarration at the call site and this function
+    // silently dropped it, so video 1's disclosure decision fell back to
+    // configuration. Every field the sweep later depends on is pinned here.
+    const entry = recordRender({ videos: [] }, {
+      videoId: "v1",
+      title: "t",
+      syntheticNarration: false,
+      thumbnailDriveId: "drv-thumb",
+      teaser: { driveFileId: "drv-teaser", seconds: 21, hookLine: "h", cutAt: "x" },
+    }).videos[0];
+    assert.equal(entry.syntheticNarration, false, "an observed false is data, not absence");
+    assert.equal(entry.thumbnailDriveId, "drv-thumb");
+    assert.equal(entry.teaser.driveFileId, "drv-teaser");
+    // And when nobody looked, the field says so rather than guessing.
+    const bare = recordRender({ videos: [] }, { videoId: "v2", title: "t" }).videos[0];
+    assert.equal(bare.syntheticNarration, null);
+    assert.equal(bare.teaser, null);
+  });
 });
 
 describe("buildPostBody", () => {

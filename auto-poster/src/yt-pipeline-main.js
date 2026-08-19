@@ -30,10 +30,15 @@ import Anthropic from "@anthropic-ai/sdk";
 import { getAccessToken, downloadVideo } from "./drive.js";
 import { join } from "path";
 import { tmpdir } from "os";
-import { mkdirSync, writeFileSync, readFileSync } from "fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "fs";
 import { generateScript } from "./yt-script.js";
 import { getVoiceSamples } from "./yt-voice.js";
 import { buildKit, renderKitText, kitPayload, takesToRecord } from "./yt-recording-kit.js";
+import { buildFaceThumbnail, preserveCandidates } from "./yt-thumbnail-face.js";
+import { cutTeaser, teaserCaptions } from "./yt-teaser.js";
+import { deliverToOwner } from "./delivery.js";
+import { loadTrialHistory, saveTrialHistory } from "./trial-variant.js";
+import { recordPost } from "./state.js";
 import {
   resolveTopicSelection, generateBrief, proposeFootage,
   renderBriefText, briefPayload, priorTitles,
@@ -417,6 +422,8 @@ async function buildFromRecordings(approvals, record) {
 
   // Only the takes Peter was asked to record. Expecting the voiceover takes
   // here would report them missing forever and the build would never run.
+  // (The thumbnail take rides inside takesToRecord and is optional — its
+  // absence never blocks a build; see THUMBNAIL_TAKE.)
   const takes = takesToRecord(script);
   const ingest = await ingestRecordings({
     requestId: record.requestId,
@@ -877,20 +884,70 @@ async function buildFromRecordings(approvals, record) {
     // away over its thumbnail is not.
     let thumb = { hook: null, scores: null };
     let thumbnailPath = null;
+    let thumbnailDriveId = null;
     try {
       thumb = await generateThumbnailHook({ title: packaging.title, script });
       if (thumb.hook) {
+        const kicker = result.market === "austin" ? "AUSTIN" : "SAN ANTONIO";
+
+        // THE FACE CONTEST (Peter's call after video 1: thumbnails feature his
+        // face, never text alone). Source: the dedicated thumbnail take when
+        // he shot one; otherwise the hook take — the first on-camera segment,
+        // where he is at his most energised. Three composites compete on the
+        // emotional-trigger axis; every candidate is preserved as evidence.
+        let face = null;
+        const onCam = plan.segments.find((s) => s.kind === "on_camera");
+        const faceSource = recordings.thumbnail?.path
+          ? { path: recordings.thumbnail.path, seconds: recordings.thumbnail.durationSeconds || 10, takeId: "thumbnail" }
+          : onCam
+            ? { path: onCam.source, seconds: onCam.seconds, takeId: onCam.takeId }
+            : null;
+        if (faceSource) {
+          face = await buildFaceThumbnail({ hookText: thumb.hook, kicker, source: faceSource, workDir });
+          preserveGateEvidence("thumbnail-face-contest", {
+            source: face.source,
+            frames: face.frames,
+            ranked: face.ranked || null,
+            fallbacks: face.fallbacks,
+            contestNote: face.contestNote || null,
+            winnerIndex: face.winner?.index ?? null,
+            reason: face.reason || null,
+          }, { files: preserveCandidates(face, workDir) });
+        }
+
         // fitUnderLimit returns { buffer, converted } — NOT bytes. Writing the
         // object threw on video 1's real build ("Received an instance of
         // Object") and the run shipped without its thumbnail attachment. The
         // fallback held, which is why this was a warning and not a dead build.
         const fitted = await fitUnderLimit(
-          await renderThumbnail(thumb.hook, { kicker: result.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
+          face?.winner
+            ? readFileSync(face.winner.path)
+            : await renderThumbnail(thumb.hook, { kicker })
         );
         thumbnailPath = join(workDir, fitted.converted ? "thumbnail.jpg" : "thumbnail.png");
         writeFileSync(thumbnailPath, fitted.buffer);
+        if (face?.winner) {
+          console.log(
+            `[YTPipeline] thumbnail: FACE composite won (frame at ${face.winner.frameAt}s, ` +
+              `trigger=${face.winner.emotionalTrigger ?? "?"} legibility=${face.winner.legibility ?? "?"}, ` +
+              `${face.candidates.length} candidates, source ${face.source}${face.winner.cutout ? ", matte" : ", raw frame"})`
+          );
+        } else {
+          console.log(`::warning::face thumbnail unavailable (${face?.reason || "no on-camera source"}) — shipping the text-only card`);
+        }
+
+        // Persisted for the sweep: thumbnails.set runs on a later cron with
+        // this workDir gone, and a text-only re-render there would quietly
+        // replace the face composite the contest just chose.
+        try {
+          const up = await uploadToFolder(ingest.folderId, `thumbnail-${videoIdFor(record.requestId)}.${fitted.converted ? "jpg" : "png"}`, fitted.buffer, fitted.converted ? "image/jpeg" : "image/png");
+          thumbnailDriveId = up?.id || null;
+        } catch (err) {
+          console.log(`::warning::thumbnail did not persist to Drive (${err.message}) — the sweep will re-render the text card instead of the face composite`);
+        }
+
         console.log(
-          `[YTPipeline] thumbnail: "${thumb.hook}" ` +
+          `[YTPipeline] thumbnail text: "${thumb.hook}" ` +
             `(curiosity=${thumb.scores?.curiosity} legibility=${thumb.scores?.legibility} emotion=${thumb.scores?.emotional_trigger}` +
             `${thumb.belowBar ? ", BELOW BAR — best of what survived" : ""}, ${thumb.candidatesConsidered ?? "?"} candidate(s) considered)`
         );
@@ -902,7 +959,36 @@ async function buildFromRecordings(approvals, record) {
     }
 
     const videoId = videoIdFor(record.requestId);
+
+    // ── the teaser: ~20 vertical seconds that send people to this video ──────
+    //
+    // Cut HERE, while the takes are still local — the delivery happens at the
+    // distribution sweep (after the publish flip), but a sweep has no workDir
+    // and no clips, so the cut and the delivery are different moments by
+    // construction. Non-fatal: a video without its teaser still ships, with
+    // the gap named and the evidence preserved.
+    let teaserRecord = null;
+    try {
+      const teaser = await cutTeaser({ script, recordings, workDir });
+      const up = await uploadToFolder(ingest.folderId, `teaser-${videoId}.mp4`, readFileSync(teaser.path), "video/mp4");
+      if (!up?.id) throw new Error("Drive upload returned no file id");
+      teaserRecord = {
+        driveFileId: up.id,
+        seconds: teaser.seconds,
+        // The hook line rides along: the sweep writes the platform captions
+        // from it, and the script is out of reach by then.
+        hookLine: script.hook || null,
+        cutAt: new Date().toISOString(),
+      };
+      console.log(`[YTPipeline] teaser cut: ${teaser.seconds}s (${teaser.report.takes.map((t) => t.takeId).join(" + ")}) — delivers to the Trial tab when the video publishes`);
+    } catch (err) {
+      console.log(`::warning::teaser cut failed — the video ships without one (${err.message})`);
+      preserveGateEvidence("teaser-cut", { error: err.message, requestId: record.requestId });
+    }
+
     let nextLog = recordRender(videoLog, {
+      teaser: teaserRecord,
+      thumbnailDriveId,
       // The sweep's publish step needs this AFTER the build's workDir is
       // gone: the synthetic-content declaration must ride the same
       // videos.update that flips the video public.
@@ -1130,7 +1216,10 @@ async function sweepDistribution() {
   const videoLog = loadVideoLog();
   const pending = (videoLog.videos || []).filter(
     (v) => v.approved && !String(v.requestId || "").startsWith("TEST-") &&
-      !(v.distribution?.thumbnail?.done && v.distribution?.playlist?.done && v.distribution?.publish?.done && v.distribution?.comment?.done)
+      (!(v.distribution?.thumbnail?.done && v.distribution?.playlist?.done && v.distribution?.publish?.done && v.distribution?.comment?.done) ||
+        // A cut teaser still waiting for its Trial-tab delivery keeps the
+        // entry in the sweep even after the four YouTube steps finish.
+        (v.teaser?.driveFileId && !v.distribution?.teaser?.done))
   );
   if (pending.length === 0) return;
 
@@ -1161,9 +1250,26 @@ async function sweepDistribution() {
     }
     if (!entry.youtubeVideoId) continue;
 
-    // The thumbnail, rebuilt from the logged text (see the header).
+    // The thumbnail. The FACE COMPOSITE the build's contest chose persists in
+    // Drive (thumbnailDriveId); re-rendering from the logged text is the
+    // fallback for entries that predate the contest or whose upload failed —
+    // the text card is reproducible, the chosen face is not.
     let thumbnailPath = null;
-    if (entry.thumbnailText) {
+    if (entry.thumbnailDriveId) {
+      try {
+        const bytes = await downloadFileById(entry.thumbnailDriveId);
+        // setThumbnail declares the content type from the EXTENSION, and
+        // fitUnderLimit may have converted the composite to JPEG — sniff the
+        // magic bytes rather than assuming, or the upload lies about its type.
+        const ext = bytes[0] === 0xff && bytes[1] === 0xd8 ? "jpg" : "png";
+        thumbnailPath = join(process.env.RUNNER_TEMP || tmpdir(), `thumb-${entry.videoId}.${ext}`);
+        writeFileSync(thumbnailPath, bytes);
+      } catch (err) {
+        console.log(`::warning::${entry.videoId}: face thumbnail download failed (${err.message}) — falling back to the text render`);
+        thumbnailPath = null;
+      }
+    }
+    if (!thumbnailPath && entry.thumbnailText) {
       try {
         const fitted = await fitUnderLimit(
           await renderThumbnail(entry.thumbnailText, { kicker: entry.market === "austin" ? "AUSTIN" : "SAN ANTONIO" })
@@ -1226,6 +1332,104 @@ async function sweepDistribution() {
       };
       saveVideoLog(log);
     }
+
+    // ── the teaser rides the publish ─────────────────────────────────────────
+    //
+    // Once the video is PUBLIC, its ~20-second vertical trailer goes to the
+    // Trial tab — the same lane the trial reels travel, so Peter posts it
+    // natively with the captions on the card. Gated on the publish flip
+    // because a teaser pointing at a private video is a dead link with his
+    // face on it; recorded as a distribution step so a failed delivery
+    // retries on the next cron and a completed one never re-sends.
+    const publishDone = done.publish?.done || entry.distribution?.publish?.done;
+    if (publishDone && entry.teaser?.driveFileId && !entry.distribution?.teaser?.done) {
+      try {
+        const delivered = await deliverTeaserToTrialTab(entry);
+        log = {
+          ...log,
+          videos: log.videos.map((v) =>
+            v.videoId === entry.videoId
+              ? { ...v, distribution: { ...(v.distribution || {}), teaser: { done: true, at: new Date().toISOString(), detail: delivered } } }
+              : v
+          ),
+        };
+        saveVideoLog(log);
+        console.log(`[YTDistribute] ${entry.videoId}: teaser on the Trial tab — ${delivered.driveLink || "delivered"}`);
+      } catch (err) {
+        console.log(`::warning::${entry.videoId}: teaser delivery FAILED — ${err.message} (retries next run)`);
+      }
+    }
+  }
+}
+
+/**
+ * One teaser onto the Trial tab, with its platform captions.
+ *
+ * The card's caption block carries all three post texts, labeled — the Trial
+ * tab renders one caption field, and three clearly-marked sections in it
+ * beats inventing a card shape the dashboard has never heard of
+ * (dashboard-routes-cards-on-kind: unknown payloads render nowhere).
+ */
+async function deliverTeaserToTrialTab(entry) {
+  const accessToken = await getAccessToken();
+  const work = mkdtempSync(join(tmpdir(), "yt-teaser-deliver-"));
+  try {
+    const safeTitle = String(entry.title || entry.videoId).replace(/[^\w-]+/g, "_").slice(0, 60);
+    const local = join(work, `TEASER-${safeTitle}.mp4`);
+    writeFileSync(local, await downloadFileById(entry.teaser.driveFileId));
+
+    const captions = teaserCaptions({ title: entry.title, hookLine: entry.teaser.hookLine });
+    const caption = [
+      "INSTAGRAM (paste as-is):", captions.instagram, "",
+      "TIKTOK:", captions.tiktok, "",
+      "LINKEDIN:", captions.linkedin,
+    ].join("\n");
+    const city = entry.market === "austin" ? "austin" : "san_antonio";
+
+    const delivery = await deliverToOwner(accessToken, local, city, caption, {
+      isTrial: true,
+      trialLabel: `TEASER — ${entry.title}`,
+      trialAngle: "yt_teaser",
+      trialHookLine: entry.teaser.hookLine || null,
+      window: "manual",
+      sourceVideoId: entry.videoId,
+    });
+
+    // The Trial tab reads trial-variants.json; a card with no record here
+    // renders once from the webhook and vanishes on the next page load — the
+    // trial-parity lesson, inherited from the edit queue.
+    const history = loadTrialHistory();
+    history.variants.push({
+      date: new Date().toLocaleDateString("en-CA", { timeZone: "America/Chicago" }),
+      window: "manual",
+      sourceVideoId: entry.videoId,
+      sourceFileName: `TEASER-${safeTitle}`,
+      city,
+      hookAngle: "yt_teaser",
+      hookLine: entry.teaser.hookLine || null,
+      variantNumber: 1,
+      caption: captions.instagram.slice(0, 200),
+      deliveryDriveLink: delivery.driveLink || null,
+      generatedAt: new Date().toISOString(),
+      trigger: "yt_teaser",
+    });
+    saveTrialHistory(history);
+    recordPost(loadLog(), {
+      driveFileId: entry.teaser.driveFileId,
+      fileName: `TEASER — ${entry.title}`,
+      city,
+      caption: captions.instagram,
+      voiceover: false,
+      platforms: [],
+      type: "trial_variant",
+      hookAngle: "yt_teaser",
+      variantNumber: 1,
+      window: "manual",
+      deliveryDriveLink: delivery.driveLink || null,
+    });
+    return { driveLink: delivery.driveLink || null, captions };
+  } finally {
+    rmSync(work, { recursive: true, force: true });
   }
 }
 
