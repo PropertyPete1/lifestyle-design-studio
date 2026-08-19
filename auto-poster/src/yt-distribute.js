@@ -108,6 +108,31 @@ async function yt(fetchImpl, token, method, path, { query = {}, body = null, hea
   return json;
 }
 
+/**
+ * The channel this token ACTS AS — the fact every visibility failure needs.
+ *
+ * A private video is visible only to credentials acting as the channel that
+ * owns it, so "videoNotFound" / "forbidden" / "not visible" on a video that
+ * provably exists means exactly one thing: the token's channel is not the
+ * video's channel. Video 1's first live sweep (run 32202427105) failed all
+ * four steps that way and the logs could not say WHO the token was — the
+ * evidence rule says the failure itself must carry that answer.
+ *
+ * Returns null when the identity lookup itself fails; diagnosis must never
+ * break the sweep it is diagnosing.
+ */
+export async function tokenChannel({ fetchImpl = fetch, token }) {
+  try {
+    const res = await yt(fetchImpl, token, "GET", "channels", { query: { part: "snippet", mine: "true" } });
+    const c = res.items?.[0];
+    // Zero items is itself the diagnosis: a Google identity with no channel.
+    if (!c) return { id: null, title: null, noChannel: true };
+    return { id: c.id, title: c.snippet?.title || "" };
+  } catch {
+    return null;
+  }
+}
+
 /** The video's privacy status — the gate the comment step waits behind. */
 export async function videoStatus(videoId, { fetchImpl = fetch, token }) {
   const res = await yt(fetchImpl, token, "GET", "videos", { query: { part: "status", id: videoId } });
@@ -316,6 +341,18 @@ export async function distributeVideo(entry, opts) {
     if (!opts.pinnedComment) return { skipped: "no pinned-comment text on the packaging" };
     return postComment(entry.youtubeVideoId, opts.pinnedComment, { fetchImpl, token });
   });
+
+  // WHEN THE VIDEO IS INVISIBLE, SAY WHO WAS LOOKING. Every visibility-class
+  // failure gets the token's channel identity attached, because that is the
+  // one fact that separates "YouTube is slow" from "the token acts as the
+  // wrong channel" — and run 32202427105 spent a whole live sweep unable to
+  // tell the difference.
+  const visibilityFailure = Object.values(report.steps).some(
+    (r) => !r.done && /videoNotFound|forbidden|not visible/i.test(String(r.error || ""))
+  );
+  if (visibilityFailure) {
+    report.identity = await tokenChannel({ fetchImpl, token });
+  }
 
   return report;
 }
