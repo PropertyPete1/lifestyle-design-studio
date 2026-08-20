@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-08-20",
+      "window": "am",
+      "sourceVideoId": "1Pn3rR3IBIx2slt989C_9we5emHEcx5QV",
+      "sourceFileName": "4504EC2B-67BD-4C8D-8FF2-949BBD8AAEF8.mp4",
+      "city": "san_antonio",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "wait until you hear what the monthly payment looks like on this one\n\nnew construction in New Braunfels starting at $470,000 moves fast. builder incentives are real right now.\n\n✨ open floor plan with n",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1QD3QLffV7PwR-X00EMet1TB4dk-Xt9SS/view",
+      "generatedAt": "2026-08-20T14:00:44.703Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-08-19",
       "window": "pm",
       "sourceVideoId": "1Pn3rR3IBIx2slt989C_9we5emHEcx5QV",
