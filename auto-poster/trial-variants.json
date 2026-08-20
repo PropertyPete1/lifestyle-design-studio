@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-08-19",
+      "window": "pm",
+      "sourceVideoId": "1Pn3rR3IBIx2slt989C_9we5emHEcx5QV",
+      "sourceFileName": "4504EC2B-67BD-4C8D-8FF2-949BBD8AAEF8.mp4",
+      "city": "san_antonio",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "caption": "Starting at $470,000 for brand new construction in New Braunfels. . and these don't sit long.\n\n✨ everyday living hits\nOpen floor plan with natural light pouring through, modern finishes throughout, an",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1qXE3x1R65rutzh_PuWWtrK2yFWbPhEGW/view",
+      "generatedAt": "2026-08-20T00:01:48.401Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-08-19",
       "window": "manual",
       "sourceVideoId": "vid-2026-08-07-d5cddf9d",
       "sourceFileName": "TEASER-North_San_Antonio_Neighborhoods_Stone_Oak_ISD_Lines_and_MUD_",
