@@ -2638,6 +2638,191 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-20",
+      "timestamp": "2026-08-20T14:26:07.530Z",
+      "pillar": "real_estate_education",
+      "topic": "Finished spec homes cost less than the identical to-be-built new build",
+      "hook": "The finished Texas new build costs less than the identical one still on paper.",
+      "closeType": "dm",
+      "keyword": "LIST",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Finished spec homes cost less than the identical to-be-built new build",
+        "hook": "The finished Texas new build costs less than the identical one still on paper.",
+        "map": [
+          "Why finished costs less",
+          "The quarter-end window",
+          "Price stays, money moves",
+          "Design center markup",
+          "Closing in 30 days"
+        ],
+        "points": [
+          {
+            "title": "The Builder Is Paying Interest",
+            "body": [
+              "A finished home was built with borrowed money.",
+              "Every month it sits empty, the builder pays for it.",
+              "A home on paper costs them nothing yet."
+            ],
+            "loop": "Timing beats negotiating here."
+          },
+          {
+            "title": "Watch The Calendar",
+            "body": [
+              "Builders report sales by the quarter.",
+              "The last two weeks of March, June, September and December are when unsold homes become a problem.",
+              "Same house, very different answer."
+            ],
+            "loop": "The discount never touches the price."
+          },
+          {
+            "title": "They Will Not Cut The Sticker",
+            "body": [
+              "Lowering the base price would drag down the value of every home they still have to sell.",
+              "So the money comes back as closing costs, a rate buydown, or a bigger credit at the table."
+            ],
+            "loop": "You also skip one dreaded room."
+          },
+          {
+            "title": "No Design Center",
+            "body": [
+              "In a to-be-built home you pick every finish and pay retail for all of it.",
+              "A finished home already has that package installed, wrapped inside the price."
+            ],
+            "loop": "The bigger win is not money."
+          },
+          {
+            "title": "You Can Actually Close",
+            "body": [
+              "A to-be-built home is a guess on a calendar. Delays push your rate lock and your lease.",
+              "A finished home closes in about 30 days."
+            ],
+            "loop": "Most of these never get advertised."
+          }
+        ],
+        "cta": {
+          "payoff": "the current list of finished Texas new builds sitting unsold right now"
+        }
+      },
+      "scores": {
+        "clarity": 7,
+        "hook": 8,
+        "loops": 8,
+        "cta": 9,
+        "worst_problem": "Slide 2's closing body line, \"Same house, very different answer,\" is compressed into vagueness — answer to what question, from whom? — forcing a reread mid-deck.",
+        "fix": "Rewrite that line as a complete claim, e.g. \"Ask for a concession on March 3rd and on March 28th and you get two different answers.\""
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 364474170,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-20T14:29:08.139Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676120179406867725"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364474173,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-20T14:29:08.380Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496211413150101504"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364474206,
+          "verified": false,
+          "verdict": "failed",
+          "verifiedAt": "2026-08-20T14:29:08.510Z",
+          "failureReason": "The media could not be fetched from this URI: https://static.metricool.com/video/3748462/202608/ab2e44905fd44009.png.Please check the limitations section in our development document for more information: https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media#creating"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364474237,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-20T14:29:08.626Z",
+          "publicUrl": "https://www.instagram.com/p/DcQ-i5EDe75/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364474240,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-20T14:29:09.031Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496211371253100544"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364474279,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-20T14:30:40.213Z",
+          "publicUrl": "https://www.instagram.com/p/DcQ-oi_iOSZ/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 364474284,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-20T14:29:09.273Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122115502347400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364474287,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-20T14:29:09.391Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496211373924909056"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-20T14:30:40.213Z",
+        "anyFailed": true,
+        "pendingRecheck": false
+      }
     }
   ]
 }
