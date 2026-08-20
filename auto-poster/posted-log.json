@@ -4536,6 +4536,30 @@
       "variantNumber": 2,
       "window": "am",
       "deliveryDriveLink": "https://drive.google.com/file/d/1QD3QLffV7PwR-X00EMet1TB4dk-Xt9SS/view"
+    },
+    {
+      "driveFileId": "10Nd7ei5b5EQuWBrztXbtgPsME1y9o3GH",
+      "fileName": "B554FDB6-F43F-4ECB-BF23-DB787C80DAD2.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe brand new construction in San Antonio starts at $281,990?\n\nNew construction like this doesn't sit around long. Builder incentives are real right now, and these homes are moving fast.",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-20T16:10:08.603Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "I know that everybody thinks they're a lost man, but again and they're right.",
+      "content_hash": "f0ffc3810e070fff:fffdb07670130100:e6a77efea606781c:fffffefe1e40c000:3f3fe0fdfdec0b00",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1Xy8HZqCtmK5LikucdkXmGPR-izTQXcO6/view"
     }
   ],
   "lastTemplateIndex": -1
