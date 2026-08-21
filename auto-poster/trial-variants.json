@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-08-21",
+      "window": "am",
+      "sourceVideoId": "1Ut2jAQlpH1sEIWY25Cya5MC2yN6VXaOA",
+      "sourceFileName": "4BE41EEA-8348-476D-8D8A-D4A68600779B.mp4",
+      "city": "san_antonio",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "the monthly payment on this one is lower than most people guess\n\nnew construction in San Antonio at this price point moves fast. builder incentives are real right now.\n\n✨ everyday living hits\nopen flo",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1qiqB2Pbjj9YS5QiO5tmEEm3V7FFJU0sl/view",
+      "generatedAt": "2026-08-21T13:59:33.324Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-08-20",
       "window": "pm",
       "sourceVideoId": "1Ut2jAQlpH1sEIWY25Cya5MC2yN6VXaOA",
