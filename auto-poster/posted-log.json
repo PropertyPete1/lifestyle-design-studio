@@ -4614,6 +4614,31 @@
       "variantNumber": 2,
       "window": "am",
       "deliveryDriveLink": "https://drive.google.com/file/d/1qiqB2Pbjj9YS5QiO5tmEEm3V7FFJU0sl/view"
+    },
+    {
+      "driveFileId": "1-sAGhnGU4_0lWyH_ReCN7TsFmp5_eFaC",
+      "fileName": "267155D3-BCBD-43F5-A1D3-6C3E798DCAC8.mp4",
+      "city": "san_antonio",
+      "caption": "This might be the best-priced new construction I've toured in San Antonio this month.\n\nNew builds like this don't sit long, especially with builder incentives still on the table. If you've been waitin",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-21T16:50:09.399Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "Listen Everyone Coming",
+      "voiceover_persona": "deadpan_comedian",
+      "content_hash": "ffffff4001e080c7:fe3e070f0607ffff:c7c7c08080e4ffff:ff3e1e3e3e181f7f:0f078cf8f8c8f8ff",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1HyOGedWjGrux6avwdNHmxOTS1ctL2B8l/view"
     }
   ],
   "lastTemplateIndex": -1
