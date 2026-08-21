@@ -4684,6 +4684,30 @@
       "timestamp": "2026-08-21T19:35:07.124Z",
       "runId": "32518601355",
       "success": true
+    },
+    {
+      "driveFileId": "1W2XAe8QHe2JMV74qHWeiR9PCS__9QA7A",
+      "fileName": "0BA83D55-87FE-4DF1-9EB6-678F6262F372.mp4",
+      "city": "san_antonio",
+      "caption": "the floor plan in this one made me stop mid-tour\n\nNew construction like this moves fast, and builder incentives are real right now. Starting at $337,500 in Schertz means you're looking at serious valu",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-21T19:35:06.957Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "Schertz",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "checklist_sprint",
+      "content_hash": "00c0dd197ff71f0f:06791fff3f070000:7f1cfefffc660200:00eeffdfdf000000:ff7f1fffff300000",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/18I5DX1PEK_ogGgN8WrdwPveBnodTG_gU/view"
     }
   ],
   "lastTemplateIndex": -1
