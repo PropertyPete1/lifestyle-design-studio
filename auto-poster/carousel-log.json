@@ -2823,6 +2823,198 @@
         "anyFailed": true,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-21",
+      "timestamp": "2026-08-21T14:26:13.551Z",
+      "pillar": "texas_lifestyle",
+      "topic": "Watering your foundation: Texas clay soil and slab movement",
+      "hook": "Texans water the dirt around their house on purpose. Transplants think we are crazy.",
+      "closeType": "question",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "Watering your foundation: Texas clay soil and slab movement",
+        "hook": "Texans water the dirt around their house on purpose. Transplants think we are crazy.",
+        "map": [
+          "Clay that swells and shrinks",
+          "Doors that stop closing",
+          "A twelve dollar hose",
+          "City watering day rules",
+          "Five figure repair bills",
+          "The tree problem"
+        ],
+        "points": [
+          {
+            "title": "The Ground Moves",
+            "body": [
+              "Most of DFW and San Antonio sits on clay, and a lot of east Austin does too.",
+              "Clay swells when it rains and shrinks hard when it bakes. Your slab rides on top of it."
+            ],
+            "loop": "Your house warns you first."
+          },
+          {
+            "title": "Doors Stop Closing",
+            "body": [
+              "A door that suddenly sticks in August. A hairline crack above a door frame. A gap at one window corner.",
+              "That is not the house settling in. That is the dirt under one side pulling down."
+            ],
+            "loop": "The fix is embarrassingly cheap."
+          },
+          {
+            "title": "A Twelve Dollar Hose",
+            "body": [
+              "Lay a soaker hose about eighteen inches out from the slab and run it all the way around.",
+              "Twenty minutes in the evening, a few times a week in summer. You want steady damp, not a swamp."
+            ],
+            "loop": "Not every day is legal."
+          },
+          {
+            "title": "Watering Days Are Real",
+            "body": [
+              "San Antonio runs stage restrictions most summers and they get enforced.",
+              "Austin and Dallas assign watering days by your address. Foundation soaker hoses usually get an exception, but you have to know your city's rule."
+            ],
+            "loop": "Getting this wrong has a price."
+          },
+          {
+            "title": "The Repair Bill",
+            "body": [
+              "Once piers are involved, Texas foundation work lands in five figures fast.",
+              "You also disclose it when you sell, and buyers knock it off the price twice over."
+            ],
+            "loop": "Your yard has a culprit."
+          },
+          {
+            "title": "The Tree Nobody Blames",
+            "body": [
+              "A big thirsty tree near the slab pulls water out of that clay faster than a hose puts it back.",
+              "Shade on one side dries the other side unevenly. That is how one corner drops while the rest stays put."
+            ],
+            "loop": "Nobody likes the honest answer."
+          }
+        ],
+        "cta": {
+          "question": "Big oak close to the house: keep it or cut it?"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 6,
+        "cta": 7,
+        "worst_problem": "Two of the six loops ('Getting this wrong has a price', 'Nobody likes the honest answer') are vague cost/consequence filler that could sit under any slide in any deck, so they don't name a specific withheld thing to swipe for.",
+        "fix": "Replace the generic loops with concrete teases tied to the next slide's actual content — e.g. 'Piers start at five figures.' and 'The tree usually wins.' — and drop 'Save this for later' from the CTA so the keep-or-cut question is the only ask."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 364927020,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-21T14:29:14.088Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676491260936359182"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364927025,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-21T14:29:14.184Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496573757570940928"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364927066,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-21T14:30:45.470Z",
+          "publicUrl": "https://www.instagram.com/p/DcTjco_CCKV/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364927084,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-21T14:30:45.655Z",
+          "publicUrl": "https://www.instagram.com/p/DcTjcBxirrX/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364927086,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-21T14:29:14.452Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496573756363079680"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 364927121,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-21T14:30:46.026Z",
+          "publicUrl": "https://www.instagram.com/p/DcTjdOhiAjQ/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 364927124,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-21T14:29:14.621Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122115746307400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 364927129,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-21T14:29:14.703Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496573755973050368"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-21T14:30:46.026Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
