@@ -3015,6 +3015,189 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-22",
+      "timestamp": "2026-08-22T14:12:48.483Z",
+      "pillar": "motivation_business",
+      "topic": "The pay lag in a new real estate business and the runway it takes to survive it",
+      "hook": "I made zero dollars in my first five months in real estate. Nothing was wrong.",
+      "closeType": "share",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "The pay lag in a new real estate business and the runway it takes to survive it",
+        "hook": "I made zero dollars in my first five months in real estate. Nothing was wrong.",
+        "map": [
+          "Why the money is late",
+          "Month five quitters",
+          "Six months of runway",
+          "The deals you refuse",
+          "Year two pays twice"
+        ],
+        "points": [
+          {
+            "title": "The Money Runs Late",
+            "body": [
+              "A conversation in March turns into a signed contract in May.",
+              "That deal closes in June and the check clears in July."
+            ],
+            "loop": "The delay does something to your head."
+          },
+          {
+            "title": "Zero Feels Like A Verdict",
+            "body": [
+              "My first five months paid me nothing, and it felt like proof I was bad at this.",
+              "It was not proof. Month six paid me for all five of them."
+            ],
+            "loop": "Most people never get to month six."
+          },
+          {
+            "title": "Fund Six Months, Not Two",
+            "body": [
+              "Rent, gas, dues, insurance. Add it up and multiply by six.",
+              "Most people save eight weeks of that and call it betting on themselves."
+            ],
+            "loop": "Runway buys something besides time."
+          },
+          {
+            "title": "You Get To Say No",
+            "body": [
+              "With money in the bank I could turn down the client who wanted to list 40 percent over market.",
+              "Broke, I take that listing, spend my own cash on photos, and sit on it for six months."
+            ],
+            "loop": "The reward for that shows up late."
+          },
+          {
+            "title": "Year Two Pays Twice",
+            "body": [
+              "In year two you get paid for the work you did in year one, plus the work you are doing now.",
+              "Same hours. Double the income. Nothing about you changed."
+            ],
+            "loop": "Almost nobody is still around to see it."
+          }
+        ],
+        "cta": {
+          "shareLine": "Send this to someone who is four months into something new and quietly doing the math on quitting."
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 9,
+        "cta": 9,
+        "worst_problem": "The hook's payoff is partly guessable — anyone who knows real estate immediately supplies \"commission lag,\" which softens the pull of \"Nothing was wrong.\"",
+        "fix": "Sharpen slide 1 to withhold something less inferable, e.g. \"I made zero dollars in my first five months in real estate. Month six paid me for all five of them.\" so the gap becomes what changed rather than why the money was late."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": false,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 365243800,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-22T14:15:49.068Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676858814469016845"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365243801,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-22T14:15:49.181Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496932662339727361"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365243828,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-22T14:15:49.281Z",
+          "publicUrl": "https://www.instagram.com/p/DcWGpIOigq3/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365243852,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-22T14:15:49.382Z",
+          "publicUrl": "https://www.instagram.com/p/DcWGoSoiAE4/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365243853,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-22T14:15:49.481Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496932663379943425"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365243872,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-22T14:17:20.326Z",
+          "publicUrl": "https://www.instagram.com/p/DcWGpWQiPPP/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 365243873,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-22T14:15:49.684Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122115952827400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365243874,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-22T14:15:49.782Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7496932660066570241"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-22T14:17:20.326Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
