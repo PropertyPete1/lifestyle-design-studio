@@ -4832,6 +4832,31 @@
       "timestamp": "2026-08-22T19:15:15.388Z",
       "runId": "32592892277",
       "success": true
+    },
+    {
+      "driveFileId": "1zjWdQOLWRdDVeyF5Jw576s64pXvlx9Vt",
+      "fileName": "63434D52-4297-48CA-8A67-A5BC436C9C65.mp4",
+      "city": "san_antonio",
+      "caption": "This might be the best new build value I've toured in New Braunfels this month.\n\nNew construction like this doesn't sit around long, especially at this price point.\n\n✨ everyday living hits\nOpen floor ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-22T19:15:15.231Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "New Braunfels",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "Quick-mamed path prices $465,000 were using free and high percent damn that's about $14,000 So the loan is $451,000 rate is $4.99 fixed on a 30-year taxis or $7,000 and sheard says $1200 a year The Am I a 0.5% That's my opinion payment is $2,770 a month Comment home and I'll DM you the exact breakdown",
+      "voiceover_persona": "rapid_fire_hype",
+      "content_hash": "fcfdff80007effff:ffffffff03030f60:ffffff8703030000:ffff7f3b63400000:ffffdffed0187000",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/15Oh_GmPd8VRo6dbSjeLCCvO-dRt2QOmj/view"
     }
   ],
   "lastTemplateIndex": -1

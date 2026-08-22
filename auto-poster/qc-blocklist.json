@@ -204,6 +204,21 @@
       "filename": "AA1F4F5B-5A62-4CF6-81FA-77D6287DB80B.mp4",
       "reason": "content duplicate of C1D7E1C7-E2FF-4EE6-B9C5-1B97AD15F2F5.mp4 posted 2026-08-21T17:14:21.481Z (distance 0.20)",
       "blockedAt": "2026-08-21T20:14:42.367Z"
+    },
+    "1pf_KRNZC0_6hTNxklS478j6YHHbdrhTd": {
+      "filename": "5DD83EDA-2DA0-43F4-9997-4E263734015D.mp4",
+      "reason": "content duplicate of 0BA83D55-87FE-4DF1-9EB6-678F6262F372.mp4 posted 2026-08-21T19:35:06.957Z (distance 1.00)",
+      "blockedAt": "2026-08-22T19:12:01.676Z"
+    },
+    "1CGeuClJEJgi8Etz1P1gO-vto29E8XOW7": {
+      "filename": "D5DC84BD-BE6D-4139-AE08-2308B65D1240.mp4",
+      "reason": "content duplicate of 0BA83D55-87FE-4DF1-9EB6-678F6262F372.mp4 posted 2026-08-21T19:35:06.957Z (distance 1.80)",
+      "blockedAt": "2026-08-22T19:12:05.894Z"
+    },
+    "1f50dfPdfHYR9zCUkrEZ-6eo_qtCsp386": {
+      "filename": "DCD26865-7407-4084-9424-863EE7199F92.mp4",
+      "reason": "content duplicate of 0BA83D55-87FE-4DF1-9EB6-678F6262F372.mp4 posted 2026-08-21T19:35:06.957Z (distance 1.60)",
+      "blockedAt": "2026-08-22T19:12:10.812Z"
     }
   }
 }
