@@ -4756,6 +4756,21 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1ayCNbdsvrqJ6LhRu03KuHvqiJ0K5xk0b/view"
+    },
+    {
+      "driveFileId": "1OOlNxfjDZHNsC7pmTBYwfKfQeB_1GTgS",
+      "fileName": "C1D7E1C7-E2FF-4EE6-B9C5-1B97AD15F2F5.mp4",
+      "city": "austin",
+      "caption": "$449,990 for brand new construction in North Austin. homes like this don't wait around.\n\nnew builds at this price point are moving fast, and builder incentives are on the table right now.\n\n✨ everyday ",
+      "voiceover": true,
+      "platforms": [],
+      "timestamp": "2026-08-22T00:02:20.191Z",
+      "success": true,
+      "type": "trial_variant",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "window": "pm",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1bxFTHnDeEsu1k2f4V0AuOdQnRigbsrhT/view"
     }
   ],
   "lastTemplateIndex": -1
