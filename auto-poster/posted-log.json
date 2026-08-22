@@ -4881,6 +4881,17 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1vcD8sD4uWmkqI_RGS3FNA1H5hGnDo8ck/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-08-22T20:24:55.738Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1vcD8sD4uWmkqI_RGS3FNA1H5hGnDo8ck",
+      "captionSnippet": "The open floor plan in this one flooded the space with natural light in a way that actually stopped me mid-tour.\n\nNew co",
+      "mainIgPostedAt": "2026-08-22T20:24:55.738Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
