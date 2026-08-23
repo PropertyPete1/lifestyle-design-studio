@@ -5017,6 +5017,31 @@
       "timestamp": "2026-08-23T19:29:51.371Z",
       "runId": "32661125865",
       "success": true
+    },
+    {
+      "driveFileId": "1wX7fR6wPNCO-Hso0ESZ06qjoEcjkjxDi",
+      "fileName": "2BF14AE7-DECC-433F-9CBA-414586729D28.mp4",
+      "city": "san_antonio",
+      "caption": "this is what new construction feels like when it's done right\n\nnew construction at this price point in San Antonio won't wait long. builder incentives are real right now.\n\n✨ everyday living hits\nopen ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-23T19:29:50.891Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "Bienvenidos, el casad! Do you like the feeling of ranch? Because I feel like I'm in the woods. Fresh out of the woods, and to your new home with a 4.99% interest rate.",
+      "voiceover_persona": "insider_secret",
+      "content_hash": "fffffb66062230c0:ffffc78000ffff00:fffffff3fff30000:ffffff1f1f030106:deddfffe1c103c00",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1gG8uJ4mpi2UIR_GklXOfzXb7wvBU3KP2/view"
     }
   ],
   "lastTemplateIndex": -1
