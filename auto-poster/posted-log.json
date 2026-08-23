@@ -4932,6 +4932,21 @@
       "variantNumber": 1,
       "window": "pm",
       "deliveryDriveLink": "https://drive.google.com/file/d/1v4HyjH7Kmv8t_EIEp5ppRbYWSnC6xLrM/view"
+    },
+    {
+      "driveFileId": "1zjWdQOLWRdDVeyF5Jw576s64pXvlx9Vt",
+      "fileName": "63434D52-4297-48CA-8A67-A5BC436C9C65.mp4",
+      "city": "san_antonio",
+      "caption": "the monthly payment on this one is lower than most people guess\n\nnew construction in New Braunfels starting at $465,000 doesn't stay on the market long, especially with builder incentives on the table",
+      "voiceover": true,
+      "platforms": [],
+      "timestamp": "2026-08-23T13:48:23.330Z",
+      "success": true,
+      "type": "trial_variant",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "window": "am",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1fFG2YWdSYd4NIQ8oEHF6f6o13jituYGa/view"
     }
   ],
   "lastTemplateIndex": -1
