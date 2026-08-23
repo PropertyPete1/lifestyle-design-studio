@@ -3198,6 +3198,191 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-23",
+      "timestamp": "2026-08-23T14:14:25.965Z",
+      "pillar": "market_insight",
+      "topic": "Deep builder discounts on Texas new builds that sat empty for months, and what sitting does to a house",
+      "hook": "The biggest builder discounts in Texas right now are on homes that sat empty for months.",
+      "closeType": "dm",
+      "keyword": "CHECKLIST",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Deep builder discounts on Texas new builds that sat empty for months, and what sitting does to a house",
+        "hook": "The biggest builder discounts in Texas right now are on homes that sat empty for months.",
+        "map": [
+          "Why it is discounted",
+          "Nine months of heat",
+          "Dry pipes, sewer smell",
+          "The sunken dirt outside",
+          "Warranty clock already running"
+        ],
+        "points": [
+          {
+            "title": "Why It Is Cheap",
+            "body": [
+              "Builders keep building even when buyer traffic drops.",
+              "Every finished house they still own costs them money every single month.",
+              "So the one that sat longest gets the deepest cut."
+            ],
+            "loop": "Empty months leave marks."
+          },
+          {
+            "title": "A Summer With Nobody Home",
+            "body": [
+              "Some builders run the AC in empty houses. Some set it at 85 and lock the door.",
+              "Texas humidity does the rest. Sticky doors, warped trim, mildew up in the attic."
+            ],
+            "loop": "Heat is the visible part."
+          },
+          {
+            "title": "Pipes That Never Ran",
+            "body": [
+              "Drain traps dry out when nobody uses a sink for half a year.",
+              "That is where a sewer smell in a brand new house comes from.",
+              "Cheap to fix. Awful to discover after you move in."
+            ],
+            "loop": "Outside is worse."
+          },
+          {
+            "title": "The Yard Nobody Watered",
+            "body": [
+              "Dead sod is cheap to replace. Sunken dirt against the slab is not.",
+              "A sprinkler system that never ran can hide broken heads and dry zones you inherit."
+            ],
+            "loop": "One date matters more than the price."
+          },
+          {
+            "title": "When The Coverage Started",
+            "body": [
+              "Parts of a builder warranty can start at completion, not at your closing.",
+              "If the house sat eight months, you may have far less coverage left than you think."
+            ],
+            "loop": "None of this shows on a walkthrough."
+          }
+        ],
+        "cta": {
+          "payoff": "the new build inspection checklist I use on homes that have been sitting"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 7,
+        "loops": 8,
+        "cta": 8,
+        "worst_problem": "The hook states a fact that reads as good news rather than a withheld catch, so a reader can plausibly stop at 'discounts are on stale inventory' and feel informed without swiping.",
+        "fix": "Rewrite slide 1 to name the catch without revealing it, e.g. 'The biggest builder discounts in Texas are on homes that sat empty for months — and four things happen to a house in that time that no walkthrough will show you.'"
+      },
+      "attemptsUsed": 2,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 365452842,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-23T14:17:26.511Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677230417660972302"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365452844,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-23T14:17:26.606Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7497295513407377408"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365452853,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-23T14:17:26.688Z",
+          "publicUrl": "https://www.instagram.com/p/DcYrkFDDbgd/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365452862,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-23T14:18:57.558Z",
+          "publicUrl": "https://www.instagram.com/p/DcYroUICmlb/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365452865,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-23T14:17:26.852Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7497295514166743040"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365452878,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-23T14:17:26.934Z",
+          "publicUrl": "https://www.instagram.com/p/DcYrjhIDRrQ/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 365452879,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-23T14:17:27.014Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122116177077400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365452881,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-23T14:17:27.095Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7497295514057654272"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-23T14:18:57.558Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
