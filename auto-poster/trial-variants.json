@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-08-22",
+      "window": "pm",
+      "sourceVideoId": "1zjWdQOLWRdDVeyF5Jw576s64pXvlx9Vt",
+      "sourceFileName": "63434D52-4297-48CA-8A67-A5BC436C9C65.mp4",
+      "city": "san_antonio",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "caption": "Starting at $465,000 for brand new construction in New Braunfels. this is the price point where new builds with modern finishes actually exist right now.\n\nNew construction like this doesn't sit long. ",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1v4HyjH7Kmv8t_EIEp5ppRbYWSnC6xLrM/view",
+      "generatedAt": "2026-08-23T00:01:12.900Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-08-22",
       "window": "am",
       "sourceVideoId": "1OOlNxfjDZHNsC7pmTBYwfKfQeB_1GTgS",
       "sourceFileName": "C1D7E1C7-E2FF-4EE6-B9C5-1B97AD15F2F5.mp4",
