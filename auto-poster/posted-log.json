@@ -5167,6 +5167,30 @@
       "timestamp": "2026-08-24T19:37:33.114Z",
       "runId": "32768751233",
       "success": true
+    },
+    {
+      "driveFileId": "16mxe-2FD8V03PdGYBAxQ3-NL-OlITTaC",
+      "fileName": "5080434B-9540-4288-80F8-A0B1A9191B02.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe brand new construction in San Antonio starts at $240,990?\n\nNew construction like this moves fast. Builder incentives are out there right now if you know where to look.\n\n✨ everyday li",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-24T19:37:32.674Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "You don't get a second chance at these bleacher years. So be present. Show up. Be their biggest and loudest fan. Because this season of life is short, and you'll never get these moments back.",
+      "content_hash": "ffffff430060ff00:e1feffdf1c1c1c00:1bdffe9af8f8040c:990687f7777c80e0:ff898f9b91878381",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1L5xlIRl1OyiN3Tdv7f5dg5X_IO6UjeJO/view"
     }
   ],
   "lastTemplateIndex": -1
