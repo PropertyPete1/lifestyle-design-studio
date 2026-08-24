@@ -5191,6 +5191,31 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1L5xlIRl1OyiN3Tdv7f5dg5X_IO6UjeJO/view"
+    },
+    {
+      "driveFileId": "1B4g1Eguq9p7n5M_iY-jwhwGQk1iTZbHj",
+      "fileName": "C0FE9C0A-409F-422E-BFDD-BF4912093E71.mp4",
+      "city": "austin",
+      "caption": "Did you know you can get brand new construction in Austin starting at $254,990?\n\nNew construction like this doesn't last long on the market. Builders are moving fast in this area.\n\n✨ Open floor plans,",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-24T20:40:46.297Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "Austin",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "and probably will be fine. And still on you You won't forget me",
+      "voiceover_persona": "deadpan_comedian",
+      "content_hash": "ffffcfc16eff0088:ffffffd9597f2701:feffffebffc08080:ffffffff0000ccfc:f7ffdfcfcfc30100",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1hPa6sgH8RdIChxXwUJRzJFWR5iukku16/view"
     }
   ],
   "lastTemplateIndex": -1
