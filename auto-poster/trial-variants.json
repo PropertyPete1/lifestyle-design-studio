@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-08-24",
+      "window": "am",
+      "sourceVideoId": "1CnBLzK7RKv00aoRZIsUaZSNEc9C3mqaQ",
+      "sourceFileName": "6A650395-CC29-41F3-8B39-4BCD22D4B97C.mp4",
+      "city": "san_antonio",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "the monthly payment on this one is lower than most people guess\n\nnew construction in San Antonio doesn't sit long, especially at this price point\n\n✨ open floor plan with natural light flooding through",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1_cQhHhGmoHgGYp6SM-1BWxghK5lrOG-S/view",
+      "generatedAt": "2026-08-24T14:03:34.175Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-08-23",
       "window": "pm",
       "sourceVideoId": "1CnBLzK7RKv00aoRZIsUaZSNEc9C3mqaQ",
