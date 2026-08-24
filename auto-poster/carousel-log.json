@@ -3383,6 +3383,189 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-24",
+      "timestamp": "2026-08-24T14:32:44.700Z",
+      "pillar": "real_estate_education",
+      "topic": "Why appraisals lag the market: closed comps, the gap, and the Texas financing addendum",
+      "hook": "A Texas appraiser is not allowed to value your home off today's prices.",
+      "closeType": "dm",
+      "keyword": "REPORT",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Why appraisals lag the market: closed comps, the gap, and the Texas financing addendum",
+        "hook": "A Texas appraiser is not allowed to value your home off today's prices.",
+        "map": [
+          "Appraisers look backward",
+          "Why comps run late",
+          "Who pays the gap",
+          "The addendum paragraph",
+          "Challenging a low number"
+        ],
+        "points": [
+          {
+            "title": "Appraisers Look Backward",
+            "body": [
+              "The appraiser values your house off homes that already closed.",
+              "Usually sales from the last three to six months."
+            ],
+            "loop": "Those closed sales are older than they look."
+          },
+          {
+            "title": "A Closed Sale Is Old News",
+            "body": [
+              "A home that closed last month went under contract about 45 days before that.",
+              "So a recent comp is really a two or three month old price."
+            ],
+            "loop": "That lag decides who writes a check."
+          },
+          {
+            "title": "The Gap Lands On The Buyer",
+            "body": [
+              "If prices moved up, the appraisal comes in under the contract price.",
+              "The lender only lends on the appraised number. The buyer covers the rest in cash."
+            ],
+            "loop": "One paragraph decides if you can walk."
+          },
+          {
+            "title": "The Paragraph Nobody Reads",
+            "body": [
+              "In Texas, the financing addendum sets whether a low appraisal lets the buyer out.",
+              "Sign that protection away and it is cash out of pocket or your deposit."
+            ],
+            "loop": "Most buyers accept the number here."
+          },
+          {
+            "title": "You Can Push Back",
+            "body": [
+              "Your agent can send the appraiser better sales and ask for a second look.",
+              "It only works with real closed sales, not opinions about the market."
+            ],
+            "loop": "Finding those sales is the whole job."
+          }
+        ],
+        "cta": {
+          "payoff": "this month's market numbers, the closed sales an appraiser will actually count"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 6,
+        "cta": 8,
+        "worst_problem": "The loop on the addendum slide — \"Most buyers accept the number here\" — is vague about which number and which moment, so it teases nothing specific and the swipe momentum sags right before the payoff slide.",
+        "fix": "Rewrite that loop as a concrete tease pointing at the next slide, e.g. \"But a low number is challengeable\" or \"Appraisals get overturned every week.\""
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 365860038,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-24T14:35:45.234Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677606133204372749"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365860039,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-24T14:35:45.325Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7497662437446328320"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365860084,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-24T14:35:45.418Z",
+          "publicUrl": "https://www.instagram.com/p/DcbSgHECEWv/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365860123,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-24T14:35:45.515Z",
+          "publicUrl": "https://www.instagram.com/p/DcbSfCWiPJK/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365860129,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-24T14:35:45.613Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7497662439891750913"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 365860168,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-24T14:35:45.699Z",
+          "publicUrl": "https://www.instagram.com/p/DcbSgfJCPdC/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 365860170,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-24T14:35:45.784Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122116503135400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 365860176,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-24T14:35:45.869Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7497662439438737408"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-24T14:35:45.870Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
