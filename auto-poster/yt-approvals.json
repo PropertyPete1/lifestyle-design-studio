@@ -1046,6 +1046,10 @@
       "requestId": "topic_pick-2026-08-17-f60982b7",
       "kind": "topic_pick",
       "requestedAt": "2026-08-17T14:23:38.595Z",
+      "decision": "approve",
+      "notes": null,
+      "decidedAt": "2026-08-25T22:45:00.000Z",
+      "selection": 1,
       "payload": {
         "requestId": "topic_pick-2026-08-17-f60982b7",
         "kind": "topic_pick",
