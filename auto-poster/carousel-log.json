@@ -3566,6 +3566,194 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-25",
+      "timestamp": "2026-08-25T14:36:03.071Z",
+      "pillar": "texas_lifestyle",
+      "topic": "Texas hail season and what it does to roofs, insurance and transplants",
+      "hook": "Texas transplants brace for tornadoes. Hail is the thing that actually gets them.",
+      "closeType": "question",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Texas hail season and what it does to roofs, insurance and transplants",
+        "hook": "Texas transplants brace for tornadoes. Hail is the thing that actually gets them.",
+        "map": [
+          "Spring, not summer",
+          "Damage you can't see",
+          "Percentage deductibles",
+          "Roof age matters",
+          "Trucks in your street"
+        ],
+        "points": [
+          {
+            "title": "Spring Is The Season",
+            "body": [
+              "The worst hail runs March through May.",
+              "DFW gets hit hardest, but Austin and San Antonio get their share.",
+              "By the time summer heat arrives, the risky window has mostly passed."
+            ],
+            "loop": "The damage often hides."
+          },
+          {
+            "title": "You Cannot See It",
+            "body": [
+              "Hail bruises shingles without breaking them.",
+              "From the ground your roof looks completely fine.",
+              "The leak shows up a year or two later."
+            ],
+            "loop": "Then the bill surprises you."
+          },
+          {
+            "title": "Your Deductible Is A Percentage",
+            "body": [
+              "Most Texas policies use a separate wind and hail deductible.",
+              "It is often 1 to 2 percent of what your home is insured for, not a flat amount.",
+              "On a normal Texas house that is thousands out of pocket before insurance pays anything."
+            ],
+            "loop": "And the payout can shrink."
+          },
+          {
+            "title": "Roof Age Changes Everything",
+            "body": [
+              "Once a roof passes a certain age, many carriers stop paying to replace it.",
+              "They pay what the worn out roof is worth today instead.",
+              "Ask the age of the roof before you write an offer, not after."
+            ],
+            "loop": "Then the trucks show up."
+          },
+          {
+            "title": "The Knock At The Door",
+            "body": [
+              "After a big storm, crews go street to street offering free inspections.",
+              "Some are excellent local roofers. Some follow storms across three states and vanish.",
+              "Check that they were working in Texas last year, not last week."
+            ],
+            "loop": "Most learn this the expensive way."
+          }
+        ],
+        "cta": {
+          "question": "New roof already on it, or older roof and negotiate for one?"
+        }
+      },
+      "scores": {
+        "clarity": 7,
+        "hook": 7,
+        "loops": 5,
+        "cta": 7,
+        "worst_problem": "The final point slide's loop, \"Most learn this the expensive way,\" is a generic summary that teases nothing specific and gives no reason to swipe.",
+        "fix": "Replace that loop with a concrete forward tease tied to the close, e.g. \"One question saves you thousands,\" and tighten the CTA to a cleaner either/or like \"Buying: new roof, or discount for old?\""
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 366389837,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-25T14:39:03.674Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677978056631356685"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 366389839,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-25T14:39:03.827Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498025641812852736"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 366389925,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-25T14:39:03.971Z",
+          "publicUrl": "https://www.instagram.com/p/Dcd3lE-jQsq/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 366389975,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-25T14:39:04.133Z",
+          "publicUrl": "https://www.instagram.com/p/Dcd3qakCJCY/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 366389980,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-25T14:39:04.284Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498025650965020677"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 366390032,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-25T14:39:04.431Z",
+          "publicUrl": "https://www.instagram.com/p/Dcd3qgMiCWV/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 366390046,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-25T14:39:04.577Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122116816731400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 366390052,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-25T14:39:04.730Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498025640349143040"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-25T14:39:04.731Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
