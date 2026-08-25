@@ -340,14 +340,91 @@ export function markActed(log, requestId, { action, result = null } = {}) {
  * for a manual override committed by hand — not for the poster to answer its
  * own questions, which is why it refuses to overwrite an existing decision.
  */
-export function recordDecision(log, requestId, { decision, notes = null, decidedAt = null }) {
+export function recordDecision(log, requestId, { decision, notes = null, decidedAt = null, selection = null }) {
   const requests = (log?.requests || []).map((r) => {
     if (r.requestId !== requestId) return r;
     if (hasDecision(r)) {
       console.warn(`[Approvals] ${requestId} already has decision "${r.decision}" — not overwriting`);
       return r;
     }
-    return { ...r, decision, notes, decidedAt: decidedAt || new Date().toISOString() };
+    const decided = { ...r, decision, notes, decidedAt: decidedAt || new Date().toISOString() };
+    // Written only when present, matching the dashboard: a review decision has
+    // no selection, and a null field would still count as "present" to the
+    // merge's decision group.
+    if (selection !== null && selection !== undefined) decided.selection = selection;
+    return decided;
   });
+  return { ...log, requests };
+}
+
+/**
+ * Record a decision the dashboard failed to write back — validated.
+ *
+ * On 2026-08-19 Peter answered the Aug 17 topic card and the dashboard never
+ * committed the decision; the pipeline read "waiting on Peter" for a week. The
+ * recovery was a by-hand edit of this file on main. This is that edit as a
+ * checked operation, for the record-decision workflow job to run: everything a
+ * typo in a dispatch form could get wrong is refused with a reason instead of
+ * being committed as state every scheduled job trusts.
+ *
+ * Refusals, each of which has already happened or nearly happened once:
+ *   - unknown requestId (a typo would otherwise no-op silently in recordDecision)
+ *   - TEST- requests (smoke fixtures; deciding one made a real kit on 2026-08-06)
+ *   - already decided / already acted (the latch that stops a double-publish)
+ *   - a decision word that is not exactly approve/reject (rule 1 of this file)
+ *   - a topic approval whose selection does not name one of the candidates —
+ *     "approved, but nothing says which one" is the stall this exists to fix,
+ *     not one it should be able to write.
+ *
+ * Returns { ok:true, log } with the decision applied, or { ok:false, reason }.
+ * Pure and non-throwing so the caller owns all I/O and exit codes.
+ */
+export function applyManualDecision(log, { requestId, decision, selection = null, notes = null }) {
+  const record = findRequest(log, requestId);
+  if (!record) return { ok: false, reason: `no request "${requestId}" in yt-approvals.json — check the id for typos` };
+  if (isTestRequest(record)) return { ok: false, reason: `${requestId} is a smoke-test fixture — deciding it would build a real kit for a card nobody asked` };
+  if (hasDecision(record)) return { ok: false, reason: `${requestId} already has decision "${record.decision}" (decided ${record.decidedAt}) — decisions are never overwritten` };
+  if (hasActed(record)) return { ok: false, reason: `${requestId} was already acted on at ${record.actedAt} (${record.actedAction}) — nothing is waiting on a decision` };
+
+  const word = String(decision || "").trim().toLowerCase();
+  if (word !== APPROVE && word !== "reject") {
+    return { ok: false, reason: `decision must be exactly "approve" or "reject" — got "${decision}"` };
+  }
+
+  let pick = null;
+  if (record.kind === KIND_TOPIC_PICK && word === APPROVE) {
+    const candidates = Array.isArray(record.payload?.candidates) ? record.payload.candidates : [];
+    pick = Number(selection);
+    if (!Number.isInteger(pick) || pick < 1 || pick > candidates.length) {
+      return {
+        ok: false,
+        reason: `an approved topic needs a selection between 1 and ${candidates.length} — got "${selection}". ` +
+          `An approval that does not say what was approved would stall the pipeline exactly like no decision at all.`,
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    log: recordDecision(log, requestId, {
+      decision: word,
+      notes: typeof notes === "string" && notes.trim() ? notes.trim() : null,
+      selection: pick,
+    }),
+  };
+}
+
+/**
+ * Stamp a waiting record as nudged (see yt-stall-nudge.js).
+ *
+ * Unlike markActed this is NOT a latch — re-nudging after another 72 silent
+ * hours is the point — so a later stamp simply replaces the earlier one, and
+ * mergeYtApprovals gives the field its own group where the LATEST timestamp
+ * wins for the same reason.
+ */
+export function markStallNudged(log, requestId, at = new Date().toISOString()) {
+  const requests = (log?.requests || []).map((r) =>
+    r.requestId === requestId ? { ...r, stallNudgedAt: at } : r
+  );
   return { ...log, requests };
 }

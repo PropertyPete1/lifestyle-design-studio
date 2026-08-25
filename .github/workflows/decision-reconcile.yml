@@ -1,0 +1,60 @@
+name: Decision Reconcile
+
+# Daily read-only sweep: every card the pipeline believes is WAITING must be
+# VISIBLE on the deployed dashboard. If one is not, Peter either answered it
+# and the dashboard dropped the write-back (2026-08-19 — video 2 lost a week),
+# or he was never shown it. Both are alarms; he gets mailed the recovery steps
+# (the record-decision job) the same day. See dashboard-smoke/reconcile.mjs
+# for why this is the strongest check possible against a dashboard with no
+# read API, and why it never tries to recover the decision content itself.
+#
+# Nothing here commits, clicks, or posts to the dashboard. The alert channel
+# is Gmail, per daily-notify.js — a reconcile alarm is not a delivery, and the
+# dashboard's webhooks each create a card in a tab Peter reads.
+on:
+  schedule:
+    # 11:15 AM CT daily, offset from every other cron here, with the same :30
+    # backup pattern as post.yml — scheduled runs get dropped under load, and
+    # this job is idempotent enough that a duplicate costs one extra mail in
+    # the rare case both fire AND a card is missing.
+    - cron: '15 16 * * *'
+    - cron: '45 16 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # BOTH workspaces on purpose. The script lives in dashboard-smoke (where
+      # Playwright is allowed to exist) but imports its approvals reader and
+      # mail sender from auto-poster, so auto-poster's node_modules must be
+      # present for those imports to resolve.
+      - name: Install auto-poster dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Install smoke dependencies
+        working-directory: dashboard-smoke
+        run: npm install
+      - name: Install Chromium
+        working-directory: dashboard-smoke
+        run: npx playwright install --with-deps chromium
+      - name: Sweep the dashboard for waiting cards
+        working-directory: dashboard-smoke
+        env:
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          # The passcode wall. Typed into the page, never printed, never
+          # screenshotted — reconcile.mjs produces no artifacts at all.
+          DASHBOARD_PASS: ${{ secrets.DASHBOARD_PASS }}
+          # The alert mail.
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+        run: node reconcile.mjs

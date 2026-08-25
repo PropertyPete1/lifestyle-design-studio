@@ -61,6 +61,7 @@ import {
   KIND_TOPIC_PICK,
   KIND_VIDEO_REVIEW,
 } from "./yt-approvals.js";
+import { maybeNudgeStalledRequest } from "./yt-stall-nudge.js";
 import { ingestRecordings } from "./yt-ingest.js";
 import { planTimeline, buildChapters } from "./yt-timeline.js";
 import { generateNarration, renderTimeline, syntheticNarrationUsed, canvasFor, ffmpeg } from "./yt-assemble.js";
@@ -1464,6 +1465,10 @@ async function main() {
         `[YTPipeline] ${topic.record.requestId} is waiting on Peter (sent ${topic.record.requestedAt}) — ` +
         `exiting cleanly, will check again next run`
       );
+      // Waiting is normal for a day and evidence of a problem after three: he
+      // has not seen the card, or the dashboard dropped his answer (2026-08-19
+      // cost video 2 a week). Either way the fix starts with telling him.
+      await maybeNudgeStalledRequest(approvals, topic.record, { dryRun: DRY_RUN });
       return;
 
     case "approved":
@@ -1483,6 +1488,9 @@ async function main() {
         console.log(
           `[YTPipeline] ${review.record.requestId} is waiting on Peter's review — exiting cleanly`
         );
+        // Same clock as the topic branch above: a review card that has sat
+        // three days unanswered needs a human told, whichever half is stuck.
+        await maybeNudgeStalledRequest(approvals, review.record, { dryRun: DRY_RUN });
         return;
       }
       if (review.state === "already-acted") {

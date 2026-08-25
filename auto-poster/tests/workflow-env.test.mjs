@@ -128,6 +128,31 @@ describe("the distribution sweep's credentials reach the job that runs it", () =
     assert.match(all["teaser-backfill"], /group:\s*youtube-longform-approvals/, "must queue behind the crons, not race them");
   });
 
+  test("the record-decision job commits what it records, and queues behind the crons", () => {
+    // The job exists to repair a dropped dashboard write-back. A recorded
+    // decision that is not committed is the same stall wearing a green run,
+    // and a write racing the crons over yt-approvals.json is the one hazard
+    // the shared group exists for.
+    const all = jobs();
+    assert.ok(all["record-decision"], "the record-decision job exists");
+    assert.match(all["record-decision"], /record-decision\.mjs/, "must run the validated script, not an inline edit");
+    assert.match(all["record-decision"], /merge-log-push\.mjs/, "an uncommitted decision is still a stall");
+    assert.match(all["record-decision"], /group:\s*youtube-longform-approvals/, "must queue behind the crons, not race them");
+    assert.match(all["record-decision"], /cancel-in-progress:\s*false/, "must queue, not kill a build mid-upload");
+  });
+
+  test("the reconcile sweep is read-only and can both see the dashboard and send the alert", () => {
+    // Its one invariant check needs the passcode wall's secret and Gmail for
+    // the alarm; contents: read is what makes "read-only against the
+    // dashboard" true of the repo half too.
+    const text = readFileSync(join(WF_DIR, "decision-reconcile.yml"), "utf-8");
+    assert.match(text, /contents:\s*read/, "the sweep must not be able to commit");
+    assert.ok(!/merge-log-push/.test(text), "the sweep must not write state");
+    assert.match(text, /DASHBOARD_PASS:/, "cannot get past the passcode wall without it");
+    assert.match(text, /GOOGLE_REFRESH_TOKEN:/, "the alert mail needs the Gmail token");
+    assert.match(text, /reconcile\.mjs/, "must run the sweep script");
+  });
+
   test("the pipeline job carries the YouTube token's OWN OAuth client pair", () => {
     // The token is minted against project "Youtube Auto Post"; a refresh
     // token only exchanges against the client that minted it, so a job with
