@@ -47,6 +47,7 @@ on:
           - resend-kit
           - teaser-backfill
           - stock-probe
+          - record-decision
       stock_queries:
         # Hand it the exact queries a past build used and read off which stage
         # each one dies at. Empty derives them from the current script instead.
@@ -55,7 +56,25 @@ on:
         default: ''
         type: string
       request_id:
-        description: 'reoutline / resend-kit: the requestId to act on'
+        description: 'reoutline / resend-kit / record-decision: the requestId to act on'
+        required: false
+        default: ''
+        type: string
+      decision:
+        description: 'record-decision: the answer the dashboard lost'
+        required: false
+        default: 'approve'
+        type: choice
+        options:
+          - approve
+          - reject
+      selection:
+        description: 'record-decision: option number picked (topic cards only, e.g. 1)'
+        required: false
+        default: ''
+        type: string
+      decision_notes:
+        description: 'record-decision: notes to attach (rejection guidance)'
         required: false
         default: ''
         type: string
@@ -508,6 +527,52 @@ jobs:
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
           node merge-log-push.mjs YTTEASER "true"
+
+  # Record a decision the dashboard failed to write back (see
+  # scripts/record-decision.mjs for the 2026-08-19 incident this recovers
+  # from). The stall-nudge mail walks Peter to this job. It writes ONLY a
+  # decision that does not exist yet — applyManualDecision refuses overwrites,
+  # TEST- fixtures, unknown ids and a topic approval with no valid selection —
+  # and the next scheduled pipeline run acts on it. Publishes nothing.
+  record-decision:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'record-decision'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: youtube-longform-approvals
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Record the decision
+        id: run
+        working-directory: auto-poster
+        env:
+          # LIVE: writes a real decision into yt-approvals.json, which the next
+          # scheduled run will act on — a script, a kit, or a rework.
+          REQUEST_ID: ${{ github.event.inputs.request_id }}
+          DECISION: ${{ github.event.inputs.decision }}
+          SELECTION: ${{ github.event.inputs.selection }}
+          DECISION_NOTES: ${{ github.event.inputs.decision_notes }}
+        run: |
+          if node scripts/record-decision.mjs; then
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Commit approvals
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs YTDECISION "${{ steps.run.outputs.success }}"
 
   resend-kit:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.job == 'resend-kit'

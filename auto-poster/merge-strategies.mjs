@@ -310,6 +310,21 @@ function mergeApprovalRecord(x, y) {
     out.actedResult = a.actedResult ?? null;
   }
 
+  // nudge — the stall reminder's stamp (yt-stall-nudge.js). Its own group
+  // because this function rebuilds records from an explicit field list: a
+  // field with no group here is a field the next concurrent commit silently
+  // deletes, and a deleted stamp re-arms the nudge into a mail on every run.
+  //
+  // LATEST wins, unlike every group above — deliberately. The other groups
+  // protect a decision from being rewritten, so the earlier write is the
+  // truth. A nudge stamp records "when was Peter last reminded", and two
+  // runners racing means he was reminded at the later time.
+  const nudgedAt = [x.stallNudgedAt, y.stallNudgedAt]
+    .filter((v) => typeof v === "string" && v)
+    .sort()
+    .pop();
+  if (nudgedAt) out.stallNudgedAt = nudgedAt;
+
   return out;
 }
 
