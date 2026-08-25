@@ -5302,6 +5302,31 @@
       "timestamp": "2026-08-25T19:21:19.498Z",
       "runId": "32887909757",
       "success": true
+    },
+    {
+      "driveFileId": "1UCUMSsESLlSU-7TGI6gs6ORxmXtEXBDV",
+      "fileName": "2CD47B1B-74AB-4357-B949-60E3D26DF8E5.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe you can get brand new construction in San Antonio starting at $469,990?\n\nNew construction like this moves fast. Builder incentives are real right now if you're ready to move.\n\n✨ ever",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-25T19:21:19.156Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "Hello, we are in Alvarage. This is what you can get for $200. Alright, let's do this one last time. My name is Peter Parker. I was bitten by a radioactive spider. And for 10 years, I've been the one and only. Spider-Man, what's that? I'm pretty sure you know the rest. It's great battle. I'm a great response. I say to a bunch of people, following love, save the city. Come on, I say this city again. Again and again and again. And I can do.",
+      "voiceover_persona": "checklist_sprint",
+      "content_hash": "3fffffff7f0a0000:ffffffd80080e0fc:e0e0e0e081dd7f7f:8f0b8fbfbfa7e303:3f3f3f3e30348400",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1AU3IBIdyv9sZf4fY1W9JGlNNd-T7_zgF/view"
     }
   ],
   "lastTemplateIndex": -1
