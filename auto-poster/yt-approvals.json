@@ -1046,10 +1046,6 @@
       "requestId": "topic_pick-2026-08-17-f60982b7",
       "kind": "topic_pick",
       "requestedAt": "2026-08-17T14:23:38.595Z",
-      "decision": "approve",
-      "notes": null,
-      "decidedAt": "2026-08-25T22:45:00.000Z",
-      "selection": 1,
       "payload": {
         "requestId": "topic_pick-2026-08-17-f60982b7",
         "kind": "topic_pick",
@@ -1206,6 +1202,513 @@
             ]
           }
         ]
+      },
+      "decision": "approve",
+      "notes": null,
+      "decidedAt": "2026-08-25T22:45:00.000Z",
+      "selection": 1,
+      "actedAt": "2026-08-25T23:31:30.579Z",
+      "actedAction": "kit_delivered",
+      "actedResult": {
+        "selectedIndex": 1,
+        "selectedTitle": "Cost of living in San Antonio: what a $100k salary covers",
+        "market": "san_antonio",
+        "folderPath": "YT Recordings/topic_pick-2026-08-17-f60982b7",
+        "takeCount": 35,
+        "scores": {
+          "clarity": 8,
+          "retention": 8,
+          "authenticity": 9,
+          "hook_punch": 9,
+          "story": 9,
+          "loop": 9,
+          "payoff": 8,
+          "worst_problem": "The promise says one thing eats the salary — \"which line eats it\" — but the body hands the viewer three competing culprits (property tax rate, special district add-on, wind-and-hail deductible), so the single most-repeated promise never resolves into one named answer.",
+          "worst_boundary": "Which is why the same money buys three completely different lives in Stone Oak, Alamo Ranch and Converse. Let me spend it in all three.",
+          "fix": "Rewrite the promise to name the one line by category up front (\"it's the insurance line, and the reason is a percentage, not a dollar amount\") and then explicitly rank the property tax and special district against it when you get there, so the singular claim is cashed out in the same words it was made in."
+        },
+        "belowBar": false,
+        "script": {
+          "title": "Cost of Living in San Antonio: What a $100K Salary Really Covers",
+          "hook": "Same price, same square footage, thousands of dollars apart every year. Two houses on opposite sides of 1604. that's the outer loop around San Antonio. and nobody explains that gap to you until you're already under contract.",
+          "promise": "By the end of this you'll know what a hundred thousand dollar salary actually covers here, and which line eats it. It's not the mortgage. It's almost never the mortgage.",
+          "openingOverlay": "Why the same price costs more",
+          "sections": [
+            {
+              "title": "No state income tax: what Texas takes back instead",
+              "takes": [
+                {
+                  "id": "s1t1",
+                  "mode": "ON_CAMERA",
+                  "text": "Before any of it. there's a number on your homeowners policy here that isn't a dollar amount. It's a percentage. And it's the reason a spring hailstorm can cost a family more than they saved all year. I'll show you exactly where it hides. Stay with me, it's coming.",
+                  "direction": "Energy up, straight into the lens, no smile yet"
+                },
+                {
+                  "id": "s1t2",
+                  "mode": "VOICEOVER",
+                  "text": "Start with the good part. Texas has no state income tax. On a hundred thousand dollar salary, that line is just gone. Federal and payroll still take about a quarter, so you're living on something like seventy-five. Compared to California or New York, that feels like a raise for about six months.",
+                  "direction": "Warm, matter of fact",
+                  "visualIntent": {
+                    "type": "NUMBER_BREAKDOWN",
+                    "spec": {
+                      "rows": [
+                        {
+                          "label": "Federal and payroll",
+                          "value": "about a quarter"
+                        },
+                        {
+                          "label": "Texas income tax",
+                          "value": "none",
+                          "struck": true
+                        }
+                      ],
+                      "total": "about seventy-five to live on",
+                      "title": "A 100k salary in Texas"
+                    }
+                  }
+                },
+                {
+                  "id": "s1t3",
+                  "mode": "VOICEOVER",
+                  "text": "Here's what takes it back. Texas sits near the top of the country for property tax rates. Most of Bexar County. that's the county San Antonio sits in. lands somewhere around two percent of what the county says your house is worth. Every year. Forever. That's not a payment you finish.",
+                  "direction": "Slow down on the last two sentences",
+                  "visualIntent": {
+                    "type": "CALLOUT",
+                    "spec": {
+                      "value": "About 2%",
+                      "label": "typical Bexar County rate",
+                      "title": "The trade"
+                    }
+                  }
+                },
+                {
+                  "id": "s1t4",
+                  "mode": "VOICEOVER",
+                  "text": "I worked with a couple who moved here from out of state and built their whole budget off the new take-home. They bought at the top of what the lender approved. Year two, the escrow shortage letter shows up, the payment jumps, and now they're skipping the trip home at Christmas to cover it. Nothing broke. The tax bill just did what tax bills do.",
+                  "direction": "Tell it like you're telling a friend, not warning a client",
+                  "visualIntent": "FOOTAGE"
+                },
+                {
+                  "id": "s1t5",
+                  "mode": "VOICEOVER",
+                  "text": "Your payment here is four things stacked together. The loan, the property tax, the homeowners insurance, and mortgage insurance if you put less than twenty percent down. Only the loan part is locked. The other three move, and around here two of them mostly move up.",
+                  "direction": "Count them off on your fingers if you're on camera later",
+                  "visualIntent": {
+                    "type": "LIST",
+                    "spec": {
+                      "items": [
+                        "Loan payment - fixed",
+                        "Property tax - moves",
+                        "Homeowners insurance - moves",
+                        "PMI under 20 percent down"
+                      ],
+                      "title": "What your payment is made of"
+                    }
+                  }
+                }
+              ],
+              "boundaryPull": "Which is why the same money buys three completely different lives in Stone Oak, Alamo Ranch and Converse. Let me spend it in all three."
+            },
+            {
+              "title": "Housing: what your money rents vs buys in Stone Oak, Alamo Ranch and Converse",
+              "takes": [
+                {
+                  "id": "s2t1",
+                  "mode": "ON_CAMERA",
+                  "text": "Let's actually spend the money. Same budget, three parts of town. And I'm going to tell you what each one feels like to live in, not just what the square footage says on paper.",
+                  "direction": "Conversational, hands moving"
+                },
+                {
+                  "id": "s2t2",
+                  "mode": "VOICEOVER",
+                  "text": "Stone Oak is the north side, up 281. that's the highway running north out of downtown. past 1604, the outer loop. Built out in the nineties and two thousands. Hills, big oaks, grown-in yards, and Northside ISD schools people move for. You pay for all of that. Your money buys the least house here of the three.",
+                  "direction": "Neighborhood drive footage, keep the pace easy",
+                  "visualIntent": "FOOTAGE"
+                },
+                {
+                  "id": "s2t3",
+                  "mode": "VOICEOVER",
+                  "text": "Alamo Ranch is the far west side, out past 1604 along 151, the highway that runs toward Sea World. Newer. Bigger floor plans for the same money. Smaller lots, thinner trees, and traffic that got ahead of the roads. If you want the most square footage per dollar, it's usually out there.",
+                  "direction": "Even tone, no selling",
+                  "visualIntent": "FOOTAGE"
+                },
+                {
+                  "id": "s2t4",
+                  "mode": "VOICEOVER",
+                  "text": "Converse sits northeast, out by Randolph. that's the Air Force base on that side of town. Judson ISD, a mix of older homes and brand new ones, and it's the cheapest of the three by a real margin. Rent's lower too. It's also the furthest from the medical center and the downtown jobs.",
+                  "direction": "Slight lift on 'cheapest'",
+                  "visualIntent": {
+                    "type": "COMPARISON",
+                    "spec": {
+                      "columns": [
+                        {
+                          "name": "Stone Oak",
+                          "points": [
+                            "North side, up 281",
+                            "Northside ISD",
+                            "Least house per dollar"
+                          ]
+                        },
+                        {
+                          "name": "Alamo Ranch",
+                          "points": [
+                            "West side, off 151",
+                            "Newest builds",
+                            "Most space per dollar"
+                          ]
+                        },
+                        {
+                          "name": "Converse",
+                          "points": [
+                            "Northeast, by Randolph",
+                            "Judson ISD",
+                            "Cheapest of the three"
+                          ]
+                        }
+                      ],
+                      "title": "Same budget, three areas"
+                    }
+                  }
+                },
+                {
+                  "id": "s2t5",
+                  "mode": "VOICEOVER",
+                  "text": "A family I worked with rented in Stone Oak for two years, loved it, couldn't buy there. So they bought in Converse. More house, real backyard, and a kid pulled out of his school in February. He barely spoke to them for a month. They're fine now. But if somebody had asked them one question earlier, they'd have moved in June instead.",
+                  "direction": "Softer here, let the February line land",
+                  "visualIntent": "FOOTAGE"
+                },
+                {
+                  "id": "s2t6",
+                  "mode": "ON_CAMERA",
+                  "text": "Renting here isn't the waste people tell you it is. Rent in Converse or out west is genuinely reasonable. Six months of renting while you learn the map beats six years in the wrong part of town.",
+                  "direction": "Say this one slower, look right at the lens"
+                }
+              ],
+              "boundaryPull": "But here's what gets people. Two of those three areas can charge you wildly different tax rates on the exact same price, and the price has nothing to do with it."
+            },
+            {
+              "title": "The tax bill: why the rate follows the address, not the price",
+              "takes": [
+                {
+                  "id": "s3t1",
+                  "mode": "ON_CAMERA",
+                  "text": "Your tax rate follows your address. Not your price, not your lender, not your credit. The address. Move the same house half a mile and it costs different money to hold every single year.",
+                  "direction": "Firm, this is the thesis of the video"
+                },
+                {
+                  "id": "s3t2",
+                  "mode": "VOICEOVER",
+                  "text": "The rate is a stack. The school district is the biggest piece by far. Then the county, the city, the hospital district, the community college, flood control. Add them up and that's your rate. Different addresses sit in different stacks, so they add up to different numbers.",
+                  "direction": "Steady, teaching voice",
+                  "visualIntent": {
+                    "type": "LIST",
+                    "spec": {
+                      "items": [
+                        "School district",
+                        "County",
+                        "City",
+                        "Hospital district",
+                        "Community college",
+                        "Flood control"
+                      ],
+                      "title": "Who is on your tax bill"
+                    }
+                  }
+                },
+                {
+                  "id": "s3t3",
+                  "mode": "VOICEOVER",
+                  "text": "Now the newer stuff. A lot of what got built outside 1604 in the last fifteen years sits in a special district that pays back the roads and pipes that went in first. That gets added to your rate. A house in Stone Oak might sit near two percent. A newer one out by Alamo Ranch can run past three. Same price. Very different year.",
+                  "direction": "Punch 'past three'",
+                  "visualIntent": {
+                    "type": "CALLOUT",
+                    "spec": {
+                      "value": "2% vs past 3%",
+                      "label": "Stone Oak vs newer outside 1604",
+                      "title": "Same price, different rate"
+                    }
+                  }
+                },
+                {
+                  "id": "s3t4",
+                  "mode": "VOICEOVER",
+                  "text": "There's a form that protects you and it costs nothing. The homestead exemption. You file it once with the county appraisal district after you own the house and you're living in it. It knocks the school portion of your taxable value way down, and it caps how much that value can climb to ten percent a year.",
+                  "direction": "Practical, like you're giving instructions",
+                  "visualIntent": {
+                    "type": "LIST",
+                    "spec": {
+                      "items": [
+                        "Own it and live in it",
+                        "File with the county appraisal district",
+                        "Costs nothing to file",
+                        "Caps taxable value at 10% a year"
+                      ],
+                      "title": "Homestead exemption"
+                    }
+                  }
+                },
+                {
+                  "id": "s3t5",
+                  "mode": "VOICEOVER",
+                  "text": "I had a buyer skip that form. New job, busy, figured the title company handled it. Two years later a neighbor mentions it at a block party. Those two years his value climbed with no cap on it at all, so that bigger number became his starting line going forward. His escrow ate the difference twice. It cost him more than everything he'd bought to furnish the place.",
+                  "direction": "Dry, slightly amused, no lecture",
+                  "visualIntent": "FOOTAGE"
+                }
+              ],
+              "boundaryPull": "That percentage on your insurance policy I promised you at the start. that's next. It's the one line newcomers never budget for."
+            },
+            {
+              "title": "Insurance, utilities and hail season",
+              "takes": [
+                {
+                  "id": "s4t1",
+                  "mode": "ON_CAMERA",
+                  "text": "Here it is. That's the line I told you about at the start. Open a Texas homeowners policy and find the wind and hail deductible. It's not five hundred bucks. It's a percentage of what your house is insured for.",
+                  "direction": "Hold up a phone or a paper if you have one, energy up"
+                },
+                {
+                  "id": "s4t2",
+                  "mode": "VOICEOVER",
+                  "text": "One or two percent of your dwelling coverage. On most houses here that's thousands out of your pocket before the company pays anything. And the rest of the policy might still carry a flat deductible, so people read that number, feel fine, and never scroll down to the hail line.",
+                  "direction": "Slow on the numbers",
+                  "visualIntent": {
+                    "type": "NUMBER_BREAKDOWN",
+                    "spec": {
+                      "rows": [
+                        {
+                          "label": "All other perils",
+                          "value": "flat deductible"
+                        },
+                        {
+                          "label": "Wind and hail",
+                          "value": "1 to 2% of dwelling"
+                        }
+                      ],
+                      "total": "hail is the expensive one",
+                      "title": "Two deductibles, one policy"
+                    }
+                  }
+                },
+                {
+                  "id": "s4t3",
+                  "mode": "VOICEOVER",
+                  "text": "A family out west took the cheapest quote their agent sent over the week of closing. Spring storm rolls through, and spring storms here throw hail. Roof's finished. Their deductible was more than they'd saved all year, so they lived under a beat-up roof for two summers and argued about it the whole time.",
+                  "direction": "Let the last line sit for a beat",
+                  "visualIntent": "FOOTAGE"
+                },
+                {
+                  "id": "s4t4",
+                  "mode": "VOICEOVER",
+                  "text": "The summer bill. CPS Energy is the city-owned utility here, and July through September is the stretch that surprises people. High ceilings, west-facing glass, an older house inside 410. that's the inner loop. those all show up on the bill. Ask the seller for twelve months of usage. Most of them hand it right over.",
+                  "direction": "Practical tip energy",
+                  "visualIntent": {
+                    "type": "COMPARISON",
+                    "spec": {
+                      "columns": [
+                        {
+                          "name": "Older inside 410",
+                          "points": [
+                            "Original windows",
+                            "Heavier summer usage"
+                          ]
+                        },
+                        {
+                          "name": "Newer outside 1604",
+                          "points": [
+                            "Tighter build",
+                            "Lighter summer usage"
+                          ]
+                        }
+                      ],
+                      "title": "Summer bills"
+                    }
+                  }
+                },
+                {
+                  "id": "s4t5",
+                  "mode": "VOICEOVER",
+                  "text": "Before you write an offer, ask how old the roof is. A roof past about fifteen years can change your premium here, or land you a policy that only pays what that old roof was worth, not what a new one costs. That's a question for before you're under contract, not after.",
+                  "direction": "Direct, useful, no fluff",
+                  "visualIntent": {
+                    "type": "LIST",
+                    "spec": {
+                      "items": [
+                        "How old is the roof?",
+                        "Replacement cost or actual cash value?",
+                        "What is the wind and hail deductible?"
+                      ],
+                      "title": "Ask before you offer"
+                    }
+                  }
+                }
+              ],
+              "boundaryPull": "Housing's handled. Now the thing that quietly takes the rest of your money here. and it isn't tolls."
+            },
+            {
+              "title": "Cars, tolls and the 281 and 1604 commute",
+              "takes": [
+                {
+                  "id": "s5t1",
+                  "mode": "ON_CAMERA",
+                  "text": "San Antonio doesn't really have a toll network. Austin does. you can spend real money every month just getting to work up there. Down here you pay in something else. Time, and two cars.",
+                  "direction": "Relaxed, this is the breather section"
+                },
+                {
+                  "id": "s5t2",
+                  "mode": "VOICEOVER",
+                  "text": "There's no commuter train, and the bus isn't built for a suburb-to-office run. So it's two cars for most households. Two payments, two insurance policies, two sets of tires, and gas for a city that spreads out thirty miles corner to corner. That's a real line item and people leave it out of the budget.",
+                  "direction": "Plain, no drama",
+                  "visualIntent": {
+                    "type": "LIST",
+                    "spec": {
+                      "items": [
+                        "Two car payments",
+                        "Two insurance policies",
+                        "Gas for a spread-out city",
+                        "No commuter rail"
+                      ],
+                      "title": "The car math"
+                    }
+                  }
+                },
+                {
+                  "id": "s5t3",
+                  "mode": "VOICEOVER",
+                  "text": "Here's the geography. Downtown sits in the middle. 410 is the inner loop, 1604 is the outer loop, and 281 runs straight north from downtown up through Stone Oak. Almost every north side commute funnels through the spot where 281 and 1604 cross. At five o'clock, that interchange is the whole conversation.",
+                  "direction": "Map voice, clear and slow",
+                  "visualIntent": {
+                    "type": "MAP",
+                    "spec": {
+                      "places": [
+                        "Downtown",
+                        "Stone Oak",
+                        "Alamo Ranch",
+                        "Converse"
+                      ],
+                      "lines": [
+                        "281",
+                        "1604",
+                        "410",
+                        "151"
+                      ],
+                      "title": "How San Antonio moves"
+                    }
+                  }
+                },
+                {
+                  "id": "s5t4",
+                  "mode": "VOICEOVER",
+                  "text": "A dad I worked with bought north of 1604 for the schools. He works at the medical center, that's the cluster of hospitals on the northwest side. On paper it's a twenty-something minute drive. In real life he was missing the first half of every practice. They sold inside a year, moved closer in, took a smaller house, and he says it's the best trade he's ever made.",
+                  "direction": "This one is personal to you, mean it",
+                  "visualIntent": "FOOTAGE"
+                },
+                {
+                  "id": "s5t5",
+                  "mode": "VOICEOVER",
+                  "text": "Drive it. Not on a Saturday. Drive from the house to the job at seven fifteen on a Tuesday, then drive it home at five thirty. Twenty-five minutes each way and you're fine. Fifty, and that's five hours a week you never get back. No amount of extra square footage covers that.",
+                  "direction": "Firm, almost an order",
+                  "visualIntent": {
+                    "type": "CALLOUT",
+                    "spec": {
+                      "value": "5 hours a week",
+                      "label": "what a 50-minute commute costs",
+                      "title": "The time tax"
+                    }
+                  }
+                }
+              ],
+              "boundaryPull": "So who actually lives well here on a hundred grand? There's a clean line, and I've watched people land on both sides of it."
+            },
+            {
+              "title": "Who lives comfortably on 100k in San Antonio, and who doesn't",
+              "takes": [
+                {
+                  "id": "s6t1",
+                  "mode": "ON_CAMERA",
+                  "text": "A hundred thousand dollars in San Antonio is a comfortable living. It is not an unlimited one. And the difference between those two is almost never the salary. It's the tax rate and the insurance quote on the house you picked.",
+                  "direction": "Look right at the lens, this is the payoff"
+                },
+                {
+                  "id": "s6t2",
+                  "mode": "VOICEOVER",
+                  "text": "An airman I worked with over by Randolph bought in that corridor, and he bought to his housing allowance instead of to his approval letter. Loan, taxes, insurance, all of it inside the allowance. So his wife's paycheck became the trips, the truck, the savings. Same income as the next guy on base. Completely different life.",
+                  "direction": "Warm, admiring",
+                  "visualIntent": "FOOTAGE"
+                },
+                {
+                  "id": "s6t3",
+                  "mode": "VOICEOVER",
+                  "text": "Another buyer, single income, right at that hundred thousand, bought the biggest house the lender would allow. Newer neighborhood outside 1604, special district on the tax bill. Escrow climbed twice in three years. He sold, and that spring there were nine houses just like his on the market. He didn't lose money. He just didn't make any, and he was tired the whole time he owned it.",
+                  "direction": "Flat delivery, let it be sobering",
+                  "visualIntent": "FOOTAGE"
+                },
+                {
+                  "id": "s6t4",
+                  "mode": "VOICEOVER",
+                  "text": "When you've got two houses at the same price, pull the tax rate on both and get a real insurance quote on both before you fall in love with either one. That gap is the difference between a vacation every year and a house that owns you.",
+                  "direction": "Steady, this is the takeaway",
+                  "visualIntent": {
+                    "type": "COMPARISON",
+                    "spec": {
+                      "columns": [
+                        {
+                          "name": "Older, inside 1604",
+                          "points": [
+                            "Lower tax rate",
+                            "Older roof risk"
+                          ]
+                        },
+                        {
+                          "name": "Newer, outside 1604",
+                          "points": [
+                            "Special district on the bill",
+                            "Newer roof, lower premium"
+                          ]
+                        }
+                      ],
+                      "title": "Same price, different carry"
+                    }
+                  }
+                },
+                {
+                  "id": "s6t5",
+                  "mode": "VOICEOVER",
+                  "text": "Who this city is easiest on. Two incomes, even modest ones. Anybody carrying pay earned in a more expensive metro. Military families with an allowance that covers the payment. And folks over sixty-five, because Texas freezes the school portion of the bill once you hit that age and file for it.",
+                  "direction": "Count them off, keep it brisk",
+                  "visualIntent": {
+                    "type": "LIST",
+                    "spec": {
+                      "items": [
+                        "Two incomes",
+                        "Remote pay from a costlier metro",
+                        "Allowance that covers the payment",
+                        "Over 65 school tax freeze"
+                      ],
+                      "title": "Who it is easiest on"
+                    }
+                  }
+                },
+                {
+                  "id": "s6t6",
+                  "mode": "ON_CAMERA",
+                  "text": "Who it's hardest on: one income at a hundred, a long commute, and a house at the very top of the approval. That's not a San Antonio problem. That's a math problem, and you can fix it before you sign anything.",
+                  "direction": "Land it, then hold still for a second"
+                }
+              ],
+              "boundaryPull": "There's one number I'm not allowed to put in a YouTube video, and it's the number you actually want. Here's how you get it."
+            }
+          ],
+          "softCta": {
+            "mode": "ON_CAMERA",
+            "text": "Quick thing while you're here. Drop the neighborhood or the base you're looking at in the comments. Just the name. I'll reply with what the tax rate over there actually runs and whether there's a special district sitting on top of it. I read every one of them.",
+            "direction": "Casual, half smile, keep it short"
+          },
+          "close": {
+            "mode": "ON_CAMERA",
+            "text": "If you want your real number. loan, taxes, insurance, all of it together. text me at the number on the screen. Send me a price and the part of town you're looking at and I'll build the whole thing out and text it back to you. That's me, not an assistant. If texting isn't your thing, comment your budget and which city, San Antonio or Austin, and I'll answer you right there in the thread. Either way you get a real number instead of a guess.",
+            "direction": "Straight to the lens, ask once, then stop talking"
+          }
+        }
       }
     }
   ]
