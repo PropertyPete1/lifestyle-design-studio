@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-08-25",
+      "window": "am",
+      "sourceVideoId": "16mxe-2FD8V03PdGYBAxQ3-NL-OlITTaC",
+      "sourceFileName": "5080434B-9540-4288-80F8-A0B1A9191B02.mp4",
+      "city": "san_antonio",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "the monthly payment on this one is lower than most people guess\n\nNew construction in San Antonio is moving fast, and these price points don't last long.\n\n✨ everyday living hits\nOpen floor plans floode",
+      "deliveryDriveLink": "https://drive.google.com/file/d/15rDzp3Busau8-6RYUji3TEg0OYndc4mr/view",
+      "generatedAt": "2026-08-25T14:04:46.082Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-08-24",
       "window": "pm",
       "sourceVideoId": "16mxe-2FD8V03PdGYBAxQ3-NL-OlITTaC",
