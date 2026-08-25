@@ -5216,6 +5216,21 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1hPa6sgH8RdIChxXwUJRzJFWR5iukku16/view"
+    },
+    {
+      "driveFileId": "16mxe-2FD8V03PdGYBAxQ3-NL-OlITTaC",
+      "fileName": "5080434B-9540-4288-80F8-A0B1A9191B02.mp4",
+      "city": "san_antonio",
+      "caption": "$240,990 for brand new construction in San Antonio. This is what move-in ready actually looks like.\n\nNew construction like this doesn't sit long. Builder incentives are live right now, and inventory a",
+      "voiceover": true,
+      "platforms": [],
+      "timestamp": "2026-08-25T00:01:30.857Z",
+      "success": true,
+      "type": "trial_variant",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "window": "pm",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1vCglsTlqnH7h5xOfR6UdBkRC1XlVlgIb/view"
     }
   ],
   "lastTemplateIndex": -1
