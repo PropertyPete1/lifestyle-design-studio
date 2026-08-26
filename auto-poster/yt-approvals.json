@@ -1284,7 +1284,7 @@
                 {
                   "id": "s1t4",
                   "mode": "VOICEOVER",
-                  "text": "I worked with a couple who moved here from out of state and built their whole budget off the new take-home. They bought at the top of what the lender approved. Year two, the escrow shortage letter shows up, the payment jumps, and now they're skipping the trip home at Christmas to cover it. Nothing broke. The tax bill just did what tax bills do.",
+                  "text": "We worked with a couple who moved here from out of state and built their whole budget off the new take-home. They bought at the top of what the lender approved. Year two, the escrow shortage letter shows up, the payment jumps, and now they're skipping the trip home at Christmas to cover it. Nothing broke. The tax bill just did what tax bills do.",
                   "direction": "Tell it like you're telling a friend, not warning a client",
                   "visualIntent": "FOOTAGE"
                 },
@@ -1373,7 +1373,7 @@
                 {
                   "id": "s2t5",
                   "mode": "VOICEOVER",
-                  "text": "A family I worked with rented in Stone Oak for two years, loved it, couldn't buy there. So they bought in Converse. More house, real backyard, and a kid pulled out of his school in February. He barely spoke to them for a month. They're fine now. But if somebody had asked them one question earlier, they'd have moved in June instead.",
+                  "text": "A family we worked with rented in Stone Oak for two years, loved it, couldn't buy there. So they bought in Converse. More house, real backyard, and a kid pulled out of his school in February. He barely spoke to them for a month. They're fine now. But if somebody had asked them one question earlier, they'd have moved in June instead.",
                   "direction": "Softer here, let the February line land",
                   "visualIntent": "FOOTAGE"
                 },
@@ -1598,7 +1598,7 @@
                 {
                   "id": "s5t4",
                   "mode": "VOICEOVER",
-                  "text": "A dad I worked with bought north of 1604 for the schools. He works at the medical center, that's the cluster of hospitals on the northwest side. On paper it's a twenty-something minute drive. In real life he was missing the first half of every practice. They sold inside a year, moved closer in, took a smaller house, and he says it's the best trade he's ever made.",
+                  "text": "A dad we worked with bought north of 1604 for the schools. He works at the medical center, that's the cluster of hospitals on the northwest side. On paper it's a twenty-something minute drive. In real life he was missing the first half of every practice. They sold inside a year, moved closer in, took a smaller house, and he says it's the best trade he's ever made.",
                   "direction": "This one is personal to you, mean it",
                   "visualIntent": "FOOTAGE"
                 },
@@ -1631,7 +1631,7 @@
                 {
                   "id": "s6t2",
                   "mode": "VOICEOVER",
-                  "text": "An airman I worked with over by Randolph bought in that corridor, and he bought to his housing allowance instead of to his approval letter. Loan, taxes, insurance, all of it inside the allowance. So his wife's paycheck became the trips, the truck, the savings. Same income as the next guy on base. Completely different life.",
+                  "text": "An airman we worked with over by Randolph bought in that corridor, and he bought to his housing allowance instead of to his approval letter. Loan, taxes, insurance, all of it inside the allowance. So his wife's paycheck became the trips, the truck, the savings. Same income as the next guy on base. Completely different life.",
                   "direction": "Warm, admiring",
                   "visualIntent": "FOOTAGE"
                 },
@@ -1700,15 +1700,23 @@
           ],
           "softCta": {
             "mode": "ON_CAMERA",
-            "text": "Quick thing while you're here. Drop the neighborhood or the base you're looking at in the comments. Just the name. I'll reply with what the tax rate over there actually runs and whether there's a special district sitting on top of it. I read every one of them.",
+            "text": "Quick thing while you're here. Drop the neighborhood or the base you're looking at in the comments. Just the name. We'll reply with what the tax rate over there actually runs and whether there's a special district sitting on top of it. We read every one of them.",
             "direction": "Casual, half smile, keep it short"
           },
           "close": {
             "mode": "ON_CAMERA",
-            "text": "If you want your real number. loan, taxes, insurance, all of it together. text me at the number on the screen. Send me a price and the part of town you're looking at and I'll build the whole thing out and text it back to you. That's me, not an assistant. If texting isn't your thing, comment your budget and which city, San Antonio or Austin, and I'll answer you right there in the thread. Either way you get a real number instead of a guess.",
+            "text": "If you want your real number. loan, taxes, insurance, all of it together. Text us at the number on the screen. Send me a price and the part of town you're looking at and I'll build the whole thing out and text it back to you. That's me, not an assistant. If texting isn't your thing, comment your budget and which city, San Antonio or Austin, and we'll answer you right there in the thread. Either way you get a real number instead of a guess.",
             "direction": "Straight to the lens, ask once, then stop talking"
           }
-        }
+        },
+        "scriptAdaptedAt": "2026-08-26T01:28:16.329Z"
+      },
+      "presenter": {
+        "id": "steven-van-orden",
+        "name": "Steven Van Orden",
+        "role": "guest",
+        "assignedAt": "2026-08-26T01:27:33.044Z",
+        "via": "assigned"
       }
     }
   ]
