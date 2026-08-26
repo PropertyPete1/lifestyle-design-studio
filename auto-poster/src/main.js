@@ -983,12 +983,14 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     });
     finalVideoPath = voResult.videoPath;
     const hasVoiceover = !voResult.skipped;
-    // Build voiceover reason for audit trail
-    // New reasons: speech_confirmed, whisper_error_failsafe, hallucination_override_add_voiceover,
-    // lyrics_override_add_voiceover, music_only_add_voiceover, silent_add_voiceover
+    // Build voiceover reason for audit trail.
+    // Skip reasons: source_has_speech, whisper_error_failsafe, number_honesty_blocked
+    // Add reasons: music_only_add_voiceover, silent_add_voiceover
+    // (the coherence-override reasons are gone with the override itself —
+    // transcribed words now always mean skip)
     let voiceoverReason = voResult.reason || "added";
     if (voResult.skipped) {
-      voiceoverReason = voResult.reason || "speech_confirmed";
+      voiceoverReason = voResult.reason || "source_has_speech";
     }
     // Store the WHOLE transcript, not the first ten words.
     //
