@@ -55,7 +55,11 @@ const SOFT_PROMISE = /\b(?:i(?:'|’)?ll|i will|we(?:'|’)?ll|we will)\s+send\b
  * A phone number, the word text/email as a verb, or a pointer to the
  * description. "Reply" counts too — replying in the thread is delivery.
  */
-const CHANNEL_NAMED = /\btext\s+(?:me|him)\b|\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b|\bemail\s+(?:me|him)\b|@[\w.-]+\.\w+|\bin\s+the\s+description\b|\blinks?\s+page\b|\bi(?:'|’)?ll\s+reply\b|\bi(?:'|’)?ll\s+answer\b/i;
+// "us" and "we'll" forms are the guest presenters' team framing (see
+// presenter-script.js): "text us at the number on screen" names a channel just
+// as surely as "text me" does, and without them every neutralized guest CTA
+// would false-positive as an undeliverable promise.
+const CHANNEL_NAMED = /\btext\s+(?:me|him|us)\b|\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b|\bemail\s+(?:me|him|us)\b|@[\w.-]+\.\w+|\bin\s+the\s+description\b|\blinks?\s+page\b|\b(?:i|we)(?:'|’)?ll\s+reply\b|\b(?:i|we)(?:'|’)?ll\s+answer\b/i;
 
 /**
  * Find CTA copy promising something YouTube cannot do.

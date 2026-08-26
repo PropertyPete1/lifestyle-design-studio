@@ -310,6 +310,47 @@ function mergeApprovalRecord(x, y) {
     out.actedResult = a.actedResult ?? null;
   }
 
+  // presenter — the assignment group. LATER assignedAt wins, because a
+  // reassignment is deliberately newer news (the same argument as the
+  // reoutline marker above: a deliberate change must not lose to the copy it
+  // changed). This group exists because this function rebuilds records from an
+  // explicit field list — without it, the first two-sided merge after an
+  // assignment would silently drop the stamp and the kit would quietly revert
+  // to the owner, which is the never-default rule failing by erosion.
+  const xp = x.presenter;
+  const yp = y.presenter;
+  if (xp || yp) {
+    const winner = !yp ? xp : !xp ? yp : String(xp.assignedAt || "") >= String(yp.assignedAt || "") ? xp : yp;
+    out.presenter = winner;
+  }
+  // The supersession trail unions on (id, assignedAt) so neither side's
+  // history is lost — same rule as the edit queue's attempts.
+  const historyKey = (h) => `${h?.id ?? "?"}|${h?.assignedAt ?? "?"}`;
+  const history = new Map();
+  for (const h of [...(x.presenterHistory || []), ...(y.presenterHistory || [])]) {
+    if (h && !history.has(historyKey(h))) history.set(historyKey(h), h);
+  }
+  if (history.size > 0) {
+    out.presenterHistory = [...history.values()].sort((a, b) =>
+      String(a.assignedAt || "").localeCompare(String(b.assignedAt || ""))
+    );
+  }
+
+  // A reassignment ADAPTS the acted script (updateActedScript in
+  // yt-approvals.js) without touching the acted latch, so both sides carry the
+  // same actedAt and the group tie above resolves to whichever side the merge
+  // saw first — the remote, whose actedResult is the STALE script. The build
+  // matches recordings against actedResult.script, so losing the adaptation
+  // would match the new presenter's takes against the old presenter's words.
+  // Same fix as reoutlinedAt: the side whose actedResult carries the later
+  // scriptAdaptedAt wins the actedResult alone; the latch fields stand.
+  const xAdapt = x.actedResult?.scriptAdaptedAt;
+  const yAdapt = y.actedResult?.scriptAdaptedAt;
+  if ((xAdapt || yAdapt) && out.actedAt) {
+    const winner = !yAdapt ? x : !xAdapt ? y : String(xAdapt) >= String(yAdapt) ? x : y;
+    out.actedResult = winner.actedResult;
+  }
+
   // nudge — the stall reminder's stamp (yt-stall-nudge.js). Its own group
   // because this function rebuilds records from an explicit field list: a
   // field with no group here is a field the next concurrent commit silently
@@ -627,6 +668,102 @@ function mergeQueueRecord(x, y) {
   return out;
 }
 
+/**
+ * presenters.json: the presenter registry (src/presenters.js).
+ *
+ * Writers are the dispatch jobs (add/assign/rotate) and the Monday brief
+ * (consuming the standing assignment); any two can race through merge-log-push.
+ * Per presenter, merged in field groups like the approval records:
+ *
+ *   identity  name, email, role, test, addedAt, cta  — EARLIEST addedAt wins;
+ *             who somebody is does not change because a stale runner pushed.
+ *   code      accessCode, codeIssuedAt               — LATEST codeIssuedAt wins;
+ *             a rotation is deliberately newer news and a stale copy must not
+ *             resurrect a code the rotation just killed.
+ *
+ * retiredCodes union (a retired code is retired forever — that is what makes
+ * "never reused" hold across runners), and the standing next-assignment is
+ * resolved by assignedAt with consumption sticky at equal stamps: a consumed
+ * copy of the SAME assignment beats an unconsumed one (or the assignment
+ * would re-fire on a later brief), while a genuinely newer assignment beats
+ * an old consumption (or "next" could never be set twice).
+ */
+export function mergePresenters(local, remote, log = console.log) {
+  const byId = new Map();
+  for (const p of [...(remote?.presenters || []), ...(local?.presenters || [])]) {
+    if (!p || typeof p !== "object" || typeof p.id !== "string" || !p.id) continue;
+    const existing = byId.get(p.id);
+    byId.set(p.id, existing ? mergePresenterRecord(existing, p) : { ...p });
+  }
+
+  // One presenter per email survives the merge too: two ids for one address
+  // can only come from a racing double-add, and resolving it here rather than
+  // warning forever keeps the invariant true everywhere else. Earliest added
+  // wins — that is the copy whose code may already be in someone's inbox —
+  // and the loser's code is retired so it can never be minted again.
+  const retired = [...(remote?.retiredCodes || []), ...(local?.retiredCodes || [])];
+  const byEmail = new Map();
+  const kept = [];
+  for (const p of [...byId.values()].sort((a, b) => String(a.addedAt || "").localeCompare(String(b.addedAt || "")))) {
+    const key = String(p.email || "").toLowerCase();
+    const winner = byEmail.get(key);
+    if (winner) {
+      log(`[Merge] presenters: DUPLICATE EMAIL ${p.email} — keeping "${winner.id}" (added first), retiring "${p.id}"`);
+      if (p.accessCode) retired.push({ code: p.accessCode, presenterId: p.id, retiredAt: new Date().toISOString() });
+      continue;
+    }
+    byEmail.set(key, p);
+    kept.push(p);
+  }
+
+  const retiredUnion = new Map();
+  for (const r of retired) {
+    if (r && typeof r.code === "string") retiredUnion.set(`${r.code}|${r.presenterId ?? "?"}`, r);
+  }
+
+  const la = local?.nextAssignment;
+  const ra = remote?.nextAssignment;
+  let nextAssignment = null;
+  if (la || ra) {
+    if (!la) nextAssignment = ra;
+    else if (!ra) nextAssignment = la;
+    else if (String(la.assignedAt || "") === String(ra.assignedAt || "")) nextAssignment = la.consumedAt ? la : ra;
+    else nextAssignment = String(la.assignedAt || "") > String(ra.assignedAt || "") ? la : ra;
+  }
+
+  log(`[Merge] presenters: ${kept.length} presenters, ${retiredUnion.size} retired codes` +
+    (nextAssignment ? `, next -> ${nextAssignment.presenterId}${nextAssignment.consumedAt ? " (consumed)" : ""}` : ""));
+  return {
+    ...(remote || {}),
+    ...(local || {}),
+    presenters: kept,
+    retiredCodes: [...retiredUnion.values()],
+    nextAssignment,
+  };
+}
+
+function mergePresenterRecord(x, y) {
+  const out = { id: x.id };
+  // identity — earliest addedAt wins.
+  const first = String(x.addedAt || "") <= String(y.addedAt || "") ? x : y;
+  for (const f of ["name", "email", "role", "test", "addedAt", "cta"]) {
+    const v = first[f] ?? x[f] ?? y[f];
+    if (v !== undefined) out[f] = v;
+  }
+  // code — latest codeIssuedAt wins (a rotation sticks).
+  const codeFrom = String(x.codeIssuedAt || "") >= String(y.codeIssuedAt || "") ? x : y;
+  out.accessCode = codeFrom.accessCode ?? x.accessCode ?? y.accessCode;
+  out.codeIssuedAt = codeFrom.codeIssuedAt ?? x.codeIssuedAt ?? y.codeIssuedAt;
+  // Everything else: defined-over-undefined, local (y) winning ties — the
+  // lesson the youtube-log merge learned about accidental allowlists.
+  for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) {
+    if (k in out) continue;
+    const v = y[k] !== undefined ? y[k] : x[k];
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
 /** Dispatch table used by merge-log-push.mjs. */
 export const MERGE_STRATEGIES = {
   "posted-log.json": (l, r, log) => mergePostedLog(l, r || { posts: [] }, log),
@@ -640,6 +777,7 @@ export const MERGE_STRATEGIES = {
   "yt-approvals.json": (l, r, log) => mergeYtApprovals(l, r || { requests: [] }, log),
   "youtube-log.json": (l, r, log) => mergeYouTubeLog(l, r || { videos: [] }, log),
   "edit-queue.json": (l, r, log) => mergeEditQueue(l, r || { videos: [] }, log),
+  "presenters.json": (l, r, log) => mergePresenters(l, r || { presenters: [], retiredCodes: [], nextAssignment: null }, log),
 };
 
 export const MERGE_FILES = Object.keys(MERGE_STRATEGIES);

@@ -157,9 +157,12 @@ export function assertPrivate(body) {
 }
 
 /** The review email — what he watched, what is left to do, and what to reply. */
-export function renderReviewText({ packaging, youtubeUrl, driveLink, checklist, stats = {}, watchReport = null }) {
+export function renderReviewText({ packaging, youtubeUrl, driveLink, checklist, stats = {}, watchReport = null, presenter = null }) {
   const lines = [];
   lines.push(`READY FOR REVIEW — ${packaging.title}`);
+  if (presenter && presenter.role !== "owner") {
+    lines.push(`Presented by ${presenter.name}. The approve decision is still yours.`);
+  }
   lines.push("");
   if (youtubeUrl) lines.push(`Watch it (private): ${youtubeUrl}`);
   if (driveLink) lines.push(`Or from Drive: ${driveLink}`);
@@ -204,12 +207,16 @@ export async function requestReview({
   // see disclosureRequired for why that falls back to the mode rather than
   // assuming the safe-sounding answer.
   syntheticNarration = null,
+  // Who fronts the video. Named on the card and in the email; the decision
+  // stays with Peter regardless — presenters never see review cards.
+  presenter = null,
 }) {
   const checklist = reviewChecklist({ packaging, narrationMode, syntheticNarration });
   return sendApprovalRequest({
     requestId,
     kind: "video_review",
     payload: {
+      ...(presenter ? { presenter } : {}),
       videoId,
       title: packaging.title,
       description: packaging.description,
@@ -225,7 +232,7 @@ export async function requestReview({
       stats,
     },
     emailSubject: `Review: ${packaging.title}`,
-    emailBody: renderReviewText({ packaging, youtubeUrl, driveLink, checklist, stats, watchReport }),
+    emailBody: renderReviewText({ packaging, youtubeUrl, driveLink, checklist, stats, watchReport, presenter }),
     accessToken,
   });
 }

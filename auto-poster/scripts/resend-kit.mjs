@@ -29,12 +29,12 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { requireLiveAck } from "./live-guard.mjs";
-import { buildKit, renderKitText, kitPayload } from "../src/yt-recording-kit.js";
-import { sendApprovalRequest } from "../src/delivery.js";
+import { buildKit, renderKitText } from "../src/yt-recording-kit.js";
 import { getAccessToken } from "../src/drive.js";
 import { ensureRecordingsFolder } from "../src/yt-ingest.js";
 import { NARRATION_MODE, disclosureRequired } from "../src/yt-config.js";
-import { KIND_TOPIC_PICK } from "../src/yt-approvals.js";
+import { loadPresenters, presenterForRequest } from "../src/presenters.js";
+import { deliverKit } from "../src/kit-delivery.js";
 import { routeWarnChannel } from "../src/yt-evidence.js";
 // The Actions log drops the warn channel entirely (proven on two preserved
 // runs) — route it to stdout at every entrypoint. See yt-evidence.js.
@@ -75,10 +75,20 @@ async function main() {
     process.exit(1);
   }
 
+  // The kit re-sends to whoever the request is ASSIGNED to now — a resend
+  // after a reassignment must reach the new presenter, not replay the old
+  // delivery. Unknown assignment refuses, same as the pipeline.
+  const who = presenterForRequest(loadPresenters(), record);
+  if (!who.ok) {
+    console.error(`[ResendKit] ${who.reason}`);
+    process.exit(1);
+  }
+  const presenter = who.presenter;
+
   const kit = buildKit({ script, title: script.title }, { requestId, narrationMode: NARRATION_MODE });
   const disclosure = disclosureRequired({ narrationMode: NARRATION_MODE });
 
-  console.log(`[ResendKit] ${requestId} — "${kit.title}"`);
+  console.log(`[ResendKit] ${requestId} — "${kit.title}" — presenter ${presenter.id} (${presenter.role})`);
   console.log(`[ResendKit] narration mode: ${NARRATION_MODE}`);
   console.log(
     `[ResendKit] ${kit.stats.takeCount} takes to record ` +
@@ -90,24 +100,17 @@ async function main() {
   }
 
   if (DRY_RUN) {
-    console.log(`\n[ResendKit] DRY RUN — the kit that WOULD be sent:\n`);
-    console.log(renderKitText(kit));
+    console.log(`\n[ResendKit] DRY RUN — the kit that WOULD be sent to ${presenter.email}:\n`);
+    console.log(renderKitText(kit, { presenter, accessCode: presenter.accessCode }));
     return;
   }
 
   const accessToken = await getAccessToken().catch(() => null);
   if (accessToken) await ensureRecordingsFolder(requestId, accessToken);
 
-  await sendApprovalRequest({
-    requestId,
-    kind: KIND_TOPIC_PICK,
-    payload: { stage: "recording_kit", ...kitPayload(kit) },
-    emailSubject: `Recording kit — ${kit.title} (${kit.stats.takeCount} takes)`,
-    emailBody: renderKitText(kit),
-    accessToken,
-  });
+  await deliverKit({ requestId, script, presenter, accessToken });
 
-  console.log(`[ResendKit] ✓ re-sent — acted marker untouched (${record.actedAt})`);
+  console.log(`[ResendKit] ✓ re-sent to ${presenter.id} — acted marker untouched (${record.actedAt})`);
 }
 
 main().catch((err) => {

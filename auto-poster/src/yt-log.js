@@ -132,6 +132,10 @@ export function recordRender(log, entry) {
         videoId,
         requestId: entry.requestId || null,
         title: entry.title || null,
+        // Who fronts this video. Identity stamp only ({id, name, role});
+        // null on entries that predate the presenter system, which all read
+        // as the owner's.
+        presenter: entry.presenter || null,
         market: entry.market || null,
         intent: entry.intent || null,
         createdAt: new Date().toISOString(),

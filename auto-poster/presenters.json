@@ -1,0 +1,18 @@
+{
+  "presenters": [
+    {
+      "id": "peter",
+      "name": "Peter Allen",
+      "email": "peter@lifestyledesignrealty.com",
+      "role": "owner",
+      "accessCode": "048502",
+      "codeIssuedAt": "2026-08-25T00:00:00.000Z",
+      "addedAt": "2026-08-25T00:00:00.000Z",
+      "cta": {
+        "framing": "personal"
+      }
+    }
+  ],
+  "retiredCodes": [],
+  "nextAssignment": null
+}

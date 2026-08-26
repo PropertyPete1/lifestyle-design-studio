@@ -25,6 +25,7 @@ import {
   KIND_TOPIC_PICK,
 } from "./yt-approvals.js";
 import { BRIEFS_PER_WEEK, TOPIC_CANDIDATES } from "./yt-config.js";
+import { loadPresenters, savePresenters, consumeNextAssignment, presenterStamp, findById, OWNER_ID } from "./presenters.js";
 import { routeWarnChannel } from "./yt-evidence.js";
 // The Actions log drops the warn channel entirely (proven on two preserved
 // runs) — route it to stdout at every entrypoint. See yt-evidence.js.
@@ -94,9 +95,35 @@ async function main() {
     accessToken,
   });
 
+  // THE STANDING "NEXT" ASSIGNMENT IS CONSUMED HERE, and only here: "assign
+  // the next brief's video to X" means the next MONDAY brief, and this is
+  // where one comes into existence. Consumed exactly once — the tombstone in
+  // presenters.json plus this run's send-before-save ordering means a backup
+  // cron or a re-brief can never spend it twice. No standing assignment means
+  // the owner, by explicit stamp rather than by silence.
+  const registry = loadPresenters();
+  const consumed = consumeNextAssignment(registry, requestId);
+  // Saved whenever consumption changed anything — including the corner where
+  // the assigned presenter has vanished from the registry, which consumes the
+  // assignment (so it cannot re-fire forever) and falls back to the owner.
+  if (consumed.registry !== registry) savePresenters(consumed.registry);
+  let presenter = null;
+  if (consumed.presenter) {
+    presenter = presenterStamp(consumed.presenter, { via: "next-assignment" });
+    console.log(`[YTBrief] standing assignment consumed — this video is ${consumed.presenter.name}'s (${consumed.presenter.id})`);
+  } else {
+    const owner = findById(registry, OWNER_ID);
+    if (owner) presenter = presenterStamp(owner, { via: "default" });
+    if (registry.nextAssignment?.consumedAt) {
+      // Not an error — just say why the assignment did not apply, so a
+      // "why did my assignment not take" question has its answer in the log.
+      console.log(`[YTBrief] next-assignment already consumed by ${registry.nextAssignment.consumedBy} — defaulting to the owner`);
+    }
+  }
+
   // Recorded only after the request is out. If sending threw, there is nothing
   // to wait on and no record claiming there is.
-  saveApprovals(appendRequest(approvals, { requestId, kind: KIND_TOPIC_PICK, payload }));
+  saveApprovals(appendRequest(approvals, { requestId, kind: KIND_TOPIC_PICK, payload, presenter }));
   console.log(`[YTBrief] ${requestId} recorded — waiting on Peter`);
 }
 

@@ -273,6 +273,10 @@ jobs:
           YT_LINKS_URL: ${{ secrets.YT_LINKS_URL }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+          # Where a presenter's kit email sends them to record. Optional —
+          # falls back to DASHBOARD_URL/recorder (recorderUrl in
+          # yt-recording-kit.js; contract in longform/PRESENTERS.md).
+          RECORDER_APP_URL: ${{ secrets.RECORDER_APP_URL }}
         run: |
           if node src/yt-pipeline-main.js; then
             echo "success=true" >> $GITHUB_OUTPUT
@@ -608,6 +612,9 @@ jobs:
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+          # A resend after a reassignment reaches the presenter's own inbox
+          # with the recorder link — same fallback rules as the pipeline job.
+          RECORDER_APP_URL: ${{ secrets.RECORDER_APP_URL }}
           REQUEST_ID: ${{ github.event.inputs.request_id }}
         run: node scripts/resend-kit.mjs "$REQUEST_ID"
 
