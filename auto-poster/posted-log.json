@@ -5452,6 +5452,37 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1JV57D-1_lXyXXvD2LWm-WnWO8JZ_cplN/view"
+    },
+    {
+      "driveFileId": "1g6Ikeop5Df1iR9GJZo3RNUM_qNKIMFbN",
+      "fileName": "F4718294-3B68-4BCC-A200-D3665E13E22B.mp4",
+      "city": "austin",
+      "caption": "wait until you see what $689,868 gets you in north austin 😮‍💨\n\nnew construction homes like this move fast. builder incentives are live right now.\n\n✨ open floor plan with natural light flooding throu",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-26T20:26:41.351Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "North Austin",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (68 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Quick payment breakdown on this one price is $689,000, raising 10% down, that's about $68,000. So this loan is about $620,000. Great is $4.99 on a 30 year fixed rate. Taxes are $10,000 a year and insurance is $1,500 a year. PMI is 0.5% that's about $250 a month. Total estimated payment is $4,541 a month. Taxes at home or fill up the link in bio for info.",
+      "content_hash": "fffffff70008e0c0:fbffe719383c1c08:c3c1877f7ef01f00:8080f3ff1e7fff03:3c1cc7ff9ebe0800",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1WebuTcJjwRPO0ATlNjWwFZroWt0tVDCi/view"
     }
   ],
   "lastTemplateIndex": -1
