@@ -93,9 +93,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg & whisper
+      - name: Install ffmpeg, tesseract & whisper
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+          # tesseract is NOT optional: the caption-over-captions gate reads the
+          # source frames with it, and a check that cannot run refuses to add
+          # captions rather than adding them unverified.
+          sudo apt-get update && sudo apt-get install -y ffmpeg tesseract-ocr
           pip install openai-whisper --quiet
       - name: Install dependencies
         working-directory: auto-poster
@@ -168,9 +171,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg & whisper
+      - name: Install ffmpeg, tesseract & whisper
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+          # tesseract is NOT optional: the caption-over-captions gate reads the
+          # source frames with it, and a check that cannot run refuses to add
+          # captions rather than adding them unverified.
+          sudo apt-get update && sudo apt-get install -y ffmpeg tesseract-ocr
           pip install openai-whisper --quiet
       - name: Install dependencies
         working-directory: auto-poster
@@ -241,9 +247,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg & whisper
+      - name: Install ffmpeg, tesseract & whisper
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+          # tesseract is NOT optional: the caption-over-captions gate reads the
+          # source frames with it, and a check that cannot run refuses to add
+          # captions rather than adding them unverified.
+          sudo apt-get update && sudo apt-get install -y ffmpeg tesseract-ocr
           pip install openai-whisper --quiet
       - name: Install dependencies
         working-directory: auto-poster
@@ -304,9 +313,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg & whisper
+      - name: Install ffmpeg, tesseract & whisper
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+          # tesseract is NOT optional: the caption-over-captions gate reads the
+          # source frames with it, and a check that cannot run refuses to add
+          # captions rather than adding them unverified.
+          sudo apt-get update && sudo apt-get install -y ffmpeg tesseract-ocr
           pip install openai-whisper --quiet
       - name: Install dependencies
         working-directory: auto-poster

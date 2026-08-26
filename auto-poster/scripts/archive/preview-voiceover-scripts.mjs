@@ -53,10 +53,14 @@ for (const persona of PERSONAS.slice(0, COUNT)) {
   }
 
   try {
-    const script = await generateVoiceoverScript(CITY, DURATION, OVERLAYS, {
+    const { script } = await generateVoiceoverScript(CITY, DURATION, OVERLAYS, {
       persona,
       avoidTranscripts: AVOID,
     });
+    if (!script) {
+      console.error("  number-honesty gate blocked every candidate script\n");
+      continue;
+    }
     const words = script.trim().split(/\s+/).length;
     const payment = findMonthlyPaymentFigure(script);
     console.log(script.trim());

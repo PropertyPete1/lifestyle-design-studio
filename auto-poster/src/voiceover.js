@@ -1,22 +1,31 @@
 /**
  * Voiceover Pipeline — detect speech via Whisper, generate TTS via ElevenLabs, merge with ffmpeg
- * 
- * Decision matrix (updated Jul 2026):
- *   Genuine human speech (confirmed by coherence check) → skip voiceover
- *   Whisper hallucination / garbled text → ADD voiceover (duck music to 12%)
- *   Lyrics detected → ADD voiceover (duck music to 12%)
- *   Audio but NO speech (music only) → ADD voiceover, duck music to 12%
+ *
+ * Decision matrix (updated Aug 2026 — the speech gate is mechanical now):
+ *   Transcript has more than incidental words → skip voiceover, PERIOD.
+ *     No coherence check, no hallucination override, no forceVoiceover — a
+ *     person talking in their own video is the content, not a bed to pave
+ *     over. The old "coherence check" let a model overrule the transcript and
+ *     on 2026-08-26 it paved Peter's cloned voice over a presenter talking on
+ *     camera (`hallucination_override_add_voiceover` in the posted-log).
+ *     Whisper mishearing someone is evidence OF speech, not against it.
+ *   Incidental words only (≤5) / music only → ADD voiceover, duck music to 12%
  *   No audio at all → ADD voiceover
  *   Whisper error/ambiguous → assume speech (fail-safe, never double voices)
+ *
+ * Every generated script also passes the NUMBER HONESTY gate (source-respect.js):
+ * a figure the source never says or shows does not get spoken. A script that
+ * cannot be made honest is not read at all — the voiceover is skipped loudly
+ * rather than corrected quietly.
  */
 
 import { execSync } from "child_process";
 import { writeFileSync, readFileSync, unlinkSync, existsSync, statSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import Anthropic from "@anthropic-ai/sdk";
 import { generateVoiceoverScript } from "./caption.js";
 import { detectSpeech } from "./speech-detect.js";
+import { speechVerdict } from "./source-respect.js";
 import { loadLog } from "./state.js";
 import {
   resolveTempo,
@@ -38,39 +47,11 @@ const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1";
 // Background music ducking level (0.12 = 12% volume)
 const DUCK_VOLUME = 0.12;
 
-let anthropicClient = null;
-function getAnthropicClient() {
-  if (!anthropicClient) {
-    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  }
-  return anthropicClient;
-}
-
-/**
- * Coherence check: ask Claude Haiku whether a Whisper transcript is real speech
- * or garbled hallucination / song lyrics.
- * Returns "SPEECH" or "NOT_SPEECH"
- */
-async function checkTranscriptCoherence(transcript) {
-  try {
-    const client = getAnthropicClient();
-    const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 10,
-      messages: [{
-        role: "user",
-        content: `Is this coherent human speech from someone talking, or garbled/hallucinated text or song lyrics? Answer with exactly one word: SPEECH or NOT_SPEECH.\n\nTranscript: "${transcript}"`
-      }],
-    });
-    const answer = response.content[0].text.trim().toUpperCase();
-    console.log(`[Voiceover] Coherence check: "${transcript.slice(0, 60)}..." → ${answer}`);
-    return answer.includes("NOT_SPEECH") ? "NOT_SPEECH" : "SPEECH";
-  } catch (err) {
-    // On error, fail-safe: assume it's real speech (don't risk doubling voices)
-    console.warn(`[Voiceover] Coherence check failed: ${err.message} — assuming SPEECH (fail-safe)`);
-    return "SPEECH";
-  }
-}
+// NOTE: the Haiku "coherence check" that used to arbitrate speech-vs-hallucination
+// is gone on purpose. It was the judge that approved paving a voiceover over a
+// person talking on camera (2026-08-26). The speech verdict is now a word count
+// over the transcript — speechVerdict() in source-respect.js — and no model
+// opinion can overrule it.
 
 /**
  * Detect if a video already has speech audio.
@@ -316,96 +297,87 @@ function mergeAudioWithVideo(videoPath, audioPath) {
 /**
  * Full voiceover pipeline:
  * 1. Detect speech using Whisper (with volume pre-filter for speed)
- * 2. If Whisper claims speech → coherence check via Claude Haiku
- * 3. Generate script via Claude
+ * 2. Speech gate: more than incidental words in the transcript → SKIP, loudly.
+ *    Applies to forceVoiceover too — trial variants do not get to pave either.
+ * 3. Generate script via Claude, number-honesty-gated against the source
  * 4. Generate TTS via ElevenLabs
  * 5. Merge with video via ffmpeg (duck music to 12%)
  * Returns the path to the final video (original or merged).
+ *
+ * opts.ocrTexts — what tesseract read on the caption-scan frames (main.js runs
+ * the scan before calling here); joins the transcript and vision overlays as
+ * the source-figure pool for the number honesty gate.
+ * opts.detect — injectable speech detector, for tests.
  */
 export async function processVoiceover(videoPath, city, dryRun = false, videoOverlays = null, opts = {}) {
-  const { forceVoiceover = false, angleInstruction = null } = opts;
+  const { forceVoiceover = false, angleInstruction = null, ocrTexts = [], detect = detectSpeech } = opts;
 
-  // If forceVoiceover is set (trial variants), skip speech detection entirely
-  if (forceVoiceover) {
-    console.log(`[Voiceover] forceVoiceover=true — skipping speech detection, generating voiceover`);
-    if (dryRun) {
-      return { videoPath, skipped: false, reason: "force_voiceover_dry_run", detection: { hasSpeech: false } };
-    }
-    const duration = getVideoDuration(videoPath);
-    const styleLog = opts.log || loadLog();
-    const persona = pickPersona(styleLog, city);
-    const avoidTranscripts = getRecentTranscripts(styleLog, 5);
-    const script = await generateVoiceoverScript(city, duration, videoOverlays, {
-      angleInstruction,
-      persona,
-      avoidTranscripts,
-    });
-    console.log(`[Voiceover] Script: "${script.slice(0, 80)}..."`);
-    let audioPath = await generateTTS(script);
-    audioPath = postProcessVoiceoverAudio(audioPath, duration);
-    const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
-    return { videoPath: mergedPath, mergedPath, skipped: false, reason: "force_voiceover", script, detection: { hasSpeech: false }, audioPath, persona: persona.id };
+  // ─── GATE 1: the speech verdict, before anything else ────────────────────
+  // forceVoiceover no longer skips detection: on 2026-08-26 the pipeline paved
+  // a voiceover over a presenter talking on camera, and "this path is special"
+  // is exactly how a gate grows a hole. A word count decides; nothing overrides.
+  const detection = detect(videoPath);
+  const verdict = speechVerdict(detection);
+
+  if (verdict.sourceHasSpeech) {
+    const suffix = forceVoiceover ? " — forceVoiceover does not override the speech gate" : "";
+    console.log(`::warning::[Voiceover] ⛔ ${verdict.say}${suffix}`);
+    return {
+      videoPath,
+      skipped: true,
+      reason: forceVoiceover ? "source_has_speech_force_refused" : verdict.reason,
+      note: verdict.say + suffix,
+      detection,
+      verdict,
+    };
   }
 
-  // Step 1: Detect speech using Whisper (with volume pre-filter)
-  const detection = detectSpeech(videoPath);
-
-  if (detection.hasSpeech) {
-    // Whisper claims speech — but is it real or hallucinated?
-    if (detection.error) {
-      // Whisper error → fail-safe: assume speech, skip voiceover
-      console.log(`[Voiceover] Whisper error (fail-safe skip) — assuming speech present`);
-      return { videoPath, skipped: true, reason: "whisper_error_failsafe", detection };
-    }
-
-    // Step 2: Coherence check — ask Claude if this is real speech
-    const transcript = detection.transcript || "";
-    const coherence = await checkTranscriptCoherence(transcript);
-
-    if (coherence === "SPEECH") {
-      // Genuine human speech confirmed — skip voiceover
-      console.log(`[Voiceover] Coherence confirmed SPEECH — skipping voiceover`);
-      return { videoPath, skipped: true, reason: "speech_confirmed", detection };
-    }
-
-    // NOT_SPEECH — Whisper hallucinated or detected lyrics
-    // Policy: ADD voiceover with music ducked
-    const isLikelyLyrics = detection.confidence < 0.6 && (detection.wordCount || 0) < 50;
-    const reason = isLikelyLyrics ? "lyrics_override_add_voiceover" : "hallucination_override_add_voiceover";
-    console.log(`[Voiceover] Coherence says NOT_SPEECH (${reason}) — will ADD voiceover over ducked music`);
-    // Fall through to voiceover generation below
-    detection._overrideReason = reason;
-  }
-
-  // Reaching here means: no speech, music only, silent, OR coherence override
+  // Reaching here means: no speech, incidental words at most, music only, or silent
   if (detection.silent) {
     console.log("[Voiceover] Silent video — will add voiceover");
-  } else if (detection.hasMusic || detection._overrideReason) {
-    console.log(`[Voiceover] Music/lyrics detected — will add voiceover (ducking music to ${DUCK_VOLUME * 100}%)`);
+  } else if (verdict.reason === "incidental_words_only") {
+    console.log(`[Voiceover] Only incidental words (${verdict.wordCount}) — treating as non-speech, will add voiceover`);
+  } else if (detection.hasMusic) {
+    console.log(`[Voiceover] Music detected — will add voiceover (ducking music to ${DUCK_VOLUME * 100}%)`);
   }
 
   if (dryRun) {
     console.log("[Voiceover] DRY RUN — would generate voiceover");
-    return { videoPath, skipped: false, reason: detection._overrideReason || "dry_run", detection };
+    return { videoPath, skipped: false, reason: forceVoiceover ? "force_voiceover_dry_run" : "dry_run", detection, verdict };
   }
 
-  // Step 3: Get video duration and generate script
+  // ─── Script, number-honesty-gated (GATE 3 lives in generateVoiceoverScript) ─
   const duration = getVideoDuration(videoPath);
   const styleLog = opts.log || loadLog();
   const persona = pickPersona(styleLog, city);
   const avoidTranscripts = getRecentTranscripts(styleLog, 5);
-  const script = await generateVoiceoverScript(city, duration, videoOverlays, {
+  const sourceTexts = [detection.transcript || "", ...ocrTexts];
+  const gen = await generateVoiceoverScript(city, duration, videoOverlays, {
     angleInstruction,
     persona,
     avoidTranscripts,
+    sourceTexts,
   });
+
+  if (!gen.script) {
+    // Every candidate script, the fallback included, stated a figure the source
+    // does not contain. A number that cannot be verified does not get spoken —
+    // and a voiceover that cannot be made honest does not get added.
+    const blocked = (gen.honesty?.violations || [])
+      .map((v) => `"${v.raw}"`).join(", ") || "unverifiable figures";
+    const note = `voiceover blocked: every candidate script stated ${blocked} — no such figure appears in the source`;
+    console.log(`::warning::[Voiceover] ⛔ ${note}`);
+    return { videoPath, skipped: true, reason: "number_honesty_blocked", note, detection, verdict, honesty: gen.honesty };
+  }
+
+  const script = gen.script;
   console.log(`[Voiceover] Script: "${script.slice(0, 80)}..."`);
 
-  // Step 4: Generate TTS, then tighten pacing (silence trim + speedup)
+  // Generate TTS, then tighten pacing (silence trim + speedup)
   let audioPath = await generateTTS(script);
   audioPath = postProcessVoiceoverAudio(audioPath, duration);
 
-  // Step 5: Merge (ducks original audio to 12% automatically)
+  // Merge (ducks original audio to 12% automatically)
   const mergedPath = mergeAudioWithVideo(videoPath, audioPath);
 
   // NOTE: Do NOT delete audioPath here — caller needs it for burned captions (Whisper word timing).
@@ -413,8 +385,22 @@ export async function processVoiceover(videoPath, city, dryRun = false, videoOve
   // in sync with what is actually in the merged video.
   // Caller is responsible for cleanup via cleanup(audioPath) after caption burn.
 
-  const reason = detection._overrideReason || (detection.silent ? "silent_add_voiceover" : "music_only_add_voiceover");
-  return { videoPath: mergedPath, skipped: false, reason, script, detection, audioPath, persona: persona.id };
+  const reason = forceVoiceover
+    ? "force_voiceover"
+    : (detection.silent ? "silent_add_voiceover" : "music_only_add_voiceover");
+  return {
+    videoPath: mergedPath,
+    mergedPath,
+    skipped: false,
+    reason,
+    script,
+    detection,
+    verdict,
+    audioPath,
+    persona: persona.id,
+    honesty: gen.honesty,
+    allowedFigures: gen.allowedFigures,
+  };
 }
 
 /**

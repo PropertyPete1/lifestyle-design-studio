@@ -13,7 +13,11 @@ calling the GitHub API, and that is no longer how any of it fires.
 1. Read Instagram's last 30 days through Metricool
 2. Pick a Drive video for the city that is outside the 30-day rotation
 3. Duplicate check — perceptual hash, content hash, AI vision for the ambiguous band
-4. Detect speech (Whisper); if the clip is silent, generate an ElevenLabs voiceover
+4. Detect speech (Whisper); if the clip is silent or music-only, generate an
+   ElevenLabs voiceover — the source-respect gates (`src/source-respect.js`)
+   refuse to voice over a clip where someone is talking, refuse a second
+   caption layer over burned-in captions, and block any generated figure the
+   source doesn't say or show (sweep: `scripts/sweep-source-respect.mjs`)
 5. Quality check — resolution, duration, file size, audio
 6. Write a fresh caption with Claude, weighted by `performance-weights.json`
 7. Publish through Metricool to Instagram, TikTok, YouTube Shorts

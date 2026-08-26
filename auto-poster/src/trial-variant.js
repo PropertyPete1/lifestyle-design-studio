@@ -19,6 +19,7 @@ import { processVoiceover } from "./voiceover.js";
 import { processBurnedCaptions } from "./burned-captions.js";
 import { generateCaption } from "./caption.js";
 import { readVideoOverlays, extractPriceCheckFrames } from "./price-check.js";
+import { detectBurnedCaptions } from "./source-respect.js";
 import { loadLog } from "./state.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -88,6 +89,29 @@ export function getNextAngle(sourceVideoId, history) {
  */
 export function getVariantNumber(sourceVideoId, history) {
   return history.variants.filter(v => v.sourceVideoId === sourceVideoId).length + 1;
+}
+
+/**
+ * Retire a source whose clip turned out to contain someone talking.
+ *
+ * A trial variant IS a re-voicing, and the speech gate (rightly) refuses to
+ * pave a voiceover over a person — so a talking-head source can never yield a
+ * variant, this run or any future one. Without this record the selector would
+ * pick the same top performer tomorrow and the lane would run red every day.
+ * Recorded, the next run moves to the next candidate; the failure email for
+ * THIS run is the loud part.
+ */
+export function markSourceSpeechBlocked(history, source, reason) {
+  history.speechBlockedSources = history.speechBlockedSources || [];
+  if (!history.speechBlockedSources.some(b => b.driveFileId === source.driveFileId)) {
+    history.speechBlockedSources.push({
+      driveFileId: source.driveFileId,
+      fileName: source.fileName,
+      reason,
+      blockedAt: new Date().toISOString(),
+    });
+    saveTrialHistory(history);
+  }
 }
 
 // ─── Source Video Selection ──────────────────────────────────────────────────
@@ -248,8 +272,13 @@ function pickSourceVideoFromLog(history) {
  * If all angles are exhausted on all N, refresh the list (return first with reset).
  */
 function selectFromTopN(topN, history) {
+  const speechBlocked = new Set((history.speechBlockedSources || []).map(b => b.driveFileId));
   // Check each in order for available angles
   for (const candidate of topN) {
+    if (speechBlocked.has(candidate.driveFileId)) {
+      console.log(`[TrialVariant] Skipping ${candidate.fileName} — retired: source has speech, a variant cannot re-voice it`);
+      continue;
+    }
     const angle = getNextAngle(candidate.driveFileId, history);
     if (angle) {
       console.log(`[TrialVariant] Selected source: ${candidate.fileName} (${candidate.views} views, city=${candidate.city})`);
@@ -260,12 +289,19 @@ function selectFromTopN(topN, history) {
 
   // All angles exhausted on all top N — signal refresh needed
   console.log("[TrialVariant] All angles exhausted on top 5 — refreshing rotation (resetting angle history for these videos)");
-  // Reset angle history for the top N videos so we can cycle again
-  const topIds = new Set(topN.map(c => c.driveFileId));
+  // Reset angle history for the top N videos so we can cycle again.
+  // A speech-retired source stays retired: the refresh clears used ANGLES, not
+  // the fact that the clip contains a person talking.
+  const eligible = topN.filter(c => !speechBlocked.has(c.driveFileId));
+  if (eligible.length === 0) {
+    console.log("[TrialVariant] Every top-5 candidate is speech-retired — no source to re-voice");
+    return null;
+  }
+  const topIds = new Set(eligible.map(c => c.driveFileId));
   history.variants = history.variants.filter(v => !topIds.has(v.sourceVideoId));
-  
-  // Now pick the first one
-  const candidate = topN[0];
+
+  // Now pick the first eligible one
+  const candidate = eligible[0];
   const angle = getNextAngle(candidate.driveFileId, history);
   console.log(`[TrialVariant] After refresh — Selected: ${candidate.fileName}, angle: ${angle}`);
   return { ...candidate, nextAngle: angle };
@@ -339,20 +375,53 @@ export async function generateVariant(source, angle, dryRun = false) {
     console.warn(`[TrialVariant] Overlay extraction failed (non-fatal): ${err.message}`);
   }
 
-  // Step 3: Generate voiceover with angle-specific hook
-  // We ALWAYS add voiceover for trial variants (that's the point — different angle)
+  // Step 2.5: Caption scan on the source — feeds both the caption-over-captions
+  // gate and the number-honesty figure pool, same as the daily posting path.
+  let captionScan = null;
+  try {
+    captionScan = detectBurnedCaptions(videoPath);
+    if (captionScan.detected || captionScan.ocrUnavailable) {
+      console.log(`::warning::[TrialVariant] ${captionScan.say}`);
+    }
+  } catch (err) {
+    console.warn(`[TrialVariant] Caption scan failed (treated as unverifiable): ${err.message?.slice(0, 120)}`);
+    captionScan = { detected: false, ocrUnavailable: true, textFrames: 0, novelTexts: 0, frameTexts: [], say: `scan failed: ${err.message?.slice(0, 80)}` };
+  }
+
+  // Step 3: Generate voiceover with angle-specific hook.
+  // forceVoiceover no longer bypasses the speech gate: a variant IS a
+  // re-voicing, and a source with someone talking cannot be re-voiced at all.
   const voResult = await processVoiceover(videoPath, city, dryRun, videoOverlays, {
     forceVoiceover: true,
     angleInstruction: getAngleInstruction(angle),
+    ocrTexts: captionScan?.frameTexts || [],
   });
+
+  if (voResult?.skipped) {
+    // Retire the source so tomorrow's run picks a different clip, then fail
+    // THIS run loudly — the notify email is the record that a human reads.
+    const why = voResult.note || `voiceover refused (${voResult.reason})`;
+    markSourceSpeechBlocked(loadTrialHistory(), source, why);
+    const err = new Error(
+      `${why}. This source is a clip with someone talking (or an unverifiable script) and a trial variant cannot re-voice it. ` +
+      `It has been retired from trial selection; the next run will pick a different source.`
+    );
+    err.gate = voResult.reason;
+    throw err;
+  }
+
   const processedPath = voResult?.mergedPath || videoPath;
   const voAudioPath = voResult?.audioPath || null;
   const voScript = voResult?.script || null;
   console.log(`[TrialVariant] Voiceover ${voResult?.mergedPath ? "added" : "skipped (unexpected)"}`);
-  // Step 4: Burn captions
-  const burnResult = await processBurnedCaptions(processedPath, voAudioPath, voScript);
+  // Step 4: Burn captions (the caption-over-captions and number-honesty gates
+  // run inside, on the scan and figure pool computed above)
+  const burnResult = await processBurnedCaptions(processedPath, voAudioPath, voScript, {
+    captionScan,
+    allowedFigures: voResult?.allowedFigures || null,
+  });
   const captionBurnedPath = burnResult.videoPath;
-  console.log(`[TrialVariant] Captions: ${burnResult.captions_burned ? "burned ✓" : "skipped"}`);
+  console.log(`[TrialVariant] Captions: ${burnResult.captions_burned ? "burned ✓" : `skipped (${burnResult.captions_skip_reason || burnResult.captions_error || "no reason recorded"})`}`);
 
   // Step 5: Skip freshness — caption burn (different voiceover + burned text) already
   // makes every variant file unique. No second encode needed.

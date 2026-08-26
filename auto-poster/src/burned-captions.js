@@ -19,6 +19,7 @@ import { execSync } from "child_process";
 import { writeFileSync, existsSync, unlinkSync, readFileSync, statSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
+import { detectBurnedCaptions, checkNumberHonesty } from "./source-respect.js";
 
 const VOICEOVER_DELAY_MS = 500; // Must match the adelay=500 in mergeAudioWithVideo
 const BURN_TIMEOUT_MS = 900_000; // 15 minutes — 4K re-encode on 2-vCPU runner
@@ -297,30 +298,92 @@ export function burnCaptions(videoPath, assPath) {
  * - videoPath: path to final video (with or without captions)
  * - captions_burned: true if captions were successfully burned
  * - captions_error: error message string if burn failed, null otherwise
+ * - captions_skip_reason: set when a GATE skipped the burn (not a failure):
+ *     "source_has_burned_captions" — the clip already carries its own captions
+ *     "caption_check_unavailable_tesseract_missing" — nobody could look
+ *     "number_honesty: ..." — the caption text states a figure the source lacks
+ *
+ * THE CAPTION-OVER-CAPTIONS GATE RUNS HERE, at the one choke point every
+ * caller flows through, so no future call site can forget it. The voiceover
+ * merge is `-c:v copy`, so the merged video's frames ARE the source's frames —
+ * scanning the merged path reads the original pictures.
  *
  * @param {string} mergedVideoPath - Video with voiceover already merged
  * @param {string} voiceoverAudioPath - The TTS audio file (for Whisper timing)
  * @param {string} script - The voiceover script text
- * @returns {{ videoPath: string, captions_burned: boolean, captions_error: string|null }}
+ * @param {object} opts - { captionScan, allowedFigures, scan }
+ *   captionScan: a detectBurnedCaptions() result already computed on the
+ *     source (main.js runs the scan early to feed the number-honesty pool) —
+ *     passed here so the frames are not read twice.
+ *   allowedFigures: Set of figure values the source supports; the caption
+ *     chunk text (Whisper's transcription of the TTS) is held to it, because a
+ *     misheard number burned into pixels is a wrong number published.
+ * @returns {{ videoPath: string, captions_burned: boolean, captions_error: string|null, captions_skip_reason: string|null }}
  */
-export async function processBurnedCaptions(mergedVideoPath, voiceoverAudioPath, script) {
+export async function processBurnedCaptions(mergedVideoPath, voiceoverAudioPath, script, opts = {}) {
+  const {
+    captionScan = null,
+    allowedFigures = null,
+    scan = detectBurnedCaptions,
+    getWords = getWordTimestampsFromElevenLabs, // injectable for tests
+  } = opts;
   console.log("[Captions] Starting burned-captions pipeline...");
+
+  // ─── GATE 2: no captions over captions ──────────────────────────────────
+  const sourceScan = captionScan || scan(mergedVideoPath);
+  if (sourceScan.ocrUnavailable) {
+    console.log(`::warning::[Captions] ⛔ ${sourceScan.say || "tesseract missing — captions skipped unverified"}`);
+    return {
+      videoPath: mergedVideoPath,
+      captions_burned: false,
+      captions_error: null,
+      captions_skip_reason: "caption_check_unavailable_tesseract_missing",
+    };
+  }
+  if (sourceScan.detected) {
+    console.log(`::warning::[Captions] ⛔ ${sourceScan.say}`);
+    return {
+      videoPath: mergedVideoPath,
+      captions_burned: false,
+      captions_error: null,
+      captions_skip_reason: "source_has_burned_captions",
+    };
+  }
 
   try {
     // Step 1: Get word-level timestamps
-    const words = await getWordTimestampsFromElevenLabs(script, voiceoverAudioPath);
+    const words = await getWords(script, voiceoverAudioPath);
     if (!words || words.length === 0) {
       console.warn("[Captions] No word timestamps available — skipping captions");
-      return { videoPath: mergedVideoPath, captions_burned: false, captions_error: "no_word_timestamps" };
+      return { videoPath: mergedVideoPath, captions_burned: false, captions_error: "no_word_timestamps", captions_skip_reason: null };
     }
 
     // Step 2: Group into 2-4 word chunks
     const chunks = groupWordsIntoChunks(words, 4);
     if (chunks.length === 0) {
       console.warn("[Captions] No chunks generated — skipping captions");
-      return { videoPath: mergedVideoPath, captions_burned: false, captions_error: "no_chunks_generated" };
+      return { videoPath: mergedVideoPath, captions_burned: false, captions_error: "no_chunks_generated", captions_skip_reason: null };
     }
     console.log(`[Captions] ${chunks.length} caption chunks (${words.length} words)`);
+
+    // ─── GATE 3 on the pixels-to-be: the chunk text is Whisper's transcription
+    // of the TTS audio, and Whisper can mishear a number the script said
+    // correctly. A wrong number burned into the video outlives every other
+    // check, so the chunks are held to the same source figures as the script.
+    if (allowedFigures) {
+      const chunkText = chunks.map((c) => c.text).join(" ");
+      const chunkCheck = checkNumberHonesty(chunkText, allowedFigures);
+      if (!chunkCheck.ok) {
+        const named = chunkCheck.violations.map((v) => `"${v.raw}" (${v.value})`).join(", ");
+        console.log(`::warning::[Captions] ⛔ captions skipped: caption text states ${named} — no such figure in the source`);
+        return {
+          videoPath: mergedVideoPath,
+          captions_burned: false,
+          captions_error: null,
+          captions_skip_reason: `number_honesty: caption text states ${named}`,
+        };
+      }
+    }
 
     // Step 3: Get video dimensions for proper positioning
     let width = 1080, height = 1920;
@@ -343,10 +406,10 @@ export async function processBurnedCaptions(mergedVideoPath, voiceoverAudioPath,
     try { unlinkSync(assPath); } catch {}
 
     console.log("[Captions] ✓ Captions burned successfully");
-    return { videoPath: captionedPath, captions_burned: true, captions_error: null };
+    return { videoPath: captionedPath, captions_burned: true, captions_error: null, captions_skip_reason: null };
   } catch (err) {
     const errorMsg = err.message?.slice(0, 200) || "unknown";
     console.error(`[Captions] Pipeline failed: ${errorMsg} — returning video without captions`);
-    return { videoPath: mergedVideoPath, captions_burned: false, captions_error: errorMsg };
+    return { videoPath: mergedVideoPath, captions_burned: false, captions_error: errorMsg, captions_skip_reason: null };
   }
 }
