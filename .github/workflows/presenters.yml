@@ -1,0 +1,120 @@
+name: Presenters
+
+# The presenter system's one door (scripts/presenter-admin.mjs). Every
+# authorized caller — Peter from the Actions page, PRIMARY over the REST API
+# later — dispatches this workflow; there is no second path that can put a kit
+# in an inbox or mint an access code.
+#
+# Registered on merge to main like every workflow_dispatch here — the first
+# dispatch only works once this file is on the default branch.
+#
+# Shares the youtube-longform-approvals concurrency group because add/assign
+# write presenters.json and yt-approvals.json, the same files the brief and
+# pipeline jobs write, and a race over those is the one way to lose a
+# decision or an assignment.
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'What to do'
+        required: true
+        default: 'list'
+        type: choice
+        options:
+          - list
+          - add-presenter
+          - assign-presenter
+          - rotate-code
+      presenter:
+        # add-presenter REQUIRES the full form; assign accepts any, and the
+        # full form is what authorizes add-if-unknown.
+        description: 'Who: "Name <email>" (full form to add), or a name/email/id already registered'
+        required: false
+        default: ''
+        type: string
+      role:
+        description: 'add-presenter: their role'
+        required: false
+        default: 'guest'
+        type: choice
+        options:
+          - guest
+          - owner
+      target:
+        description: 'assign-presenter: a requestId (topic_pick-...), a videoId (vid-...), or "next" for the next Monday brief'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Walk every path, send nothing, write nothing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  admin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: youtube-longform-approvals
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Run the presenter action
+        id: run
+        working-directory: auto-poster
+        env:
+          # LIVE: writes presenter registry state and can send real kit and
+          # access-code emails. list and dry_run touch nothing.
+          I_UNDERSTAND_THIS_TOUCHES_LIVE: "yes"
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          # MUST match the pipeline job: a reassignment rebuilds the kit, and
+          # takesToRecord keys off this — the wrong mode here would send the
+          # new presenter a kit missing every voiceover take while the build
+          # expects all of them (the takesToRecord header documents this
+          # disagreement happening once already).
+          YT_NARRATION_MODE: peter
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          # The critic re-scores an adapted script on reassignment.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
+          # Where the kit email sends a presenter to record. Optional — falls
+          # back to DASHBOARD_URL/recorder (see recorderUrl in
+          # yt-recording-kit.js and the Manus contract in longform/PRESENTERS.md).
+          RECORDER_APP_URL: ${{ secrets.RECORDER_APP_URL }}
+          YT_TEXT_NUMBER: ${{ secrets.YT_TEXT_NUMBER }}
+          JOB: ${{ github.event.inputs.job }}
+          PRESENTER: ${{ github.event.inputs.presenter }}
+          ROLE: ${{ github.event.inputs.role }}
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          set -e
+          case "$JOB" in
+            list)             node scripts/presenter-admin.mjs list ;;
+            add-presenter)    node scripts/presenter-admin.mjs add "$PRESENTER" "$ROLE" ;;
+            assign-presenter) node scripts/presenter-admin.mjs assign "$PRESENTER" "$TARGET" ;;
+            rotate-code)      node scripts/presenter-admin.mjs rotate "$PRESENTER" ;;
+            *) echo "unknown job $JOB" && exit 1 ;;
+          esac
+          echo "success=true" >> $GITHUB_OUTPUT
+      - name: Commit state
+        # list reads only, but merge-log-push exits clean on a no-diff tree,
+        # so running it unconditionally costs nothing and never misses a write.
+        if: always()
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs PRESENTERS "${{ steps.run.outputs.success || 'false' }}"

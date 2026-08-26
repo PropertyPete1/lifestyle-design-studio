@@ -415,10 +415,41 @@ export function encodeSubject(subject) {
  */
 export { sendOwnerEmailViaGmail as sendOwnerEmail };
 
-async function sendOwnerEmailViaGmail(accessToken, { subject, body, prefix = null }) {
+/**
+ * Send one email to a PRESENTER — the kit, a code rotation, a supersession
+ * notice. The one function allowed to put mail in anyone's inbox but Peter's,
+ * so the two rules live here and nowhere else:
+ *
+ *   1. TEST- presenters get no real mail, ever. The body is printed to the
+ *      log instead, so a smoke run still shows exactly what WOULD have been
+ *      sent — inert, not invisible.
+ *   2. No address, no send. A presenter record without an email is a registry
+ *      bug, and mailing the owner "instead" would silently deliver someone
+ *      else's access code to Peter's inbox.
+ *
+ * Returns the same { ok, ... } shape as the other channels; a real send that
+ * fails all retries reports ok:false and the CALLER decides whether that is
+ * fatal (for a kit it is — the email IS the onboarding).
+ */
+export async function sendPresenterEmail(accessToken, { presenter, subject, body, prefix = MAIL_PREFIX.YT }) {
+  if (!presenter || typeof presenter.email !== "string" || !presenter.email.trim()) {
+    return { ok: false, lastError: new Error("presenter has no email address — refusing to send to a guess") };
+  }
+  const isTest = presenter.test === true || String(presenter.name || presenter.id || "").startsWith(TEST_PREFIX);
+  if (isTest) {
+    console.log(`[Delivery] TEST presenter ${presenter.id} — mail suppressed. Would have sent to ${presenter.email}:`);
+    console.log(`[Delivery]   subject: ${prefix} ${subject}`);
+    console.log(String(body).split("\n").slice(0, 12).map((l) => `[Delivery]   | ${l}`).join("\n"));
+    return { ok: true, suppressed: true };
+  }
+  if (!accessToken) return { ok: false, lastError: new Error("no Google token — presenter email channel unavailable") };
+  return sendOwnerEmailViaGmail(accessToken, { subject, body, prefix, to: presenter.email.trim() });
+}
+
+async function sendOwnerEmailViaGmail(accessToken, { subject, body, prefix = null, to = OWNER_EMAIL }) {
   const labelled = prefix ? `${prefix} ${subject}` : subject;
   const rawEmail = [
-    `To: ${OWNER_EMAIL}`,
+    `To: ${to}`,
     `Subject: ${encodeSubject(labelled)}`,
     `Content-Type: text/plain; charset=UTF-8`,
     ``,

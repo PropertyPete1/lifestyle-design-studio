@@ -31,9 +31,12 @@ import { getAccessToken, downloadVideo } from "./drive.js";
 import { join } from "path";
 import { tmpdir } from "os";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "fs";
-import { generateScript } from "./yt-script.js";
+import { generateScript, scoreScript, scoresPass } from "./yt-script.js";
 import { getVoiceSamples } from "./yt-voice.js";
-import { buildKit, renderKitText, kitPayload, takesToRecord } from "./yt-recording-kit.js";
+import { buildKit, renderKitText, takesToRecord } from "./yt-recording-kit.js";
+import { loadPresenters, presenterForRequest } from "./presenters.js";
+import { adaptScriptForPresenter, guestPresenterBlock } from "./presenter-script.js";
+import { deliverKit } from "./kit-delivery.js";
 import { buildFaceThumbnail, preserveCandidates } from "./yt-thumbnail-face.js";
 import { cutTeaser, teaserCaptions } from "./yt-teaser.js";
 import { deliverToOwner } from "./delivery.js";
@@ -208,6 +211,19 @@ async function deliverKitForApprovedTopic(approvals, record) {
   const topic = selection.candidate;
   console.log(`[YTPipeline] ${record.requestId}: option ${selection.index} via ${selection.via} — "${topic.title}"`);
 
+  // WHO FRONTS THIS VIDEO. Default is the owner; an explicit stamp naming
+  // somebody the registry does not know is a refusal, never a fallback — a
+  // kit sent to the wrong person is the one failure the presenter system
+  // exists to prevent. Unacted, so a registry fix makes the next run proceed.
+  const who = presenterForRequest(loadPresenters(), record);
+  if (!who.ok) {
+    console.log(`[YTPipeline] NOT delivering a kit for ${record.requestId}: ${who.reason}`);
+    console.log(`::warning::${who.reason} — fix presenters.json or the assignment, then the next run proceeds.`);
+    return { advanced: false, reason: who.reason };
+  }
+  const presenter = who.presenter;
+  console.log(`[YTPipeline] presenter: ${presenter.name} (${presenter.id}, ${presenter.role})`);
+
   const voiceSamples = getVoiceSamples(loadLog());
   if (voiceSamples.length === 0) {
     console.log("[YTPipeline] no usable voice samples yet — writing without a voice reference");
@@ -229,6 +245,8 @@ async function deliverKitForApprovedTopic(approvals, record) {
       topic: { title: topic.title, hook: topic.hook, outline: topic.outline },
       notes: record.notes || null,
       voiceSamples,
+      // Guest framing rides the writer prompt; empty string for the owner.
+      presenterBlock: guestPresenterBlock(presenter),
     });
   } catch (err) {
     const failures = err?.attemptFailures || [];
@@ -295,26 +313,61 @@ async function deliverKitForApprovedTopic(approvals, record) {
     return { advanced: false, reason: why };
   }
 
-  const kit = buildKit(scriptResult, { requestId: record.requestId });
-  const emailBody = renderKitText(kit);
+  // THE GUEST IDENTITY SWEEP. The writer was told the presenter is not Peter;
+  // this is the check that the telling worked, because a prompt is not a
+  // guarantee. Ownership claims are neutralized into team framing; an
+  // identity claim nothing mechanical can fix holds the kit exactly like a
+  // below-bar script — unacted, loud, retried next run.
+  if (presenter.role !== "owner") {
+    const swept = adaptScriptForPresenter(scriptResult.script, presenter);
+    if (swept.unresolved.length > 0) {
+      const list = swept.unresolved.map((u) => `${u.where}: "${u.match}"`).join("; ");
+      const why = `the script still claims Peter's identity after neutralization (${list})`;
+      console.log(`[YTPipeline] NOT delivering a kit for ${record.requestId}: ${why}`);
+      console.log(`::warning::Guest script for "${topic.title}" held back — ${why}. Will retry on the next run.`);
+      writeScriptDiagnostics(record, topic, scriptResult, why);
+      return { advanced: false, reason: why };
+    }
+    if (swept.changes.length > 0) {
+      console.log(
+        `[YTPipeline] guest sweep neutralized ${swept.changes.length} owner claim(s): ` +
+          swept.changes.map((c) => `${c.where} "${c.from}" -> "${c.to}"`).join("; ")
+      );
+      // The edits are word-level, but the bar is a property of whole takes —
+      // the FULL critic re-scores the adapted script, same stakes as the
+      // first pass: an unjudged kit costs the presenter a recording session.
+      const rescored = await scoreScript(swept.script);
+      if (rescored.unscored || !scoresPass(rescored)) {
+        const why = rescored.unscored
+          ? "the critic could not re-score the neutralized script"
+          : `the neutralized script scored below the bar (clarity=${rescored.clarity} retention=${rescored.retention} authenticity=${rescored.authenticity})`;
+        console.log(`[YTPipeline] NOT delivering a kit for ${record.requestId}: ${why}`);
+        console.log(`::warning::Guest script for "${topic.title}" held back after neutralization — ${why}.`);
+        writeScriptDiagnostics(record, topic, { ...scriptResult, scores: rescored, script: swept.script }, why);
+        return { advanced: false, reason: why };
+      }
+      scriptResult.scores = rescored;
+    }
+    scriptResult.script = swept.script;
+  }
 
   if (DRY_RUN) {
-    console.log(`[YTPipeline] DRY RUN — would deliver a kit for ${record.requestId}`);
-    console.log(emailBody);
+    const kit = buildKit(scriptResult, { requestId: record.requestId });
+    console.log(`[YTPipeline] DRY RUN — would deliver a kit for ${record.requestId} to ${presenter.id}`);
+    console.log(renderKitText(kit, { presenter, accessCode: presenter.accessCode }));
     return { advanced: false, reason: "dry run" };
   }
 
   const accessToken = await getAccessToken();
   await ensureRecordingsFolder(record.requestId, accessToken);
 
-  await sendApprovalRequest({
+  const delivered = await deliverKit({
     requestId: record.requestId,
-    kind: KIND_TOPIC_PICK,
-    payload: { stage: "recording_kit", ...kitPayload(kit) },
-    emailSubject: `Recording kit — ${kit.title} (${kit.stats.takeCount} takes)`,
-    emailBody,
+    script: scriptResult.script,
+    presenter,
     accessToken,
   });
+  const kit = delivered.kit;
 
   const stamped = markActed(approvals, record.requestId, {
     action: "kit_delivered",
@@ -326,6 +379,9 @@ async function deliverKitForApprovedTopic(approvals, record) {
       takeCount: kit.stats.takeCount,
       scores: scriptResult.scores,
       belowBar: scriptResult.belowBar,
+      // Identity only, never the access code — this file is the dashboard's
+      // read surface.
+      presenter: { id: presenter.id, name: presenter.name, role: presenter.role },
       // The full script rides along because the build job needs the exact take
       // text to match recordings against, and this record is the only thing
       // that survives between runs. It is a few KB against a 400-entry cap.
@@ -333,7 +389,7 @@ async function deliverKitForApprovedTopic(approvals, record) {
     },
   });
   saveApprovals(stamped);
-  console.log(`[YTPipeline] kit delivered for ${record.requestId} — waiting on recordings`);
+  console.log(`[YTPipeline] kit delivered for ${record.requestId} to ${presenter.id} — waiting on recordings`);
   return { advanced: true };
 }
 
@@ -391,7 +447,15 @@ async function reBriefAfterRejection(approvals, record) {
     action: "rebriefed",
     result: { replacedBy: requestId },
   });
-  next = appendRequest(next, { requestId, kind: KIND_TOPIC_PICK, payload });
+  // The replacement inherits the rejected brief's presenter: a re-brief is the
+  // same video cycle wearing a new outline, and the standing "next" assignment
+  // (which only the Monday brief consumes) must not be spent on it.
+  next = appendRequest(next, {
+    requestId,
+    kind: KIND_TOPIC_PICK,
+    payload,
+    ...(record.presenter ? { presenter: { ...record.presenter, via: "inherited" } } : {}),
+  });
   saveApprovals(next);
   console.log(`[YTPipeline] reworked brief sent as ${requestId}`);
   return { advanced: true };
@@ -410,6 +474,12 @@ async function buildFromRecordings(approvals, record) {
     console.log(`[YTPipeline] ${record.requestId} has no script on record — nothing to build from`);
     return;
   }
+
+  // Attribution rides the whole way down: the record's assignment outranks
+  // the delivery-time stamp (a reassignment updates the first and the acted
+  // script, deliberately not the latch), and absent both, the owner — the
+  // default every pre-presenter video was built under.
+  const presenter = record.presenter || result.presenter || { id: "peter", name: "Peter", role: "owner" };
 
   const videoLog = loadVideoLog();
   const existing = findByRequest(videoLog, record.requestId);
@@ -988,6 +1058,9 @@ async function buildFromRecordings(approvals, record) {
     }
 
     let nextLog = recordRender(videoLog, {
+      // Who fronts this video — the ingestion and matching above never cared,
+      // but everything downstream that names the video should name them.
+      presenter: { id: presenter.id, name: presenter.name, role: presenter.role },
       teaser: teaserRecord,
       thumbnailDriveId,
       // The sweep's publish step needs this AFTER the build's workDir is
@@ -1066,6 +1139,9 @@ async function buildFromRecordings(approvals, record) {
       accessToken,
       syntheticNarration,
       watchReport: watch.text,
+      // The card names who fronts the video. The DECISION is not theirs —
+      // review cards go to Peter's surfaces only, and Approve stays his.
+      presenter: { id: presenter.id, name: presenter.name, role: presenter.role },
     });
 
     saveApprovals(
@@ -1074,6 +1150,7 @@ async function buildFromRecordings(approvals, record) {
         kind: KIND_VIDEO_REVIEW,
         videoId,
         payload: { videoId, title: packaging.title, requestId: record.requestId },
+        presenter: { id: presenter.id, name: presenter.name, role: presenter.role, assignedAt: record.presenter?.assignedAt || null, via: "build" },
       })
     );
     console.log(`[YTPipeline] uploaded PRIVATE and sent ${reviewRequestId} for review`);

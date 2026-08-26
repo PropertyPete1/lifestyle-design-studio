@@ -405,8 +405,13 @@ Before you answer, check that every [ you opened has a matching ].
 Return ONLY valid JSON, no preamble and no code fences:
 {"title": "search-query-shaped title, under 70 chars", "hook": "...", "promise": "...", "openingOverlay": "4 to 8 words", "sections": [{"title": "...", "takes": [{"id": "s1t1", "mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, {"id": "s1t2", "mode": "${VOICEOVER}", "text": "...", "direction": "...", "visualIntent": "FOOTAGE"}, {"id": "s1t3", "mode": "${VOICEOVER}", "text": "...", "direction": "...", "visualIntent": {"type": "CALLOUT", "spec": {"value": "...", "label": "..."}}}], "boundaryPull": "..."}], "softCta": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}, "close": {"mode": "${ON_CAMERA}", "text": "...", "direction": "..."}}`;
 
-export function writerSystem({ voiceBlock = "", bannedBlock = buildBannedBlock() } = {}) {
-  return buildWriterSystem() + bannedBlock + voiceBlock;
+export function writerSystem({ voiceBlock = "", bannedBlock = buildBannedBlock(), presenterBlock = "" } = {}) {
+  // presenterBlock LAST so its overrides read as overrides. It is built by
+  // presenter-script.js (guestPresenterBlock) and passed in by the caller
+  // rather than imported here — presenter-script imports allTakes from this
+  // module, and importing back would close an ESM cycle (see yt-cta.js for
+  // why cycles are not worth the undefined-at-init risk).
+  return buildWriterSystem() + bannedBlock + voiceBlock + presenterBlock;
 }
 
 // ─── the critic ─────────────────────────────────────────────────────────────
@@ -900,10 +905,13 @@ export async function generateScript({
   voiceSamples = [],
   maxRetries = MAX_RETRIES,
   modelCall = callModel,
+  // Guest framing, from guestPresenterBlock(). Empty for the owner, so every
+  // existing call site is byte-identical to before this parameter existed.
+  presenterBlock = "",
 } = {}) {
   if (!topic || !nonEmpty(topic.title)) throw new Error("generateScript requires a topic with a title");
 
-  const system = writerSystem({ voiceBlock: buildVoiceBlock(voiceSamples) });
+  const system = writerSystem({ voiceBlock: buildVoiceBlock(voiceSamples), presenterBlock });
 
   const basePrompt =
     `Write the script.\n\n` +

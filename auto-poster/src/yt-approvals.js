@@ -297,7 +297,7 @@ export function newRequestId(kind) {
  * proposed — the webhook delivery is fire-and-forget and the dashboard is not a
  * queryable source of truth for us.
  */
-export function appendRequest(log, { requestId, kind, payload, videoId = null }) {
+export function appendRequest(log, { requestId, kind, payload, videoId = null, presenter = null }) {
   if (!KINDS.includes(kind)) throw new Error(`Unknown approval kind: ${kind}`);
   if (!requestId) throw new Error("appendRequest requires a requestId");
   if (findRequest(log, requestId)) {
@@ -311,7 +311,60 @@ export function appendRequest(log, { requestId, kind, payload, videoId = null })
     payload: payload ?? null,
   };
   if (videoId) entry.videoId = videoId;
+  // Who fronts this video, stamped at creation (presenterStamp shape from
+  // src/presenters.js). Absent means "the owner, by default" — resolved at
+  // read time by presenterForRequest so old records need no backfill.
+  if (presenter) entry.presenter = presenter;
   return { ...log, requests: [...(log?.requests || []), entry] };
+}
+
+/**
+ * Assign (or reassign) a request's presenter.
+ *
+ * The previous stamp moves into presenterHistory with a supersededAt — a
+ * reassignment is an event with a trail, not an overwrite, because "who was
+ * this kit sent to before" is exactly the question a mixed-up recording
+ * session needs answered. mergeYtApprovals carries both fields in their own
+ * groups (later assignedAt wins; history unions).
+ */
+export function setRequestPresenter(log, requestId, stamp, { now = new Date().toISOString() } = {}) {
+  const record = findRequest(log, requestId);
+  if (!record) return { ok: false, reason: `no request "${requestId}" in yt-approvals.json` };
+  if (record.presenter?.id === stamp?.id) {
+    return { ok: false, reason: `${requestId} is already assigned to "${stamp.id}" — nothing to change` };
+  }
+  const requests = (log?.requests || []).map((r) => {
+    if (r.requestId !== requestId) return r;
+    const history = r.presenter
+      ? [...(r.presenterHistory || []), { ...r.presenter, supersededAt: now }]
+      : r.presenterHistory || [];
+    return { ...r, presenter: stamp, ...(history.length ? { presenterHistory: history } : {}) };
+  });
+  return { ok: true, log: { ...log, requests }, previous: record.presenter || null };
+}
+
+/**
+ * Replace the script inside an acted request's actedResult — the reassignment
+ * path's one write into settled state.
+ *
+ * The acted LATCH is untouched (same discipline as resend-kit: re-sending a
+ * kit and re-opening a stage are different things), but the script has to
+ * move, because buildFromRecordings matches recordings against
+ * actedResult.script and a reassigned presenter records the ADAPTED words.
+ * scriptAdaptedAt is the merge marker that keeps this write from losing to a
+ * stale concurrent copy — see mergeApprovalRecord.
+ */
+export function updateActedScript(log, requestId, script, { now = new Date().toISOString() } = {}) {
+  const record = findRequest(log, requestId);
+  if (!record) return { ok: false, reason: `no request "${requestId}" in yt-approvals.json` };
+  if (!hasActed(record)) return { ok: false, reason: `${requestId} has not been acted on — there is no delivered script to replace` };
+  if (!record.actedResult?.script) return { ok: false, reason: `${requestId} carries no script in actedResult` };
+  const requests = (log?.requests || []).map((r) =>
+    r.requestId === requestId
+      ? { ...r, actedResult: { ...r.actedResult, script, scriptAdaptedAt: now } }
+      : r
+  );
+  return { ok: true, log: { ...log, requests } };
 }
 
 /**

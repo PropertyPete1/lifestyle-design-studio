@@ -166,13 +166,73 @@ const HOW_TO = [
 ];
 
 /**
+ * The recorder the kit email points a presenter into.
+ *
+ * The login gate and the teleprompter live on the dashboard (Manus's half —
+ * see longform/PRESENTERS.md for the contract). RECORDER_APP_URL names the
+ * page directly; without it the conventional path under DASHBOARD_URL is
+ * used, and with neither the email says so honestly instead of linking to
+ * nothing — a kit with a dead link reads as broken, a kit that says "recorder
+ * link coming" reads as early.
+ */
+export function recorderUrl() {
+  const explicit = (process.env.RECORDER_APP_URL || "").trim();
+  if (explicit) return explicit;
+  const dashboard = (process.env.DASHBOARD_URL || "").trim();
+  return dashboard ? `${dashboard.replace(/\/+$/, "")}/recorder` : null;
+}
+
+/**
+ * The onboarding header — the part of the kit email that takes someone who
+ * has never seen this system from "what is this" to recording in under two
+ * minutes. Written for a first-timer: one paragraph of what this is, the
+ * door, the key, and the drill. Everything below it is the same kit Peter
+ * gets.
+ */
+export function renderOnboardingHeader({ presenter, accessCode, recorderLink = recorderUrl() }) {
+  const firstName = String(presenter?.name || "").split(/\s+/)[0] || "there";
+  const lines = [];
+  lines.push(`Hi ${firstName},`);
+  lines.push("");
+  lines.push(
+    `You're presenting a YouTube video for Lifestyle Design Realty. Below is your recording kit: ` +
+      `the full script, already written and broken into short "takes" of a few sentences each. ` +
+      `You read one take at a time off the screen — nothing to memorise, nothing to prepare. ` +
+      `Record them all and the system edits the finished video; you never touch the footage.`
+  );
+  lines.push("");
+  lines.push(`START HERE: ${recorderLink || "(recorder link coming separately)"}`);
+  lines.push(`YOUR ACCESS CODE: ${accessCode || "(ask Peter)"} — the recorder asks for it. It's yours alone; don't share it.`);
+  lines.push("");
+  lines.push(`THE DRILL:`);
+  lines.push(`  1. Open the recorder and enter your code.`);
+  lines.push(`  2. The teleprompter reads each take to you. One take at a time.`);
+  lines.push(`  3. Fluffed one? Retake it till it's clean — the last version wins.`);
+  lines.push(`  4. Don't skip the thumbnail take at the end. Your face IS the thumbnail.`);
+  lines.push("");
+  lines.push(`That's the whole job. The kit below is the same script the recorder will show you, so you can read ahead.`);
+  return lines;
+}
+
+/**
  * The plain-text kit, for email.
  *
  * Deliberately not markdown: this gets read on a phone in a mail client, and
  * often while standing in a driveway.
+ *
+ * With no options this renders exactly what it always has — every existing
+ * call site and the kit already in Peter's inbox are unchanged. Passing a
+ * presenter (with their access code) prepends the onboarding header, which is
+ * the presenter-system contract: THE KIT EMAIL IS THE ONBOARDING.
  */
-export function renderKitText(kit) {
+export function renderKitText(kit, { presenter = null, accessCode = null, recorderLink } = {}) {
   const lines = [];
+  if (presenter) {
+    lines.push(...renderOnboardingHeader({ presenter, accessCode, ...(recorderLink !== undefined ? { recorderLink } : {}) }));
+    lines.push("");
+    lines.push("=".repeat(60));
+    lines.push("");
+  }
   lines.push(`RECORDING KIT — ${kit.title}`);
   lines.push(`${kit.stats.takeCount} takes, about ${kit.stats.estimatedSessionMinutes} minutes of your time.`);
   lines.push("");
@@ -218,7 +278,7 @@ function indent(text) {
 }
 
 /** The structured payload the dashboard renders as a checklist. */
-export function kitPayload(kit) {
+export function kitPayload(kit, { presenter = null } = {}) {
   return {
     requestId: kit.requestId,
     title: kit.title,
@@ -227,5 +287,8 @@ export function kitPayload(kit) {
     stats: kit.stats,
     takes: kit.takes,
     instructions: HOW_TO.join("\n"),
+    // Who fronts this video. Identity only — the access code never rides a
+    // webhook payload; the recorder verifies against presenters.json itself.
+    ...(presenter ? { presenter: { id: presenter.id, name: presenter.name, role: presenter.role } } : {}),
   };
 }
