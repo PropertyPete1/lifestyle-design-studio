@@ -17,12 +17,12 @@
       "name": "Steven Van Orden",
       "email": "steven@lifestyledesignrealty.com",
       "role": "guest",
-      "accessCode": "230251",
-      "codeIssuedAt": "2026-08-26T01:27:33.041Z",
       "addedAt": "2026-08-26T01:27:33.041Z",
       "cta": {
         "framing": "team"
-      }
+      },
+      "accessCode": "230251",
+      "codeIssuedAt": "2026-08-26T01:27:33.041Z"
     }
   ],
   "retiredCodes": [],
