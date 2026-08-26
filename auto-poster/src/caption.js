@@ -14,6 +14,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { sanitizeCaption, sanitizeForTTS } from "./sanitize.js";
 import { validateCaption, RETRY_INSTRUCTION, findMonthlyPaymentFigure } from "./caption-validator.js";
+import { sourceFigureValues, checkNumberHonesty } from "./source-respect.js";
 import { targetWordsForDuration, resolveTempo, buildAvoidBlock } from "./voiceover-style.js";
 import { pickHookStyle, loadWeights } from "./analytics.js";
 
@@ -611,8 +612,24 @@ ${CAPTION_RULES}`;
  * Generate a voiceover script for a video.
  * Script should be shorter than video duration to ensure natural ending.
  */
+/**
+ * Returns { script, honesty, allowedFigures }.
+ *
+ * `script` is null when the NUMBER HONESTY gate blocked every candidate — the
+ * model's attempts and the hand-written fallback alike stated a figure the
+ * source does not contain. The caller must then skip the voiceover entirely;
+ * there is no "close enough" number.
+ *
+ * `allowedFigures` is the Set of figure values the source supports, handed back
+ * so the burned-caption pass can hold its chunk text to the same standard.
+ *
+ * opts.sourceTexts — texts that ARE the source: the clip's own transcript and
+ * what tesseract read on its frames. Joined here by the two inputs this prompt
+ * injects on purpose (the overlay price and the community-KB rate) to form the
+ * complete set of numbers the script is allowed to say.
+ */
 export async function generateVoiceoverScript(city, videoDurationSec = 30, videoOverlays = null, opts = {}) {
-  const { angleInstruction = null, persona = null, avoidTranscripts = [] } = opts;
+  const { angleInstruction = null, persona = null, avoidTranscripts = [], sourceTexts = [] } = opts;
   const runCityName = CITY_NAMES[city] || city;
   // Overlay city is ground truth for location (San Marcos, Kyle, Buda, Leander, etc.)
   const overlayCity = cleanOverlayCity(videoOverlays?.city);
@@ -729,28 +746,79 @@ HARD RULES — these are not style preferences:
 
 Example of the ENERGY to hit (do not copy the wording): "Three hundred twenty six thousand. Brand new. In ${spokenCity}. Look at this kitchen. The payment on this one surprises people. Comment TOUR and I'll send you the exact payment breakdown."`;
 
-  try {
-    const response = await getClient().messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 512,
-      messages: [{ role: "user", content: prompt }],
-    });
-    const content = response.content[0]?.text;
-    if (content && content.length > 30) {
-      // HARD RULE: a payment-tease script must never state a payment figure.
-      // Fall back to the hand-written script rather than speaking a number.
-      const payment = findMonthlyPaymentFigure(content);
-      if (payment.found) {
-        console.error(`[VoiceoverScript] ❌ BLOCKED: script stated a monthly payment figure (${payment.label}): "${payment.match}" — using safe fallback script`);
-      } else {
-        console.log(`[VoiceoverScript] Generated payment-tease (${content.length} chars, ~${content.split(/\s+/).length} words)`);
-        return sanitizeForTTS(sanitizeCaption(content));
-      }
+  // ─── NUMBER HONESTY: what this script is allowed to say ───────────────────
+  // The source's own numbers (transcript + frame OCR + vision overlays) plus
+  // the two figures this prompt injects deliberately: the overlay price and the
+  // KB rate. Everything else is an invention and gets blocked — the 2026-08-26
+  // voiceover said a price the video never shows, and no retry loop or fallback
+  // may reintroduce that.
+  const allowedFigures = sourceFigureValues([
+    ...sourceTexts,
+    priceFromOverlay || "",
+    rateFromOverlayOrKB || "",
+    videoOverlays?.price || "",
+    videoOverlays?.raw_text || "",
+    videoOverlays?.beds_baths || "",
+  ]);
+  const honesty = { checked: true, attempts: 0, violations: [], fallback_used: false };
+
+  let honestyFeedback = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    honesty.attempts = attempt;
+    let content = null;
+    try {
+      const response = await getClient().messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 512,
+        messages: [{ role: "user", content: prompt + honestyFeedback }],
+      });
+      content = response.content[0]?.text;
+    } catch (err) {
+      console.error("[VoiceoverScript] Anthropic API failed:", err.message);
+      break; // API is down — go straight to the hand-written fallback
     }
-  } catch (err) {
-    console.error("[VoiceoverScript] Anthropic API failed:", err.message);
+    if (!content || content.length <= 30) continue;
+
+    // HARD RULE: a payment-tease script must never state a payment figure.
+    const payment = findMonthlyPaymentFigure(content);
+    if (payment.found) {
+      console.error(`[VoiceoverScript] ❌ BLOCKED: script stated a monthly payment figure (${payment.label}): "${payment.match}"`);
+      honestyFeedback = `\n\nYOUR PREVIOUS SCRIPT WAS REJECTED for stating a monthly payment figure ("${payment.match}"). Tease the payment WITHOUT any number.`;
+      continue;
+    }
+
+    // The check runs on the SANITIZED text — the exact words the TTS will read.
+    const candidate = sanitizeForTTS(sanitizeCaption(content));
+    const check = checkNumberHonesty(candidate, allowedFigures);
+    if (!check.ok) {
+      const named = check.violations.map((v) => `"${v.raw}" (${v.value})`).join(", ");
+      console.error(`::warning::[VoiceoverScript] ❌ NUMBER HONESTY: script states ${named} — no such figure in the source. ${attempt < 2 ? "Retrying." : "Out of attempts."}`);
+      honesty.violations.push(...check.violations.map((v) => ({ ...v, attempt })));
+      honestyFeedback =
+        `\n\nYOUR PREVIOUS SCRIPT WAS REJECTED for stating numbers the video does not contain: ${named}. ` +
+        (priceFromOverlay || rateFromOverlayOrKB
+          ? `The ONLY numbers you may state are: ${[priceFromOverlay, rateFromOverlayOrKB].filter(Boolean).join(" and ")} — exactly as given, or no numbers at all.`
+          : `State NO numbers at all.`);
+      continue;
+    }
+
+    console.log(`[VoiceoverScript] Generated payment-tease (${candidate.length} chars, ~${candidate.split(/\s+/).length} words, figures verified)`);
+    return { script: candidate, honesty, allowedFigures };
   }
-  return getPaymentTeaseFallbackScript(spokenCity, priceFromOverlay, rateFromOverlayOrKB);
+
+  // Hand-written fallback: its only figures are the overlay price and the KB
+  // rate, both in the allowed set by construction — but it is CHECKED anyway,
+  // because "safe by construction" is what the old pipeline believed too.
+  honesty.fallback_used = true;
+  const fallback = sanitizeForTTS(getPaymentTeaseFallbackScript(spokenCity, priceFromOverlay, rateFromOverlayOrKB));
+  const fallbackCheck = checkNumberHonesty(fallback, allowedFigures);
+  if (!fallbackCheck.ok) {
+    const named = fallbackCheck.violations.map((v) => `"${v.raw}" (${v.value})`).join(", ");
+    console.error(`::warning::[VoiceoverScript] ⛔ Even the fallback script states ${named} — no honest script exists for this clip. Voiceover must be skipped.`);
+    honesty.violations.push(...fallbackCheck.violations.map((v) => ({ ...v, attempt: "fallback" })));
+    return { script: null, honesty, allowedFigures };
+  }
+  return { script: fallback, honesty, allowedFigures };
 }
 
 /**

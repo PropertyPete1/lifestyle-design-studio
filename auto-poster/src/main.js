@@ -28,6 +28,7 @@ import { generateCaption, generateCaptionFromOriginal, findCommunity } from "./c
 import { processVoiceover, cleanup } from "./voiceover.js";
 import { runPriceConsistencyCheck, readVideoOverlays, extractPriceCheckFrames } from "./price-check.js";
 import { processBurnedCaptions } from "./burned-captions.js";
+import { detectBurnedCaptions } from "./source-respect.js";
 import { prePostQualityCheck } from "./quality-check.js";
 import { applyFreshness } from "./freshness.js";
 import { deliverToOwner } from "./delivery.js";
@@ -952,19 +953,44 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       console.warn(`[Post] Overlay extraction failed (non-fatal): ${err.message}`);
     }
 
+    // Caption scan on the SOURCE frames, before any processing. Two consumers:
+    // the caption-over-captions gate (a clip that already carries burned-in
+    // captions must not get a second layer), and the number-honesty gate (what
+    // tesseract reads on the frames joins the source figure pool the voiceover
+    // script is checked against).
+    let captionScan = null;
+    try {
+      captionScan = detectBurnedCaptions(tempVideoPath);
+      if (captionScan.ocrUnavailable) {
+        console.log(`::warning::[Post] Caption scan could not run: ${captionScan.say}`);
+      } else if (captionScan.detected) {
+        console.log(`::warning::[Post] ${captionScan.say}`);
+      } else {
+        console.log(`[Post] Caption scan: no burned-in captions (${captionScan.novelTexts} distinct texts / ${captionScan.textFrames} text frames)`);
+      }
+    } catch (err) {
+      console.warn(`[Post] Caption scan failed (treated as unverifiable): ${err.message?.slice(0, 120)}`);
+      captionScan = { detected: false, ocrUnavailable: true, textFrames: 0, novelTexts: 0, frameTexts: [], say: `scan failed: ${err.message?.slice(0, 80)}` };
+    }
+
     // Voiceover pipeline (now receives videoOverlays for payment-tease script)
     console.log("[Post] Running voiceover detection...");
     // `log` is passed through so persona rotation can see this city's history
     // without re-reading posted-log.json from disk.
-    const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN, videoOverlays, { log });
+    const voResult = await processVoiceover(tempVideoPath, CITY, DRY_RUN, videoOverlays, {
+      log,
+      ocrTexts: captionScan?.frameTexts || [],
+    });
     finalVideoPath = voResult.videoPath;
     const hasVoiceover = !voResult.skipped;
-    // Build voiceover reason for audit trail
-    // New reasons: speech_confirmed, whisper_error_failsafe, hallucination_override_add_voiceover,
-    // lyrics_override_add_voiceover, music_only_add_voiceover, silent_add_voiceover
+    // Build voiceover reason for audit trail.
+    // Skip reasons: source_has_speech, whisper_error_failsafe, number_honesty_blocked
+    // Add reasons: music_only_add_voiceover, silent_add_voiceover
+    // (the coherence-override reasons are gone with the override itself —
+    // transcribed words now always mean skip)
     let voiceoverReason = voResult.reason || "added";
     if (voResult.skipped) {
-      voiceoverReason = voResult.reason || "speech_confirmed";
+      voiceoverReason = voResult.reason || "source_has_speech";
     }
     // Store the WHOLE transcript, not the first ten words.
     //
@@ -983,14 +1009,19 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       : null;
 
     // Burned-in captions: only when voiceover was added (not skipped)
-    // processBurnedCaptions now returns { videoPath, captions_burned, captions_error }
+    // processBurnedCaptions now returns { videoPath, captions_burned, captions_error, captions_skip_reason }
     let captionsBurned = false;
     let captionsError = null;
+    let captionsSkipReason = null;
     if (hasVoiceover && voResult.audioPath && voResult.script && !DRY_RUN) {
       console.log("[Post] Burning synced captions onto video...");
-      const captionResult = await processBurnedCaptions(finalVideoPath, voResult.audioPath, voResult.script);
+      const captionResult = await processBurnedCaptions(finalVideoPath, voResult.audioPath, voResult.script, {
+        captionScan,
+        allowedFigures: voResult.allowedFigures || null,
+      });
       captionsBurned = captionResult.captions_burned;
       captionsError = captionResult.captions_error;
+      captionsSkipReason = captionResult.captions_skip_reason || null;
       if (captionResult.videoPath !== finalVideoPath) {
         // Clean up the pre-caption merged video
         cleanup(finalVideoPath);
@@ -999,7 +1030,7 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       if (captionsBurned) {
         console.log("[Post] ✓ Captions burned onto video");
       } else {
-        console.warn(`[Post] Captions NOT burned (non-fatal): ${captionsError}`);
+        console.warn(`[Post] Captions NOT burned (non-fatal): ${captionsSkipReason || captionsError}`);
       }
       // Clean up TTS audio file (no longer needed after caption burn)
       cleanup(voResult.audioPath);
@@ -1197,15 +1228,28 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         caption,
         voiceover: hasVoiceover,
         voiceover_reason: voiceoverReason,
+        // The gate's own sentence, when a gate spoke — "voiceover skipped:
+        // source has speech (12 words transcribed)". Skips are LOUD: the record
+        // must say what was skipped and why, never leave a silent false.
+        voiceover_note: voResult.note || null,
         voiceover_transcript: voiceoverTranscript,
         // Persisted so the next run for this city can avoid repeating the persona
         voiceover_persona: voResult.persona || null,
+        // Number-honesty audit: attempts, any figures blocked, whether the
+        // hand-written fallback had to serve.
+        number_honesty: voResult.honesty || null,
         // Perceptual fingerprint of the ORIGINAL footage (pre-processing) so
         // future runs can detect the same content re-uploaded under a new
         // Drive id / fileName. Null when fingerprinting failed.
         content_hash: contentHash,
         captions_burned: captionsBurned,
         captions_error: captionsError,
+        captions_skip_reason: captionsSkipReason,
+        // What the caption scan saw on the source frames (frame texts elided —
+        // the verdict and its two counts are the auditable part).
+        caption_scan: captionScan
+          ? { detected: captionScan.detected, ocr_unavailable: captionScan.ocrUnavailable, text_frames: captionScan.textFrames, novel_texts: captionScan.novelTexts }
+          : null,
         freshness: freshnessResult.applied ? "re_encoded" : freshnessResult.reason,
         platforms: ["tiktok", "youtube", "satellite_ig"],
         mainIgDelivery: deliveryResult ? "delivered" : "delivery_failed_owner_must_post",
