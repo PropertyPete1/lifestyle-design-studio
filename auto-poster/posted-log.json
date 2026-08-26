@@ -5357,6 +5357,31 @@
       "variantNumber": 4,
       "window": "am",
       "deliveryDriveLink": "https://drive.google.com/file/d/1_KXOD_n-xqPAvYVXWP_HaYHR3gZUn0UK/view"
+    },
+    {
+      "driveFileId": "1UuJq3nKUUUv1wzSRfm3hA3BaamHk__2n",
+      "fileName": "003001B1-0C39-4A31-82EE-FD86C942D049.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe brand new construction in San Antonio for $2,500?\n\nNew construction like this doesn't sit long, and builder incentives are real right now.\n\n✨ everyday living hits\nOpen floor plan wit",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-26T16:48:10.169Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "hallucination_override_add_voiceover",
+      "voiceover_transcript": "This house is not $25 a month. It's only $80 a day.",
+      "voiceover_persona": "deadpan_comedian",
+      "content_hash": "06fefeffb7272000:ffffff23c1c1c0c0:f079000008ffffff:fffffffff3c00000:4604181c1d1e7fff",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/16aYC9gDF5PsO2gJIx3zu1E5ncOdyr8pn/view"
     }
   ],
   "lastTemplateIndex": -1
