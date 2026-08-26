@@ -5427,6 +5427,31 @@
       "timestamp": "2026-08-26T19:16:39.381Z",
       "runId": "33003804107",
       "success": true
+    },
+    {
+      "driveFileId": "155HVLLCbJR7GrcY6Pgb7RLzYSqIALZL0",
+      "fileName": "543DD42D-B5CC-405B-93FB-3967F1AF1C3C.mp4",
+      "city": "san_antonio",
+      "caption": "I've never seen finishes like this at this price point in San Antonio right now.\n\nNew construction in this market moves fast, especially when builder incentives are on the table.\n\n✨ everyday living hi",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-26T19:16:39.181Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "lyrics_override_add_voiceover",
+      "voiceover_transcript": "I was in a match For that kind of spark She's from Texas, I can tell By the way, he's just having around the room And judging by the smile it's written on his face",
+      "voiceover_persona": "checklist_sprint",
+      "content_hash": "ffffff8300010000:fefeff7602021e0e:ffbf838c1c3c1c1c:fd793f2f3d180139:fffffeefe7c00000",
+      "captions_burned": true,
+      "freshness": "already_re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1JV57D-1_lXyXXvD2LWm-WnWO8JZ_cplN/view"
     }
   ],
   "lastTemplateIndex": -1

@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "team_wins",
-      "body": "We just closed out a strong quarter. Not because we got lucky. Because we showed up consistently and backed each other up when it mattered.\n\n1. We took on deals other agents turned down. Harder files. Tougher negotiations. But we did them as a team. Someone jumped in when closing got messy. Someone else handled the problem solve. That's not heroic. That's just how we operate.\n\n2. The agents here aren't chasing splits. They're building something. They're learning systems that work. They're not repeating the same year five times. They're actually moving forward.\n\n3. We celebrate wins together. A close is a close. But when someone breaks through and does something new, we all feel it. That momentum carries into the next deal.\n\nThis is what winning feels like when you're not grinding alone. You're part of something that actually grows the people in it, not just the brokerage.",
-      "format": "list",
-      "ending": "strong_close",
-      "date": "2026-08-13"
-    },
-    {
       "topic": "wish_i_knew",
       "body": "I wish I'd known that having the best leads means nothing if you don't have a system to work them. I spent years chasing deals instead of building a process. Now our agents don't chase. They follow a rhythm. They know what works because they've documented it. They repeat it. That's the difference between busy and successful.",
       "format": "short_punchy",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "dm_cta",
       "date": "2026-08-25"
+    },
+    {
+      "topic": "leadership_culture",
+      "body": "I've got agents at Lifestyle Design Realty who actually call me when things get hard instead of disappearing.\n\nThat didn't happen by accident. It happened because I stopped pretending that paychecks were the reason people stay. They stay because when a deal falls apart at 11pm, someone picks up the phone. They stay because when they're learning something new, there's a system and people to learn it from. They stay because closing a deal alone feels different than closing a deal knowing someone had your back the whole way. That's not soft stuff. That's the difference between an agent who stays two years and an agent who builds a career.\n\nWhat would it feel like to work somewhere that invested in keeping you, not just recruiting you?",
+      "format": "bold_statement",
+      "ending": "question",
+      "date": "2026-08-26"
     }
   ]
 }
