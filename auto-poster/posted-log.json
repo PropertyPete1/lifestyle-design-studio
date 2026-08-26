@@ -5382,6 +5382,30 @@
       "freshness": "already_re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/16aYC9gDF5PsO2gJIx3zu1E5ncOdyr8pn/view"
+    },
+    {
+      "driveFileId": "1eEApIbC8tdTqnyb1giUfRnEk6E4De8Kf",
+      "fileName": "AA48C44A-BFE9-46CB-A5D5-774EA9DD2942.mp4",
+      "city": "austin",
+      "caption": "Wait until you see this kitchen 😮‍💨\n\nNew construction like this in West Austin doesn't sit long. Starting at just $899,999, these homes are moving fast.\n\n✨ Open floor plan with natural light floodin",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-26T17:56:52.247Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "West Austin",
+      "voiceover_reason": "speech_confirmed",
+      "voiceover_transcript": "Hi, my name is Peter Parker. You don't remember me, but we used to know each other. Something bad was going to happen in the only way to stop it was to make everyone forget about me. I'm not just Peter Parker. I'm Spider-Man.",
+      "content_hash": "077fff0000ff7f00:7f7f7e3f3f070200:70c087674387c0f0:ffffc77e7f730100:ffffff7f1f010000",
+      "captions_burned": false,
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1MKraY__EH6kjRWj5cufQbOAQlNhwCSRt/view"
     }
   ],
   "lastTemplateIndex": -1
