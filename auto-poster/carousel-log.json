@@ -3754,6 +3754,203 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-26",
+      "timestamp": "2026-08-26T14:35:18.625Z",
+      "pillar": "motivation_business",
+      "topic": "Paying yourself a fixed salary out of lumpy commission income",
+      "hook": "My real estate income is different every month. My paycheck is the same every month.",
+      "closeType": "share",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "Paying yourself a fixed salary out of lumpy commission income",
+        "hook": "My real estate income is different every month. My paycheck is the same every month.",
+        "map": [
+          "Income lands in clumps",
+          "The one account rule",
+          "Pay your worst month",
+          "Taxes come out first",
+          "Where the extra goes",
+          "What this buys you"
+        ],
+        "points": [
+          {
+            "title": "Money Lands In Clumps",
+            "body": [
+              "Three closings can land in one week.",
+              "Then nothing for forty days.",
+              "Your rent does not care about that."
+            ],
+            "loop": "The fix is boring."
+          },
+          {
+            "title": "One Account Catches It All",
+            "body": [
+              "Every commission check goes into one business account.",
+              "I never spend directly out of it.",
+              "It is a holding tank, not a wallet."
+            ],
+            "loop": "Then one number decides everything."
+          },
+          {
+            "title": "Pay Yourself Your Worst Month",
+            "body": [
+              "I set my salary off my slowest quarter, not my best one.",
+              "Same amount hits my personal account on the same day.",
+              "It feels too small at first. That is the point."
+            ],
+            "loop": "Something comes out before that."
+          },
+          {
+            "title": "Taxes Are Not Yours",
+            "body": [
+              "Nobody withholds for you when you are self employed.",
+              "A cut of every check moves out the day it clears.",
+              "Agents who skip this get wrecked in April."
+            ],
+            "loop": "Most people spend the rest."
+          },
+          {
+            "title": "The Extra Has A Job",
+            "body": [
+              "Whatever is left builds a cushion until the account holds six months of salary.",
+              "After that it goes into the business or into property.",
+              "It never becomes a nicer car."
+            ],
+            "loop": "That cushion does something specific."
+          },
+          {
+            "title": "It Buys You The Word No",
+            "body": [
+              "A hungry agent takes every client and every bad deal.",
+              "A paid agent can walk away from the ones that will cost more than they pay.",
+              "That choice is where the real money starts."
+            ],
+            "loop": "Most never get there."
+          }
+        ],
+        "cta": {
+          "shareLine": "Send this to someone who just went commission only and is already living off their best month."
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 9,
+        "worst_problem": "Two of the six loops ('That cushion does something specific.', 'Something comes out before that.') are content-free placeholders that announce a gap rather than name a specific tease, weakening the swipe momentum mid-deck.",
+        "fix": "Rewrite the vague loops with concrete nouns — e.g. 'Six months buys one word.' and 'The IRS gets paid first.' — so each tease points at a specific thing the next slide will deliver."
+      },
+      "attemptsUsed": 2,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 366900754,
+          "verified": false,
+          "verdict": "pending",
+          "verifiedAt": "2026-08-26T14:41:22.379Z"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 366900757,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-26T14:38:19.389Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498387972652781569"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 366900799,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-26T14:39:51.626Z",
+          "publicUrl": "https://www.instagram.com/p/Dcgcd-iiBqs/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 366900851,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-26T14:39:51.774Z",
+          "publicUrl": "https://www.instagram.com/p/DcgcdXdCDXM/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 366900854,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-26T14:38:19.798Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498387975899222017"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 366900898,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-26T14:39:51.922Z",
+          "publicUrl": "https://www.instagram.com/p/DcgccxLilmj/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 366900900,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-26T14:38:20.063Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122117107647400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 366900904,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-26T14:38:20.540Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498387974422691840"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-26T14:41:22.380Z",
+        "anyFailed": false,
+        "pendingRecheck": true
+      }
     }
   ]
 }

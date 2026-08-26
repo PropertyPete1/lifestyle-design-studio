@@ -1,7 +1,9 @@
 {
   "date": "2026-08-26",
-  "posts_scheduled": 0,
-  "posts_published_today": {},
+  "posts_scheduled": 1,
+  "posts_published_today": {
+    "instagram": 3
+  },
   "failures": 0,
-  "last_run_iso": "2026-08-26T14:06:10Z"
+  "last_run_iso": "2026-08-26T14:41:23Z"
 }
