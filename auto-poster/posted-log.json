@@ -5535,6 +5535,43 @@
       "timestamp": "2026-08-27T19:15:04.107Z",
       "runId": "33107017526",
       "success": true
+    },
+    {
+      "driveFileId": "1uBVEj4iYFHlrGBu8zJ6Nz8LJ16bIGFbK",
+      "fileName": "5A26AB98-D7E8-42D2-8808-C5AA31BF3992.mp4",
+      "city": "san_antonio",
+      "caption": "I've never seen finishes like this at this price point in San Antonio right now.\n\nNew construction starting at $369,990 doesn't sit long. Builder incentives are live, and the timing is solid if you're",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-27T19:15:03.762Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "rapid_fire_hype",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 1,
+        "violations": [],
+        "fallback_used": false
+      },
+      "content_hash": "fff1800000ffffff:ffffc30000ff0e1e:63ff7f3e23c3191c:fffefee0003e3c1c:1f0301bf99818f8f",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1P6v-PtgEVp9vHWFmx3FB4yX3F9pQSz0N/view"
     }
   ],
   "lastTemplateIndex": -1
