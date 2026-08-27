@@ -3951,6 +3951,189 @@
         "anyFailed": false,
         "pendingRecheck": true
       }
+    },
+    {
+      "date": "2026-08-27",
+      "timestamp": "2026-08-27T23:19:44.995Z",
+      "pillar": "real_estate_education",
+      "topic": "Why the pre-approval number is not an affordable budget",
+      "hook": "Your lender will approve you for a number the lender knows you cannot afford.",
+      "closeType": "dm",
+      "keyword": "MATH",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Why the pre-approval number is not an affordable budget",
+        "hook": "Your lender will approve you for a number the lender knows you cannot afford.",
+        "map": [
+          "Approval is a limit",
+          "Gross pay, not take-home",
+          "The 45 percent line",
+          "Bills nobody counts",
+          "Texas taxes and insurance"
+        ],
+        "points": [
+          {
+            "title": "Approval Is A Ceiling",
+            "body": [
+              "A pre-approval says the bank believes the loan gets repaid.",
+              "It says nothing about the life you want to keep living."
+            ],
+            "loop": "The first gap is in your paycheck."
+          },
+          {
+            "title": "They Use Gross Pay",
+            "body": [
+              "The math runs on your income before taxes come out.",
+              "You make the payment with what actually lands in the account."
+            ],
+            "loop": "Then they stretch that number further."
+          },
+          {
+            "title": "The 45 Percent Line",
+            "body": [
+              "Most loan programs let your total debts reach around 45 percent of gross income.",
+              "That is a ceiling built for the bank, not a target built for you."
+            ],
+            "loop": "Half your real bills never get counted."
+          },
+          {
+            "title": "The Invisible Bills",
+            "body": [
+              "Daycare, groceries, gas, power, savings, travel. None of it shows on a credit report.",
+              "The bank cannot see any of it. You still pay all of it."
+            ],
+            "loop": "Texas adds one more weight."
+          },
+          {
+            "title": "Taxes And Insurance",
+            "body": [
+              "Texas property tax and home insurance run high compared to most states.",
+              "Both live inside the monthly payment, and neither one is locked in."
+            ],
+            "loop": "One number sorts all of this out."
+          }
+        ],
+        "cta": {
+          "payoff": "the full payment breakdown for a Texas home, line by line, at the price you are actually looking at"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 7,
+        "loops": 8,
+        "cta": 7,
+        "worst_problem": "The hook's withheld piece is too guessable — anyone who has shopped a mortgage can predict 'because they use gross income,' which the very next slides confirm, so the gap closes before the swipe.",
+        "fix": "Sharpen slide 1 to withhold a specific, unguessable number or moment (e.g. 'Your lender will approve you for a payment that eats 45% of a paycheck you never actually see') so the reader wants the exact mechanism, not a category they already suspect."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 367599885,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-27T23:22:45.520Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678855331845262605"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 367599886,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-27T23:22:45.608Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498882254299885568"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 367599906,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-27T23:22:45.694Z",
+          "publicUrl": "https://www.instagram.com/p/Dcj9M2zCp8-/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 367599920,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-27T23:22:45.778Z",
+          "publicUrl": "https://www.instagram.com/p/Dcj9HsJDcVe/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 367599921,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-27T23:22:45.866Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498882251640860672"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 367599939,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-27T23:22:45.951Z",
+          "publicUrl": "https://www.instagram.com/p/Dcj9NMJiHts/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 367599944,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-27T23:22:46.037Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122117444517400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 367599948,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-27T23:22:46.125Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7498882255755509760"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-27T23:22:46.126Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
