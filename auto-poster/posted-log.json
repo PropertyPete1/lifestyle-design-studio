@@ -5517,10 +5517,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "income_potential",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-08-27T14:16:38"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-08-27T14:46:38"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-08-27T15:16:38"
+        }
+      ],
       "timestamp": "2026-08-27T19:15:04.107Z",
       "runId": "33107017526",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
