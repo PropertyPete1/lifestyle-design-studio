@@ -5483,6 +5483,37 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1WebuTcJjwRPO0ATlNjWwFZroWt0tVDCi/view"
+    },
+    {
+      "driveFileId": "1ImvNzY2M3_dQYu3KGBbCjmcCReZjHLpl",
+      "fileName": "56F39D1F-4BAC-414F-BB7F-196466CBC853.mp4",
+      "city": "san_antonio",
+      "caption": "this is what new construction in San Antonio is supposed to feel like.\n\nhomes starting at $369,000. these don't sit long, and builder incentives are real right now.\n\n✨ everyday living hits\n\nopen floor",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-27T16:13:33.142Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (35 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "15.99 fixed rate just kidding at 3.9% Quick payment math prices 365 990 with 3% down the to 11,090 That's our 6,000 year insurance is 1500 year estimated payment is $2,698 That was a month",
+      "content_hash": "fcff8580000c0eff:f8ff850010087e7f:fffffe80c0ec7e00:873f00803e7efe00:00000064199efe9c",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1Epq6Jy9KDCLOpzs3qpEoAsfzbMnnuc7A/view"
     }
   ],
   "lastTemplateIndex": -1
