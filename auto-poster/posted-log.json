@@ -5613,6 +5613,37 @@
       "variantNumber": 2,
       "window": "pm",
       "deliveryDriveLink": "https://drive.google.com/file/d/1b7FPCm_Y7W8aTCqS5JKTtJXFUzvDGHXo/view"
+    },
+    {
+      "driveFileId": "1O3xEoZiFdQD26OMHQ0EiAFrwqPTEPeNX",
+      "fileName": "5B453E70-D4BC-4076-B244-295AFA21E005.mp4",
+      "city": "san_antonio",
+      "caption": "I was speechless when I walked into this one. $269,990 for brand new construction in San Antonio? New builds like this don't sit long.\n\n✨ open floor plan with natural light pouring through, modern fin",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-28T16:08:48.961Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (15 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "The house does not come with Stephen. He just happens to be there right now.",
+      "content_hash": "fffffe000c3fff00:180090de6e7e7f1e:06844eff3f7eff7f:0088b0fcfcfcbc00:c0c0e3efe3e2c0c0",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1_OT4TXkJXIcFQmZbSejs1XHDeUt4iCMN/view"
     }
   ],
   "lastTemplateIndex": -1
