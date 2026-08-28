@@ -5644,6 +5644,17 @@
       "freshness": "re_encoded",
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1_OT4TXkJXIcFQmZbSejs1XHDeUt4iCMN/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-08-28T16:43:45.299Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1_OT4TXkJXIcFQmZbSejs1XHDeUt4iCMN",
+      "captionSnippet": "I was speechless when I walked into this one. $269,990 for brand new construction in San Antonio? New builds like this d",
+      "mainIgPostedAt": "2026-08-28T16:43:45.300Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
