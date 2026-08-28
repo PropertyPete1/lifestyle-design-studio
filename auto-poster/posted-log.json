@@ -5676,6 +5676,37 @@
       "timestamp": "2026-08-28T19:20:18.378Z",
       "runId": "33202339808",
       "success": true
+    },
+    {
+      "driveFileId": "1NH8_Y6xWs7moiA6w54mub0r4mqFtGQTP",
+      "fileName": "5DBC5AF3-E59A-4186-9FAE-A9EFBD509E42.mp4",
+      "city": "san_antonio",
+      "caption": "I was speechless when I walked through this one. New construction in San Antonio that actually feels like home from day one.\n\nOpen floor plan with natural light flooding through, modern finishes, and ",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-28T19:20:17.816Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (70 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Do you want to skip into our dams? Look. Here you go. That's it. What the fuck is that? What are you? Forget it. It's been awesome. Payments in her 4,000. For all of this, I know you California's kid appreciate that. You know I'm counting 4,000 a month and you just space like this. Jackson's knows how to do it big. We'll show you how. I'm about to know.",
+      "content_hash": "ff1e1e00101a7e7f:ffff0000004dfeff:ffff78707080d8f9:e7fb5f0124796127:01013d3d3d1dfdfd",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1deEdqtJCjKSICjNGJI0QFi_ZKleuIr3U/view"
     }
   ],
   "lastTemplateIndex": -1
