@@ -4134,6 +4134,200 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-28",
+      "timestamp": "2026-08-28T23:18:03.657Z",
+      "pillar": "texas_lifestyle",
+      "topic": "Texas toll roads and how transplants get billed",
+      "hook": "Texas toll roads have no toll booths. Transplants find out from a letter.",
+      "closeType": "question",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "Texas toll roads and how transplants get billed",
+        "hook": "Texas toll roads have no toll booths. Transplants find out from a letter.",
+        "map": [
+          "No toll booths",
+          "The free tag sticker",
+          "Free road right beside",
+          "Austin's shifting price",
+          "Rental car bills",
+          "When fees stack up"
+        ],
+        "points": [
+          {
+            "title": "Nobody Takes Your Money",
+            "body": [
+              "Texas tollways read your plate at highway speed.",
+              "No tag means they mail the bill to whoever owns the car."
+            ],
+            "loop": "That is the expensive option."
+          },
+          {
+            "title": "Get The Sticker",
+            "body": [
+              "A toll tag is a free sticker for your windshield.",
+              "Tag rates are lower than mailed rates on the exact same road.",
+              "One tag covers Austin, DFW and Houston."
+            ],
+            "loop": "Some days you skip it entirely."
+          },
+          {
+            "title": "The Free Road Beside It",
+            "body": [
+              "Most Texas tollways have a free access road running right next to them.",
+              "Same direction, same exits, a few more traffic lights.",
+              "San Antonio drivers barely deal with tolls at all."
+            ],
+            "loop": "One lane plays by different rules."
+          },
+          {
+            "title": "Austin Changes The Price",
+            "body": [
+              "The express lanes in Austin do not charge a flat rate.",
+              "The price moves with traffic, so the worst hour costs the most."
+            ],
+            "loop": "Then there is the car problem."
+          },
+          {
+            "title": "Rentals And Moving Trucks",
+            "body": [
+              "The cameras do not care whose name is on the vehicle.",
+              "The rental company pays the toll, then bills you plus a daily fee."
+            ],
+            "loop": "Ignoring one bill gets expensive fast."
+          },
+          {
+            "title": "Small Bills Grow Teeth",
+            "body": [
+              "Unpaid tolls collect fees and late notices in the mail.",
+              "Enough of them can hold up your registration renewal."
+            ],
+            "loop": "And it does not stop there."
+          }
+        ],
+        "cta": {
+          "question": "Toll road every day or free frontage road with the lights?"
+        }
+      },
+      "scores": {
+        "clarity": 7,
+        "hook": 7,
+        "loops": 4,
+        "cta": 7,
+        "worst_problem": "The per-slide loops are mostly filler — \"And it does not stop there,\" \"That is the expensive option,\" and \"One lane plays by different rules\" either restate the slide or are too vague to name a payoff.",
+        "fix": "Rewrite every loop to tease a specific, concrete next fact (e.g. \"Rental fees double it\", \"Austin prices move hourly\", \"It blocks your registration\") instead of gesturing at more."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 368073630,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-28T23:21:04.231Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7679225905042050318"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368073632,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-28T23:21:04.368Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499244328943419392"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368073649,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-28T23:22:35.725Z",
+          "publicUrl": "https://www.instagram.com/p/Dcmh4U3iN7X/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368073670,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-28T23:22:35.858Z",
+          "publicUrl": "https://www.instagram.com/p/Dcmh4KhCPcT/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368073672,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-28T23:21:04.782Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499244326632488961"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368073684,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-28T23:22:36.002Z",
+          "publicUrl": "https://www.instagram.com/p/Dcmh4R0iMzp/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 368073685,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-28T23:21:05.058Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122117727819400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368073686,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-28T23:21:05.188Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499244329207656448"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-28T23:22:36.003Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
