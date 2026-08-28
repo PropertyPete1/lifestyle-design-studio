@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-27T23:22:28Z",
+  "generated_at": "2026-08-28T23:18:28Z",
   "window_days": 30,
   "source": "metricool",
   "platforms": {
@@ -10,102 +10,108 @@
         "lifestyledesignrealtytexas",
         "propertypete01"
       ],
-      "posts_recorded": 491,
+      "posts_recorded": 492,
       "daily": [
+        {
+          "date": "2026-08-27",
+          "posts": 11,
+          "views": 2008,
+          "views_from_posts": 11
+        },
         {
           "date": "2026-08-26",
           "posts": 22,
-          "views": 4010,
+          "views": 5623,
           "views_from_posts": 22
         },
         {
           "date": "2026-08-25",
           "posts": 10,
-          "views": 2113,
+          "views": 2166,
           "views_from_posts": 10
         },
         {
           "date": "2026-08-24",
           "posts": 17,
-          "views": 4333,
+          "views": 4419,
           "views_from_posts": 17
         },
         {
           "date": "2026-08-23",
           "posts": 17,
-          "views": 3434,
+          "views": 3477,
           "views_from_posts": 17
         },
         {
           "date": "2026-08-22",
           "posts": 24,
-          "views": 5486,
+          "views": 5539,
           "views_from_posts": 24
         },
         {
           "date": "2026-08-21",
           "posts": 26,
-          "views": 5871,
+          "views": 5932,
           "views_from_posts": 26
         },
         {
           "date": "2026-08-20",
           "posts": 8,
-          "views": 963,
+          "views": 966,
           "views_from_posts": 8
         },
         {
           "date": "2026-08-19",
           "posts": 15,
-          "views": 2025,
+          "views": 2035,
           "views_from_posts": 15
         },
         {
           "date": "2026-08-18",
           "posts": 12,
-          "views": 1861,
+          "views": 1867,
           "views_from_posts": 12
         },
         {
           "date": "2026-08-17",
           "posts": 21,
-          "views": 9406,
+          "views": 9442,
           "views_from_posts": 21
         },
         {
           "date": "2026-08-16",
           "posts": 12,
-          "views": 5892,
+          "views": 5922,
           "views_from_posts": 12
         },
         {
           "date": "2026-08-15",
           "posts": 24,
-          "views": 11753,
+          "views": 11795,
           "views_from_posts": 24
         },
         {
           "date": "2026-08-14",
           "posts": 27,
-          "views": 8573,
+          "views": 8604,
           "views_from_posts": 27
         },
         {
           "date": "2026-08-13",
           "posts": 24,
-          "views": 7579,
+          "views": 7596,
           "views_from_posts": 24
         },
         {
           "date": "2026-08-12",
           "posts": 21,
-          "views": 5167,
+          "views": 5174,
           "views_from_posts": 21
         },
         {
           "date": "2026-08-11",
           "posts": 20,
-          "views": 7396,
+          "views": 7397,
           "views_from_posts": 20
         },
         {
@@ -117,13 +123,13 @@
         {
           "date": "2026-08-09",
           "posts": 11,
-          "views": 5217,
+          "views": 5222,
           "views_from_posts": 11
         },
         {
           "date": "2026-08-08",
           "posts": 7,
-          "views": 2731,
+          "views": 2732,
           "views_from_posts": 7
         },
         {
@@ -171,7 +177,7 @@
         {
           "date": "2026-07-31",
           "posts": 10,
-          "views": 1482,
+          "views": 1484,
           "views_from_posts": 10
         },
         {
@@ -282,90 +288,96 @@
       "accounts": [
         "lifestyledesignrealtytexas"
       ],
-      "posts_recorded": 148,
+      "posts_recorded": 149,
       "daily": [
+        {
+          "date": "2026-08-27",
+          "posts": 3,
+          "views": 1129,
+          "views_from_posts": 3
+        },
         {
           "date": "2026-08-26",
           "posts": 6,
-          "views": 1314,
+          "views": 1596,
           "views_from_posts": 6
         },
         {
           "date": "2026-08-25",
           "posts": 3,
-          "views": 977,
+          "views": 1011,
           "views_from_posts": 3
         },
         {
           "date": "2026-08-24",
           "posts": 4,
-          "views": 1274,
+          "views": 1319,
           "views_from_posts": 4
         },
         {
           "date": "2026-08-23",
           "posts": 5,
-          "views": 1621,
+          "views": 1638,
           "views_from_posts": 5
         },
         {
           "date": "2026-08-22",
           "posts": 7,
-          "views": 1659,
+          "views": 1675,
           "views_from_posts": 7
         },
         {
           "date": "2026-08-21",
           "posts": 8,
-          "views": 3694,
+          "views": 3787,
           "views_from_posts": 8
         },
         {
           "date": "2026-08-20",
           "posts": 3,
-          "views": 983,
+          "views": 991,
           "views_from_posts": 3
         },
         {
           "date": "2026-08-19",
           "posts": 5,
-          "views": 3014,
+          "views": 3093,
           "views_from_posts": 5
         },
         {
           "date": "2026-08-18",
           "posts": 4,
-          "views": 1761,
+          "views": 1773,
           "views_from_posts": 4
         },
         {
           "date": "2026-08-17",
           "posts": 5,
-          "views": 2106,
+          "views": 2118,
           "views_from_posts": 5
         },
         {
           "date": "2026-08-16",
           "posts": 3,
-          "views": 1229,
+          "views": 1232,
           "views_from_posts": 3
         },
         {
           "date": "2026-08-15",
           "posts": 9,
-          "views": 1899,
+          "views": 1916,
           "views_from_posts": 9
         },
         {
           "date": "2026-08-14",
           "posts": 8,
-          "views": 2854,
+          "views": 2865,
           "views_from_posts": 8
         },
         {
           "date": "2026-08-13",
           "posts": 7,
-          "views": 3859,
+          "views": 3883,
           "views_from_posts": 7
         },
         {
@@ -377,13 +389,13 @@
         {
           "date": "2026-08-11",
           "posts": 6,
-          "views": 11462,
+          "views": 11630,
           "views_from_posts": 6
         },
         {
           "date": "2026-08-10",
           "posts": 5,
-          "views": 2713,
+          "views": 2716,
           "views_from_posts": 5
         },
         {
@@ -395,7 +407,7 @@
         {
           "date": "2026-08-08",
           "posts": 2,
-          "views": 1134,
+          "views": 1143,
           "views_from_posts": 2
         },
         {
@@ -413,19 +425,19 @@
         {
           "date": "2026-08-05",
           "posts": 2,
-          "views": 1363,
+          "views": 1364,
           "views_from_posts": 2
         },
         {
           "date": "2026-08-04",
           "posts": 3,
-          "views": 1215,
+          "views": 1216,
           "views_from_posts": 3
         },
         {
           "date": "2026-08-03",
           "posts": 3,
-          "views": 938,
+          "views": 940,
           "views_from_posts": 3
         },
         {
@@ -455,7 +467,7 @@
         {
           "date": "2026-07-29",
           "posts": 2,
-          "views": 7226,
+          "views": 7302,
           "views_from_posts": 2
         },
         {
@@ -554,7 +566,7 @@
       "accounts": [
         "lifestyledesignrealtytexas"
       ],
-      "posts_recorded": 111,
+      "posts_recorded": 109,
       "daily": [
         {
           "date": "2026-08-24",
@@ -869,11 +881,302 @@
           "views_from_posts": 1
         }
       ],
-      "unclassified_rows": 111,
+      "unclassified_rows": 107,
       "unclassified_note": "rows returned by /v2/analytics/posts/youtube carrying no videoType; format unknown, so excluded from the Shorts series rather than assumed"
     }
   },
   "recent_posts": [
+    {
+      "platform": "instagram",
+      "account": "lifestyledesignrealty",
+      "kind": "feed",
+      "post_id": "18120514151509004",
+      "published": "2026-08-27T23:22:36Z",
+      "slug": "Your lender will approve you for a number the lender knows you cannot afford.",
+      "url": "https://www.instagram.com/p/Dcj9NMJiHts/",
+      "metrics": {
+        "views": 27,
+        "reach": 12,
+        "impressions": 27,
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "saves": 0,
+        "interactions": 0,
+        "engagement_rate": 0
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "propertypete01",
+      "kind": "feed",
+      "post_id": "17915991060242369",
+      "published": "2026-08-27T23:22:33Z",
+      "slug": "Your lender will approve you for a number the lender knows you cannot afford.",
+      "url": "https://www.instagram.com/p/Dcj9M2zCp8-/",
+      "metrics": {
+        "views": 20,
+        "reach": 7,
+        "impressions": 20,
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "saves": 0,
+        "interactions": 0,
+        "engagement_rate": 0
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "lifestyledesignrealtyaustintx",
+      "kind": "feed",
+      "post_id": "17946390588271348",
+      "published": "2026-08-27T23:21:46Z",
+      "slug": "Your lender will approve you for a number the lender knows you cannot afford.",
+      "url": "https://www.instagram.com/p/Dcj9HsJDcVe/",
+      "metrics": {
+        "views": 1,
+        "reach": 1,
+        "impressions": 1,
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "saves": 0,
+        "interactions": 0,
+        "engagement_rate": 0
+      }
+    },
+    {
+      "platform": "tiktok",
+      "account": "lifestyledesignrealtytexas",
+      "post_id": "7678855331845262605",
+      "published": "2026-08-27T23:20:39Z",
+      "slug": "Your lender will approve you for a number the lender knows you cannot afford. Approval Is A Ceiling: A pre-approval say…",
+      "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678855331845262605",
+      "metrics": {
+        "views": 251,
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "duration_seconds": 0
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "lifestyledesignrealtytexas",
+      "kind": "reel",
+      "post_id": "18106821397879433",
+      "published": "2026-08-27T19:41:41Z",
+      "slug": "I’ve never seen finishes like this at this price point in San Antonio right now.",
+      "url": "https://www.instagram.com/reel/Dcjj9iBsMfe/",
+      "metrics": {
+        "views": 672,
+        "reach": 507,
+        "impressions": 672,
+        "likes": 18,
+        "comments": 8,
+        "shares": 9,
+        "saves": 8,
+        "interactions": 43,
+        "engagement_rate": 8.481262327416173,
+        "avg_watch_seconds": 5.994,
+        "duration_seconds": 14,
+        "skip_rate": 63.5
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "lifestyledesignrealty",
+      "kind": "reel",
+      "post_id": "18351245671220031",
+      "published": "2026-08-27T19:16:55Z",
+      "slug": "I've never seen finishes like this at this price point in San Antonio right now.",
+      "url": "https://www.instagram.com/reel/DcjhHQNjgky/",
+      "metrics": {
+        "views": 149,
+        "reach": 128,
+        "impressions": 149,
+        "likes": 12,
+        "comments": 0,
+        "shares": 0,
+        "saves": 0,
+        "interactions": 12,
+        "engagement_rate": 9.375,
+        "avg_watch_seconds": 4.781,
+        "duration_seconds": 14,
+        "skip_rate": 65.9
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "propertypete01",
+      "kind": "reel",
+      "post_id": "18101752312979881",
+      "published": "2026-08-27T19:16:33Z",
+      "slug": "I've never seen finishes like this at this price point in San Antonio right now.",
+      "url": "https://www.instagram.com/reel/Dcjg-S_kpiC/",
+      "metrics": {
+        "views": 144,
+        "reach": 115,
+        "impressions": 144,
+        "likes": 1,
+        "comments": 0,
+        "shares": 0,
+        "saves": 0,
+        "interactions": 1,
+        "engagement_rate": 0.8695652173913043,
+        "avg_watch_seconds": 6.285,
+        "duration_seconds": 14,
+        "skip_rate": 63.2
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "lifestyledesignrealtyaustintx",
+      "kind": "reel",
+      "post_id": "18172386940433772",
+      "published": "2026-08-27T19:16:10Z",
+      "slug": "I've never seen finishes like this at this price point in San Antonio right now.",
+      "url": "https://www.instagram.com/reel/DcjhBwXAuFV/",
+      "metrics": {
+        "views": 72,
+        "reach": 56,
+        "impressions": 72,
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "saves": 0,
+        "interactions": 0,
+        "engagement_rate": 0,
+        "avg_watch_seconds": 4.926,
+        "duration_seconds": 14,
+        "skip_rate": 64.3
+      }
+    },
+    {
+      "platform": "tiktok",
+      "account": "lifestyledesignrealtytexas",
+      "post_id": "7678792005970840846",
+      "published": "2026-08-27T19:14:47Z",
+      "slug": "I've never seen finishes like this at this price point in San Antonio right now. New construction starting at $369,990…",
+      "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678792005970840846",
+      "metrics": {
+        "views": 299,
+        "likes": 8,
+        "comments": 0,
+        "shares": 1,
+        "engagement_rate": 3.0100334448160537,
+        "duration_seconds": 14
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "lifestyledesignrealtytexas",
+      "kind": "reel",
+      "post_id": "18082646027700796",
+      "published": "2026-08-27T17:42:47Z",
+      "slug": "this is what new construction in San Antonio is supposed to feel like.",
+      "url": "https://www.instagram.com/reel/DcjWWOBMoMA/",
+      "metrics": {
+        "views": 493,
+        "reach": 375,
+        "impressions": 493,
+        "likes": 9,
+        "comments": 0,
+        "shares": 1,
+        "saves": 3,
+        "interactions": 13,
+        "engagement_rate": 3.466666666666667,
+        "avg_watch_seconds": 5.296,
+        "duration_seconds": 14,
+        "skip_rate": 65.7
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "lifestyledesignrealty",
+      "kind": "reel",
+      "post_id": "17954748141223847",
+      "published": "2026-08-27T16:15:14Z",
+      "slug": "this is what new construction in San Antonio is supposed to feel like.",
+      "url": "https://www.instagram.com/reel/DcjMUgvDRkn/",
+      "metrics": {
+        "views": 161,
+        "reach": 130,
+        "impressions": 161,
+        "likes": 5,
+        "comments": 1,
+        "shares": 0,
+        "saves": 0,
+        "interactions": 6,
+        "engagement_rate": 4.615384615384615,
+        "avg_watch_seconds": 4.097,
+        "duration_seconds": 14,
+        "skip_rate": 76.3
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "lifestyledesignrealtyaustintx",
+      "kind": "reel",
+      "post_id": "18060355331529126",
+      "published": "2026-08-27T16:14:10Z",
+      "slug": "this is what new construction in San Antonio is supposed to feel like.",
+      "url": "https://www.instagram.com/reel/DcjMMjxlSsT/",
+      "metrics": {
+        "views": 122,
+        "reach": 104,
+        "impressions": 122,
+        "likes": 0,
+        "comments": 0,
+        "shares": 1,
+        "saves": 0,
+        "interactions": 1,
+        "engagement_rate": 0.9615384615384616,
+        "avg_watch_seconds": 3.538,
+        "duration_seconds": 14,
+        "skip_rate": 76.2
+      }
+    },
+    {
+      "platform": "instagram",
+      "account": "propertypete01",
+      "kind": "reel",
+      "post_id": "18477461155128069",
+      "published": "2026-08-27T16:14:10Z",
+      "slug": "this is what new construction in San Antonio is supposed to feel like.",
+      "url": "https://www.instagram.com/reel/DcjMMfkkSF_/",
+      "metrics": {
+        "views": 147,
+        "reach": 123,
+        "impressions": 147,
+        "likes": 4,
+        "comments": 0,
+        "shares": 0,
+        "saves": 0,
+        "interactions": 4,
+        "engagement_rate": 3.252032520325203,
+        "avg_watch_seconds": 3.946,
+        "duration_seconds": 14,
+        "skip_rate": 71.5
+      }
+    },
+    {
+      "platform": "tiktok",
+      "account": "lifestyledesignrealtytexas",
+      "post_id": "7678745323828694285",
+      "published": "2026-08-27T16:13:38Z",
+      "slug": "this is what new construction in San Antonio is supposed to feel like. homes starting at $369,000. these don't sit long…",
+      "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678745323828694285",
+      "metrics": {
+        "views": 579,
+        "likes": 9,
+        "comments": 1,
+        "shares": 1,
+        "engagement_rate": 1.8998272884283247,
+        "duration_seconds": 13
+      }
+    },
     {
       "platform": "instagram",
       "account": "lifestyledesignrealty",
@@ -883,18 +1186,18 @@
       "slug": "🔥 Want to build a real estate business that actually produces?",
       "url": "https://www.instagram.com/reel/DchUfEnJhir/",
       "metrics": {
-        "views": 72,
-        "reach": 69,
-        "impressions": 72,
-        "likes": 1,
+        "views": 126,
+        "reach": 116,
+        "impressions": 126,
+        "likes": 4,
         "comments": 2,
         "shares": 0,
         "saves": 0,
-        "interactions": 3,
-        "engagement_rate": 4.3478260869565215,
-        "avg_watch_seconds": 4.424,
+        "interactions": 6,
+        "engagement_rate": 5.172413793103448,
+        "avg_watch_seconds": 4.377,
         "duration_seconds": 18,
-        "skip_rate": 59.4
+        "skip_rate": 65.5
       }
     },
     {
@@ -905,11 +1208,11 @@
       "slug": "🔥 Want to build a real estate business that actually produces? It starts with a simple formula: consistent conversatio…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678475786503982350",
       "metrics": {
-        "views": 229,
-        "likes": 4,
+        "views": 285,
+        "likes": 5,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.7467248908296944,
+        "engagement_rate": 1.7543859649122806,
         "duration_seconds": 18
       }
     },
@@ -922,18 +1225,18 @@
       "slug": "🔥 Want to build a real estate business that actually produces?",
       "url": "https://www.instagram.com/reel/DchUbPqMPtK/",
       "metrics": {
-        "views": 484,
-        "reach": 321,
-        "impressions": 484,
+        "views": 617,
+        "reach": 414,
+        "impressions": 617,
         "likes": 9,
         "comments": 2,
         "shares": 5,
         "saves": 0,
         "interactions": 16,
-        "engagement_rate": 4.984423676012461,
-        "avg_watch_seconds": 7.388,
+        "engagement_rate": 3.864734299516908,
+        "avg_watch_seconds": 6.958,
         "duration_seconds": 18,
-        "skip_rate": 60.9
+        "skip_rate": 61.2
       }
     },
     {
@@ -945,18 +1248,18 @@
       "slug": "I’ve never seen finishes like this at this price point in San Antonio right now.",
       "url": "https://www.instagram.com/reel/DchRmubsinw/",
       "metrics": {
-        "views": 631,
-        "reach": 489,
-        "impressions": 631,
-        "likes": 24,
-        "comments": 2,
-        "shares": 6,
-        "saves": 3,
-        "interactions": 35,
-        "engagement_rate": 7.157464212678937,
-        "avg_watch_seconds": 5.511,
+        "views": 992,
+        "reach": 773,
+        "impressions": 992,
+        "likes": 33,
+        "comments": 3,
+        "shares": 7,
+        "saves": 4,
+        "interactions": 47,
+        "engagement_rate": 6.0802069857697285,
+        "avg_watch_seconds": 5.829,
         "duration_seconds": 16,
-        "skip_rate": 61.2
+        "skip_rate": 60.1
       }
     },
     {
@@ -968,18 +1271,18 @@
       "slug": "wait until you see what $689,868 gets you in north austin 😮‍💨",
       "url": "https://www.instagram.com/reel/DchEj-Gic3y/",
       "metrics": {
-        "views": 145,
-        "reach": 133,
-        "impressions": 145,
-        "likes": 3,
+        "views": 152,
+        "reach": 137,
+        "impressions": 152,
+        "likes": 4,
         "comments": 0,
         "shares": 0,
         "saves": 0,
-        "interactions": 3,
-        "engagement_rate": 2.255639097744361,
-        "avg_watch_seconds": 6.642,
+        "interactions": 4,
+        "engagement_rate": 2.9197080291970803,
+        "avg_watch_seconds": 6.584,
         "duration_seconds": 28,
-        "skip_rate": 62.1
+        "skip_rate": 62.8
       }
     },
     {
@@ -991,18 +1294,18 @@
       "slug": "wait until you see what $689,868 gets you in north austin 😮‍💨",
       "url": "https://www.instagram.com/reel/DchEauBipTL/",
       "metrics": {
-        "views": 67,
-        "reach": 57,
-        "impressions": 67,
+        "views": 121,
+        "reach": 108,
+        "impressions": 121,
         "likes": 0,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 0,
         "engagement_rate": 0,
-        "avg_watch_seconds": 7.889,
+        "avg_watch_seconds": 6.602,
         "duration_seconds": 28,
-        "skip_rate": 66.7
+        "skip_rate": 67
       }
     },
     {
@@ -1014,18 +1317,18 @@
       "slug": "wait until you see what $689,868 gets you in north austin 😮‍💨",
       "url": "https://www.instagram.com/reel/DchEZWgFTaC/",
       "metrics": {
-        "views": 155,
-        "reach": 128,
-        "impressions": 155,
+        "views": 161,
+        "reach": 131,
+        "impressions": 161,
         "likes": 0,
         "comments": 0,
         "shares": 2,
         "saves": 0,
         "interactions": 2,
-        "engagement_rate": 1.5625,
-        "avg_watch_seconds": 6.159,
+        "engagement_rate": 1.5267175572519085,
+        "avg_watch_seconds": 6.183,
         "duration_seconds": 28,
-        "skip_rate": 67.7
+        "skip_rate": 68.2
       }
     },
     {
@@ -1036,11 +1339,11 @@
       "slug": "wait until you see what $689,868 gets you in north austin 😮‍💨 new construction homes like this move fast. builder inc…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678439400706936094",
       "metrics": {
-        "views": 82,
+        "views": 109,
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.2195121951219512,
+        "engagement_rate": 0.9174311926605505,
         "duration_seconds": 27
       }
     },
@@ -1052,11 +1355,11 @@
       "slug": "🔥 Want to build a real estate business that actually produces? It starts with a simple formula: consistent conversatio…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678428937344535822",
       "metrics": {
-        "views": 214,
-        "likes": 1,
+        "views": 234,
+        "likes": 2,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.4672897196261682,
+        "engagement_rate": 0.8547008547008547,
         "duration_seconds": 20
       }
     },
@@ -1069,18 +1372,18 @@
       "slug": "🔥 Want to build a real estate business that actually produces?",
       "url": "https://www.instagram.com/reel/Dcg_nDAPjAQ/",
       "metrics": {
-        "views": 74,
-        "reach": 66,
-        "impressions": 74,
+        "views": 102,
+        "reach": 83,
+        "impressions": 102,
         "likes": 2,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 2,
-        "engagement_rate": 3.0303030303030303,
-        "avg_watch_seconds": 3.519,
+        "engagement_rate": 2.4096385542168677,
+        "avg_watch_seconds": 3.098,
         "duration_seconds": 21,
-        "skip_rate": 89.2
+        "skip_rate": 91.8
       }
     },
     {
@@ -1092,18 +1395,18 @@
       "slug": "🔥 Want to build a real estate business that actually produces?",
       "url": "https://www.instagram.com/reel/Dcg_e0ohula/",
       "metrics": {
-        "views": 39,
-        "reach": 25,
-        "impressions": 39,
+        "views": 47,
+        "reach": 33,
+        "impressions": 47,
         "likes": 0,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 0,
         "engagement_rate": 0,
-        "avg_watch_seconds": 4.462,
+        "avg_watch_seconds": 3.787,
         "duration_seconds": 21,
-        "skip_rate": 96
+        "skip_rate": 93.9
       }
     },
     {
@@ -1115,16 +1418,16 @@
       "slug": "🔥 Want to build a real estate business that actually produces?",
       "url": "https://www.instagram.com/reel/Dcg_dWhqeYl/",
       "metrics": {
-        "views": 9,
-        "reach": 7,
-        "impressions": 9,
+        "views": 11,
+        "reach": 9,
+        "impressions": 11,
         "likes": 0,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 0,
         "engagement_rate": 0,
-        "avg_watch_seconds": 1.263,
+        "avg_watch_seconds": 1.172,
         "duration_seconds": 21,
         "skip_rate": 100
       }
@@ -1138,18 +1441,18 @@
       "slug": "I've never seen finishes like this at this price point in San Antonio right now.",
       "url": "https://www.instagram.com/reel/Dcg8bzsjGTO/",
       "metrics": {
-        "views": 146,
-        "reach": 120,
-        "impressions": 146,
-        "likes": 1,
+        "views": 155,
+        "reach": 125,
+        "impressions": 155,
+        "likes": 2,
         "comments": 0,
         "shares": 1,
         "saves": 0,
-        "interactions": 2,
-        "engagement_rate": 1.6666666666666667,
-        "avg_watch_seconds": 4.725,
+        "interactions": 3,
+        "engagement_rate": 2.4,
+        "avg_watch_seconds": 4.736,
         "duration_seconds": 16,
-        "skip_rate": 71.7
+        "skip_rate": 71.4
       }
     },
     {
@@ -1161,18 +1464,18 @@
       "slug": "I've never seen finishes like this at this price point in San Antonio right now.",
       "url": "https://www.instagram.com/reel/Dcg8VsVFVvE/",
       "metrics": {
-        "views": 127,
-        "reach": 111,
-        "impressions": 127,
+        "views": 135,
+        "reach": 117,
+        "impressions": 135,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 0.9009009009009009,
-        "avg_watch_seconds": 4.448,
+        "engagement_rate": 0.8547008547008547,
+        "avg_watch_seconds": 4.503,
         "duration_seconds": 16,
-        "skip_rate": 70.6
+        "skip_rate": 70.7
       }
     },
     {
@@ -1184,16 +1487,16 @@
       "slug": "I've never seen finishes like this at this price point in San Antonio right now.",
       "url": "https://www.instagram.com/reel/Dcg8VjTDFVM/",
       "metrics": {
-        "views": 154,
-        "reach": 130,
-        "impressions": 154,
+        "views": 161,
+        "reach": 136,
+        "impressions": 161,
         "likes": 2,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 2.3076923076923075,
-        "avg_watch_seconds": 5.21,
+        "engagement_rate": 2.2058823529411766,
+        "avg_watch_seconds": 5.106,
         "duration_seconds": 16,
         "skip_rate": 66.9
       }
@@ -1206,11 +1509,11 @@
       "slug": "I've never seen finishes like this at this price point in San Antonio right now. New construction in this market moves…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678421372334296350",
       "metrics": {
-        "views": 376,
-        "likes": 7,
-        "comments": 0,
-        "shares": 0,
-        "engagement_rate": 1.8617021276595744,
+        "views": 480,
+        "likes": 12,
+        "comments": 4,
+        "shares": 2,
+        "engagement_rate": 3.75,
         "duration_seconds": 16
       }
     },
@@ -1223,18 +1526,18 @@
       "slug": "Wait until you see this kitchen 😮‍💨",
       "url": "https://www.instagram.com/reel/Dcgznz_sxfU/",
       "metrics": {
-        "views": 1067,
-        "reach": 914,
-        "impressions": 1067,
-        "likes": 38,
+        "views": 1854,
+        "reach": 1634,
+        "impressions": 1854,
+        "likes": 66,
         "comments": 0,
-        "shares": 6,
-        "saves": 7,
-        "interactions": 51,
-        "engagement_rate": 5.579868708971554,
-        "avg_watch_seconds": 7.637,
+        "shares": 9,
+        "saves": 9,
+        "interactions": 84,
+        "engagement_rate": 5.140758873929008,
+        "avg_watch_seconds": 9.802,
         "duration_seconds": 35,
-        "skip_rate": 51.9
+        "skip_rate": 50.7
       }
     },
     {
@@ -1246,18 +1549,18 @@
       "slug": "Wait until you see this kitchen 😮‍💨",
       "url": "https://www.instagram.com/reel/DcgzWqgCS0P/",
       "metrics": {
-        "views": 190,
-        "reach": 161,
-        "impressions": 190,
-        "likes": 10,
-        "comments": 0,
+        "views": 216,
+        "reach": 180,
+        "impressions": 216,
+        "likes": 12,
+        "comments": 2,
         "shares": 3,
-        "saves": 2,
-        "interactions": 15,
-        "engagement_rate": 9.316770186335404,
-        "avg_watch_seconds": 8.853,
+        "saves": 3,
+        "interactions": 20,
+        "engagement_rate": 11.11111111111111,
+        "avg_watch_seconds": 9.086,
         "duration_seconds": 35,
-        "skip_rate": 58.3
+        "skip_rate": 57.4
       }
     },
     {
@@ -1269,18 +1572,18 @@
       "slug": "Wait until you see this kitchen 😮‍💨",
       "url": "https://www.instagram.com/reel/DcgzSB9glwa/",
       "metrics": {
-        "views": 66,
-        "reach": 55,
-        "impressions": 66,
-        "likes": 1,
+        "views": 119,
+        "reach": 110,
+        "impressions": 119,
+        "likes": 2,
         "comments": 0,
         "shares": 1,
-        "saves": 0,
-        "interactions": 2,
+        "saves": 1,
+        "interactions": 4,
         "engagement_rate": 3.6363636363636362,
-        "avg_watch_seconds": 6.651,
+        "avg_watch_seconds": 6.833,
         "duration_seconds": 35,
-        "skip_rate": 47.5
+        "skip_rate": 50.9
       }
     },
     {
@@ -1292,18 +1595,18 @@
       "slug": "Wait until you see this kitchen 😮‍💨",
       "url": "https://www.instagram.com/reel/DcgzOPUlYCv/",
       "metrics": {
-        "views": 149,
-        "reach": 121,
-        "impressions": 149,
+        "views": 154,
+        "reach": 126,
+        "impressions": 154,
         "likes": 5,
         "comments": 0,
         "shares": 0,
         "saves": 1,
         "interactions": 6,
-        "engagement_rate": 4.958677685950414,
-        "avg_watch_seconds": 16.531,
+        "engagement_rate": 4.761904761904762,
+        "avg_watch_seconds": 16.036,
         "duration_seconds": 35,
-        "skip_rate": 50.8
+        "skip_rate": 52
       }
     },
     {
@@ -1314,11 +1617,11 @@
       "slug": "Wait until you see this kitchen 😮‍💨 New construction like this in West Austin doesn't sit long. Starting at just $899…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678400787734662430",
       "metrics": {
-        "views": 196,
-        "likes": 3,
+        "views": 261,
+        "likes": 5,
         "comments": 0,
         "shares": 2,
-        "engagement_rate": 2.5510204081632653,
+        "engagement_rate": 2.681992337164751,
         "duration_seconds": 35
       }
     },
@@ -1331,18 +1634,18 @@
       "slug": "Would you believe brand new construction in San Antonio for $2,500?",
       "url": "https://www.instagram.com/reel/DcgriLvArHZ/",
       "metrics": {
-        "views": 130,
-        "reach": 115,
-        "impressions": 130,
-        "likes": 3,
+        "views": 137,
+        "reach": 119,
+        "impressions": 137,
+        "likes": 5,
         "comments": 0,
         "shares": 0,
         "saves": 0,
-        "interactions": 3,
-        "engagement_rate": 2.608695652173913,
-        "avg_watch_seconds": 3.891,
+        "interactions": 5,
+        "engagement_rate": 4.201680672268908,
+        "avg_watch_seconds": 3.864,
         "duration_seconds": 16,
-        "skip_rate": 70.4
+        "skip_rate": 69.4
       }
     },
     {
@@ -1354,18 +1657,18 @@
       "slug": "Would you believe brand new construction in San Antonio for $2,500?",
       "url": "https://www.instagram.com/reel/DcgriGkFOSg/",
       "metrics": {
-        "views": 47,
-        "reach": 39,
-        "impressions": 47,
+        "views": 81,
+        "reach": 72,
+        "impressions": 81,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 1,
         "interactions": 2,
-        "engagement_rate": 5.128205128205129,
-        "avg_watch_seconds": 3.702,
+        "engagement_rate": 2.7777777777777777,
+        "avg_watch_seconds": 4.252,
         "duration_seconds": 16,
-        "skip_rate": 58.5
+        "skip_rate": 58.3
       }
     },
     {
@@ -1377,18 +1680,18 @@
       "slug": "Would you believe brand new construction in San Antonio for $2,500?",
       "url": "https://www.instagram.com/reel/DcgrfmpFPE-/",
       "metrics": {
-        "views": 167,
-        "reach": 128,
-        "impressions": 167,
+        "views": 175,
+        "reach": 137,
+        "impressions": 175,
         "likes": 3,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 2.34375,
-        "avg_watch_seconds": 4.732,
+        "engagement_rate": 2.18978102189781,
+        "avg_watch_seconds": 4.883,
         "duration_seconds": 16,
-        "skip_rate": 63.4
+        "skip_rate": 63
       }
     },
     {
@@ -1399,11 +1702,11 @@
       "slug": "Would you believe brand new construction in San Antonio for $2,500? New construction like this doesn't sit long, and bu…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678383222882864414",
       "metrics": {
-        "views": 217,
+        "views": 227,
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.4608294930875576,
+        "engagement_rate": 0.44052863436123346,
         "duration_seconds": 16
       }
     },
@@ -1416,9 +1719,9 @@
       "slug": "My real estate income is different every month. My paycheck is the same every month.",
       "url": "https://www.instagram.com/p/Dcgcd-iiBqs/",
       "metrics": {
-        "views": 43,
-        "reach": 11,
-        "impressions": 43,
+        "views": 44,
+        "reach": 12,
+        "impressions": 44,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -1436,9 +1739,9 @@
       "slug": "My real estate income is different every month. My paycheck is the same every month.",
       "url": "https://www.instagram.com/p/DcgcdXdCDXM/",
       "metrics": {
-        "views": 8,
-        "reach": 4,
-        "impressions": 8,
+        "views": 10,
+        "reach": 5,
+        "impressions": 10,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -1456,9 +1759,9 @@
       "slug": "My real estate income is different every month. My paycheck is the same every month.",
       "url": "https://www.instagram.com/p/DcgccxLilmj/",
       "metrics": {
-        "views": 40,
-        "reach": 19,
-        "impressions": 40,
+        "views": 53,
+        "reach": 24,
+        "impressions": 53,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -1476,18 +1779,18 @@
       "slug": "Would you believe you can get brand new construction in San Antonio starting at $469,990?",
       "url": "https://www.instagram.com/reel/DceYOe5AIau/",
       "metrics": {
-        "views": 176,
-        "reach": 142,
-        "impressions": 176,
+        "views": 180,
+        "reach": 143,
+        "impressions": 180,
         "likes": 5,
         "comments": 2,
         "shares": 1,
         "saves": 0,
         "interactions": 8,
-        "engagement_rate": 5.633802816901408,
-        "avg_watch_seconds": 5.256,
+        "engagement_rate": 5.594405594405594,
+        "avg_watch_seconds": 5.264,
         "duration_seconds": 35,
-        "skip_rate": 75.3
+        "skip_rate": 75
       }
     },
     {
@@ -1499,18 +1802,18 @@
       "slug": "Would you believe you can get brand new construction in San Antonio starting at $469,990?",
       "url": "https://www.instagram.com/reel/DceYLxWCp2I/",
       "metrics": {
-        "views": 154,
-        "reach": 126,
-        "impressions": 154,
+        "views": 156,
+        "reach": 128,
+        "impressions": 156,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 0.7936507936507936,
-        "avg_watch_seconds": 5.545,
+        "engagement_rate": 0.78125,
+        "avg_watch_seconds": 5.688,
         "duration_seconds": 35,
-        "skip_rate": 65.4
+        "skip_rate": 64.3
       }
     },
     {
@@ -1544,11 +1847,11 @@
       "slug": "Would you believe you can get brand new construction in San Antonio starting at $469,990? New construction like this mo…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678051400412122381",
       "metrics": {
-        "views": 356,
+        "views": 365,
         "likes": 4,
         "comments": 3,
         "shares": 0,
-        "engagement_rate": 1.9662921348314606,
+        "engagement_rate": 1.917808219178082,
         "duration_seconds": 34
       }
     },
@@ -1561,18 +1864,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/DceGfnRklJv/",
       "metrics": {
-        "views": 173,
-        "reach": 132,
-        "impressions": 173,
+        "views": 176,
+        "reach": 134,
+        "impressions": 176,
         "likes": 6,
         "comments": 5,
         "shares": 1,
         "saves": 0,
         "interactions": 12,
-        "engagement_rate": 9.090909090909092,
+        "engagement_rate": 8.955223880597014,
         "avg_watch_seconds": 5.778,
         "duration_seconds": 23,
-        "skip_rate": 71.5
+        "skip_rate": 70.7
       }
     },
     {
@@ -1584,18 +1887,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/DceGdJWjPFV/",
       "metrics": {
-        "views": 115,
-        "reach": 102,
-        "impressions": 115,
+        "views": 116,
+        "reach": 103,
+        "impressions": 116,
         "likes": 4,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 4,
-        "engagement_rate": 3.9215686274509802,
-        "avg_watch_seconds": 5.616,
+        "engagement_rate": 3.883495145631068,
+        "avg_watch_seconds": 5.579,
         "duration_seconds": 23,
-        "skip_rate": 73
+        "skip_rate": 73.3
       }
     },
     {
@@ -1608,14 +1911,14 @@
       "url": "https://www.instagram.com/reel/DceGa8lj3s-/",
       "metrics": {
         "views": 133,
-        "reach": 117,
+        "reach": 118,
         "impressions": 133,
         "likes": 3,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 2.5641025641025643,
+        "engagement_rate": 2.542372881355932,
         "avg_watch_seconds": 4.661,
         "duration_seconds": 23,
         "skip_rate": 75.9
@@ -1630,18 +1933,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/DceGeWOMrBy/",
       "metrics": {
-        "views": 1123,
-        "reach": 918,
-        "impressions": 1123,
-        "likes": 42,
+        "views": 1151,
+        "reach": 945,
+        "impressions": 1151,
+        "likes": 43,
         "comments": 16,
         "shares": 6,
-        "saves": 8,
-        "interactions": 72,
-        "engagement_rate": 7.8431372549019605,
-        "avg_watch_seconds": 7.426,
+        "saves": 9,
+        "interactions": 74,
+        "engagement_rate": 7.830687830687831,
+        "avg_watch_seconds": 7.414,
         "duration_seconds": 23,
-        "skip_rate": 60.4
+        "skip_rate": 59.9
       }
     },
     {
@@ -1652,11 +1955,11 @@
       "slug": "this is what new construction is supposed to feel like new construction like this doesn't sit long. starting at $369,99…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7678011518876749070",
       "metrics": {
-        "views": 189,
+        "views": 203,
         "likes": 1,
-        "comments": 0,
+        "comments": 1,
         "shares": 0,
-        "engagement_rate": 0.5291005291005291,
+        "engagement_rate": 0.9852216748768473,
         "duration_seconds": 22
       }
     },
@@ -1669,15 +1972,15 @@
       "slug": "Texas transplants brace for tornadoes. Hail is the thing that actually gets them.",
       "url": "https://www.instagram.com/p/Dcd3qakCJCY/",
       "metrics": {
-        "views": 9,
-        "reach": 5,
-        "impressions": 9,
+        "views": 12,
+        "reach": 7,
+        "impressions": 12,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 20
+        "engagement_rate": 14.285714285714286
       }
     },
     {
@@ -1689,15 +1992,15 @@
       "slug": "Texas transplants brace for tornadoes. Hail is the thing that actually gets them.",
       "url": "https://www.instagram.com/p/Dcd3qgMiCWV/",
       "metrics": {
-        "views": 93,
-        "reach": 44,
-        "impressions": 93,
+        "views": 101,
+        "reach": 47,
+        "impressions": 101,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 2.272727272727273
+        "engagement_rate": 2.127659574468085
       }
     },
     {
@@ -1709,15 +2012,15 @@
       "slug": "Texas transplants brace for tornadoes. Hail is the thing that actually gets them.",
       "url": "https://www.instagram.com/p/Dcd3lE-jQsq/",
       "metrics": {
-        "views": 37,
-        "reach": 10,
-        "impressions": 37,
+        "views": 41,
+        "reach": 11,
+        "impressions": 41,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 10
+        "engagement_rate": 9.090909090909092
       }
     },
     {
@@ -1728,11 +2031,11 @@
       "slug": "Texas transplants brace for tornadoes. Hail is the thing that actually gets them. Spring Is The Season: The worst hail…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677978056631356685",
       "metrics": {
-        "views": 432,
+        "views": 443,
         "likes": 3,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.6944444444444444,
+        "engagement_rate": 0.6772009029345373,
         "duration_seconds": 0
       }
     },
@@ -1762,18 +2065,18 @@
       "slug": "Did you know you can get brand new construction in Austin starting at $254,990?",
       "url": "https://www.instagram.com/reel/Dcb8d1xgSVJ/",
       "metrics": {
-        "views": 196,
-        "reach": 167,
-        "impressions": 196,
-        "likes": 8,
+        "views": 201,
+        "reach": 170,
+        "impressions": 201,
+        "likes": 9,
         "comments": 0,
         "shares": 2,
         "saves": 3,
-        "interactions": 13,
-        "engagement_rate": 7.7844311377245505,
-        "avg_watch_seconds": 5.805,
+        "interactions": 14,
+        "engagement_rate": 8.235294117647058,
+        "avg_watch_seconds": 5.864,
         "duration_seconds": 24,
-        "skip_rate": 65.9
+        "skip_rate": 66.1
       }
     },
     {
@@ -1809,14 +2112,14 @@
       "url": "https://www.instagram.com/reel/Dcb8WuAk9lh/",
       "metrics": {
         "views": 146,
-        "reach": 125,
+        "reach": 126,
         "impressions": 146,
         "likes": 2,
         "comments": 0,
         "shares": 2,
         "saves": 0,
         "interactions": 4,
-        "engagement_rate": 3.2,
+        "engagement_rate": 3.1746031746031744,
         "avg_watch_seconds": 5.758,
         "duration_seconds": 24,
         "skip_rate": 65.9
@@ -1830,11 +2133,11 @@
       "slug": "Did you know you can get brand new construction in Austin starting at $254,990? New construction like this doesn't last…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677700811442457869",
       "metrics": {
-        "views": 152,
+        "views": 154,
         "likes": 5,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 3.289473684210526,
+        "engagement_rate": 3.2467532467532467,
         "duration_seconds": 24
       }
     },
@@ -1847,18 +2150,18 @@
       "slug": "Would you believe brand new construction in San Antonio starts at $240,990?",
       "url": "https://www.instagram.com/reel/Dcb130GMZRB/",
       "metrics": {
-        "views": 982,
-        "reach": 781,
-        "impressions": 982,
-        "likes": 17,
+        "views": 1003,
+        "reach": 795,
+        "impressions": 1003,
+        "likes": 18,
         "comments": 5,
         "shares": 7,
         "saves": 4,
-        "interactions": 33,
-        "engagement_rate": 4.225352112676056,
-        "avg_watch_seconds": 4.48,
+        "interactions": 34,
+        "engagement_rate": 4.276729559748428,
+        "avg_watch_seconds": 4.437,
         "duration_seconds": 15,
-        "skip_rate": 70.6
+        "skip_rate": 70.7
       }
     },
     {
@@ -1870,18 +2173,18 @@
       "slug": "Would you believe brand new construction in San Antonio starts at $240,990?",
       "url": "https://www.instagram.com/reel/Dcb1OmPgGJx/",
       "metrics": {
-        "views": 165,
-        "reach": 136,
-        "impressions": 165,
-        "likes": 7,
+        "views": 167,
+        "reach": 137,
+        "impressions": 167,
+        "likes": 8,
         "comments": 0,
         "shares": 1,
         "saves": 0,
-        "interactions": 8,
-        "engagement_rate": 5.882352941176471,
-        "avg_watch_seconds": 4.496,
+        "interactions": 9,
+        "engagement_rate": 6.569343065693431,
+        "avg_watch_seconds": 4.459,
         "duration_seconds": 15,
-        "skip_rate": 69.6
+        "skip_rate": 70
       }
     },
     {
@@ -1955,11 +2258,11 @@
       "slug": "Would you believe brand new construction in San Antonio starts at $240,990? New construction like this moves fast. Buil…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677684496468102414",
       "metrics": {
-        "views": 598,
+        "views": 636,
         "likes": 14,
-        "comments": 5,
+        "comments": 6,
         "shares": 4,
-        "engagement_rate": 3.8461538461538463,
+        "engagement_rate": 3.7735849056603774,
         "duration_seconds": 14
       }
     },
@@ -1972,18 +2275,18 @@
       "slug": "Wait until you see what starts at $339,990 in South Austin.",
       "url": "https://www.instagram.com/reel/Dcbygy2sVyK/",
       "metrics": {
-        "views": 1596,
-        "reach": 1260,
-        "impressions": 1596,
+        "views": 1636,
+        "reach": 1290,
+        "impressions": 1636,
         "likes": 39,
         "comments": 2,
         "shares": 14,
         "saves": 7,
         "interactions": 62,
-        "engagement_rate": 4.920634920634921,
-        "avg_watch_seconds": 6.327,
+        "engagement_rate": 4.8062015503875966,
+        "avg_watch_seconds": 6.361,
         "duration_seconds": 18,
-        "skip_rate": 60.1
+        "skip_rate": 60
       }
     },
     {
@@ -2012,18 +2315,18 @@
       "slug": "Wait until you see what starts at $339,990 in South Austin.",
       "url": "https://www.instagram.com/reel/Dcbn5CxiP9J/",
       "metrics": {
-        "views": 193,
-        "reach": 154,
-        "impressions": 193,
-        "likes": 4,
+        "views": 196,
+        "reach": 155,
+        "impressions": 196,
+        "likes": 5,
         "comments": 2,
         "shares": 1,
         "saves": 1,
-        "interactions": 8,
-        "engagement_rate": 5.194805194805195,
+        "interactions": 9,
+        "engagement_rate": 5.806451612903226,
         "avg_watch_seconds": 5.441,
         "duration_seconds": 18,
-        "skip_rate": 73.2
+        "skip_rate": 73.1
       }
     },
     {
@@ -2058,18 +2361,18 @@
       "slug": "Wait until you see what starts at $339,990 in South Austin.",
       "url": "https://www.instagram.com/reel/Dcbn3PEDe1E/",
       "metrics": {
-        "views": 130,
-        "reach": 119,
-        "impressions": 130,
+        "views": 132,
+        "reach": 120,
+        "impressions": 132,
         "likes": 1,
         "comments": 0,
         "shares": 1,
         "saves": 2,
         "interactions": 4,
-        "engagement_rate": 3.361344537815126,
-        "avg_watch_seconds": 3.578,
+        "engagement_rate": 3.3333333333333335,
+        "avg_watch_seconds": 3.574,
         "duration_seconds": 18,
-        "skip_rate": 79.7
+        "skip_rate": 79.8
       }
     },
     {
@@ -2081,18 +2384,18 @@
       "slug": "Wait until you see this kitchen 😮‍💨",
       "url": "https://www.instagram.com/reel/DcbiZI9gale/",
       "metrics": {
-        "views": 144,
-        "reach": 128,
-        "impressions": 144,
+        "views": 147,
+        "reach": 130,
+        "impressions": 147,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 0.78125,
-        "avg_watch_seconds": 3.061,
+        "engagement_rate": 0.7692307692307693,
+        "avg_watch_seconds": 3.209,
         "duration_seconds": 27,
-        "skip_rate": 79.1
+        "skip_rate": 77.3
       }
     },
     {
@@ -2144,18 +2447,18 @@
       "slug": "Wait until you see this kitchen 😮‍💨",
       "url": "https://www.instagram.com/reel/DcbiNHtIBR-/",
       "metrics": {
-        "views": 121,
-        "reach": 110,
-        "impressions": 121,
+        "views": 123,
+        "reach": 111,
+        "impressions": 123,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 0.9090909090909091,
-        "avg_watch_seconds": 2.919,
+        "engagement_rate": 0.9009009009009009,
+        "avg_watch_seconds": 3.148,
         "duration_seconds": 27,
-        "skip_rate": 77.3
+        "skip_rate": 76.6
       }
     },
     {
@@ -2166,11 +2469,11 @@
       "slug": "Wait until you see this kitchen 😮‍💨 New construction like this doesn't stay on the market long, especially with build…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677643553467632909",
       "metrics": {
-        "views": 266,
+        "views": 269,
         "likes": 3,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.1278195488721805,
+        "engagement_rate": 1.1152416356877324,
         "duration_seconds": 27
       }
     },
@@ -2183,9 +2486,9 @@
       "slug": "A Texas appraiser is not allowed to value your home off today's prices.",
       "url": "https://www.instagram.com/p/DcbSgfJCPdC/",
       "metrics": {
-        "views": 47,
-        "reach": 20,
-        "impressions": 47,
+        "views": 53,
+        "reach": 22,
+        "impressions": 53,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -2203,15 +2506,15 @@
       "slug": "A Texas appraiser is not allowed to value your home off today's prices.",
       "url": "https://www.instagram.com/p/DcbSgHECEWv/",
       "metrics": {
-        "views": 29,
-        "reach": 9,
-        "impressions": 29,
+        "views": 31,
+        "reach": 10,
+        "impressions": 31,
         "likes": 0,
         "comments": 0,
         "shares": 0,
         "saves": 1,
         "interactions": 1,
-        "engagement_rate": 11.11111111111111
+        "engagement_rate": 10
       }
     },
     {
@@ -2242,11 +2545,11 @@
       "slug": "A Texas appraiser is not allowed to value your home off today's prices. Appraisers Look Backward: The appraiser values…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677606133204372749",
       "metrics": {
-        "views": 258,
+        "views": 260,
         "likes": 3,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.1627906976744187,
+        "engagement_rate": 1.1538461538461537,
         "duration_seconds": 0
       }
     },
@@ -2259,18 +2562,18 @@
       "slug": "I walked into this new construction and immediately understood why these move fast.",
       "url": "https://www.instagram.com/reel/DcZe9ThsjnK/",
       "metrics": {
-        "views": 434,
-        "reach": 355,
-        "impressions": 434,
+        "views": 443,
+        "reach": 362,
+        "impressions": 443,
         "likes": 14,
         "comments": 2,
         "shares": 1,
         "saves": 1,
         "interactions": 18,
-        "engagement_rate": 5.070422535211268,
-        "avg_watch_seconds": 3.79,
+        "engagement_rate": 4.972375690607735,
+        "avg_watch_seconds": 3.864,
         "duration_seconds": 17,
-        "skip_rate": 70
+        "skip_rate": 69.4
       }
     },
     {
@@ -2282,18 +2585,18 @@
       "slug": "this is what new construction feels like when it’s done right",
       "url": "https://www.instagram.com/reel/DcZelBbsKxj/",
       "metrics": {
-        "views": 859,
-        "reach": 709,
-        "impressions": 859,
-        "likes": 23,
+        "views": 876,
+        "reach": 721,
+        "impressions": 876,
+        "likes": 24,
         "comments": 2,
-        "shares": 13,
+        "shares": 14,
         "saves": 8,
-        "interactions": 46,
-        "engagement_rate": 6.488011283497884,
-        "avg_watch_seconds": 5.937,
+        "interactions": 48,
+        "engagement_rate": 6.657420249653259,
+        "avg_watch_seconds": 6.037,
         "duration_seconds": 21,
-        "skip_rate": 68.7
+        "skip_rate": 68.3
       }
     },
     {
@@ -2351,18 +2654,18 @@
       "slug": "I walked into this new construction and immediately understood why these move fast.",
       "url": "https://www.instagram.com/reel/DcZbvx8lGX4/",
       "metrics": {
-        "views": 275,
-        "reach": 241,
-        "impressions": 275,
-        "likes": 4,
+        "views": 278,
+        "reach": 243,
+        "impressions": 278,
+        "likes": 6,
         "comments": 1,
         "shares": 1,
         "saves": 0,
-        "interactions": 6,
-        "engagement_rate": 2.4896265560165975,
-        "avg_watch_seconds": 4.405,
+        "interactions": 8,
+        "engagement_rate": 3.292181069958848,
+        "avg_watch_seconds": 4.391,
         "duration_seconds": 17,
-        "skip_rate": 69.6
+        "skip_rate": 69.1
       }
     },
     {
@@ -2390,11 +2693,11 @@
       "slug": "I walked into this new construction and immediately understood why these move fast. New construction in Fort Worth star…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677338939136445710",
       "metrics": {
-        "views": 306,
+        "views": 309,
         "likes": 11,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 3.5947712418300655,
+        "engagement_rate": 3.559870550161812,
         "duration_seconds": 16
       }
     },
@@ -2407,18 +2710,18 @@
       "slug": "this is what new construction feels like when it's done right",
       "url": "https://www.instagram.com/reel/DcZPjE4jAh2/",
       "metrics": {
-        "views": 245,
+        "views": 247,
         "reach": 201,
-        "impressions": 245,
+        "impressions": 247,
         "likes": 7,
         "comments": 2,
         "shares": 2,
         "saves": 1,
         "interactions": 12,
         "engagement_rate": 5.970149253731344,
-        "avg_watch_seconds": 4.579,
+        "avg_watch_seconds": 4.74,
         "duration_seconds": 21,
-        "skip_rate": 75.5
+        "skip_rate": 75.1
       }
     },
     {
@@ -2492,11 +2795,11 @@
       "slug": "this is what new construction feels like when it's done right new construction at this price point in San Antonio won't…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677311461269556493",
       "metrics": {
-        "views": 652,
+        "views": 657,
         "likes": 13,
         "comments": 0,
         "shares": 2,
-        "engagement_rate": 2.3006134969325154,
+        "engagement_rate": 2.2831050228310503,
         "duration_seconds": 20
       }
     },
@@ -2509,18 +2812,18 @@
       "slug": "This might be the best new build value I've toured in Buda all month.",
       "url": "https://www.instagram.com/reel/DcZBzaBAcj2/",
       "metrics": {
-        "views": 214,
-        "reach": 173,
-        "impressions": 214,
-        "likes": 8,
+        "views": 217,
+        "reach": 174,
+        "impressions": 217,
+        "likes": 9,
         "comments": 2,
         "shares": 3,
         "saves": 1,
-        "interactions": 14,
-        "engagement_rate": 8.092485549132949,
-        "avg_watch_seconds": 5.006,
+        "interactions": 15,
+        "engagement_rate": 8.620689655172415,
+        "avg_watch_seconds": 5.044,
         "duration_seconds": 22,
-        "skip_rate": 74.7
+        "skip_rate": 74
       }
     },
     {
@@ -2594,11 +2897,11 @@
       "slug": "This might be the best new build value I've toured in Buda all month. New construction like this doesn't last long. The…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677280441887444238",
       "metrics": {
-        "views": 130,
+        "views": 133,
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.7692307692307693,
+        "engagement_rate": 0.7518796992481203,
         "duration_seconds": 21
       }
     },
@@ -2628,18 +2931,18 @@
       "slug": "This is what new construction is supposed to feel like.",
       "url": "https://www.instagram.com/reel/DcY79C5j6vT/",
       "metrics": {
-        "views": 176,
-        "reach": 143,
-        "impressions": 176,
+        "views": 183,
+        "reach": 146,
+        "impressions": 183,
         "likes": 4,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 5,
-        "engagement_rate": 3.4965034965034967,
-        "avg_watch_seconds": 4.965,
+        "engagement_rate": 3.4246575342465753,
+        "avg_watch_seconds": 4.93,
         "duration_seconds": 17,
-        "skip_rate": 68.3
+        "skip_rate": 68.2
       }
     },
     {
@@ -2696,11 +2999,11 @@
       "slug": "This is what new construction is supposed to feel like. Brand new construction starting at $279,995 in San Antonio. The…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677267350030159117",
       "metrics": {
-        "views": 174,
+        "views": 177,
         "likes": 2,
         "comments": 1,
         "shares": 3,
-        "engagement_rate": 3.4482758620689653,
+        "engagement_rate": 3.389830508474576,
         "duration_seconds": 16
       }
     },
@@ -2733,9 +3036,9 @@
       "slug": "The biggest builder discounts in Texas right now are on homes that sat empty for months.",
       "url": "https://www.instagram.com/p/DcYrkFDDbgd/",
       "metrics": {
-        "views": 44,
+        "views": 46,
         "reach": 14,
-        "impressions": 44,
+        "impressions": 46,
         "likes": 1,
         "comments": 0,
         "shares": 0,
@@ -2772,11 +3075,11 @@
       "slug": "The biggest builder discounts in Texas right now are on homes that sat empty for months. Why It Is Cheap: Builders keep…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677230417660972302",
       "metrics": {
-        "views": 359,
+        "views": 362,
         "likes": 4,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.1142061281337048,
+        "engagement_rate": 1.1049723756906078,
         "duration_seconds": 0
       }
     },
@@ -2788,11 +3091,11 @@
       "slug": "🚩 TWO GREEN FLAGS IN A REALTOR® If your REALTOR® is more excited about getting you into the right house than getting y…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7677001051458866445",
       "metrics": {
-        "views": 303,
+        "views": 306,
         "likes": 6,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.9801980198019802,
+        "engagement_rate": 1.9607843137254901,
         "duration_seconds": 35
       }
     },
@@ -2828,18 +3131,18 @@
       "slug": "🚩 TWO GREEN FLAGS IN A REALTOR®",
       "url": "https://www.instagram.com/reel/DcXFHeEMqAq/",
       "metrics": {
-        "views": 320,
-        "reach": 229,
-        "impressions": 320,
+        "views": 325,
+        "reach": 233,
+        "impressions": 325,
         "likes": 9,
         "comments": 1,
         "shares": 0,
         "saves": 0,
         "interactions": 10,
-        "engagement_rate": 4.366812227074236,
-        "avg_watch_seconds": 6.888,
+        "engagement_rate": 4.291845493562231,
+        "avg_watch_seconds": 6.956,
         "duration_seconds": 36,
-        "skip_rate": 67.8
+        "skip_rate": 67.6
       }
     },
     {
@@ -2867,11 +3170,11 @@
       "slug": "🚩 TWO GREEN FLAGS IN A REALTOR® If your REALTOR® is more excited about getting you into the right house than getting y…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676997444160294157",
       "metrics": {
-        "views": 302,
+        "views": 304,
         "likes": 9,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 2.980132450331126,
+        "engagement_rate": 2.960526315789474,
         "duration_seconds": 31
       }
     },
@@ -2907,18 +3210,18 @@
       "slug": "🚩 TWO GREEN FLAGS IN A REALTOR®",
       "url": "https://www.instagram.com/reel/DcXDjYaJ8AK/",
       "metrics": {
-        "views": 159,
+        "views": 160,
         "reach": 134,
-        "impressions": 159,
+        "impressions": 160,
         "likes": 2,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 2,
         "engagement_rate": 1.492537313432836,
-        "avg_watch_seconds": 4.716,
+        "avg_watch_seconds": 4.799,
         "duration_seconds": 32,
-        "skip_rate": 71.3
+        "skip_rate": 70.8
       }
     },
     {
@@ -2953,18 +3256,18 @@
       "slug": "🚩 TWO GREEN FLAGS IN A REALTOR®",
       "url": "https://www.instagram.com/reel/DcXDPWcMbjz/",
       "metrics": {
-        "views": 552,
-        "reach": 426,
-        "impressions": 552,
+        "views": 570,
+        "reach": 443,
+        "impressions": 570,
         "likes": 9,
         "comments": 2,
         "shares": 0,
         "saves": 0,
         "interactions": 11,
-        "engagement_rate": 2.5821596244131455,
-        "avg_watch_seconds": 5.81,
+        "engagement_rate": 2.4830699774266365,
+        "avg_watch_seconds": 5.713,
         "duration_seconds": 32,
-        "skip_rate": 64.2
+        "skip_rate": 65.1
       }
     },
     {
@@ -2976,18 +3279,18 @@
       "slug": "Wait until you see what's behind that front door 😮‍💨",
       "url": "https://www.instagram.com/reel/DcW3I6giY6n/",
       "metrics": {
-        "views": 166,
-        "reach": 140,
-        "impressions": 166,
-        "likes": 2,
+        "views": 168,
+        "reach": 141,
+        "impressions": 168,
+        "likes": 3,
         "comments": 0,
         "shares": 0,
         "saves": 0,
-        "interactions": 2,
-        "engagement_rate": 1.4285714285714286,
-        "avg_watch_seconds": 3.98,
+        "interactions": 3,
+        "engagement_rate": 2.127659574468085,
+        "avg_watch_seconds": 3.978,
         "duration_seconds": 20,
-        "skip_rate": 72.7
+        "skip_rate": 71.7
       }
     },
     {
@@ -3061,11 +3364,11 @@
       "slug": "Wait until you see what's behind that front door 😮‍💨 New construction in Fort Worth doesn't stay on the market long.…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676968134829477134",
       "metrics": {
-        "views": 190,
+        "views": 192,
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.5263157894736842,
+        "engagement_rate": 0.5208333333333334,
         "duration_seconds": 20
       }
     },
@@ -3078,16 +3381,16 @@
       "slug": "The open floor plan in this one flooded the space with natural light in a way that actually stopped me mid-tour.",
       "url": "https://www.instagram.com/reel/DcWxAZhMfnZ/",
       "metrics": {
-        "views": 1230,
-        "reach": 1029,
-        "impressions": 1230,
+        "views": 1244,
+        "reach": 1044,
+        "impressions": 1244,
         "likes": 25,
         "comments": 2,
         "shares": 5,
         "saves": 3,
         "interactions": 35,
-        "engagement_rate": 3.401360544217687,
-        "avg_watch_seconds": 6.198,
+        "engagement_rate": 3.3524904214559386,
+        "avg_watch_seconds": 6.243,
         "duration_seconds": 21,
         "skip_rate": 68.1
       }
@@ -3101,18 +3404,18 @@
       "slug": "The open floor plan in this one flooded the space with natural light in a way that actually stopped me mid-tour.",
       "url": "https://www.instagram.com/reel/DcWwNTfAFqk/",
       "metrics": {
-        "views": 147,
+        "views": 148,
         "reach": 125,
-        "impressions": 147,
+        "impressions": 148,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
         "engagement_rate": 0.8,
-        "avg_watch_seconds": 3.859,
+        "avg_watch_seconds": 3.989,
         "duration_seconds": 21,
-        "skip_rate": 74.8
+        "skip_rate": 74.2
       }
     },
     {
@@ -3186,11 +3489,11 @@
       "slug": "The open floor plan in this one flooded the space with natural light in a way that actually stopped me mid-tour. New co…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676952665162648845",
       "metrics": {
-        "views": 259,
+        "views": 261,
         "likes": 5,
         "comments": 0,
         "shares": 1,
-        "engagement_rate": 2.3166023166023164,
+        "engagement_rate": 2.2988505747126435,
         "duration_seconds": 21
       }
     },
@@ -3203,18 +3506,18 @@
       "slug": "This might be the best new build value I've toured in New Braunfels this month.",
       "url": "https://www.instagram.com/reel/DcWpHYRjWCj/",
       "metrics": {
-        "views": 183,
-        "reach": 165,
-        "impressions": 183,
+        "views": 185,
+        "reach": 166,
+        "impressions": 185,
         "likes": 2,
         "comments": 0,
         "shares": 1,
         "saves": 1,
         "interactions": 4,
-        "engagement_rate": 2.4242424242424243,
-        "avg_watch_seconds": 4.126,
+        "engagement_rate": 2.4096385542168677,
+        "avg_watch_seconds": 4.114,
         "duration_seconds": 22,
-        "skip_rate": 71.3
+        "skip_rate": 71
       }
     },
     {
@@ -3288,11 +3591,11 @@
       "slug": "This might be the best new build value I've toured in New Braunfels this month. New construction like this doesn't sit…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676936756045892877",
       "metrics": {
-        "views": 314,
+        "views": 316,
         "likes": 8,
         "comments": 0,
         "shares": 2,
-        "engagement_rate": 3.1847133757961785,
+        "engagement_rate": 3.1645569620253164,
         "duration_seconds": 21
       }
     },
@@ -3327,18 +3630,18 @@
       "slug": "I’ve never seen finishes like this at this price point in Schertz.",
       "url": "https://www.instagram.com/reel/DcWfAnlsi7E/",
       "metrics": {
-        "views": 1137,
-        "reach": 937,
-        "impressions": 1137,
+        "views": 1143,
+        "reach": 939,
+        "impressions": 1143,
         "likes": 42,
         "comments": 4,
         "shares": 2,
         "saves": 4,
         "interactions": 52,
-        "engagement_rate": 5.549626467449306,
-        "avg_watch_seconds": 5.459,
+        "engagement_rate": 5.537806176783812,
+        "avg_watch_seconds": 5.442,
         "duration_seconds": 19,
-        "skip_rate": 66.2
+        "skip_rate": 66.1
       }
     },
     {
@@ -3350,18 +3653,18 @@
       "slug": "I've never seen finishes like this at this price point in Schertz.",
       "url": "https://www.instagram.com/reel/DcWUZ4wCDpO/",
       "metrics": {
-        "views": 152,
-        "reach": 133,
-        "impressions": 152,
-        "likes": 2,
+        "views": 154,
+        "reach": 134,
+        "impressions": 154,
+        "likes": 3,
         "comments": 0,
         "shares": 1,
         "saves": 0,
-        "interactions": 3,
-        "engagement_rate": 2.255639097744361,
-        "avg_watch_seconds": 3.867,
+        "interactions": 4,
+        "engagement_rate": 2.985074626865672,
+        "avg_watch_seconds": 3.865,
         "duration_seconds": 19,
-        "skip_rate": 71.3
+        "skip_rate": 71
       }
     },
     {
@@ -3435,11 +3738,11 @@
       "slug": "I've never seen finishes like this at this price point in Schertz. New construction starting at $337,500 doesn't sit on…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676889969020914957",
       "metrics": {
-        "views": 144,
+        "views": 147,
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.6944444444444444,
+        "engagement_rate": 0.6802721088435374,
         "duration_seconds": 18
       }
     },
@@ -3452,9 +3755,9 @@
       "slug": "I made zero dollars in my first five months in real estate. Nothing was wrong.",
       "url": "https://www.instagram.com/p/DcWGpWQiPPP/",
       "metrics": {
-        "views": 92,
-        "reach": 36,
-        "impressions": 92,
+        "views": 94,
+        "reach": 37,
+        "impressions": 94,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -3511,11 +3814,11 @@
       "slug": "I made zero dollars in my first five months in real estate. Nothing was wrong. The Money Runs Late: A conversation in M…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676858814469016845",
       "metrics": {
-        "views": 147,
+        "views": 149,
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.6802721088435374,
+        "engagement_rate": 0.6711409395973155,
         "duration_seconds": 0
       }
     },
@@ -3544,11 +3847,11 @@
       "slug": "🇺🇸 I’ve been stabbed in the back for trusting the wrong people. As a Veteran, I know what it feels like to put your t…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676638635059449102",
       "metrics": {
-        "views": 189,
+        "views": 192,
         "likes": 4,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 2.1164021164021163,
+        "engagement_rate": 2.0833333333333335,
         "duration_seconds": 33
       }
     },
@@ -3561,18 +3864,18 @@
       "slug": "🇺🇸 I’ve been stabbed in the back for trusting the wrong people.",
       "url": "https://www.instagram.com/reel/DcUkdBfOUGR/",
       "metrics": {
-        "views": 128,
-        "reach": 108,
-        "impressions": 128,
+        "views": 129,
+        "reach": 109,
+        "impressions": 129,
         "likes": 0,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 0,
         "engagement_rate": 0,
-        "avg_watch_seconds": 4.721,
+        "avg_watch_seconds": 4.688,
         "duration_seconds": 34,
-        "skip_rate": 60.7
+        "skip_rate": 61.1
       }
     },
     {
@@ -3584,18 +3887,18 @@
       "slug": "🇺🇸 I’ve been stabbed in the back for trusting the wrong people.",
       "url": "https://www.instagram.com/reel/DcUkXqCJPAT/",
       "metrics": {
-        "views": 191,
+        "views": 192,
         "reach": 155,
-        "impressions": 191,
+        "impressions": 192,
         "likes": 1,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 2,
         "engagement_rate": 1.2903225806451613,
-        "avg_watch_seconds": 5.696,
+        "avg_watch_seconds": 5.686,
         "duration_seconds": 34,
-        "skip_rate": 59
+        "skip_rate": 58.6
       }
     },
     {
@@ -3630,18 +3933,18 @@
       "slug": "🇺🇸 I’ve been stabbed in the back for trusting the wrong people.",
       "url": "https://www.instagram.com/reel/DcUkFCjMYwk/",
       "metrics": {
-        "views": 564,
-        "reach": 412,
-        "impressions": 564,
+        "views": 575,
+        "reach": 420,
+        "impressions": 575,
         "likes": 11,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 12,
-        "engagement_rate": 2.912621359223301,
-        "avg_watch_seconds": 6.939,
+        "engagement_rate": 2.857142857142857,
+        "avg_watch_seconds": 7,
         "duration_seconds": 34,
-        "skip_rate": 61.9
+        "skip_rate": 61.1
       }
     },
     {
@@ -3652,11 +3955,11 @@
       "slug": "Define no HOA in one photo 📸 (this is it) I drove past this house yesterday and had to stop. A full-size Peterbilt. Pa…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676632972447059214",
       "metrics": {
-        "views": 503,
+        "views": 505,
         "likes": 4,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.7952286282306164,
+        "engagement_rate": 0.7920792079207921,
         "duration_seconds": 0
       }
     },
@@ -3669,9 +3972,9 @@
       "slug": "Define no HOA in one photo 📸 (this is it)",
       "url": "https://www.instagram.com/p/DcUhnoMCTGi/",
       "metrics": {
-        "views": 128,
+        "views": 130,
         "reach": 46,
-        "impressions": 128,
+        "impressions": 130,
         "likes": 3,
         "comments": 0,
         "shares": 0,
@@ -3689,9 +3992,9 @@
       "slug": "Define no HOA in one photo 📸 (this is it)",
       "url": "https://www.instagram.com/p/DcUhg3XDnFa/",
       "metrics": {
-        "views": 66,
+        "views": 67,
         "reach": 17,
-        "impressions": 66,
+        "impressions": 67,
         "likes": 5,
         "comments": 0,
         "shares": 0,
@@ -3729,15 +4032,15 @@
       "slug": "Define no HOA in one photo 📸 (this is it)",
       "url": "https://www.instagram.com/p/DcUg8Z9lQBl/",
       "metrics": {
-        "views": 2175,
-        "reach": 1023,
-        "impressions": 2175,
+        "views": 2197,
+        "reach": 1038,
+        "impressions": 2197,
         "likes": 18,
         "comments": 3,
         "shares": 2,
         "saves": 1,
         "interactions": 24,
-        "engagement_rate": 2.346041055718475
+        "engagement_rate": 2.3121387283236996
       }
     },
     {
@@ -3749,18 +4052,18 @@
       "slug": "This is what new construction is supposed to feel like.",
       "url": "https://www.instagram.com/reel/DcURSjrAdkX/",
       "metrics": {
-        "views": 131,
-        "reach": 117,
-        "impressions": 131,
+        "views": 132,
+        "reach": 118,
+        "impressions": 132,
         "likes": 3,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 2.5641025641025643,
-        "avg_watch_seconds": 4.028,
+        "engagement_rate": 2.542372881355932,
+        "avg_watch_seconds": 4.015,
         "duration_seconds": 14,
-        "skip_rate": 64
+        "skip_rate": 64.3
       }
     },
     {
@@ -3795,18 +4098,18 @@
       "slug": "This is what new construction is supposed to feel like.",
       "url": "https://www.instagram.com/reel/DcURW3qgRGC/",
       "metrics": {
-        "views": 174,
-        "reach": 153,
-        "impressions": 174,
-        "likes": 5,
+        "views": 180,
+        "reach": 154,
+        "impressions": 180,
+        "likes": 6,
         "comments": 1,
         "shares": 2,
         "saves": 1,
-        "interactions": 9,
-        "engagement_rate": 5.882352941176471,
-        "avg_watch_seconds": 3.706,
+        "interactions": 10,
+        "engagement_rate": 6.4935064935064934,
+        "avg_watch_seconds": 4.107,
         "duration_seconds": 14,
-        "skip_rate": 73.7
+        "skip_rate": 73.4
       }
     },
     {
@@ -3834,11 +4137,11 @@
       "slug": "This is what new construction is supposed to feel like. New construction like this doesn't sit long, and with builder i…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676594993368206606",
       "metrics": {
-        "views": 325,
+        "views": 327,
         "likes": 5,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.5384615384615385,
+        "engagement_rate": 1.529051987767584,
         "duration_seconds": 13
       }
     },
@@ -3851,18 +4154,18 @@
       "slug": "Would you believe brand new construction in Bee Cave starts at $549,000?",
       "url": "https://www.instagram.com/reel/DcULd8HAmD3/",
       "metrics": {
-        "views": 177,
-        "reach": 154,
-        "impressions": 177,
-        "likes": 7,
+        "views": 179,
+        "reach": 155,
+        "impressions": 179,
+        "likes": 8,
         "comments": 0,
         "shares": 1,
         "saves": 0,
-        "interactions": 8,
-        "engagement_rate": 5.194805194805195,
-        "avg_watch_seconds": 3.805,
+        "interactions": 9,
+        "engagement_rate": 5.806451612903226,
+        "avg_watch_seconds": 3.79,
         "duration_seconds": 20,
-        "skip_rate": 75.3
+        "skip_rate": 75.6
       }
     },
     {
@@ -3936,11 +4239,11 @@
       "slug": "Would you believe brand new construction in Bee Cave starts at $549,000? New homes like this move fast. Preferred lendi…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676581666327989517",
       "metrics": {
-        "views": 391,
+        "views": 393,
         "likes": 9,
         "comments": 4,
         "shares": 0,
-        "engagement_rate": 3.3248081841432224,
+        "engagement_rate": 3.3078880407124682,
         "duration_seconds": 19
       }
     },
@@ -3953,18 +4256,18 @@
       "slug": "the floor plan in this one made me stop mid-tour",
       "url": "https://www.instagram.com/reel/DcUGn2XEmeV/",
       "metrics": {
-        "views": 156,
-        "reach": 131,
-        "impressions": 156,
+        "views": 160,
+        "reach": 132,
+        "impressions": 160,
         "likes": 2,
         "comments": 1,
         "shares": 0,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 2.2900763358778624,
-        "avg_watch_seconds": 4.104,
+        "engagement_rate": 2.272727272727273,
+        "avg_watch_seconds": 4.178,
         "duration_seconds": 20,
-        "skip_rate": 75.9
+        "skip_rate": 75.6
       }
     },
     {
@@ -3977,7 +4280,7 @@
       "url": "https://www.instagram.com/reel/DcUGingCkI5/",
       "metrics": {
         "views": 133,
-        "reach": 117,
+        "reach": 118,
         "impressions": 133,
         "likes": 0,
         "comments": 0,
@@ -4038,11 +4341,11 @@
       "slug": "the floor plan in this one made me stop mid-tour New construction like this moves fast, and builder incentives are real…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676570662483348749",
       "metrics": {
-        "views": 143,
+        "views": 146,
         "likes": 3,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 2.097902097902098,
+        "engagement_rate": 2.0547945205479454,
         "duration_seconds": 19
       }
     },
@@ -4055,18 +4358,18 @@
       "slug": "the floor plan in this one made me stop mid-tour",
       "url": "https://www.instagram.com/reel/DcT2f5uAPKe/",
       "metrics": {
-        "views": 160,
-        "reach": 137,
-        "impressions": 160,
+        "views": 163,
+        "reach": 139,
+        "impressions": 163,
         "likes": 5,
         "comments": 2,
         "shares": 0,
         "saves": 0,
         "interactions": 7,
-        "engagement_rate": 5.109489051094891,
-        "avg_watch_seconds": 3.833,
+        "engagement_rate": 5.0359712230215825,
+        "avg_watch_seconds": 3.782,
         "duration_seconds": 20,
-        "skip_rate": 76.9
+        "skip_rate": 77.4
       }
     },
     {
@@ -4078,18 +4381,18 @@
       "slug": "the floor plan in this one made me stop mid-tour",
       "url": "https://www.instagram.com/reel/DcT2aBnHzfU/",
       "metrics": {
-        "views": 145,
-        "reach": 125,
-        "impressions": 145,
+        "views": 147,
+        "reach": 127,
+        "impressions": 147,
         "likes": 2,
         "comments": 2,
         "shares": 1,
         "saves": 0,
         "interactions": 5,
-        "engagement_rate": 4,
-        "avg_watch_seconds": 5.29,
+        "engagement_rate": 3.937007874015748,
+        "avg_watch_seconds": 5.241,
         "duration_seconds": 20,
-        "skip_rate": 64
+        "skip_rate": 64.6
       }
     },
     {
@@ -4140,11 +4443,11 @@
       "slug": "the floor plan in this one made me stop mid-tour new construction at this price point in North Austin doesn't sit aroun…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676534368147442957",
       "metrics": {
-        "views": 377,
-        "likes": 9,
+        "views": 385,
+        "likes": 10,
         "comments": 2,
         "shares": 2,
-        "engagement_rate": 3.4482758620689653,
+        "engagement_rate": 3.6363636363636362,
         "duration_seconds": 20
       }
     },
@@ -4157,18 +4460,18 @@
       "slug": "This might be the best-priced new construction I've toured in San Antonio this month.",
       "url": "https://www.instagram.com/reel/DcTzv2LjKs3/",
       "metrics": {
-        "views": 173,
-        "reach": 150,
-        "impressions": 173,
+        "views": 175,
+        "reach": 151,
+        "impressions": 175,
         "likes": 4,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 5,
-        "engagement_rate": 3.3333333333333335,
-        "avg_watch_seconds": 4.278,
+        "engagement_rate": 3.3112582781456954,
+        "avg_watch_seconds": 4.294,
         "duration_seconds": 27,
-        "skip_rate": 75
+        "skip_rate": 74
       }
     },
     {
@@ -4203,18 +4506,18 @@
       "slug": "This might be the best-priced new construction I've toured in San Antonio this month.",
       "url": "https://www.instagram.com/reel/DcTzn-wjdPK/",
       "metrics": {
-        "views": 415,
-        "reach": 354,
-        "impressions": 415,
+        "views": 416,
+        "reach": 355,
+        "impressions": 416,
         "likes": 7,
         "comments": 3,
         "shares": 2,
         "saves": 3,
         "interactions": 15,
-        "engagement_rate": 4.237288135593221,
-        "avg_watch_seconds": 7.019,
+        "engagement_rate": 4.225352112676056,
+        "avg_watch_seconds": 7.008,
         "duration_seconds": 27,
-        "skip_rate": 63.5
+        "skip_rate": 63.3
       }
     },
     {
@@ -4242,11 +4545,11 @@
       "slug": "This might be the best-priced new construction I've toured in San Antonio this month. New builds like this don't sit lo…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676528108278762765",
       "metrics": {
-        "views": 203,
+        "views": 205,
         "likes": 7,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 3.4482758620689653,
+        "engagement_rate": 3.4146341463414633,
         "duration_seconds": 27
       }
     },
@@ -4279,9 +4582,9 @@
       "slug": "Texans water the dirt around their house on purpose. Transplants think we are crazy.",
       "url": "https://www.instagram.com/p/DcTjco_CCKV/",
       "metrics": {
-        "views": 63,
+        "views": 65,
         "reach": 13,
-        "impressions": 63,
+        "impressions": 65,
         "likes": 2,
         "comments": 0,
         "shares": 0,
@@ -4318,11 +4621,11 @@
       "slug": "Texans water the dirt around their house on purpose. Transplants think we are crazy. The Ground Moves: Most of DFW and…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676491260936359182",
       "metrics": {
-        "views": 1563,
+        "views": 1634,
         "likes": 8,
         "comments": 4,
         "shares": 1,
-        "engagement_rate": 0.8317338451695457,
+        "engagement_rate": 0.795593635250918,
         "duration_seconds": 0
       }
     },
@@ -4352,18 +4655,18 @@
       "slug": "the kitchen in this one made me stop mid-tour 😮‍💨",
       "url": "https://www.instagram.com/reel/DcRfaKhjhyz/",
       "metrics": {
-        "views": 162,
-        "reach": 133,
-        "impressions": 162,
+        "views": 163,
+        "reach": 134,
+        "impressions": 163,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 0.7518796992481203,
-        "avg_watch_seconds": 6.194,
+        "engagement_rate": 0.746268656716418,
+        "avg_watch_seconds": 6.166,
         "duration_seconds": 16,
-        "skip_rate": 73.1
+        "skip_rate": 73.3
       }
     },
     {
@@ -4420,11 +4723,11 @@
       "slug": "the kitchen in this one made me stop mid-tour 😮‍💨 new construction like this doesn't sit long in San Antonio ✨ everyd…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676194343614434574",
       "metrics": {
-        "views": 364,
+        "views": 366,
         "likes": 4,
         "comments": 0,
         "shares": 1,
-        "engagement_rate": 1.3736263736263736,
+        "engagement_rate": 1.366120218579235,
         "duration_seconds": 15
       }
     },
@@ -4437,18 +4740,18 @@
       "slug": "Would you believe brand new construction in San Antonio starts at $281,990?",
       "url": "https://www.instagram.com/reel/DcRKX9SDSNK/",
       "metrics": {
-        "views": 174,
+        "views": 175,
         "reach": 144,
-        "impressions": 174,
+        "impressions": 175,
         "likes": 5,
         "comments": 0,
         "shares": 1,
         "saves": 2,
         "interactions": 8,
         "engagement_rate": 5.555555555555555,
-        "avg_watch_seconds": 4.496,
+        "avg_watch_seconds": 4.473,
         "duration_seconds": 18,
-        "skip_rate": 73.6
+        "skip_rate": 73.8
       }
     },
     {
@@ -4522,11 +4825,11 @@
       "slug": "Would you believe brand new construction in San Antonio starts at $281,990? New construction like this doesn't sit arou…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676146784095177997",
       "metrics": {
-        "views": 422,
+        "views": 425,
         "likes": 25,
         "comments": 4,
         "shares": 2,
-        "engagement_rate": 7.345971563981043,
+        "engagement_rate": 7.294117647058823,
         "duration_seconds": 17
       }
     },
@@ -4539,9 +4842,9 @@
       "slug": "The finished Texas new build costs less than the identical one still on paper.",
       "url": "https://www.instagram.com/p/DcQ-oi_iOSZ/",
       "metrics": {
-        "views": 89,
-        "reach": 34,
-        "impressions": 89,
+        "views": 90,
+        "reach": 35,
+        "impressions": 90,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -4578,11 +4881,11 @@
       "slug": "The finished Texas new build costs less than the identical one still on paper. The Builder Is Paying Interest: A finish…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7676120179406867725",
       "metrics": {
-        "views": 197,
+        "views": 200,
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.015228426395939,
+        "engagement_rate": 1,
         "duration_seconds": 0
       }
     },
@@ -4595,18 +4898,18 @@
       "slug": "Would you believe brand new construction in Austin starts at just $369,990?",
       "url": "https://www.instagram.com/reel/DcPrBoqFABv/",
       "metrics": {
-        "views": 185,
-        "reach": 153,
-        "impressions": 185,
+        "views": 188,
+        "reach": 154,
+        "impressions": 188,
         "likes": 4,
         "comments": 0,
         "shares": 1,
         "saves": 2,
         "interactions": 7,
-        "engagement_rate": 4.57516339869281,
-        "avg_watch_seconds": 5.387,
+        "engagement_rate": 4.545454545454546,
+        "avg_watch_seconds": 5.315,
         "duration_seconds": 21,
-        "skip_rate": 60
+        "skip_rate": 60.8
       }
     },
     {
@@ -4680,11 +4983,11 @@
       "slug": "Would you believe brand new construction in Austin starts at just $369,990? New construction like this doesn't sit long…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675932257449676046",
       "metrics": {
-        "views": 778,
+        "views": 785,
         "likes": 24,
         "comments": 1,
         "shares": 2,
-        "engagement_rate": 3.4704370179948585,
+        "engagement_rate": 3.4394904458598727,
         "duration_seconds": 20
       }
     },
@@ -4782,11 +5085,11 @@
       "slug": "the floor plan in this one made me stop mid-tour New construction like this in New Braunfels doesn't sit long. Starting…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675823074670906638",
       "metrics": {
-        "views": 1403,
-        "likes": 35,
+        "views": 1462,
+        "likes": 36,
         "comments": 2,
         "shares": 8,
-        "engagement_rate": 3.2074126870990733,
+        "engagement_rate": 3.146374829001368,
         "duration_seconds": 19
       }
     },
@@ -4799,18 +5102,18 @@
       "slug": "I walked through this one and immediately understood why new construction in San Marcos moves fast like this.",
       "url": "https://www.instagram.com/reel/DcOtfKDkwec/",
       "metrics": {
-        "views": 185,
+        "views": 186,
         "reach": 144,
-        "impressions": 185,
+        "impressions": 186,
         "likes": 4,
         "comments": 0,
         "shares": 2,
         "saves": 0,
         "interactions": 6,
         "engagement_rate": 4.166666666666667,
-        "avg_watch_seconds": 6.151,
+        "avg_watch_seconds": 6.133,
         "duration_seconds": 20,
-        "skip_rate": 69
+        "skip_rate": 68.5
       }
     },
     {
@@ -4884,11 +5187,11 @@
       "slug": "I walked through this one and immediately understood why new construction in San Marcos moves fast like this. The open…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675793401576459533",
       "metrics": {
-        "views": 440,
+        "views": 446,
         "likes": 18,
         "comments": 6,
         "shares": 3,
-        "engagement_rate": 6.136363636363637,
+        "engagement_rate": 6.053811659192825,
         "duration_seconds": 20
       }
     },
@@ -4901,18 +5204,18 @@
       "slug": "Would you believe brand new construction in San Antonio starts at $369,990?",
       "url": "https://www.instagram.com/reel/DcOprfQCblo/",
       "metrics": {
-        "views": 247,
-        "reach": 198,
-        "impressions": 247,
-        "likes": 9,
+        "views": 248,
+        "reach": 199,
+        "impressions": 248,
+        "likes": 10,
         "comments": 1,
         "shares": 5,
         "saves": 1,
-        "interactions": 16,
-        "engagement_rate": 8.080808080808081,
-        "avg_watch_seconds": 5.425,
+        "interactions": 17,
+        "engagement_rate": 8.542713567839195,
+        "avg_watch_seconds": 5.407,
         "duration_seconds": 15,
-        "skip_rate": 66
+        "skip_rate": 66.2
       }
     },
     {
@@ -4947,18 +5250,18 @@
       "slug": "Would you believe brand new construction in San Antonio starts at $369,990?",
       "url": "https://www.instagram.com/reel/DcOpbm9js43/",
       "metrics": {
-        "views": 145,
-        "reach": 127,
-        "impressions": 145,
+        "views": 146,
+        "reach": 128,
+        "impressions": 146,
         "likes": 2,
         "comments": 0,
         "shares": 1,
         "saves": 1,
         "interactions": 4,
-        "engagement_rate": 3.1496062992125986,
-        "avg_watch_seconds": 3.902,
+        "engagement_rate": 3.125,
+        "avg_watch_seconds": 3.882,
         "duration_seconds": 15,
-        "skip_rate": 75
+        "skip_rate": 75.2
       }
     },
     {
@@ -4986,11 +5289,11 @@
       "slug": "Would you believe brand new construction in San Antonio starts at $369,990? New construction like this doesn't sit long…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675784730003901710",
       "metrics": {
-        "views": 176,
+        "views": 181,
         "likes": 4,
         "comments": 0,
         "shares": 1,
-        "engagement_rate": 2.840909090909091,
+        "engagement_rate": 2.7624309392265194,
         "duration_seconds": 14
       }
     },
@@ -5023,9 +5326,9 @@
       "slug": "I run a real estate business. Every Friday I check one number. It is not income.",
       "url": "https://www.instagram.com/p/DcOZkCMjVhI/",
       "metrics": {
-        "views": 42,
+        "views": 44,
         "reach": 14,
-        "impressions": 42,
+        "impressions": 44,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -5043,15 +5346,15 @@
       "slug": "I run a real estate business. Every Friday I check one number. It is not income.",
       "url": "https://www.instagram.com/p/DcOZjawDVAJ/",
       "metrics": {
-        "views": 94,
-        "reach": 41,
-        "impressions": 94,
+        "views": 96,
+        "reach": 42,
+        "impressions": 96,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 2.4390243902439024
+        "engagement_rate": 2.380952380952381
       }
     },
     {
@@ -5062,7 +5365,7 @@
       "slug": "I run a real estate business. Every Friday I check one number. It is not income. Income Lies To You: The money that hit…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675748772328049933",
       "metrics": {
-        "views": 217,
+        "views": 219,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -5078,18 +5381,18 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcMxKPBDK39/",
       "metrics": {
-        "views": 292,
-        "reach": 244,
-        "impressions": 292,
-        "likes": 13,
+        "views": 293,
+        "reach": 245,
+        "impressions": 293,
+        "likes": 14,
         "comments": 1,
         "shares": 2,
         "saves": 4,
-        "interactions": 20,
-        "engagement_rate": 8.19672131147541,
-        "avg_watch_seconds": 5.904,
+        "interactions": 21,
+        "engagement_rate": 8.571428571428571,
+        "avg_watch_seconds": 5.906,
         "duration_seconds": 19,
-        "skip_rate": 59.5
+        "skip_rate": 59.3
       }
     },
     {
@@ -5118,18 +5421,18 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcMw-QxgBDG/",
       "metrics": {
-        "views": 320,
-        "reach": 275,
-        "impressions": 320,
+        "views": 321,
+        "reach": 276,
+        "impressions": 321,
         "likes": 1,
         "comments": 0,
         "shares": 2,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 1.0909090909090908,
-        "avg_watch_seconds": 5.489,
+        "engagement_rate": 1.0869565217391304,
+        "avg_watch_seconds": 5.483,
         "duration_seconds": 19,
-        "skip_rate": 58.3
+        "skip_rate": 58.1
       }
     },
     {
@@ -5163,11 +5466,11 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨 New construction like this doesn't sit long in Georgetown. ✨ everyday…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675513485031247118",
       "metrics": {
-        "views": 304,
+        "views": 306,
         "likes": 16,
         "comments": 2,
         "shares": 1,
-        "engagement_rate": 6.25,
+        "engagement_rate": 6.209150326797386,
         "duration_seconds": 18
       }
     },
@@ -5265,11 +5568,11 @@
       "slug": "the floor plan in this one stopped me mid-tour new construction in New Braunfels hits different when it's built this cl…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675497240944774413",
       "metrics": {
-        "views": 898,
+        "views": 904,
         "likes": 34,
         "comments": 3,
         "shares": 7,
-        "engagement_rate": 4.8997772828507795,
+        "engagement_rate": 4.867256637168142,
         "duration_seconds": 10
       }
     },
@@ -5305,18 +5608,18 @@
       "slug": "Wait until you see what $499,990 gets you in Fort Worth right now 😮‍💨",
       "url": "https://www.instagram.com/reel/DcMjrg2iD3y/",
       "metrics": {
-        "views": 163,
-        "reach": 129,
-        "impressions": 163,
-        "likes": 2,
+        "views": 164,
+        "reach": 130,
+        "impressions": 164,
+        "likes": 3,
         "comments": 1,
         "shares": 0,
         "saves": 0,
-        "interactions": 3,
-        "engagement_rate": 2.3255813953488373,
-        "avg_watch_seconds": 4.13,
+        "interactions": 4,
+        "engagement_rate": 3.076923076923077,
+        "avg_watch_seconds": 4.116,
         "duration_seconds": 14,
-        "skip_rate": 78
+        "skip_rate": 78.1
       }
     },
     {
@@ -5367,11 +5670,11 @@
       "slug": "Wait until you see what $499,990 gets you in Fort Worth right now 😮‍💨 New construction like this doesn't sit long. Bu…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675483137643728141",
       "metrics": {
-        "views": 390,
+        "views": 392,
         "likes": 16,
         "comments": 3,
         "shares": 0,
-        "engagement_rate": 4.871794871794871,
+        "engagement_rate": 4.846938775510204,
         "duration_seconds": 13
       }
     },
@@ -5384,9 +5687,9 @@
       "slug": "A Frisco address can land you in four different school districts. Most buyers find out late.",
       "url": "https://www.instagram.com/p/DcL0vsbiAl7/",
       "metrics": {
-        "views": 40,
-        "reach": 13,
-        "impressions": 40,
+        "views": 43,
+        "reach": 14,
+        "impressions": 43,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -5443,7 +5746,7 @@
       "slug": "A Frisco address can land you in four different school districts. Most buyers find out late. One City, Four Districts:…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675377296714321165",
       "metrics": {
-        "views": 169,
+        "views": 171,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -5482,18 +5785,18 @@
       "slug": "the monthly payment on this one is lower than most people guess",
       "url": "https://www.instagram.com/reel/DcKSrA2Mv3N/",
       "metrics": {
-        "views": 995,
-        "reach": 803,
-        "impressions": 995,
-        "likes": 25,
-        "comments": 1,
+        "views": 1009,
+        "reach": 810,
+        "impressions": 1009,
+        "likes": 26,
+        "comments": 5,
         "shares": 7,
         "saves": 9,
-        "interactions": 42,
-        "engagement_rate": 5.23038605230386,
-        "avg_watch_seconds": 5.793,
+        "interactions": 47,
+        "engagement_rate": 5.802469135802469,
+        "avg_watch_seconds": 5.918,
         "duration_seconds": 20,
-        "skip_rate": 62
+        "skip_rate": 61.9
       }
     },
     {
@@ -5551,18 +5854,18 @@
       "slug": "wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcKFEzlFYGq/",
       "metrics": {
-        "views": 66,
-        "reach": 39,
-        "impressions": 66,
-        "likes": 6,
+        "views": 67,
+        "reach": 40,
+        "impressions": 67,
+        "likes": 7,
         "comments": 1,
         "shares": 1,
         "saves": 0,
-        "interactions": 8,
-        "engagement_rate": 20.512820512820515,
-        "avg_watch_seconds": 5.875,
+        "interactions": 9,
+        "engagement_rate": 22.5,
+        "avg_watch_seconds": 5.8,
         "duration_seconds": 32,
-        "skip_rate": 57.4
+        "skip_rate": 58.3
       }
     },
     {
@@ -5636,11 +5939,11 @@
       "slug": "wait until you see the kitchen in this one 😮‍💨 new construction in Fort Worth like this doesn't sit long. builder inc…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675125918007954701",
       "metrics": {
-        "views": 561,
+        "views": 565,
         "likes": 27,
         "comments": 5,
         "shares": 2,
-        "engagement_rate": 6.0606060606060606,
+        "engagement_rate": 6.017699115044247,
         "duration_seconds": 31
       }
     },
@@ -5653,18 +5956,18 @@
       "slug": "this might be the best new construction I’ve toured this month",
       "url": "https://www.instagram.com/reel/DcJ0lCts0mN/",
       "metrics": {
-        "views": 2730,
-        "reach": 2495,
-        "impressions": 2730,
+        "views": 2737,
+        "reach": 2502,
+        "impressions": 2737,
         "likes": 84,
-        "comments": 12,
+        "comments": 14,
         "shares": 20,
         "saves": 22,
-        "interactions": 138,
-        "engagement_rate": 5.531062124248497,
-        "avg_watch_seconds": 8.959,
+        "interactions": 140,
+        "engagement_rate": 5.595523581135092,
+        "avg_watch_seconds": 8.971,
         "duration_seconds": 34,
-        "skip_rate": 66.1
+        "skip_rate": 66
       }
     },
     {
@@ -5676,18 +5979,18 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcJ0ULQMMmA/",
       "metrics": {
-        "views": 996,
-        "reach": 786,
-        "impressions": 996,
+        "views": 1004,
+        "reach": 797,
+        "impressions": 1004,
         "likes": 30,
         "comments": 4,
         "shares": 6,
         "saves": 8,
         "interactions": 48,
-        "engagement_rate": 6.106870229007634,
-        "avg_watch_seconds": 5.206,
+        "engagement_rate": 6.022584692597239,
+        "avg_watch_seconds": 5.215,
         "duration_seconds": 16,
-        "skip_rate": 65.5
+        "skip_rate": 65.6
       }
     },
     {
@@ -5716,18 +6019,18 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcJwkquDKzK/",
       "metrics": {
-        "views": 148,
-        "reach": 135,
-        "impressions": 148,
-        "likes": 3,
+        "views": 150,
+        "reach": 136,
+        "impressions": 150,
+        "likes": 4,
         "comments": 1,
         "shares": 0,
         "saves": 0,
-        "interactions": 4,
-        "engagement_rate": 2.962962962962963,
-        "avg_watch_seconds": 2.997,
+        "interactions": 5,
+        "engagement_rate": 3.676470588235294,
+        "avg_watch_seconds": 2.998,
         "duration_seconds": 17,
-        "skip_rate": 77
+        "skip_rate": 77.2
       }
     },
     {
@@ -5784,11 +6087,11 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨 New construction in San Antonio like this doesn't sit long. Starting a…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675079768542350606",
       "metrics": {
-        "views": 372,
+        "views": 373,
         "likes": 19,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 5.10752688172043,
+        "engagement_rate": 5.093833780160858,
         "duration_seconds": 16
       }
     },
@@ -5824,18 +6127,18 @@
       "slug": "this might be the best new construction I've toured this month",
       "url": "https://www.instagram.com/reel/DcJjWUcCYdr/",
       "metrics": {
-        "views": 254,
-        "reach": 204,
-        "impressions": 254,
-        "likes": 10,
+        "views": 255,
+        "reach": 205,
+        "impressions": 255,
+        "likes": 11,
         "comments": 4,
         "shares": 3,
         "saves": 0,
-        "interactions": 17,
-        "engagement_rate": 8.333333333333334,
-        "avg_watch_seconds": 8.439,
+        "interactions": 18,
+        "engagement_rate": 8.78048780487805,
+        "avg_watch_seconds": 8.408,
         "duration_seconds": 34,
-        "skip_rate": 59.9
+        "skip_rate": 60.1
       }
     },
     {
@@ -5886,11 +6189,11 @@
       "slug": "this might be the best new construction I've toured this month new construction like this doesn't sit long in this mark…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675050069598522638",
       "metrics": {
-        "views": 462,
+        "views": 463,
         "likes": 14,
         "comments": 5,
         "shares": 2,
-        "engagement_rate": 4.545454545454546,
+        "engagement_rate": 4.535637149028077,
         "duration_seconds": 34
       }
     },
@@ -5966,18 +6269,18 @@
       "slug": "wait until you see the kitchen in this one. new construction in San Antonio that's built for real life",
       "url": "https://www.instagram.com/reel/DcJcjk2jhC2/",
       "metrics": {
-        "views": 161,
-        "reach": 136,
-        "impressions": 161,
+        "views": 162,
+        "reach": 137,
+        "impressions": 162,
         "likes": 2,
         "comments": 1,
         "shares": 0,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 2.2058823529411766,
-        "avg_watch_seconds": 3.754,
+        "engagement_rate": 2.18978102189781,
+        "avg_watch_seconds": 3.742,
         "duration_seconds": 15,
-        "skip_rate": 76.1
+        "skip_rate": 76.3
       }
     },
     {
@@ -5988,11 +6291,11 @@
       "slug": "wait until you see the kitchen in this one. new construction in San Antonio that's built for real life these homes move…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675035064228531469",
       "metrics": {
-        "views": 479,
+        "views": 484,
         "likes": 25,
         "comments": 3,
         "shares": 1,
-        "engagement_rate": 6.054279749478079,
+        "engagement_rate": 5.991735537190083,
         "duration_seconds": 14
       }
     },
@@ -6045,15 +6348,15 @@
       "slug": "Texas buyers lock a fixed rate and still get a payment increase in year two.",
       "url": "https://www.instagram.com/p/DcJPQQZjXMv/",
       "metrics": {
-        "views": 75,
-        "reach": 27,
-        "impressions": 75,
+        "views": 77,
+        "reach": 28,
+        "impressions": 77,
         "likes": 1,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 2,
-        "engagement_rate": 7.407407407407407
+        "engagement_rate": 7.142857142857143
       }
     },
     {
@@ -6064,11 +6367,11 @@
       "slug": "Texas buyers lock a fixed rate and still get a payment increase in year two. Your Rate Is Not Your Payment: A fixed rat…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7675004885628161293",
       "metrics": {
-        "views": 232,
+        "views": 233,
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.8620689655172413,
+        "engagement_rate": 0.8583690987124464,
         "duration_seconds": 0
       }
     },
@@ -6081,18 +6384,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/DcHO7adskpE/",
       "metrics": {
-        "views": 1434,
+        "views": 1437,
         "reach": 1216,
-        "impressions": 1434,
-        "likes": 39,
+        "impressions": 1437,
+        "likes": 40,
         "comments": 3,
         "shares": 0,
         "saves": 5,
-        "interactions": 47,
-        "engagement_rate": 3.8651315789473686,
-        "avg_watch_seconds": 5.183,
+        "interactions": 48,
+        "engagement_rate": 3.9473684210526314,
+        "avg_watch_seconds": 5.173,
         "duration_seconds": 18,
-        "skip_rate": 61.5
+        "skip_rate": 61.6
       }
     },
     {
@@ -6104,15 +6407,15 @@
       "slug": "The average Texas home sells in about 60 days. Almost no actual home does that.",
       "url": "https://www.instagram.com/p/DcHO2rZFcCm/",
       "metrics": {
-        "views": 1226,
-        "reach": 596,
-        "impressions": 1226,
+        "views": 1242,
+        "reach": 603,
+        "impressions": 1242,
         "likes": 5,
         "comments": 8,
         "shares": 4,
         "saves": 2,
         "interactions": 19,
-        "engagement_rate": 3.1879194630872485
+        "engagement_rate": 3.1509121061359866
       }
     },
     {
@@ -6124,18 +6427,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/DcHMIusFYyR/",
       "metrics": {
-        "views": 155,
-        "reach": 136,
-        "impressions": 155,
-        "likes": 2,
+        "views": 157,
+        "reach": 137,
+        "impressions": 157,
+        "likes": 3,
         "comments": 1,
         "shares": 0,
         "saves": 0,
-        "interactions": 3,
-        "engagement_rate": 2.2058823529411766,
-        "avg_watch_seconds": 3.464,
+        "interactions": 4,
+        "engagement_rate": 2.9197080291970803,
+        "avg_watch_seconds": 3.486,
         "duration_seconds": 18,
-        "skip_rate": 70.3
+        "skip_rate": 69.8
       }
     },
     {
@@ -6209,11 +6512,11 @@
       "slug": "this is what new construction is supposed to feel like new construction like this doesn't wait long in this market. $34…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674709654244560141",
       "metrics": {
-        "views": 374,
+        "views": 375,
         "likes": 10,
         "comments": 2,
         "shares": 1,
-        "engagement_rate": 3.4759358288770055,
+        "engagement_rate": 3.466666666666667,
         "duration_seconds": 17
       }
     },
@@ -6226,18 +6529,18 @@
       "slug": "would you believe brand new construction in San Antonio starts at $469,990?",
       "url": "https://www.instagram.com/reel/DcHEWxRMWjg/",
       "metrics": {
-        "views": 2306,
-        "reach": 1928,
-        "impressions": 2306,
+        "views": 2311,
+        "reach": 1930,
+        "impressions": 2311,
         "likes": 64,
         "comments": 4,
         "shares": 15,
         "saves": 16,
         "interactions": 99,
-        "engagement_rate": 5.134854771784233,
-        "avg_watch_seconds": 7.67,
+        "engagement_rate": 5.129533678756476,
+        "avg_watch_seconds": 7.686,
         "duration_seconds": 25,
-        "skip_rate": 60.3
+        "skip_rate": 60.2
       }
     },
     {
@@ -6249,18 +6552,18 @@
       "slug": "would you believe brand new construction in San Antonio starts at $469,990?",
       "url": "https://www.instagram.com/reel/DcG3yj5jiru/",
       "metrics": {
-        "views": 165,
-        "reach": 142,
-        "impressions": 165,
+        "views": 166,
+        "reach": 143,
+        "impressions": 166,
         "likes": 5,
         "comments": 0,
         "shares": 1,
         "saves": 1,
         "interactions": 7,
-        "engagement_rate": 4.929577464788732,
-        "avg_watch_seconds": 6.009,
+        "engagement_rate": 4.895104895104895,
+        "avg_watch_seconds": 5.974,
         "duration_seconds": 25,
-        "skip_rate": 64.3
+        "skip_rate": 64.5
       }
     },
     {
@@ -6334,11 +6637,11 @@
       "slug": "would you believe brand new construction in San Antonio starts at $469,990? new construction like this doesn't sit arou…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674663961731665166",
       "metrics": {
-        "views": 244,
+        "views": 245,
         "likes": 4,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.639344262295082,
+        "engagement_rate": 1.6326530612244898,
         "duration_seconds": 24
       }
     },
@@ -6371,9 +6674,9 @@
       "slug": "The average Texas home sells in about 60 days. Almost no actual home does that.",
       "url": "https://www.instagram.com/p/DcGp9TvCHEk/",
       "metrics": {
-        "views": 47,
-        "reach": 13,
-        "impressions": 47,
+        "views": 50,
+        "reach": 14,
+        "impressions": 50,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -6410,11 +6713,11 @@
       "slug": "The average Texas home sells in about 60 days. Almost no actual home does that. The Average Is Fake: That 60 day number…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674632512181718285",
       "metrics": {
-        "views": 611,
+        "views": 612,
         "likes": 5,
         "comments": 0,
         "shares": 1,
-        "engagement_rate": 0.9819967266775778,
+        "engagement_rate": 0.9803921568627451,
         "duration_seconds": 0
       }
     },
@@ -6427,18 +6730,18 @@
       "slug": "the floor plan in this one made me stop mid-tour",
       "url": "https://www.instagram.com/reel/DcFdf9nDcQ3/",
       "metrics": {
-        "views": 167,
-        "reach": 141,
-        "impressions": 167,
+        "views": 168,
+        "reach": 142,
+        "impressions": 168,
         "likes": 3,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 2.127659574468085,
-        "avg_watch_seconds": 3.092,
+        "engagement_rate": 2.112676056338028,
+        "avg_watch_seconds": 3.085,
         "duration_seconds": 19,
-        "skip_rate": 74.5
+        "skip_rate": 74.6
       }
     },
     {
@@ -6450,18 +6753,18 @@
       "slug": "the floor plan in this one made me stop mid-tour",
       "url": "https://www.instagram.com/reel/DcFdmRqD0aS/",
       "metrics": {
-        "views": 167,
-        "reach": 140,
-        "impressions": 167,
+        "views": 168,
+        "reach": 142,
+        "impressions": 168,
         "likes": 1,
         "comments": 2,
         "shares": 1,
         "saves": 1,
         "interactions": 5,
-        "engagement_rate": 3.5714285714285716,
-        "avg_watch_seconds": 4.407,
+        "engagement_rate": 3.5211267605633805,
+        "avg_watch_seconds": 4.384,
         "duration_seconds": 19,
-        "skip_rate": 76.2
+        "skip_rate": 76.4
       }
     },
     {
@@ -6512,11 +6815,11 @@
       "slug": "the floor plan in this one made me stop mid-tour new construction this clean doesn't stick around long in Fort Worth ri…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674460753012854030",
       "metrics": {
-        "views": 317,
+        "views": 318,
         "likes": 6,
         "comments": 0,
         "shares": 1,
-        "engagement_rate": 2.2082018927444795,
+        "engagement_rate": 2.20125786163522,
         "duration_seconds": 19
       }
     },
@@ -6529,18 +6832,18 @@
       "slug": "wait until you see what $442,990 gets you in Cedar Park",
       "url": "https://www.instagram.com/reel/DcEv5hOFHPt/",
       "metrics": {
-        "views": 157,
-        "reach": 132,
-        "impressions": 157,
+        "views": 158,
+        "reach": 133,
+        "impressions": 158,
         "likes": 3,
         "comments": 0,
         "shares": 2,
         "saves": 0,
         "interactions": 5,
-        "engagement_rate": 3.787878787878788,
-        "avg_watch_seconds": 6.967,
+        "engagement_rate": 3.7593984962406015,
+        "avg_watch_seconds": 6.947,
         "duration_seconds": 18,
-        "skip_rate": 63.2
+        "skip_rate": 62.7
       }
     },
     {
@@ -6575,18 +6878,18 @@
       "slug": "wait until you see what $442,990 gets you in Cedar Park",
       "url": "https://www.instagram.com/reel/DcEv0APjckt/",
       "metrics": {
-        "views": 137,
-        "reach": 118,
-        "impressions": 137,
+        "views": 141,
+        "reach": 119,
+        "impressions": 141,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 1,
-        "engagement_rate": 0.847457627118644,
-        "avg_watch_seconds": 4.29,
+        "engagement_rate": 0.8403361344537815,
+        "avg_watch_seconds": 4.291,
         "duration_seconds": 18,
-        "skip_rate": 73.9
+        "skip_rate": 74.2
       }
     },
     {
@@ -6614,11 +6917,11 @@
       "slug": "wait until you see what $442,990 gets you in Cedar Park new construction like this doesn't sit long, especially at this…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674357759189601549",
       "metrics": {
-        "views": 381,
+        "views": 383,
         "likes": 16,
         "comments": 2,
         "shares": 0,
-        "engagement_rate": 4.724409448818897,
+        "engagement_rate": 4.699738903394256,
         "duration_seconds": 17
       }
     },
@@ -6630,11 +6933,11 @@
       "slug": "🤖 POV: My assistant just became my personal trainer. 😂 I woke up, told Primary I needed a chest & triceps workout, an…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674357028583787790",
       "metrics": {
-        "views": 36,
+        "views": 37,
         "likes": 3,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 8.333333333333334,
+        "engagement_rate": 8.108108108108109,
         "duration_seconds": 23
       }
     },
@@ -6646,11 +6949,11 @@
       "slug": "🤖 POV: My assistant just became my personal trainer. 😂 I woke up, told Primary I needed a chest & triceps workout, an…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674357033059077389",
       "metrics": {
-        "views": 115,
+        "views": 117,
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.8695652173913043,
+        "engagement_rate": 0.8547008547008547,
         "duration_seconds": 23
       }
     },
@@ -6662,7 +6965,7 @@
       "slug": "🤖 POV: My assistant just became my personal trainer. 😂 I woke up, told Primary I needed a chest & triceps workout, an…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674356980223331598",
       "metrics": {
-        "views": 67,
+        "views": 71,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -6678,18 +6981,18 @@
       "slug": "🤖 POV: My assistant just became my personal trainer. 😂",
       "url": "https://www.instagram.com/reel/DcEvQVWMs3p/",
       "metrics": {
-        "views": 990,
+        "views": 991,
         "reach": 878,
-        "impressions": 990,
+        "impressions": 991,
         "likes": 12,
         "comments": 0,
         "shares": 3,
         "saves": 2,
         "interactions": 17,
         "engagement_rate": 1.9362186788154898,
-        "avg_watch_seconds": 6.881,
+        "avg_watch_seconds": 6.874,
         "duration_seconds": 24,
-        "skip_rate": 34.8
+        "skip_rate": 34.9
       }
     },
     {
@@ -6747,16 +7050,16 @@
       "slug": "wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcEuCV4sZkg/",
       "metrics": {
-        "views": 1918,
-        "reach": 1628,
-        "impressions": 1918,
+        "views": 1923,
+        "reach": 1637,
+        "impressions": 1923,
         "likes": 99,
         "comments": 7,
         "shares": 23,
         "saves": 12,
         "interactions": 141,
-        "engagement_rate": 8.660933660933662,
-        "avg_watch_seconds": 6.149,
+        "engagement_rate": 8.613317043372023,
+        "avg_watch_seconds": 6.161,
         "duration_seconds": 27,
         "skip_rate": 61.2
       }
@@ -6786,7 +7089,7 @@
       "slug": "🤖 POV: My assistant just became my personal trainer. 😂 I woke up, told Primary I needed a chest & triceps workout, an…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674353053855796494",
       "metrics": {
-        "views": 143,
+        "views": 146,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -6802,18 +7105,18 @@
       "slug": "🤖 POV: My assistant just became my personal trainer. 😂",
       "url": "https://www.instagram.com/reel/DcEthWqzo3j/",
       "metrics": {
-        "views": 223,
-        "reach": 183,
-        "impressions": 223,
+        "views": 224,
+        "reach": 184,
+        "impressions": 224,
         "likes": 4,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 4,
-        "engagement_rate": 2.185792349726776,
-        "avg_watch_seconds": 5.248,
+        "engagement_rate": 2.1739130434782608,
+        "avg_watch_seconds": 5.244,
         "duration_seconds": 24,
-        "skip_rate": 47.3
+        "skip_rate": 47.1
       }
     },
     {
@@ -6871,18 +7174,18 @@
       "slug": "🤖 POV: My assistant just became my personal trainer. 😂",
       "url": "https://www.instagram.com/reel/DcEtNINshpx/",
       "metrics": {
-        "views": 1893,
-        "reach": 1533,
-        "impressions": 1893,
+        "views": 1906,
+        "reach": 1543,
+        "impressions": 1906,
         "likes": 33,
         "comments": 8,
         "shares": 2,
         "saves": 1,
         "interactions": 44,
-        "engagement_rate": 2.8701891715590344,
-        "avg_watch_seconds": 7.124,
+        "engagement_rate": 2.851587815942968,
+        "avg_watch_seconds": 7.12,
         "duration_seconds": 24,
-        "skip_rate": 42.9
+        "skip_rate": 43.1
       }
     },
     {
@@ -6957,18 +7260,18 @@
       "slug": "This might be the best new build value I've toured in San Antonio this month.",
       "url": "https://www.instagram.com/reel/DcEnQswDpTC/",
       "metrics": {
-        "views": 162,
-        "reach": 135,
-        "impressions": 162,
+        "views": 163,
+        "reach": 136,
+        "impressions": 163,
         "likes": 5,
         "comments": 0,
         "shares": 2,
         "saves": 0,
         "interactions": 7,
-        "engagement_rate": 5.185185185185185,
-        "avg_watch_seconds": 5.488,
+        "engagement_rate": 5.147058823529412,
+        "avg_watch_seconds": 5.589,
         "duration_seconds": 20,
-        "skip_rate": 64.9
+        "skip_rate": 65.2
       }
     },
     {
@@ -6979,11 +7282,11 @@
       "slug": "This might be the best new build value I've toured in San Antonio this month. New construction at this price point move…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674338647335800077",
       "metrics": {
-        "views": 162,
+        "views": 164,
         "likes": 3,
         "comments": 1,
         "shares": 0,
-        "engagement_rate": 2.4691358024691357,
+        "engagement_rate": 2.4390243902439024,
         "duration_seconds": 19
       }
     },
@@ -6996,16 +7299,16 @@
       "slug": "brand new construction in San Antonio just hits different",
       "url": "https://www.instagram.com/reel/DcEdGSRsEgN/",
       "metrics": {
-        "views": 2608,
-        "reach": 2204,
-        "impressions": 2608,
+        "views": 2619,
+        "reach": 2213,
+        "impressions": 2619,
         "likes": 66,
         "comments": 6,
         "shares": 26,
         "saves": 14,
         "interactions": 112,
-        "engagement_rate": 5.081669691470054,
-        "avg_watch_seconds": 8.414,
+        "engagement_rate": 5.061003163126977,
+        "avg_watch_seconds": 8.406,
         "duration_seconds": 28,
         "skip_rate": 59.1
       }
@@ -7019,18 +7322,18 @@
       "slug": "wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcEZTMAAld4/",
       "metrics": {
-        "views": 177,
-        "reach": 144,
-        "impressions": 177,
+        "views": 179,
+        "reach": 145,
+        "impressions": 179,
         "likes": 4,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 4,
-        "engagement_rate": 2.7777777777777777,
-        "avg_watch_seconds": 6.415,
+        "engagement_rate": 2.7586206896551726,
+        "avg_watch_seconds": 6.35,
         "duration_seconds": 27,
-        "skip_rate": 60.3
+        "skip_rate": 60.8
       }
     },
     {
@@ -7104,11 +7407,11 @@
       "slug": "wait until you see the kitchen in this one 😮‍💨 brand new construction in Austin starting at $649,990. builder incenti…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674306937898519822",
       "metrics": {
-        "views": 470,
+        "views": 471,
         "likes": 18,
         "comments": 2,
         "shares": 1,
-        "engagement_rate": 4.468085106382978,
+        "engagement_rate": 4.45859872611465,
         "duration_seconds": 26
       }
     },
@@ -7121,18 +7424,18 @@
       "slug": "brand new construction in San Antonio just hits different",
       "url": "https://www.instagram.com/reel/DcESb2gjDvF/",
       "metrics": {
-        "views": 165,
-        "reach": 145,
-        "impressions": 165,
-        "likes": 7,
+        "views": 166,
+        "reach": 146,
+        "impressions": 166,
+        "likes": 8,
         "comments": 0,
         "shares": 3,
         "saves": 0,
-        "interactions": 10,
-        "engagement_rate": 6.896551724137931,
-        "avg_watch_seconds": 4.947,
+        "interactions": 11,
+        "engagement_rate": 7.534246575342466,
+        "avg_watch_seconds": 4.935,
         "duration_seconds": 28,
-        "skip_rate": 72.7
+        "skip_rate": 72.2
       }
     },
     {
@@ -7206,11 +7509,11 @@
       "slug": "brand new construction in San Antonio just hits different new construction like this doesn't sit long. if you've been w…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674291431162383629",
       "metrics": {
-        "views": 208,
+        "views": 209,
         "likes": 8,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 3.8461538461538463,
+        "engagement_rate": 3.827751196172249,
         "duration_seconds": 28
       }
     },
@@ -7223,16 +7526,16 @@
       "slug": "🤖 I didn’t hire an assistant. I BUILT one.",
       "url": "https://www.instagram.com/reel/DcCeuw-M-c9/",
       "metrics": {
-        "views": 763,
-        "reach": 587,
-        "impressions": 763,
+        "views": 768,
+        "reach": 589,
+        "impressions": 768,
         "likes": 21,
         "comments": 0,
         "shares": 0,
         "saves": 1,
         "interactions": 22,
-        "engagement_rate": 3.7478705281090288,
-        "avg_watch_seconds": 5.008,
+        "engagement_rate": 3.735144312393888,
+        "avg_watch_seconds": 5.025,
         "duration_seconds": 19,
         "skip_rate": 58.7
       }
@@ -7262,7 +7565,7 @@
       "slug": "🤖 I didn’t hire an assistant. I BUILT one. Meet PRIMARY — my personal AI assistant built from scratch to help me run m…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674029383400656141",
       "metrics": {
-        "views": 178,
+        "views": 179,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -7278,18 +7581,18 @@
       "slug": "🤖 I didn’t hire an assistant. I BUILT one.",
       "url": "https://www.instagram.com/reel/DcCdkGou8B9/",
       "metrics": {
-        "views": 133,
-        "reach": 114,
-        "impressions": 133,
+        "views": 136,
+        "reach": 115,
+        "impressions": 136,
         "likes": 3,
         "comments": 0,
         "shares": 0,
         "saves": 1,
         "interactions": 4,
-        "engagement_rate": 3.508771929824561,
-        "avg_watch_seconds": 4.014,
+        "engagement_rate": 3.4782608695652173,
+        "avg_watch_seconds": 4.063,
         "duration_seconds": 19,
-        "skip_rate": 66.7
+        "skip_rate": 66.1
       }
     },
     {
@@ -7455,11 +7758,11 @@
       "slug": "wait until you see this kitchen 😮‍💨 new construction in San Marcos starting at $674,223 doesn't stay on the market lo…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7674001245606120717",
       "metrics": {
-        "views": 385,
+        "views": 389,
         "likes": 18,
         "comments": 2,
         "shares": 0,
-        "engagement_rate": 5.194805194805195,
+        "engagement_rate": 5.141388174807198,
         "duration_seconds": 18
       }
     },
@@ -7489,18 +7792,18 @@
       "slug": "would you believe brand new construction in Dallas can be yours for $466,900?",
       "url": "https://www.instagram.com/reel/DcCQDkmgQ34/",
       "metrics": {
-        "views": 169,
-        "reach": 135,
-        "impressions": 169,
-        "likes": 4,
+        "views": 170,
+        "reach": 136,
+        "impressions": 170,
+        "likes": 5,
         "comments": 0,
         "shares": 0,
         "saves": 2,
-        "interactions": 6,
-        "engagement_rate": 4.444444444444445,
-        "avg_watch_seconds": 5.607,
+        "interactions": 7,
+        "engagement_rate": 5.147058823529412,
+        "avg_watch_seconds": 5.628,
         "duration_seconds": 17,
-        "skip_rate": 68.6
+        "skip_rate": 68.1
       }
     },
     {
@@ -7557,11 +7860,11 @@
       "slug": "would you believe brand new construction in Dallas can be yours for $466,900? new construction like this doesn't sit ar…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673997887365336333",
       "metrics": {
-        "views": 423,
+        "views": 424,
         "likes": 13,
         "comments": 1,
         "shares": 0,
-        "engagement_rate": 3.309692671394799,
+        "engagement_rate": 3.30188679245283,
         "duration_seconds": 16
       }
     },
@@ -7574,16 +7877,16 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcCFgISMwYJ/",
       "metrics": {
-        "views": 1674,
-        "reach": 1331,
-        "impressions": 1674,
+        "views": 1675,
+        "reach": 1333,
+        "impressions": 1675,
         "likes": 55,
         "comments": 4,
         "shares": 8,
         "saves": 8,
         "interactions": 75,
-        "engagement_rate": 5.634861006761833,
-        "avg_watch_seconds": 5.414,
+        "engagement_rate": 5.626406601650412,
+        "avg_watch_seconds": 5.422,
         "duration_seconds": 17,
         "skip_rate": 66.3
       }
@@ -7620,18 +7923,18 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcCB7sME2yw/",
       "metrics": {
-        "views": 150,
-        "reach": 128,
-        "impressions": 150,
+        "views": 151,
+        "reach": 129,
+        "impressions": 151,
         "likes": 5,
         "comments": 0,
         "shares": 1,
         "saves": 2,
         "interactions": 8,
-        "engagement_rate": 6.25,
-        "avg_watch_seconds": 6.889,
+        "engagement_rate": 6.2015503875969,
+        "avg_watch_seconds": 6.849,
         "duration_seconds": 17,
-        "skip_rate": 71.8
+        "skip_rate": 72
       }
     },
     {
@@ -7660,18 +7963,18 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcCBy_GFS4r/",
       "metrics": {
-        "views": 136,
-        "reach": 123,
-        "impressions": 136,
+        "views": 138,
+        "reach": 125,
+        "impressions": 138,
         "likes": 5,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 5,
-        "engagement_rate": 4.065040650406504,
-        "avg_watch_seconds": 2.878,
+        "engagement_rate": 4,
+        "avg_watch_seconds": 2.874,
         "duration_seconds": 17,
-        "skip_rate": 78.3
+        "skip_rate": 78.5
       }
     },
     {
@@ -7682,11 +7985,11 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨 New construction like this doesn't sit long in San Antonio. Starting a…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673966019701968142",
       "metrics": {
-        "views": 689,
+        "views": 690,
         "likes": 11,
         "comments": 2,
         "shares": 2,
-        "engagement_rate": 2.1770682148040637,
+        "engagement_rate": 2.1739130434782608,
         "duration_seconds": 16
       }
     },
@@ -7762,18 +8065,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/DcB05uriuX8/",
       "metrics": {
-        "views": 138,
-        "reach": 120,
-        "impressions": 138,
+        "views": 139,
+        "reach": 121,
+        "impressions": 139,
         "likes": 4,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 4,
-        "engagement_rate": 3.3333333333333335,
-        "avg_watch_seconds": 4.123,
+        "engagement_rate": 3.3057851239669422,
+        "avg_watch_seconds": 4.148,
         "duration_seconds": 39,
-        "skip_rate": 61.7
+        "skip_rate": 61.2
       }
     },
     {
@@ -7784,11 +8087,11 @@
       "slug": "this is what new construction is supposed to feel like new construction like this doesn't sit long in Austin. builder i…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673936898263387406",
       "metrics": {
-        "views": 295,
+        "views": 296,
         "likes": 5,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 1.694915254237288,
+        "engagement_rate": 1.6891891891891893,
         "duration_seconds": 38
       }
     },
@@ -7801,16 +8104,16 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcBvUJJsgtf/",
       "metrics": {
-        "views": 1903,
-        "reach": 1567,
-        "impressions": 1903,
+        "views": 1914,
+        "reach": 1578,
+        "impressions": 1914,
         "likes": 82,
         "comments": 20,
         "shares": 20,
         "saves": 9,
         "interactions": 131,
-        "engagement_rate": 8.359923420548819,
-        "avg_watch_seconds": 8.855,
+        "engagement_rate": 8.301647655259822,
+        "avg_watch_seconds": 8.828,
         "duration_seconds": 23,
         "skip_rate": 61.2
       }
@@ -7887,18 +8190,18 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.instagram.com/reel/DcBuG9aFOex/",
       "metrics": {
-        "views": 129,
-        "reach": 116,
-        "impressions": 129,
+        "views": 130,
+        "reach": 118,
+        "impressions": 130,
         "likes": 2,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 2,
-        "engagement_rate": 1.7241379310344827,
-        "avg_watch_seconds": 3.861,
+        "engagement_rate": 1.694915254237288,
+        "avg_watch_seconds": 3.85,
         "duration_seconds": 24,
-        "skip_rate": 75.4
+        "skip_rate": 75.7
       }
     },
     {
@@ -7909,11 +8212,11 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨 New construction in San Antonio like this doesn't sit on the market lo…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673921530023152910",
       "metrics": {
-        "views": 430,
+        "views": 431,
         "likes": 10,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 2.3255813953488373,
+        "engagement_rate": 2.320185614849188,
         "duration_seconds": 23
       }
     },
@@ -7948,11 +8251,11 @@
       "slug": "7 DEALS ON CONTRACT IN AUGUST. 📈🔥 And honestly, the biggest difference isn’t some secret lead source… it’s how you st…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673905161957362957",
       "metrics": {
-        "views": 135,
+        "views": 136,
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 0.7407407407407407,
+        "engagement_rate": 0.7352941176470589,
         "duration_seconds": 28
       }
     },
@@ -8008,15 +8311,15 @@
       "slug": "Transplants in Austin and San Antonio get sick every January. It is not the flu.",
       "url": "https://www.instagram.com/p/DcBkPGhCPxP/",
       "metrics": {
-        "views": 136,
-        "reach": 69,
-        "impressions": 136,
+        "views": 141,
+        "reach": 71,
+        "impressions": 141,
         "likes": 1,
         "comments": 0,
         "shares": 0,
         "saves": 1,
         "interactions": 2,
-        "engagement_rate": 2.898550724637681
+        "engagement_rate": 2.816901408450704
       }
     },
     {
@@ -8047,7 +8350,7 @@
       "slug": "Transplants in Austin and San Antonio get sick every January. It is not the flu. One Tree Does This: Central Texas is c…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673899038185426189",
       "metrics": {
-        "views": 319,
+        "views": 320,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -8079,11 +8382,11 @@
       "slug": "7 DEALS ON CONTRACT IN AUGUST. 📈🔥 And honestly, the biggest difference isn’t some secret lead source… it’s how you st…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673689271475260686",
       "metrics": {
-        "views": 273,
+        "views": 274,
         "likes": 10,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 3.663003663003663,
+        "engagement_rate": 3.6496350364963503,
         "duration_seconds": 37
       }
     },
@@ -8165,16 +8468,16 @@
       "slug": "7 DEALS ON CONTRACT IN AUGUST. 📈🔥",
       "url": "https://www.instagram.com/reel/DcAGGK9ssFP/",
       "metrics": {
-        "views": 888,
-        "reach": 607,
-        "impressions": 888,
+        "views": 890,
+        "reach": 609,
+        "impressions": 890,
         "likes": 21,
         "comments": 10,
         "shares": 0,
         "saves": 0,
         "interactions": 31,
-        "engagement_rate": 5.107084019769357,
-        "avg_watch_seconds": 10.096,
+        "engagement_rate": 5.090311986863711,
+        "avg_watch_seconds": 10.095,
         "duration_seconds": 38,
         "skip_rate": 60.9
       }
@@ -8228,18 +8531,18 @@
       "slug": "This might be the best new build I've toured this month.",
       "url": "https://www.instagram.com/reel/Db_rKZ1EmFG/",
       "metrics": {
-        "views": 204,
-        "reach": 165,
-        "impressions": 204,
-        "likes": 5,
+        "views": 205,
+        "reach": 166,
+        "impressions": 205,
+        "likes": 6,
         "comments": 0,
         "shares": 2,
         "saves": 1,
-        "interactions": 8,
-        "engagement_rate": 4.848484848484849,
-        "avg_watch_seconds": 5.074,
+        "interactions": 9,
+        "engagement_rate": 5.421686746987952,
+        "avg_watch_seconds": 5.059,
         "duration_seconds": 18,
-        "skip_rate": 66.9
+        "skip_rate": 67.1
       }
     },
     {
@@ -8251,18 +8554,18 @@
       "slug": "This might be the best new build I've toured this month.",
       "url": "https://www.instagram.com/reel/Db_rFDbkTCu/",
       "metrics": {
-        "views": 123,
-        "reach": 120,
-        "impressions": 123,
+        "views": 124,
+        "reach": 121,
+        "impressions": 124,
         "likes": 0,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "interactions": 0,
         "engagement_rate": 0,
-        "avg_watch_seconds": 3.09,
+        "avg_watch_seconds": 3.083,
         "duration_seconds": 18,
-        "skip_rate": 73.7
+        "skip_rate": 73.9
       }
     },
     {
@@ -8273,11 +8576,11 @@
       "slug": "This might be the best new build I've toured this month. New construction like this doesn't sit long in the DFW market.…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673626609752100109",
       "metrics": {
-        "views": 750,
+        "views": 752,
         "likes": 54,
         "comments": 2,
         "shares": 1,
-        "engagement_rate": 7.6,
+        "engagement_rate": 7.579787234042553,
         "duration_seconds": 17
       }
     },
@@ -8290,18 +8593,18 @@
       "slug": "Would you believe brand new construction in Georgetown starts at $520,000?",
       "url": "https://www.instagram.com/reel/Db_lJfVDYOg/",
       "metrics": {
-        "views": 169,
-        "reach": 135,
-        "impressions": 169,
-        "likes": 5,
+        "views": 170,
+        "reach": 136,
+        "impressions": 170,
+        "likes": 6,
         "comments": 1,
         "shares": 1,
         "saves": 0,
-        "interactions": 7,
-        "engagement_rate": 5.185185185185185,
-        "avg_watch_seconds": 3.904,
+        "interactions": 8,
+        "engagement_rate": 5.882352941176471,
+        "avg_watch_seconds": 3.891,
         "duration_seconds": 14,
-        "skip_rate": 72.7
+        "skip_rate": 72.9
       }
     },
     {
@@ -8375,11 +8678,11 @@
       "slug": "Would you believe brand new construction in Georgetown starts at $520,000? New construction like this doesn't sit long.…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673613179238288653",
       "metrics": {
-        "views": 1042,
+        "views": 1059,
         "likes": 22,
         "comments": 2,
-        "shares": 6,
-        "engagement_rate": 2.8790786948176583,
+        "shares": 7,
+        "engagement_rate": 2.927289896128423,
         "duration_seconds": 13
       }
     },
@@ -8392,18 +8695,18 @@
       "slug": "I’ve never seen finishes like this at $450,000 in Austin new construction. This might be the best value I’ve walked thr…",
       "url": "https://www.instagram.com/reel/Db_gI4Ost9X/",
       "metrics": {
-        "views": 2901,
-        "reach": 2319,
-        "impressions": 2901,
+        "views": 2906,
+        "reach": 2322,
+        "impressions": 2906,
         "likes": 74,
         "comments": 22,
         "shares": 31,
         "saves": 15,
         "interactions": 142,
-        "engagement_rate": 6.1233290211297975,
-        "avg_watch_seconds": 7.357,
+        "engagement_rate": 6.11541774332472,
+        "avg_watch_seconds": 7.363,
         "duration_seconds": 23,
-        "skip_rate": 57.3
+        "skip_rate": 57.2
       }
     },
     {
@@ -8415,16 +8718,16 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/Db_gAhcs7i-/",
       "metrics": {
-        "views": 1182,
-        "reach": 988,
-        "impressions": 1182,
+        "views": 1183,
+        "reach": 989,
+        "impressions": 1183,
         "likes": 32,
         "comments": 2,
         "shares": 6,
         "saves": 8,
         "interactions": 48,
-        "engagement_rate": 4.8582995951417,
-        "avg_watch_seconds": 5.931,
+        "engagement_rate": 4.853387259858443,
+        "avg_watch_seconds": 5.927,
         "duration_seconds": 21,
         "skip_rate": 67.7
       }
@@ -8484,18 +8787,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/Db_dMjtFCOW/",
       "metrics": {
-        "views": 144,
-        "reach": 122,
-        "impressions": 144,
+        "views": 145,
+        "reach": 123,
+        "impressions": 145,
         "likes": 2,
         "comments": 0,
         "shares": 0,
         "saves": 1,
         "interactions": 3,
-        "engagement_rate": 2.459016393442623,
-        "avg_watch_seconds": 2.751,
+        "engagement_rate": 2.4390243902439024,
+        "avg_watch_seconds": 2.744,
         "duration_seconds": 21,
-        "skip_rate": 83.6
+        "skip_rate": 83.7
       }
     },
     {
@@ -8540,18 +8843,18 @@
       "slug": "I've never seen finishes like this at $450,000 in Austin new construction. This might be the best value I've walked thr…",
       "url": "https://www.instagram.com/reel/Db_QJOmG6rU/",
       "metrics": {
-        "views": 152,
-        "reach": 133,
-        "impressions": 152,
+        "views": 153,
+        "reach": 134,
+        "impressions": 153,
         "likes": 5,
         "comments": 0,
         "shares": 0,
         "saves": 1,
         "interactions": 6,
-        "engagement_rate": 4.511278195488722,
-        "avg_watch_seconds": 6.164,
+        "engagement_rate": 4.477611940298507,
+        "avg_watch_seconds": 6.14,
         "duration_seconds": 23,
-        "skip_rate": 61.9
+        "skip_rate": 62.2
       }
     },
     {
@@ -8586,18 +8889,18 @@
       "slug": "I've never seen finishes like this at $450,000 in Austin new construction. This might be the best value I've walked thr…",
       "url": "https://www.instagram.com/reel/Db_QCwtkqYN/",
       "metrics": {
-        "views": 135,
-        "reach": 116,
-        "impressions": 135,
+        "views": 136,
+        "reach": 117,
+        "impressions": 136,
         "likes": 1,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 2,
-        "engagement_rate": 1.7241379310344827,
-        "avg_watch_seconds": 5.009,
+        "engagement_rate": 1.7094017094017093,
+        "avg_watch_seconds": 4.978,
         "duration_seconds": 23,
-        "skip_rate": 71.6
+        "skip_rate": 71.8
       }
     },
     {
@@ -8625,11 +8928,11 @@
       "slug": "I've never seen finishes like this at $450,000 in Austin new construction. This might be the best value I've walked thr…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673565681278913806",
       "metrics": {
-        "views": 373,
+        "views": 376,
         "likes": 7,
         "comments": 0,
         "shares": 5,
-        "engagement_rate": 3.2171581769436997,
+        "engagement_rate": 3.1914893617021276,
         "duration_seconds": 22
       }
     },
@@ -8665,18 +8968,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/Db_JMREDMXG/",
       "metrics": {
-        "views": 159,
-        "reach": 133,
-        "impressions": 159,
+        "views": 160,
+        "reach": 134,
+        "impressions": 160,
         "likes": 3,
         "comments": 1,
         "shares": 3,
         "saves": 0,
         "interactions": 7,
-        "engagement_rate": 5.2631578947368425,
-        "avg_watch_seconds": 4.523,
+        "engagement_rate": 5.223880597014926,
+        "avg_watch_seconds": 4.495,
         "duration_seconds": 18,
-        "skip_rate": 74.4
+        "skip_rate": 74.6
       }
     },
     {
@@ -8705,18 +9008,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/Db_JFcWDmhC/",
       "metrics": {
-        "views": 142,
-        "reach": 127,
-        "impressions": 142,
+        "views": 143,
+        "reach": 128,
+        "impressions": 143,
         "likes": 2,
         "comments": 0,
         "shares": 2,
         "saves": 0,
         "interactions": 4,
-        "engagement_rate": 3.1496062992125986,
-        "avg_watch_seconds": 2.757,
+        "engagement_rate": 3.125,
+        "avg_watch_seconds": 2.745,
         "duration_seconds": 18,
-        "skip_rate": 84.6
+        "skip_rate": 84.7
       }
     },
     {
@@ -8727,11 +9030,11 @@
       "slug": "this is what new construction is supposed to feel like new construction like this moves fast in San Antonio right now.…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7673550127017102605",
       "metrics": {
-        "views": 855,
+        "views": 856,
         "likes": 33,
         "comments": 4,
         "shares": 8,
-        "engagement_rate": 5.2631578947368425,
+        "engagement_rate": 5.257009345794392,
         "duration_seconds": 18
       }
     },
@@ -8744,9 +9047,9 @@
       "slug": "Your Texas new build has a one year warranty. Most buyers waste 11 months of it.",
       "url": "https://www.instagram.com/p/Db-_95biEAb/",
       "metrics": {
-        "views": 39,
+        "views": 40,
         "reach": 11,
-        "impressions": 39,
+        "impressions": 40,
         "likes": 1,
         "comments": 0,
         "shares": 0,
@@ -9140,18 +9443,18 @@
       "slug": "wait until you see these 60 ft homesites with actual breathing room 😮‍💨",
       "url": "https://www.instagram.com/reel/Db8tw1xsxX4/",
       "metrics": {
-        "views": 2019,
-        "reach": 1700,
-        "impressions": 2019,
+        "views": 2025,
+        "reach": 1711,
+        "impressions": 2025,
         "likes": 79,
         "comments": 8,
         "shares": 12,
         "saves": 13,
         "interactions": 112,
-        "engagement_rate": 6.588235294117647,
-        "avg_watch_seconds": 5.976,
+        "engagement_rate": 6.5458796025715955,
+        "avg_watch_seconds": 5.964,
         "duration_seconds": 23,
-        "skip_rate": 65.4
+        "skip_rate": 65.6
       }
     },
     {
@@ -9209,18 +9512,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/Db8rVrJj_ms/",
       "metrics": {
-        "views": 155,
-        "reach": 137,
-        "impressions": 155,
+        "views": 156,
+        "reach": 138,
+        "impressions": 156,
         "likes": 2,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 2.18978102189781,
-        "avg_watch_seconds": 4.613,
+        "engagement_rate": 2.1739130434782608,
+        "avg_watch_seconds": 4.582,
         "duration_seconds": 19,
-        "skip_rate": 73.7
+        "skip_rate": 73.9
       }
     },
     {
@@ -9798,11 +10101,11 @@
       "slug": "the floor plan in this one made me stop mid-tour 😮‍💨 bright light finishes and a layout that actually lives new const…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7672854920835386637",
       "metrics": {
-        "views": 2327,
-        "likes": 93,
+        "views": 2425,
+        "likes": 95,
         "comments": 19,
-        "shares": 25,
-        "engagement_rate": 5.8874086807047705,
+        "shares": 26,
+        "engagement_rate": 5.77319587628866,
         "duration_seconds": 17
       }
     },
@@ -9816,14 +10119,14 @@
       "url": "https://www.instagram.com/reel/Db6NHZhsNER/",
       "metrics": {
         "views": 2769,
-        "reach": 2230,
+        "reach": 2231,
         "impressions": 2769,
         "likes": 109,
         "comments": 28,
         "shares": 31,
         "saves": 28,
         "interactions": 196,
-        "engagement_rate": 8.789237668161435,
+        "engagement_rate": 8.785298072613179,
         "avg_watch_seconds": 8.33,
         "duration_seconds": 19,
         "skip_rate": 51.3
@@ -9838,16 +10141,16 @@
       "slug": "I’ve never seen finishes like this at this price point in San Antonio.",
       "url": "https://www.instagram.com/reel/Db6JE_5sx9P/",
       "metrics": {
-        "views": 1492,
-        "reach": 1187,
-        "impressions": 1492,
+        "views": 1493,
+        "reach": 1191,
+        "impressions": 1493,
         "likes": 38,
         "comments": 6,
         "shares": 11,
         "saves": 12,
         "interactions": 67,
-        "engagement_rate": 5.644481887110362,
-        "avg_watch_seconds": 5.439,
+        "engagement_rate": 5.625524769101595,
+        "avg_watch_seconds": 5.437,
         "duration_seconds": 12,
         "skip_rate": 62.9
       }
@@ -9946,11 +10249,11 @@
       "slug": "I've never seen finishes like this at this price point in Austin right now. New construction in this market moves fast,…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7672821160333069582",
       "metrics": {
-        "views": 327,
+        "views": 330,
         "likes": 6,
         "comments": 0,
         "shares": 3,
-        "engagement_rate": 2.7522935779816513,
+        "engagement_rate": 2.727272727272727,
         "duration_seconds": 19
       }
     },
@@ -10104,11 +10407,11 @@
       "slug": "Austin to San Antonio is 80 miles. Locals still block out three hours each way. The 80 Mile Lie: I-35 between the two c…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7672941954841251085",
       "metrics": {
-        "views": 7734,
+        "views": 7801,
         "likes": 47,
         "comments": 6,
         "shares": 4,
-        "engagement_rate": 0.7370054305663305,
+        "engagement_rate": 0.7306755544161005,
         "duration_seconds": 0
       }
     },
@@ -10229,11 +10532,11 @@
       "slug": "this is what new construction is supposed to feel like New construction like this doesn't stay available long in Austin…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7672497375994236173",
       "metrics": {
-        "views": 380,
+        "views": 383,
         "likes": 11,
         "comments": 0,
         "shares": 0,
-        "engagement_rate": 2.8947368421052633,
+        "engagement_rate": 2.8720626631853787,
         "duration_seconds": 15
       }
     },
@@ -10451,14 +10754,14 @@
       "url": "https://www.instagram.com/reel/Db3eU4NMOMQ/",
       "metrics": {
         "views": 868,
-        "reach": 721,
+        "reach": 723,
         "impressions": 868,
         "likes": 20,
         "comments": 2,
         "shares": 7,
         "saves": 4,
         "interactions": 33,
-        "engagement_rate": 4.5769764216366156,
+        "engagement_rate": 4.564315352697095,
         "avg_watch_seconds": 5.281,
         "duration_seconds": 16,
         "skip_rate": 66.8
@@ -10674,18 +10977,18 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.instagram.com/reel/Db1SJRUMZLx/",
       "metrics": {
-        "views": 2738,
-        "reach": 2254,
-        "impressions": 2738,
-        "likes": 69,
+        "views": 2743,
+        "reach": 2259,
+        "impressions": 2743,
+        "likes": 70,
         "comments": 18,
         "shares": 12,
         "saves": 15,
-        "interactions": 114,
-        "engagement_rate": 5.057675244010648,
-        "avg_watch_seconds": 5.826,
+        "interactions": 115,
+        "engagement_rate": 5.090748118636565,
+        "avg_watch_seconds": 5.821,
         "duration_seconds": 14,
-        "skip_rate": 62.6
+        "skip_rate": 62.5
       }
     },
     {
@@ -10997,16 +11300,16 @@
       "slug": "🌳 Luxury, privacy, and Guadalupe River access all in one address… this River Chase estate is seriously something speci…",
       "url": "https://www.instagram.com/reel/Dby9J_yM0zB/",
       "metrics": {
-        "views": 2070,
-        "reach": 1591,
-        "impressions": 2070,
+        "views": 2071,
+        "reach": 1593,
+        "impressions": 2071,
         "likes": 42,
         "comments": 4,
         "shares": 11,
         "saves": 1,
         "interactions": 58,
-        "engagement_rate": 3.6455059710873665,
-        "avg_watch_seconds": 6.819,
+        "engagement_rate": 3.640929064657878,
+        "avg_watch_seconds": 6.822,
         "duration_seconds": 24,
         "skip_rate": 58.9
       }
@@ -11105,11 +11408,11 @@
       "slug": "Would you believe this is brand new construction in San Marcos for $329,990? New construction like this doesn't sit lon…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7671710846166289677",
       "metrics": {
-        "views": 392,
+        "views": 401,
         "likes": 10,
         "comments": 1,
         "shares": 0,
-        "engagement_rate": 2.806122448979592,
+        "engagement_rate": 2.743142144638404,
         "duration_seconds": 19
       }
     },
@@ -11560,11 +11863,11 @@
       "slug": "wait until you see the kitchen in this one 😮‍💨 new construction like this in San Antonio doesn't sit long. if you've…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7670594471087590669",
       "metrics": {
-        "views": 1195,
+        "views": 1196,
         "likes": 39,
         "comments": 7,
         "shares": 7,
-        "engagement_rate": 4.435146443514644,
+        "engagement_rate": 4.431438127090301,
         "duration_seconds": 24
       }
     },
@@ -11823,11 +12126,11 @@
       "slug": "wait until you see what's behind that front door 😮‍💨 New construction in San Antonio starting at just $590,000. This…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7670220256731843854",
       "metrics": {
-        "views": 658,
+        "views": 659,
         "likes": 11,
         "comments": 2,
         "shares": 6,
-        "engagement_rate": 2.8875379939209727,
+        "engagement_rate": 2.8831562974203337,
         "duration_seconds": 22
       }
     },
@@ -12205,11 +12508,11 @@
       "slug": "This might be the best new build finishes I've toured in San Antonio this month. New construction like this doesn't las…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7669845084619230477",
       "metrics": {
-        "views": 390,
+        "views": 392,
         "likes": 13,
         "comments": 3,
         "shares": 0,
-        "engagement_rate": 4.102564102564102,
+        "engagement_rate": 4.081632653061225,
         "duration_seconds": 18
       }
     },
@@ -12792,18 +13095,18 @@
       "slug": "Would you believe brand new construction in North Austin starts at $470,000?",
       "url": "https://www.instagram.com/reel/DbeGU0oE7u4/",
       "metrics": {
-        "views": 215,
-        "reach": 160,
-        "impressions": 215,
+        "views": 217,
+        "reach": 161,
+        "impressions": 217,
         "likes": 2,
         "comments": 0,
         "shares": 1,
         "saves": 0,
         "interactions": 3,
-        "engagement_rate": 1.875,
-        "avg_watch_seconds": 5.586,
+        "engagement_rate": 1.8633540372670807,
+        "avg_watch_seconds": 5.532,
         "duration_seconds": 25,
-        "skip_rate": 70.6
+        "skip_rate": 70.9
       }
     },
     {
@@ -13466,11 +13769,11 @@
       "slug": "Wait until you see the kitchen in this one 😮‍💨 New construction like this moves fast in San Antonio. Builder incentiv…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7668033749057113357",
       "metrics": {
-        "views": 443,
+        "views": 444,
         "likes": 5,
         "comments": 2,
         "shares": 2,
-        "engagement_rate": 2.0316027088036117,
+        "engagement_rate": 2.027027027027027,
         "duration_seconds": 25
       }
     },
@@ -13568,11 +13871,11 @@
       "slug": "would you believe this is brand new construction in San Antonio starting at $326,990? new construction like this doesn'…",
       "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7667986875478445325",
       "metrics": {
-        "views": 6783,
-        "likes": 102,
+        "views": 6858,
+        "likes": 105,
         "comments": 22,
-        "shares": 52,
-        "engagement_rate": 2.594722099366062,
+        "shares": 53,
+        "engagement_rate": 2.6246719160104988,
         "duration_seconds": 19
       }
     },
@@ -13607,12 +13910,12 @@
       "slug": "Would you believe you can get brand new construction in San Antonio starting at $299,990?",
       "url": "https://www.youtube.com/watch?v=3iRgAJkdL6g",
       "metrics": {
-        "views": 1270,
-        "likes": 13,
-        "comments": 1,
-        "shares": 2,
-        "watch_minutes": 123.53801666666664,
-        "avg_watch_seconds": 5.836441732283463,
+        "views": 180,
+        "likes": 2,
+        "comments": 0,
+        "shares": 0,
+        "watch_minutes": 24.752999999999997,
+        "avg_watch_seconds": 8.251,
         "duration_seconds": 19
       }
     },
@@ -13755,12 +14058,12 @@
       "slug": "I was speechless when I walked through this one. New construction in San Antonio starting at $379,99",
       "url": "https://www.youtube.com/watch?v=X4q1lT81BAY",
       "metrics": {
-        "views": 999,
-        "likes": 10,
+        "views": 69,
+        "likes": 1,
         "comments": 0,
-        "shares": 3,
-        "watch_minutes": 80.2396,
-        "avg_watch_seconds": 4.819195195195196,
+        "shares": 1,
+        "watch_minutes": 5.917050000000001,
+        "avg_watch_seconds": 5.145260869565218,
         "duration_seconds": 17
       }
     },
@@ -13834,12 +14137,12 @@
       "slug": "This might be the best new build value I've toured in North Austin all month.",
       "url": "https://www.youtube.com/watch?v=iZMBcLd1baU",
       "metrics": {
-        "views": 59,
+        "views": 52,
         "likes": 1,
         "comments": 0,
         "shares": 1,
-        "watch_minutes": 8.441566666666667,
-        "avg_watch_seconds": 8.58464406779661,
+        "watch_minutes": 7.470766666666667,
+        "avg_watch_seconds": 8.620115384615385,
         "duration_seconds": 28
       }
     },
@@ -13913,12 +14216,12 @@
       "slug": "wait until you see the kitchen in this one 😮‍💨",
       "url": "https://www.youtube.com/watch?v=MW0qZR3nz1U",
       "metrics": {
-        "views": 12,
+        "views": 11,
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "watch_minutes": 0.9731666666666666,
-        "avg_watch_seconds": 4.865833333333334,
+        "watch_minutes": 0.9481666666666666,
+        "avg_watch_seconds": 5.171818181818181,
         "duration_seconds": 19
       }
     },
@@ -14038,12 +14341,12 @@
       "slug": "wait until you see what $689,868 gets you in North Austin 😮‍💨",
       "url": "https://www.youtube.com/watch?v=mWbjetTo0Hw",
       "metrics": {
-        "views": 118,
-        "likes": 1,
+        "views": 61,
+        "likes": 0,
         "comments": 0,
         "shares": 0,
-        "watch_minutes": 12.548966666666667,
-        "avg_watch_seconds": 6.380830508474576,
+        "watch_minutes": 6.307450000000001,
+        "avg_watch_seconds": 6.2040491803278695,
         "duration_seconds": 28
       }
     },
@@ -14265,12 +14568,12 @@
       "slug": "this is what new construction is supposed to feel like",
       "url": "https://www.youtube.com/watch?v=OwUTX4kqmhQ",
       "metrics": {
-        "views": 17,
+        "views": 16,
         "likes": 2,
         "comments": 1,
         "shares": 0,
-        "watch_minutes": 3.230933333333333,
-        "avg_watch_seconds": 11.403294117647059,
+        "watch_minutes": 3.0926,
+        "avg_watch_seconds": 11.59725,
         "duration_seconds": 36
       }
     },
@@ -14752,12 +15055,12 @@
       "slug": "the floor plan in this one made me stop mid-tour",
       "url": "https://www.youtube.com/watch?v=5XWLrJyj8os",
       "metrics": {
-        "views": 900,
-        "likes": 4,
+        "views": 124,
+        "likes": 1,
         "comments": 1,
-        "shares": 2,
-        "watch_minutes": 179.0027833333333,
-        "avg_watch_seconds": 11.933518888888885,
+        "shares": 0,
+        "watch_minutes": 24.286466666666666,
+        "avg_watch_seconds": 11.751516129032257,
         "duration_seconds": 28
       }
     },
@@ -15330,12 +15633,12 @@
       "slug": "🤠 be honest… would you trade your current place for a brand-new home with a 4.99% fixed",
       "url": "https://www.youtube.com/watch?v=H-YMwQzWhYs",
       "metrics": {
-        "views": 3,
+        "views": 1,
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "watch_minutes": 0.2707833333333333,
-        "avg_watch_seconds": 5.415666666666667,
+        "watch_minutes": 0.0016666666666666668,
+        "avg_watch_seconds": 0.1,
         "duration_seconds": 76
       }
     },
@@ -15896,302 +16199,6 @@
         "avg_watch_seconds": 5.939,
         "duration_seconds": 22,
         "skip_rate": 64.3
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "lifestyledesignrealty",
-      "kind": "reel",
-      "post_id": "18121824022693414",
-      "published": "2026-07-23T21:39:47Z",
-      "slug": "I've never seen finishes like this at the $420,000 price point.",
-      "url": "https://www.instagram.com/reel/DbJpgxuCC62/",
-      "metrics": {
-        "views": 132,
-        "reach": 124,
-        "impressions": 132,
-        "likes": 2,
-        "comments": 0,
-        "shares": 0,
-        "saves": 0,
-        "interactions": 2,
-        "engagement_rate": 1.6129032258064515,
-        "avg_watch_seconds": 3.381,
-        "duration_seconds": 22,
-        "skip_rate": 76.4
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "propertypete01",
-      "kind": "reel",
-      "post_id": "18155922889489594",
-      "published": "2026-07-23T21:39:04Z",
-      "slug": "I've never seen finishes like this at the $420,000 price point.",
-      "url": "https://www.instagram.com/reel/DbJpbqXgoxk/",
-      "metrics": {
-        "views": 132,
-        "reach": 115,
-        "impressions": 132,
-        "likes": 2,
-        "comments": 0,
-        "shares": 0,
-        "saves": 0,
-        "interactions": 2,
-        "engagement_rate": 1.7391304347826086,
-        "avg_watch_seconds": 2.764,
-        "duration_seconds": 22,
-        "skip_rate": 86.3
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "lifestyledesignrealtyaustintx",
-      "kind": "reel",
-      "post_id": "17915940363451463",
-      "published": "2026-07-23T21:38:58Z",
-      "slug": "I've never seen finishes like this at the $420,000 price point.",
-      "url": "https://www.instagram.com/reel/DbJpbSwiKDp/",
-      "metrics": {
-        "views": 144,
-        "reach": 137,
-        "impressions": 144,
-        "likes": 2,
-        "comments": 0,
-        "shares": 1,
-        "saves": 0,
-        "interactions": 3,
-        "engagement_rate": 2.18978102189781,
-        "avg_watch_seconds": 3.364,
-        "duration_seconds": 22,
-        "skip_rate": 77.8
-      }
-    },
-    {
-      "platform": "youtube_shorts",
-      "account": "lifestyledesignrealtytexas",
-      "post_id": "2Hy630hl9Sk",
-      "published": "2026-07-23T21:38:07Z",
-      "slug": "I've never seen finishes like this at the $420,000 price point.",
-      "url": "https://www.youtube.com/watch?v=2Hy630hl9Sk",
-      "metrics": {
-        "views": 2,
-        "likes": 0,
-        "comments": 0,
-        "shares": 0,
-        "watch_minutes": 0.3888333333333333,
-        "avg_watch_seconds": 11.665,
-        "duration_seconds": 22
-      }
-    },
-    {
-      "platform": "tiktok",
-      "account": "lifestyledesignrealtytexas",
-      "post_id": "7665840708737125646",
-      "published": "2026-07-23T21:37:24Z",
-      "slug": "I've never seen finishes like this at the $420,000 price point. New construction in Buda doesn't move slowly, especiall…",
-      "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7665840708737125646",
-      "metrics": {
-        "views": 387,
-        "likes": 10,
-        "comments": 2,
-        "shares": 0,
-        "engagement_rate": 3.10077519379845,
-        "duration_seconds": 21
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "lifestyledesignrealty",
-      "kind": "reel",
-      "post_id": "18134999023595945",
-      "published": "2026-07-23T21:13:11Z",
-      "slug": "I've never seen finishes like this at this price point in Fort Worth right now.",
-      "url": "https://www.instagram.com/reel/DbJmjuUjeMz/",
-      "metrics": {
-        "views": 165,
-        "reach": 137,
-        "impressions": 165,
-        "likes": 1,
-        "comments": 0,
-        "shares": 0,
-        "saves": 1,
-        "interactions": 2,
-        "engagement_rate": 1.4598540145985401,
-        "avg_watch_seconds": 2.98,
-        "duration_seconds": 17,
-        "skip_rate": 77
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "lifestyledesignrealtytexas",
-      "kind": "reel",
-      "post_id": "17964964554137613",
-      "published": "2026-07-23T21:13:01Z",
-      "slug": "I’ve never seen finishes like this at this price point in Fort Worth right now.",
-      "url": "https://www.instagram.com/reel/DbJmkNsMKQ4/",
-      "metrics": {
-        "views": 495,
-        "reach": 404,
-        "impressions": 495,
-        "likes": 6,
-        "comments": 0,
-        "shares": 2,
-        "saves": 1,
-        "interactions": 9,
-        "engagement_rate": 2.227722772277228,
-        "avg_watch_seconds": 3.909,
-        "duration_seconds": 17,
-        "skip_rate": 68.3
-      }
-    },
-    {
-      "platform": "youtube_shorts",
-      "account": "lifestyledesignrealtytexas",
-      "post_id": "Mk-lOyD7eF0",
-      "published": "2026-07-23T21:12:08Z",
-      "slug": "I've never seen finishes like this at this price point in Fort Worth right now.",
-      "url": "https://www.youtube.com/watch?v=Mk-lOyD7eF0",
-      "metrics": {
-        "views": 1,
-        "likes": 0,
-        "comments": 0,
-        "shares": 0,
-        "watch_minutes": 0.055,
-        "avg_watch_seconds": 3.3,
-        "duration_seconds": 17
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "propertypete01",
-      "kind": "reel",
-      "post_id": "17944541511254714",
-      "published": "2026-07-23T21:12:00Z",
-      "slug": "I've never seen finishes like this at this price point in Fort Worth right now.",
-      "url": "https://www.instagram.com/reel/DbJmdLdme5k/",
-      "metrics": {
-        "views": 138,
-        "reach": 121,
-        "impressions": 138,
-        "likes": 0,
-        "comments": 0,
-        "shares": 0,
-        "saves": 0,
-        "interactions": 0,
-        "engagement_rate": 0,
-        "avg_watch_seconds": 4.06,
-        "duration_seconds": 17,
-        "skip_rate": 71.9
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "lifestyledesignrealtyaustintx",
-      "kind": "reel",
-      "post_id": "18112189510943048",
-      "published": "2026-07-23T21:11:58Z",
-      "slug": "I've never seen finishes like this at this price point in Fort Worth right now.",
-      "url": "https://www.instagram.com/reel/DbJmdIlgRwz/",
-      "metrics": {
-        "views": 185,
-        "reach": 170,
-        "impressions": 185,
-        "likes": 2,
-        "comments": 0,
-        "shares": 0,
-        "saves": 0,
-        "interactions": 2,
-        "engagement_rate": 1.1764705882352942,
-        "avg_watch_seconds": 3.578,
-        "duration_seconds": 17,
-        "skip_rate": 73.3
-      }
-    },
-    {
-      "platform": "tiktok",
-      "account": "lifestyledesignrealtytexas",
-      "post_id": "7665834018729970958",
-      "published": "2026-07-23T21:11:26Z",
-      "slug": "I've never seen finishes like this at this price point in Fort Worth right now. New construction moves fast when it's d…",
-      "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7665834018729970958",
-      "metrics": {
-        "views": 288,
-        "likes": 4,
-        "comments": 0,
-        "shares": 0,
-        "engagement_rate": 1.3888888888888888,
-        "duration_seconds": 16
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "lifestyledesignrealtytexas",
-      "kind": "reel",
-      "post_id": "18091291271084247",
-      "published": "2026-07-23T17:11:24Z",
-      "slug": "This might be the best new build I’ve toured in Kyle this month.",
-      "url": "https://www.instagram.com/reel/DbJK6GpM7rX/",
-      "metrics": {
-        "views": 640,
-        "reach": 515,
-        "impressions": 640,
-        "likes": 10,
-        "comments": 0,
-        "shares": 0,
-        "saves": 1,
-        "interactions": 11,
-        "engagement_rate": 2.1359223300970873,
-        "avg_watch_seconds": 5.53,
-        "duration_seconds": 21,
-        "skip_rate": 66.4
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "lifestyledesignrealty",
-      "kind": "reel",
-      "post_id": "18146598160523530",
-      "published": "2026-07-23T17:10:16Z",
-      "slug": "This might be the best new build I've toured in Kyle this month.",
-      "url": "https://www.instagram.com/reel/DbJKrSoAXWY/",
-      "metrics": {
-        "views": 159,
-        "reach": 131,
-        "impressions": 159,
-        "likes": 2,
-        "comments": 0,
-        "shares": 0,
-        "saves": 0,
-        "interactions": 2,
-        "engagement_rate": 1.5267175572519085,
-        "avg_watch_seconds": 5.011,
-        "duration_seconds": 21,
-        "skip_rate": 72.7
-      }
-    },
-    {
-      "platform": "instagram",
-      "account": "lifestyledesignrealtyaustintx",
-      "kind": "reel",
-      "post_id": "18449434657190430",
-      "published": "2026-07-23T17:09:25Z",
-      "slug": "This might be the best new build I've toured in Kyle this month.",
-      "url": "https://www.instagram.com/reel/DbJKl8ugtt4/",
-      "metrics": {
-        "views": 182,
-        "reach": 164,
-        "impressions": 182,
-        "likes": 1,
-        "comments": 0,
-        "shares": 1,
-        "saves": 0,
-        "interactions": 2,
-        "engagement_rate": 1.2195121951219512,
-        "avg_watch_seconds": 3.813,
-        "duration_seconds": 21,
-        "skip_rate": 79.4
       }
     }
   ],
