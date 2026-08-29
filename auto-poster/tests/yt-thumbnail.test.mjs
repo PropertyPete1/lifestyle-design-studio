@@ -226,3 +226,14 @@ describe("fitUnderLimit's return shape reaches disk as bytes", () => {
     assert.ok(!Buffer.isBuffer(out), "the return itself is NOT bytes — callers must destructure");
   });
 });
+
+describe("imageMediaType — the declared type must match the bytes", () => {
+  test("jpeg copies are declared as jpeg", async () => {
+    const { imageMediaType } = await import("../src/yt-thumbnail.js");
+    // Run 32300759856: judging copies are .judge.jpg, the call declared
+    // image/png, and the API 400'd every expression contest.
+    assert.equal(imageMediaType("/x/thumb-cand-0.judge.jpg"), "image/jpeg");
+    assert.equal(imageMediaType("/x/frame.jpeg"), "image/jpeg");
+    assert.equal(imageMediaType("/x/frame.png"), "image/png");
+  });
+});

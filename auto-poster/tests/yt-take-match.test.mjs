@@ -299,3 +299,21 @@ describe("optional takes — the thumbnail take must never hold a build hostage"
     assert.equal(r.missingTakes.length, TAKES.length);
   });
 });
+
+describe("the pipeline's own outputs can never become takes", async () => {
+  const { isPipelineOutput } = await import("../src/yt-ingest.js");
+
+  test("output names are recognised, recordings are not", () => {
+    // Probe 32300759856: the backfilled teaser sat in the recordings folder,
+    // spoke the hook's words, carried the newest timestamp, and became "the
+    // latest recording of s1t1" — thumbnail frames came out letterboxed with
+    // burned captions in shot.
+    assert.equal(isPipelineOutput("teaser-vid-2026-08-07-d5cddf9d.mp4"), true);
+    assert.equal(isPipelineOutput("thumbnail-vid-2026-08-07-d5cddf9d.png"), true);
+    assert.equal(isPipelineOutput("THUMBNAIL-x.jpg"), true, "case cannot be a loophole");
+    assert.equal(isPipelineOutput("s1t1_1786199080740.mp4"), false);
+    assert.equal(isPipelineOutput("IMG_4021.MOV"), false);
+    // A take Peter happens to record ABOUT thumbnails is still a take.
+    assert.equal(isPipelineOutput("my thumbnail take.mov"), false);
+  });
+});

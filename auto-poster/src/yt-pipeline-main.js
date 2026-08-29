@@ -76,7 +76,7 @@ import { selectPunches, captionTextFor } from "./yt-punch.js";
 import { runArtifactQc, preserveFailedRender } from "./yt-artifact-qc.js";
 import { preserveQcPassedRender, preserveGateEvidence } from "./yt-evidence.js";
 import { pickTrack, fetchMusicBed, musicReport, musicCreditsBlock, cacheKey as musicCacheKey, MUSIC_FOLDER } from "./yt-music.js";
-import { findInFolder, downloadFileById, uploadToFolder } from "./drive.js";
+import { findInFolder, downloadFileById, uploadToFolder, ensureFolder } from "./drive.js";
 import { getWordTimestamps } from "./burned-captions.js";
 import { generateOpeningOverlay, planOpening } from "./yt-opening.js";
 import { generateThumbnailHook } from "./yt-thumbnail-hook.js";
@@ -1011,7 +1011,11 @@ async function buildFromRecordings(approvals, record) {
         // this workDir gone, and a text-only re-render there would quietly
         // replace the face composite the contest just chose.
         try {
-          const up = await uploadToFolder(ingest.folderId, `thumbnail-${videoIdFor(record.requestId)}.${fitted.converted ? "jpg" : "png"}`, fitted.buffer, fitted.converted ? "image/jpeg" : "image/png");
+          // Into the OUTPUTS subfolder, never among the takes: an output in the
+          // recordings folder gets transcribed and matched as the newest
+          // recording of whatever take it quotes — probe 32300759856 built
+          // thumbnails from the teaser that way (see isPipelineOutput).
+          const up = await uploadToFolder(await ensureFolder("outputs", ingest.folderId), `thumbnail-${videoIdFor(record.requestId)}.${fitted.converted ? "jpg" : "png"}`, fitted.buffer, fitted.converted ? "image/jpeg" : "image/png");
           thumbnailDriveId = up?.id || null;
         } catch (err) {
           console.log(`::warning::thumbnail did not persist to Drive (${err.message}) — the sweep will re-render the text card instead of the face composite`);
@@ -1041,7 +1045,7 @@ async function buildFromRecordings(approvals, record) {
     let teaserRecord = null;
     try {
       const teaser = await cutTeaser({ script, recordings, workDir });
-      const up = await uploadToFolder(ingest.folderId, `teaser-${videoId}.mp4`, readFileSync(teaser.path), "video/mp4");
+      const up = await uploadToFolder(await ensureFolder("outputs", ingest.folderId), `teaser-${videoId}.mp4`, readFileSync(teaser.path), "video/mp4");
       if (!up?.id) throw new Error("Drive upload returned no file id");
       teaserRecord = {
         driveFileId: up.id,

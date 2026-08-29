@@ -66,6 +66,24 @@ function isMediaType(mimeType) {
  * Google's own doc types are always out: alt=media cannot fetch bytes for them,
  * so admitting one buys a download failure later instead of a skip now.
  */
+/**
+ * Our own outputs are not Peter's recordings.
+ *
+ * The pipeline writes the cut teaser and the chosen thumbnail into the
+ * request's Drive folder tree. When the teaser landed in the SAME folder the
+ * takes live in, the next ingest transcribed it, heard the hook's words in
+ * it, and — "the last recording of a take wins" — matched it as the newest
+ * hook take: probe 32300759856's thumbnail frames came from the teaser,
+ * letterboxed, with its burned captions in shot. A rebuild would have cut the
+ * next teaser from the previous teaser the same way. Outputs now live in a
+ * subfolder, and this predicate is the belt to that braces: anything carrying
+ * an output prefix is skipped even when something puts it in the wrong place
+ * — video 1's folder already has one.
+ */
+export function isPipelineOutput(name) {
+  return /^(teaser|thumbnail)-/i.test(String(name || ""));
+}
+
 export function looksLikeRecording(file) {
   const mimeType = file?.mimeType || "";
   if (mimeType.startsWith("application/vnd.google-apps")) return false;
@@ -270,6 +288,10 @@ export async function ingestRecordings({ requestId, takes, accessToken = null, w
   const clips = [];
   try {
     for (const file of files) {
+      if (isPipelineOutput(file.name)) {
+        console.log(`[Ingest] skipping ${file.name} — that is the pipeline's own output, not a recording`);
+        continue;
+      }
       const durationSec = Number(file.videoMediaMetadata?.durationMillis || 0) / 1000;
       if (durationSec > MAX_CLIP_SECONDS) {
         console.warn(`[Ingest] skipping ${file.name} — ${Math.round(durationSec)}s is far longer than a take`);
