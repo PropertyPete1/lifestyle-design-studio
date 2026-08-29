@@ -56,9 +56,11 @@ Nothing else. No new tokens, no code changes, no redeploys.
   QC (landscape allowed — screen recordings) → caption in the LDT voice →
   claims gate → posts to IG (Reel) + TikTok on the LDT brand only.
   Each clip posts exactly once.
-- **Promo fallback**: when the intake queue is empty, a generated 3-slide
-  promo carousel ($99/mo positioning), angle rotating daily, every line of
-  copy backed by `ldt-claims.json`.
+- **Self-made fallback**: when no clip lands, a generated piece — the
+  8-slide narrative carousel leads, the single promo card and the silent
+  text-motion reel alternate behind it ($99/mo positioning, angle rotating
+  daily, one post per format per day, every line of copy backed by
+  `ldt-claims.json`). See `LDT-SELFMADE.md`.
 - **Cadence**: 2/day per platform (config: `brands.json`). Hard cap 6/day —
   a config above the cap is **refused at startup**; 3–6 runs only with the
   explicit config change and logs a warning every run. A 3-hour minimum gap

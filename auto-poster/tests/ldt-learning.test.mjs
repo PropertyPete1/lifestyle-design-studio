@@ -7,9 +7,10 @@
  *
  *   - reelEntries is brand-scoped: one brand's brief never scores another
  *     brand's posts. Legacy untagged entries belong to the default brand;
- *     LDT clip entries (brand:"ldt", type:"ldt_clip") are the ldt brand's
- *     reels — the type keeps every realty guard blind to them, the brand
- *     field is what the learn step separates on.
+ *     LDT clip entries (type:"ldt_clip") and self-made text reels
+ *     (type:"ldt_text_reel") are the ldt brand's reels — the types keep
+ *     every realty guard blind to them, the brand field is what the learn
+ *     step separates on, and image formats (carousel/card) stay out.
  *   - The LDT variation plan excludes ITS OWN previous hook style, not the
  *     realty lane's — brand-scoped anti-repeat.
  *   - An LDT brief with zero posts builds and renders without inventing a
@@ -40,13 +41,22 @@ const ldtClip = {
   timestamp: iso(26), success: true, driveFileId: "l1", fileName: "l1.mp4",
   generation: { hook_style: "pov", caption_length_bucket: null },
 };
-const ldtPromo = {
-  brand: "ldt", type: "ldt_promo", city: "ldt", slot: "pm",
-  caption: "Meet PRIMARY.", timestamp: iso(20), success: true,
+const ldtTextReel = {
+  brand: "ldt", type: "ldt_text_reel", city: "ldt", slot: "pm",
+  caption: "New leads contacted in under five minutes.\nPRIMARY at work.",
+  timestamp: iso(20), success: true, driveFileId: "selfmade:2026-08-28:text_reel:after_hours",
+  generation: { hook_style: "stat", caption_length_bucket: null },
+};
+const ldtCarousel = {
+  brand: "ldt", type: "ldt_carousel", city: "ldt", slot: "am",
+  caption: "How many of your leads went cold this week?\nPRIMARY at work.",
+  timestamp: iso(15), success: true, driveFileId: "selfmade:2026-08-29:carousel:leads_going_cold",
+  hook_style: "question",
+  generation: { hook_style: "question", caption_length_bucket: null },
 };
 const linkedinEntry = { type: "linkedin", topic: "recruiting", timestamp: iso(10), success: true };
 
-const LOG = { posts: [realtyEntry, ldtClip, ldtPromo, linkedinEntry] };
+const LOG = { posts: [realtyEntry, ldtClip, ldtTextReel, ldtCarousel, linkedinEntry] };
 
 describe("reelEntries is brand-scoped", () => {
   test("the default brand sees only its own reels — no LDT, no receipts", () => {
@@ -54,9 +64,12 @@ describe("reelEntries is brand-scoped", () => {
     assert.deepEqual(entries.map(e => e.driveFileId), ["r1"]);
   });
 
-  test("the ldt brand sees only its clip posts — promos and realty excluded", () => {
+  test("the ldt brand sees its clips AND its text reels — image formats and realty excluded", () => {
+    // Everything the lane publishes AS A REEL gets scored: clips and
+    // self-made text reels both land in reel analytics. Carousels and cards
+    // are image posts — admitting them would only add unjoined noise.
     const entries = reelEntries(LOG, { brand: "ldt", now: NOW });
-    assert.deepEqual(entries.map(e => e.driveFileId), ["l1"]);
+    assert.deepEqual(entries.map(e => e.driveFileId), ["l1", "selfmade:2026-08-28:text_reel:after_hours"]);
   });
 
   test("an LDT entry's tags read as tagged provenance with a canonical style", () => {
@@ -94,12 +107,19 @@ describe("the LDT brief builds honestly at every data stage", () => {
 });
 
 describe("brand-scoped anti-repeat in the variation plan", () => {
-  test("the LDT plan excludes the LDT lane's own previous style, not realty's", () => {
-    // Realty's newest reel is 'question'; the LDT lane's own last clip is
-    // 'pov'. An unscoped scan would exclude 'question'.
+  test("the LDT plan excludes the lane's newest style across formats, not realty's", () => {
+    // The lane's newest post is the self-made carousel ('question'); one
+    // rotation covers clips AND self-made formats, so 'question' is what the
+    // next post must not repeat. An unscoped scan would land on realty's
+    // newest instead.
     const plan = pickLdtVariation(LOG, { brief: null, rand: () => 0.99, now: NOW });
+    assert.equal(plan.excluded_style, "question");
+    assert.notEqual(plan.hook_style, "question", "never repeats the lane's previous style");
+  });
+
+  test("a clip-only history still rotates on the clip's style", () => {
+    const plan = pickLdtVariation({ posts: [realtyEntry, ldtClip] }, { brief: null, rand: () => 0.99, now: NOW });
     assert.equal(plan.excluded_style, "pov");
-    assert.notEqual(plan.hook_style, "pov", "never repeats its own previous style");
   });
 
   test("with no LDT history the plan imposes no exclusion", () => {

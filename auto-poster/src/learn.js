@@ -89,16 +89,21 @@ export function linesMatch(a, b) {
  * Brand scoping: legacy entries carry no `brand` field and belong to the
  * default brand; brand-lane entries are stamped (brand:"ldt"). A lane's clip
  * posts are its reels — they carry a type (`ldt_clip`) so every realty guard
- * ignores them, which is why the type exclusion here admits `*_clip` and the
- * brand filter does the separating. One brand's brief never scores another
- * brand's posts.
+ * ignores them — and so are its self-made text-motion reels (`*_text_reel`):
+ * both publish as reels, so both land in the reel analytics this step joins
+ * against, and everything posted as a reel gets scored. Which is why the
+ * type exclusion here admits `*_clip` and `*_text_reel` and the brand filter
+ * does the separating. Image formats (`ldt_carousel`, `ldt_card`) stay out:
+ * they are not reels and would only ever count as unjoined noise. One
+ * brand's brief never scores another brand's posts.
  */
 export function reelEntries(log, { brand = DEFAULT_BRAND, days = DEFAULT_LOOKBACK_DAYS, now = new Date() } = {}) {
   const cutoff = now.getTime() - days * 24 * 60 * 60 * 1000;
   return validPosts(log).filter((p) => {
     if ((p.brand || DEFAULT_BRAND) !== brand) return false;
-    const isBrandClip = typeof p.type === "string" && p.type.endsWith("_clip");
-    if ((p.type && !isBrandClip) || p.platform === "instagram_main_native") return false;
+    const isBrandReel = typeof p.type === "string" &&
+      (p.type.endsWith("_clip") || p.type.endsWith("_text_reel"));
+    if ((p.type && !isBrandReel) || p.platform === "instagram_main_native") return false;
     if (!p.city || !p.slot || !p.caption) return false;
     if (p.success === false) return false;
     const ts = new Date(p.timestamp).getTime();

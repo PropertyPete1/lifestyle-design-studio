@@ -117,6 +117,25 @@ export function fillPlan({ log, intakeEligible = [], brandKey = "ldt" } = {}) {
   ];
 }
 
+/**
+ * May the self-made chain run at all this dispatch? Policy, in one testable
+ * place:
+ *
+ *   - A FORCE_VIDEO_ID pin short-circuits ALL self-made fallback: a pin
+ *     names a clip, and a blocked pin must exit red, never quietly post a
+ *     generated piece instead (the runner owns the red exit).
+ *   - MODE=selfmade runs the chain on demand (no clips this dispatch).
+ *   - MODE=auto runs it only when the brand config opts in
+ *     (contentSources.promoWhenNoClip — the key predates the multi-format
+ *     lane; it now gates ALL self-made generation, not just the old promo).
+ *   - MODE=clip never generates.
+ */
+export function selfMadeAllowed({ mode = "auto", forceVideoId = "", brand = null } = {}) {
+  if (forceVideoId) return false;
+  if (mode === "selfmade") return true;
+  return mode === "auto" && Boolean(brand?.contentSources?.promoWhenNoClip);
+}
+
 /** Sanity export for tests: the plan can never be empty. */
 export function planNeverEmpty(plan) {
   return Array.isArray(plan) && plan.length >= SELF_MADE_KINDS.length;

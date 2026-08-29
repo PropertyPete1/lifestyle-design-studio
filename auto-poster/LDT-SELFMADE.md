@@ -51,19 +51,22 @@ every other generator failing, repeating a format still beats an empty slot.
 The plan is a fall-through list — the runner takes the first entry that
 renders and passes its gates.
 
-## Integration seam (for ldt-main.js)
+## Integration (wired in ldt-main.js)
 
-This PR ships generators + plan logic only; the LDT runner wires them:
+The runner walks the plan in two parts: the existing clip path first (per-clip
+QC + blocklisting, oldest first), then the self-made chain — for each kind,
+gate the format's full visible text through `checkClaimsCompliance` at
+runtime, render (`renderNarrativeDeck` / `renderCard` / `renderTextReel`),
+post (images via `uploadSlides`/`schedulePost`, the reel via
+`uploadToBrand`/`createSingleBrandPost`), record, then verify the returned
+postIds with `verifyReelPublication` (scheduler acceptance ≠ published). A
+`FORCE_VIDEO_ID` pin short-circuits the whole self-made chain (`selfMadeAllowed`),
+and each format posts at most once per day (`hasBrandTypeToday`) on top of
+cadence.
 
-```js
-const plan = fillPlan({ log, intakeEligible });
-// walk plan: "clip" → existing clip path; "carousel" → gate deckText() then
-// renderNarrativeDeck() and post via uploadSlides/schedulePost;
-// "card" → gate cardText() then renderCard(); "text_reel" → gate reelText()
-// then renderTextReel() and post as a reel/video.
-```
-
-Log types: `ldt_carousel`, `ldt_card`, `ldt_text_reel` — entries should carry
-`angle` and `generation.hook_style` so the rotation rules and the learn step
-can read them. **Cadence caps are unchanged and stay in the runner**: the
+Log types: `ldt_carousel`, `ldt_card`, `ldt_text_reel` — entries carry
+`angle`, `hook_style`, and the `generation` tag block so the rotation rules
+and the learn step can read them (`reelEntries` admits `*_text_reel` alongside
+`*_clip`: everything posted as a reel gets scored; image formats stay out of
+the reel brief). **Cadence caps are unchanged and stay in the runner**: the
 plan only fills the slot the cadence guard already granted.

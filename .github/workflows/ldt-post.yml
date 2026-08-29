@@ -1,7 +1,8 @@
 name: LDT Brand Post
 
-# LDT lane (brand 2): 2 posts/day per platform by default — one clip or promo
-# per slot. Central Time → UTC during CDT:
+# LDT lane (brand 2): 2 posts/day per platform by default — one clip or
+# self-made piece (carousel / card / text reel) per slot. Central Time → UTC
+# during CDT:
 #   Slot 1: 10:00 AM CT = 15:00 UTC
 #   Slot 2:  5:00 PM CT = 22:00 UTC
 # No backup crons on purpose: the lane's cadence + min-gap guards make any
@@ -13,14 +14,14 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Content mode (auto = intake clip first, promo fallback)'
+        description: 'Content mode (auto = intake clip first, self-made fallback)'
         required: false
         default: 'auto'
         type: choice
         options:
           - auto
           - clip
-          - promo
+          - selfmade
       dry_run:
         description: 'Dry run (no actual posting)'
         required: false

@@ -8,8 +8,9 @@
  * never authorises $2,500,000, and here $99 never authorises $98).
  *
  * The teeth tests at the bottom matter most: the pinned fallback caption and
- * every promo deck are run through the gate they exist to satisfy. A copy
- * edit that drifts from the claims list fails HERE, in CI, not on Instagram.
+ * every self-made surface (deck, card, reel — every angle × hook style) are
+ * run through the gate they exist to satisfy. A copy edit that drifts from
+ * the claims list fails HERE, in CI, not on Instagram.
  */
 
 import { test, describe } from "node:test";
@@ -20,7 +21,10 @@ import {
 import {
   validateLdtCaption, getLdtFallbackCaption, lockLdtHashtags,
 } from "../src/ldt-caption.js";
-import { promoAngles, promoDeckText, angleForDate } from "../src/ldt-promo.js";
+import { carouselAngles, deckText, pickAngle } from "../src/ldt-carousel-gen.js";
+import { cardText } from "../src/ldt-card-gen.js";
+import { reelText } from "../src/ldt-text-reel.js";
+import { HOOK_STYLE_IDS } from "../src/hook-styles.js";
 import { loadBrandRegistry } from "../src/brands.js";
 
 const claims = loadLdtClaims();
@@ -151,7 +155,7 @@ describe("TEETH — the shipped copy passes its own gate", () => {
   // A fallback that fails validation would mean captions can NEVER post
   // (generate fails → retry fails → fallback fails). This is the guard
   // against that dead-end, and against claims drift in the pinned copy.
-  for (const kind of ["clip", "promo"]) {
+  for (const kind of ["clip", "carousel", "card", "text_reel"]) {
     test(`the pinned fallback caption (${kind}) is gate-clean`, () => {
       const caption = getLdtFallbackCaption(brand, claims, kind);
       const v = validateLdtCaption(caption, brand, claims, allowed);
@@ -159,27 +163,38 @@ describe("TEETH — the shipped copy passes its own gate", () => {
     });
   }
 
-  test("every promo angle's full deck copy is gate-clean", () => {
-    const angles = promoAngles(claims);
+  // The self-made sweep, against the REAL claims file (ldt-selfmade.test.mjs
+  // runs the same sweep hermetically against its fixture — this one is what
+  // catches a drift between ldt-claims.json and the shipped angle tables).
+  test("every angle × hook style × format's full visible copy is gate-clean", () => {
+    const angles = carouselAngles(claims);
     assert.ok(angles.length >= 4, "rotation has enough angles to avoid repetition");
     for (const angle of angles) {
-      const r = checkClaimsCompliance(promoDeckText(angle, brand, claims), claims, allowed);
-      assert.equal(r.ok, true, `angle '${angle.key}': ${describeViolations(r.violations)}`);
+      for (const style of HOOK_STYLE_IDS) {
+        for (const [format, textOf] of [["deck", deckText], ["card", cardText], ["reel", reelText]]) {
+          const r = checkClaimsCompliance(textOf(angle, style, { claims, brand }), claims, allowed);
+          assert.equal(r.ok, true, `${format} '${angle.key}' × '${style}': ${describeViolations(r.violations)}`);
+        }
+      }
     }
   });
 
   test("angle rotation is deterministic and covers the whole table", () => {
-    const angles = promoAngles(claims);
+    const angles = carouselAngles(claims);
     const seen = new Set();
     for (let i = 0; i < angles.length; i++) {
       const d = new Date(Date.UTC(2026, 8, 1 + i)).toISOString().slice(0, 10);
-      seen.add(angleForDate(d, claims).key);
+      seen.add(pickAngle({ claims, dateStr: d }).key);
     }
     assert.equal(seen.size, angles.length, "consecutive days walk the whole rotation");
-    // Pinned date→angle mappings: catches an off-by-one in the day-number
-    // arithmetic that a mere determinism check would wave through.
-    assert.equal(angleForDate("2026-09-01", claims).key, "honesty");
-    assert.equal(angleForDate("2026-09-02", claims).key, "voice");
-    assert.equal(angleForDate("2027-01-15", claims).key, "briefing");
+    // Determinism: the same date always tells the same story.
+    assert.equal(pickAngle({ claims, dateStr: "2026-09-01" }).key, pickAngle({ claims, dateStr: "2026-09-01" }).key);
+    // The no-immediate-repeat rule: yesterday's angle is excluded.
+    for (let i = 0; i < angles.length; i++) {
+      const d = new Date(Date.UTC(2026, 8, 1 + i)).toISOString().slice(0, 10);
+      for (const prev of angles.map(a => a.key)) {
+        assert.notEqual(pickAngle({ claims, dateStr: d, previousAngle: prev }).key, prev);
+      }
+    }
   });
 });

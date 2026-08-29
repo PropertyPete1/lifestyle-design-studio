@@ -33,7 +33,7 @@ import {
 } from "../src/ldt-text-reel.js";
 import {
   selfMadePlan, fillPlan, previousSelfMadeKind, previousLdtHookStyle, previousSelfMadeAngle,
-  kindOfEntry, planNeverEmpty, SELF_MADE_KINDS,
+  kindOfEntry, planNeverEmpty, selfMadeAllowed, SELF_MADE_KINDS,
 } from "../src/ldt-slot-filler.js";
 
 // ─── Fixture: mirror of the pinned claims list ───────────────────────────────
@@ -311,6 +311,33 @@ describe("the slot filler", () => {
     assert.equal(kindOfEntry({ type: "ldt_carousel" }), "carousel");
     assert.equal(kindOfEntry({ type: "ldt_clip" }), null);
     assert.equal(kindOfEntry({ type: "linkedin" }), null);
+  });
+});
+
+// ─── The walk's admission policy ─────────────────────────────────────────────
+
+describe("selfMadeAllowed — when the generated chain may run at all", () => {
+  const CONFIGURED = { contentSources: { promoWhenNoClip: true } };
+
+  test("a FORCE_VIDEO_ID pin short-circuits ALL self-made fallback, whatever the mode", () => {
+    for (const mode of ["auto", "clip", "selfmade"]) {
+      assert.equal(selfMadeAllowed({ mode, forceVideoId: "abc123", brand: CONFIGURED }), false,
+        `a pin names a clip — mode '${mode}' must not generate around it`);
+    }
+  });
+
+  test("MODE=selfmade runs the chain even without the config opt-in", () => {
+    assert.equal(selfMadeAllowed({ mode: "selfmade", forceVideoId: "", brand: {} }), true);
+  });
+
+  test("MODE=auto generates only when the brand config opts in", () => {
+    assert.equal(selfMadeAllowed({ mode: "auto", forceVideoId: "", brand: CONFIGURED }), true);
+    assert.equal(selfMadeAllowed({ mode: "auto", forceVideoId: "", brand: {} }), false);
+    assert.equal(selfMadeAllowed({ mode: "auto", forceVideoId: "", brand: { contentSources: { promoWhenNoClip: false } } }), false);
+  });
+
+  test("MODE=clip never generates", () => {
+    assert.equal(selfMadeAllowed({ mode: "clip", forceVideoId: "", brand: CONFIGURED }), false);
   });
 });
 

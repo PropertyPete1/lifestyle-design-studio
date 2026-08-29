@@ -15,7 +15,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { isVideoLike, pickIntakeCandidates, hasBrandPromoToday } from "../src/ldt-intake.js";
+import { isVideoLike, pickIntakeCandidates, hasBrandTypeToday } from "../src/ldt-intake.js";
 import {
   getBrandPostedIds, getBrandPostedFileNames,
   getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities,
@@ -105,28 +105,36 @@ describe("brand scoping of the shared posted-log", () => {
   });
 });
 
-describe("one promo per day", () => {
-  // The promo angle is deterministic per Chicago DATE — without this guard
-  // the second daily slot would publish the byte-identical deck (cadence
-  // 2/day and the 3h gap both pass at the second slot).
+describe("one post per format per day", () => {
+  // The self-made angle is deterministic per Chicago DATE — without this
+  // guard a second same-day post of one format would tell the same story
+  // (cadence 2/day and the 3h gap both pass at the second slot, and the
+  // rotation only DEMOTES the previous kind — a walk whose other generators
+  // fail lands right back on the morning's format).
   const NOW = new Date("2026-08-29T22:00:00Z"); // 5 PM CT, the second slot
-  const promo = (over) => ({
-    brand: "ldt", type: "ldt_promo", platforms: ["instagram", "tiktok"],
+  const entry = (over) => ({
+    brand: "ldt", type: "ldt_carousel", platforms: ["instagram", "tiktok"],
     timestamp: "2026-08-29T15:05:00.000Z", success: true, ...over,
   });
 
-  test("a promo posted this CT morning blocks the evening slot", () => {
-    assert.equal(hasBrandPromoToday({ posts: [promo()] }, "ldt", NOW), true);
+  test("a carousel posted this CT morning blocks the evening carousel", () => {
+    assert.equal(hasBrandTypeToday({ posts: [entry()] }, "ldt", "ldt_carousel", NOW), true);
   });
 
-  test("yesterday's promo does not block today", () => {
-    const log = { posts: [promo({ timestamp: "2026-08-28T15:05:00.000Z" })] };
-    assert.equal(hasBrandPromoToday(log, "ldt", NOW), false);
+  test("the dedup is PER FORMAT — a morning carousel does not block a card or a text reel", () => {
+    const log = { posts: [entry()] };
+    assert.equal(hasBrandTypeToday(log, "ldt", "ldt_card", NOW), false);
+    assert.equal(hasBrandTypeToday(log, "ldt", "ldt_text_reel", NOW), false);
   });
 
-  test("clips are not promos, failures do not count, brands do not cross", () => {
-    assert.equal(hasBrandPromoToday({ posts: [promo({ type: "ldt_clip" })] }, "ldt", NOW), false);
-    assert.equal(hasBrandPromoToday({ posts: [promo({ success: false })] }, "ldt", NOW), false);
-    assert.equal(hasBrandPromoToday({ posts: [promo()] }, "otherbrand", NOW), false);
+  test("yesterday's post does not block today", () => {
+    const log = { posts: [entry({ timestamp: "2026-08-28T15:05:00.000Z" })] };
+    assert.equal(hasBrandTypeToday(log, "ldt", "ldt_carousel", NOW), false);
+  });
+
+  test("other types do not count, failures do not count, brands do not cross", () => {
+    assert.equal(hasBrandTypeToday({ posts: [entry({ type: "ldt_clip" })] }, "ldt", "ldt_carousel", NOW), false);
+    assert.equal(hasBrandTypeToday({ posts: [entry({ success: false })] }, "ldt", "ldt_carousel", NOW), false);
+    assert.equal(hasBrandTypeToday({ posts: [entry()] }, "otherbrand", "ldt_carousel", NOW), false);
   });
 });
