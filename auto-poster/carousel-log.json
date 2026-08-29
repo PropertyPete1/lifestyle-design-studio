@@ -4328,6 +4328,189 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-29",
+      "timestamp": "2026-08-29T17:29:06.555Z",
+      "pillar": "motivation_business",
+      "topic": "The long game of following up with buyers who said no",
+      "hook": "Half my closings this year came from people who told me no.",
+      "closeType": "share",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "The long game of following up with buyers who said no",
+        "hook": "Half my closings this year came from people who told me no.",
+        "map": [
+          "Why buyers say no",
+          "The date I write down",
+          "Nine months of silence",
+          "Four calls, six weeks",
+          "Half my closings"
+        ],
+        "points": [
+          {
+            "title": "No Almost Never Means No",
+            "body": [
+              "People say no when the timing is wrong, not when you are wrong.",
+              "The lease ends in June. The bonus lands in March. Dad moves in next fall."
+            ],
+            "loop": "So I stopped counting the nos."
+          },
+          {
+            "title": "I Write Down The Date",
+            "body": [
+              "Every no goes on a list with one date next to it.",
+              "The date is when their life changes, not when I feel like calling."
+            ],
+            "loop": "Most of that list goes silent."
+          },
+          {
+            "title": "The Quiet Stretch",
+            "body": [
+              "Nine to eighteen months of nothing back. No replies. No likes.",
+              "There is no sign anyone read a single word I sent."
+            ],
+            "loop": "Then four of them called at once."
+          },
+          {
+            "title": "Four Calls, Six Weeks",
+            "body": [
+              "Last spring four people off that list called inside six weeks.",
+              "Two had waited over a year. Not one of them interviewed another agent."
+            ],
+            "loop": "That part was not luck."
+          },
+          {
+            "title": "Half My Closings",
+            "body": [
+              "Add them up and half my closings this year started as a no.",
+              "I did not get better at selling. I just refused to delete anyone."
+            ],
+            "loop": "Most people quit around month seven."
+          }
+        ],
+        "cta": {
+          "shareLine": "Send this to someone who deletes a lead the second they hear not right now."
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 9,
+        "worst_problem": "Two of the five loops ('So I stopped counting the nos.' and 'That part was not luck.') are reflective pivots rather than teases — they close the thought instead of dangling a specific unanswered thing.",
+        "fix": "Rewrite those two loops to name a withheld concrete object, e.g. 'So I started a list instead.' and 'They all had one thing in common.'"
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 368263616,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-29T17:32:07.220Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7679507061394214158"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368263617,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-29T17:32:07.369Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499518743228633089"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368263636,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-29T17:32:07.513Z",
+          "publicUrl": "https://www.instagram.com/p/DcoepzFiIOo/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368263655,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-29T17:32:07.656Z",
+          "publicUrl": "https://www.instagram.com/p/DcoepXzii1o/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368263656,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-29T17:32:07.797Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499518744029970433"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368263697,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-29T17:32:07.940Z",
+          "publicUrl": "https://www.instagram.com/p/DcoepLrCEvj/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 368263701,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-29T17:32:08.086Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122117902665400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368263705,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-29T17:32:08.232Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499518744038187008"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-29T17:32:08.233Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
