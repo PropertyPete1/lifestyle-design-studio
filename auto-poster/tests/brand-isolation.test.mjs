@@ -152,3 +152,51 @@ describe("TEETH — the tested seam IS the production path", () => {
     assert.equal(stamps.length, 2, "both recordPost calls (clip + promo) stamp brand: BRAND_KEY — the field every scoping guard keys on");
   });
 });
+
+// ─── Facebook joins the LDT lane without touching realty ─────────────────────
+
+describe("adding Facebook to LDT leaks nothing to realty", () => {
+  // The LDT Metricool brand carries a Facebook Page. Realty's two fan-outs
+  // discover profiles from the same account, so the question this pins is
+  // whether targeting that Page from the LDT lane could ever hand realty
+  // content to it. It cannot: exclusion is per PROFILE, not per network —
+  // the whole LDT profile (Page included) drops out of both realty lists.
+  const ldtProfile = {
+    id: 6804409,
+    label: "Lifestyle Design Technologies",
+    instagram: "lifestyledesigntechnologies",
+    tiktok: "lifestyledesigntech",
+    facebook: "LifestyleDesignTechnologies",
+  };
+  const realtyProfile = {
+    id: 111, label: "Lifestyle Design Realty",
+    instagram: "lifestyledesignrealty", facebook: "LifestyleDesignRealty",
+  };
+
+  test("the LDT profile is claimed even though no facebook handle is configured", () => {
+    // handles.facebook is deliberately absent — the IG/TikTok handles and the
+    // label pattern already identify the profile, and guessing a Page slug
+    // would be a fabricated config value. Claiming is per profile, so the
+    // Page is covered by whichever signal matched.
+    assert.equal(claimingBrandKey(ldtProfile, registry), "ldt");
+    assert.equal(profileClaimedBy(ldtProfile, registry.brands.ldt), true);
+  });
+
+  test("both realty fan-outs drop the whole LDT profile, Facebook Page included", () => {
+    const kept = excludeClaimedProfiles([realtyProfile, ldtProfile], registry, () => {});
+    assert.deepEqual(kept, [realtyProfile], "realty keeps only its own profile");
+    assert.ok(!kept.some(p => p.facebook === ldtProfile.facebook), "the LDT Page is not in realty's list");
+  });
+
+  test("realty's own Facebook Page is untouched by the LDT config", () => {
+    assert.equal(claimingBrandKey(realtyProfile, registry), null);
+    assert.equal(excludeClaimedProfiles([realtyProfile], registry, () => {})[0], realtyProfile,
+      "same object, byte-identical realty behavior");
+  });
+
+  test("the LDT lane targets the Page only through its own resolved profile", () => {
+    const found = findBrandProfiles([realtyProfile, ldtProfile], registry.brands.ldt);
+    assert.deepEqual(found.map(p => p.id), [6804409], "fail-closed: only the LDT profile");
+    assert.equal(found[0].facebook, "LifestyleDesignTechnologies");
+  });
+});

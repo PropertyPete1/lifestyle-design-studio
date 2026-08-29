@@ -2,9 +2,21 @@
  * Lifestyle Design Technologies — LDT brand lane (brand 2).
  *
  * Posts to the LDT accounts ONLY (IG @lifestyledesigntechnologies, TikTok
- * @lifestyledesigntech), resolved by handle from brands.json against the
- * Metricool profile list. FAIL-CLOSED: no matching profile means no post and
- * a loud notice with the connect steps — never a fallback to "all brands".
+ * @lifestyledesigntech, and the LDT Facebook Page), resolved by handle from
+ * brands.json against the Metricool profile list. FAIL-CLOSED: no matching
+ * profile means no post and a loud notice with the connect steps — never a
+ * fallback to "all brands".
+ *
+ * PLATFORM SHAPES differ by medium, and Metricool cares:
+ *   - images (carousel, card) — one scheduler call PER NETWORK, each with
+ *     that network's *Data block: instagram/facebook take the PNGs
+ *     (facebookData type POST), tiktok its own JPEG copy (it rejects PNG at
+ *     publish). The PNGs upload once and are shared, as the realty carousel
+ *     fan-out does.
+ *   - video (clip, text reel) — ONE scheduler call carrying every provider,
+ *     with instagramData REEL / tiktokData VIDEO / facebookData REEL. That
+ *     asymmetry is Metricool's, not ours: the video endpoint fans out across
+ *     providers, the image bodies do not.
  *
  * CONTENT — the fillPlan walk (ldt-slot-filler.js), in priority order:
  *   1. Operator-supplied clips from the intake Drive folder
@@ -63,7 +75,7 @@ import { reelText, renderTextReel } from "./ldt-text-reel.js";
 import { prePostQualityCheck } from "./quality-check.js";
 import { loadLog, saveLog, recordPost, loadBlocklist, blocklistVideo } from "./state.js";
 import { verifyReelPublication, applyReelVerification } from "./reel-verify.js";
-import { uploadSlides, schedulePost, instagramCarouselBody, tiktokCarouselBody, chicagoDateTime } from "./carousel-distribute.js";
+import { uploadSlides, schedulePost, instagramCarouselBody, tiktokCarouselBody, facebookCarouselBody, chicagoDateTime } from "./carousel-distribute.js";
 import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
 import { routeWarnChannel } from "./yt-evidence.js";
 routeWarnChannel();
@@ -87,9 +99,10 @@ function chicagoSlot(now = new Date()) {
 const CONNECT_STEPS =
   "Connect the LDT accounts in Metricool: app.metricool.com → add a new Brand " +
   "('Lifestyle Design Technologies') → connect Instagram @lifestyledesigntechnologies " +
-  "(must be a Professional account linked to a Facebook Page for auto-publish) and " +
-  "TikTok @lifestyledesigntech. No new repo secrets are needed — the lane finds the " +
-  "brand by handle. Full steps: auto-poster/LDT-SETUP.md";
+  "(must be a Professional account linked to a Facebook Page for auto-publish), " +
+  "TikTok @lifestyledesigntech, and the Facebook Page itself. No new repo secrets " +
+  "are needed — the lane finds the brand by handle and reads the connected networks " +
+  "off the profile. Full steps: auto-poster/LDT-SETUP.md";
 
 async function notify(outcome, reason, remedy, detail) {
   try {
@@ -283,18 +296,33 @@ async function postSelfMade(kind, { log, brand, claims, blogId, label, platforms
     } else {
       const publishAt = chicagoDateTime();
       const results = [];
+      // Slides are uploaded ONCE per encoding and reused by every network that
+      // accepts it — the realty carousel's proven shape (distributeCarousel):
+      // the lossless PNGs serve Instagram AND Facebook, and only TikTok needs
+      // its own JPEG copy because it rejects PNG at publish time. So adding
+      // Facebook costs a scheduler call, not another upload of the deck.
+      const uploads = {};
+      const urlsFor = (encoding) => {
+        if (!uploads[encoding]) {
+          uploads[encoding] = encoding === "jpeg"
+            ? uploadSlides(blogId, images.jpegs, "image/jpeg")
+            : uploadSlides(blogId, images.pngs, "image/png");
+        }
+        return uploads[encoding];
+      };
       // Per-network throws are contained as failed results: once ONE network
       // has scheduled, a throw here would send the walk to the next format on
       // top of a live post. All-networks-failed still throws below, where
       // nothing has published yet.
-      const bodies = [
-        { network: "instagram", bufs: () => images.pngs, type: "image/png", body: instagramCarouselBody },
-        { network: "tiktok", bufs: () => images.jpegs, type: "image/jpeg", body: tiktokCarouselBody },
+      const targets = [
+        { network: "instagram", encoding: "png", body: instagramCarouselBody },
+        { network: "facebook", encoding: "png", body: facebookCarouselBody },
+        { network: "tiktok", encoding: "jpeg", body: tiktokCarouselBody },
       ];
-      for (const net of bodies) {
+      for (const net of targets) {
         if (!platforms.includes(net.network)) continue;
         try {
-          const urls = await uploadSlides(blogId, net.bufs(), net.type);
+          const urls = await urlsFor(net.encoding);
           const res = await schedulePost(blogId, net.body(urls, caption, publishAt));
           results.push({ network: net.network, ...res });
         } catch (err) {
@@ -420,11 +448,17 @@ async function main() {
   const profile = ldtProfiles[0];
   const blogId = Number(profile.id || profile.blogId);
   const label = String(profile.label || blogId);
-  console.log(`[LDT] Target brand resolved: "${label}" (blogId ${blogId}) — IG: ${profile.instagram || "not connected"}, TikTok: ${profile.tiktok || "not connected"}`);
+  console.log(`[LDT] Target brand resolved: "${label}" (blogId ${blogId}) — IG: ${profile.instagram || "not connected"}, TikTok: ${profile.tiktok || "not connected"}, Facebook: ${profile.facebook || "not connected"}`);
 
+  // The postable set is read off the RESOLVED PROFILE's connected networks,
+  // not from brands.json handles: handles identify which profile is LDT's,
+  // and the profile itself is the source of truth for what is connected on
+  // it. So a Page connected in Metricool is picked up with no config change,
+  // and one disconnected there stops being targeted the same way.
   const connected = [];
   if (profile.instagram) connected.push("instagram");
   if (profile.tiktok) connected.push("tiktok");
+  if (profile.facebook) connected.push("facebook");
   if (!blogId || connected.length === 0) {
     // The brand exists (label matched) but is not postable yet. This must be
     // the connect notice, NOT a silent "cadence" green — a half-finished

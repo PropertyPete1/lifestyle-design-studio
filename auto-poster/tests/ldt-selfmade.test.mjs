@@ -27,6 +27,7 @@ import { sourceFigureValues, checkNumberHonesty } from "../src/source-respect.js
 import { HOOK_STYLE_IDS } from "../src/hook-styles.js";
 import { planVariation } from "../src/variation.js";
 import { loadBrandRegistry } from "../src/brands.js";
+import { instagramCarouselBody, tiktokCarouselBody, facebookCarouselBody } from "../src/carousel-distribute.js";
 import {
   carouselAngles, pickAngle, hookLineFor, deckText, narrativeDeckSvgs, renderNarrativeDeck, DECK_SLIDES,
 } from "../src/ldt-carousel-gen.js";
@@ -502,5 +503,95 @@ describe("planVariation's previousStyle override (the LDT seam)", () => {
       seen.add(planVariation({ log: { posts: [] }, brief: null, previousStyle: null, rand: seq(0.9, i / 60, i / 60) }).hook_style);
     }
     assert.equal(seen.size, HOOK_STYLE_IDS.length, "with no exclusion, exploration reaches every style");
+  });
+});
+
+// ─── Facebook payload shapes, per medium ─────────────────────────────────────
+
+describe("Facebook gets the shape Metricool wants, per format", () => {
+  const CAPTION = "PRIMARY at work.";
+  const AT = "2026-08-29T15:00:00";
+
+  test("IMAGE formats (carousel, card): a per-network body with facebookData type POST", () => {
+    // Proven shape: the realty carousel fan-out has posted Facebook
+    // multi-image in production with exactly this body, and the 2026-08-01
+    // reach probe confirmed FB multi-image is reachable.
+    const urls = ["https://cdn.test/1.png", "https://cdn.test/2.png"];
+    const body = facebookCarouselBody(urls, CAPTION, AT);
+    assert.deepEqual(body.providers, [{ network: "facebook" }], "one network per image call");
+    assert.deepEqual(body.media, urls, "carries the slides");
+    assert.equal(body.facebookData.type, "POST");
+    assert.equal(body.autoPublish, true);
+    assert.equal(body.draft, false);
+    assert.equal(body.publicationDate.timezone, "America/Chicago");
+    // A single-image card is the same body with one URL — not a special case.
+    const card = facebookCarouselBody([urls[0]], CAPTION, AT);
+    assert.equal(card.media.length, 1);
+    assert.equal(card.facebookData.type, "POST");
+  });
+
+  test("IMAGE formats: Facebook rides the PNGs, and the deck uploads ONCE", () => {
+    // Adding Facebook must cost a scheduler call, not a third upload of the
+    // same deck. Instagram and Facebook share the lossless PNG upload; only
+    // TikTok needs its own JPEG copy (it rejects PNG at publish time).
+    const src = readFileSync(join(SRC_ROOT, "ldt-main.js"), "utf-8");
+    const block = src.slice(src.indexOf("const targets = ["), src.indexOf("const failed = results.filter"));
+    assert.match(block, /network: "facebook", encoding: "png"/, "facebook takes the PNGs");
+    assert.match(block, /network: "instagram", encoding: "png"/, "instagram takes the same PNGs");
+    assert.match(block, /network: "tiktok", encoding: "jpeg"/, "tiktok keeps its own JPEG copy");
+    // The memo is what makes the sharing real rather than incidental.
+    assert.match(src, /if \(!uploads\[encoding\]\)/, "uploads are memoized per encoding");
+  });
+
+  test("VIDEO formats (clip, text reel): ONE call carrying every provider, facebookData REEL", () => {
+    // The asymmetry is Metricool's: the video endpoint fans out across
+    // providers in a single scheduler call, so Facebook rides along as a
+    // provider rather than getting its own call. Pinned on the real source
+    // because the call is made inside createSingleBrandPost.
+    const src = readFileSync(join(SRC_ROOT, "metricool.js"), "utf-8");
+    const fn = src.slice(src.indexOf("export async function createSingleBrandPost"));
+    const body = fn.slice(0, fn.indexOf("const url ="));
+    assert.match(body, /facebookData:\s*\{\s*type:\s*"REEL"/, "video to a Page is a REEL");
+    assert.match(body, /instagramData/, "instagram still gets its REEL block");
+    assert.match(body, /tiktokData/, "tiktok still gets its VIDEO block");
+    assert.match(body, /providers:\s*wanted\.map/, "every wanted network goes in one call");
+  });
+
+  test("the two shapes stay distinct — images never fan out, video never splits", () => {
+    // If someone 'simplifies' the image path into the video path's single
+    // multi-provider call, Facebook and Instagram would share one post body
+    // and TikTok would receive PNGs. Pin the distinction.
+    const igBody = instagramCarouselBody(["u"], CAPTION, AT);
+    const fbBody = facebookCarouselBody(["u"], CAPTION, AT);
+    const tkBody = tiktokCarouselBody(["u"], CAPTION, AT);
+    for (const [name, b] of [["instagram", igBody], ["facebook", fbBody], ["tiktok", tkBody]]) {
+      assert.equal(b.providers.length, 1, `${name} image body targets exactly one network`);
+      assert.equal(b.providers[0].network, name);
+    }
+  });
+});
+
+describe("entry stamps record what actually published", () => {
+  test("the image path records the networks that SUCCEEDED, not the ones attempted", () => {
+    // With three networks, a partial failure is now ordinary (Facebook could
+    // reject while Instagram accepts). Recording the attempted list would
+    // tell the learn step a post reached a platform it never reached, and
+    // would spend cadence budget the lane never used.
+    const src = readFileSync(join(SRC_ROOT, "ldt-main.js"), "utf-8");
+    const fn = src.slice(src.indexOf("async function postSelfMade"));
+    assert.match(fn, /const postedNetworks = okResults\.flatMap\(r => r\.networks\)/,
+      "the recorded set is derived from the OK results");
+    const record = fn.slice(fn.indexOf("recordPost(log, {"), fn.indexOf("} catch (err) {", fn.indexOf("recordPost(log, {")));
+    assert.match(record, /platforms: postedNetworks/, "platforms comes from what published");
+    assert.ok(!/platforms: platforms/.test(record), "never the attempted list");
+    // Per-network postIds keep the audit trail resolvable per platform.
+    assert.match(record, /postIds: okResults\.map/);
+  });
+
+  test("a failed network is warned about, not silently dropped from the record", () => {
+    const src = readFileSync(join(SRC_ROOT, "ldt-main.js"), "utf-8");
+    const fn = src.slice(src.indexOf("async function postSelfMade"));
+    assert.match(fn, /for \(const f of failed\)/, "failures are iterated");
+    assert.match(fn, /::warning::/, "and surfaced in the Actions log");
   });
 });

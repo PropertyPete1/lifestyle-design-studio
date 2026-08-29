@@ -13,12 +13,16 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   loadBrandRegistry, resolveCadence, cadenceFor, chicagoDayOf,
   countBrandPostsToday, cadenceAllows, minGapOk,
   DEFAULT_CADENCE_PER_DAY, CADENCE_HARD_CAP_PER_DAY,
 } from "../src/brands.js";
 
+const SRC_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
 const registry = loadBrandRegistry();
 
 describe("resolveCadence refusal and warnings", () => {
@@ -29,8 +33,8 @@ describe("resolveCadence refusal and warnings", () => {
     // run restates it in the log so it can't become invisible background.
     const warned = [];
     const resolved = resolveCadence(registry.brands.ldt, registry, (m) => warned.push(m));
-    assert.deepEqual(resolved.perPlatform, { instagram: 3, tiktok: 3 });
-    assert.equal(resolved.warnings.length, 2, "one warning per configured platform");
+    assert.deepEqual(resolved.perPlatform, { instagram: 3, tiktok: 3, facebook: 3 });
+    assert.equal(resolved.warnings.length, 3, "one warning per configured platform");
     assert.deepEqual(warned, resolved.warnings, "every warning is actually logged, not just collected");
     for (const w of resolved.warnings) {
       assert.match(w, /3\/day/, "the warning names the configured rate");
@@ -179,5 +183,38 @@ describe("minimum gap between brand posts", () => {
     const recent = { posts: [{ brand: "ldt", platforms: ["instagram"], timestamp: "2026-08-29T15:59:00.000Z", success: true }] };
     assert.equal(minGapOk(recent, "ldt", 0, NOW).ok, true);
     assert.equal(minGapOk(recent, "ldt", undefined, NOW).ok, true);
+  });
+});
+
+// ─── Facebook on the LDT lane ────────────────────────────────────────────────
+
+describe("Facebook is a first-class LDT platform", () => {
+  test("every connected network has a configured cadence — none silently falls back", () => {
+    // cadenceFor() returns the 2/day DEFAULT for any platform missing from the
+    // config. A network the lane posts to but never configures would therefore
+    // run at 2/day while its siblings run at 3 — a silent, invisible cap. The
+    // lane's postable set comes from the profile's connected networks, so the
+    // three it can target must all be configured.
+    const cadence = registry.brands.ldt.cadence;
+    for (const network of ["instagram", "tiktok", "facebook"]) {
+      assert.ok(Number.isInteger(cadence[network]),
+        `${network} has no configured cadence — it would silently fall back to the ${DEFAULT_CADENCE_PER_DAY}/day default`);
+    }
+    const resolved = resolveCadence(registry.brands.ldt, registry, () => {});
+    for (const network of ["instagram", "tiktok", "facebook"]) {
+      assert.equal(cadenceFor(resolved, network), 3, `${network} resolves at the configured rate`);
+    }
+  });
+
+  test("the lane's postable set is read off the profile, so a connected Page is targeted", () => {
+    // Pins the runtime derivation in ldt-main.js: `connected` is built from
+    // the RESOLVED PROFILE's network fields, not from brands.json handles —
+    // which is why a Facebook Page connected in Metricool needs no config
+    // change, and why the LDT handles never had to name it.
+    const src = readFileSync(join(SRC_DIR, "ldt-main.js"), "utf-8");
+    for (const network of ["instagram", "tiktok", "facebook"]) {
+      assert.match(src, new RegExp(`if \\(profile\\.${network}\\) connected\\.push\\("${network}"\\)`),
+        `${network} is not derived from the resolved profile`);
+    }
   });
 });
