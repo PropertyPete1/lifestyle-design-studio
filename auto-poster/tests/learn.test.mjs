@@ -131,7 +131,7 @@ describe("the join", () => {
 describe("generation provenance", () => {
   test("a tagged entry answers from its tag", () => {
     const g = generationFor(entry({ generation: { hook_style: "stat", caption_length_bucket: "short" } }));
-    assert.deepEqual(g, { provenance: "tagged", hook_style: "stat", caption_length_bucket: "short" });
+    assert.deepEqual(g, { provenance: "tagged", hook_style: "stat", caption_length_bucket: "short", hook_plate_burned: null });
   });
 
   test("a legacy-tagged style maps to canonical but stays 'tagged'", () => {

@@ -41,6 +41,15 @@ Every post's generation decisions are chosen up front and written onto its
 - **Caption length** — rotated across short / medium / long buckets, fresh
   captions only (a restructured caption preserves the original's facts and is
   tagged `restructured`, excluded from the length experiment).
+- **Hook plate** (`src/reel-hook-burn.js`) — the caption's hook line is also
+  burned onto the video's first 3 seconds, using the trial path's plate
+  renderer at the source's own dimensions. Same words, second surface — the
+  honesty story is unchanged. Gated: a source with burned-in text (or an
+  unverifiable caption scan) gets no plate, an unfit line (>12 words, or
+  emoji-only) gets no plate, and the burn self-checks its output before
+  claiming success. The outcome is tagged (`hook_plate`,
+  `generation.hook_plate_burned`) and analyzed in the brief — analyzed-only,
+  because eligibility is decided by the source, not rotated.
 - **Tagged but not rotated** (stated so the data is honest): posting time
   (the cron owns the slots; slot is recorded and analyzed), topic signals
   (price overlay present, community-KB match — observed, not synthesized),
