@@ -348,6 +348,13 @@ export const MAIL_PREFIX = {
    * trial runs went unread. An alert has to look unlike the routine.
    */
   ALERT: "[DAILY ALERT]",
+  /**
+   * The weekly "what's working" brief from the learning loop — one page of
+   * measured numbers, worth an actual read once a week. Its own prefix for the
+   * same reason ALERT has one: filed under REELS it becomes daily noise, and a
+   * brief nobody reads teaches nothing.
+   */
+  BRIEF: "[WEEKLY BRIEF]",
 };
 
 /**

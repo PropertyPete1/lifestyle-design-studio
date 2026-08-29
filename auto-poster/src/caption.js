@@ -17,6 +17,8 @@ import { validateCaption, RETRY_INSTRUCTION, findMonthlyPaymentFigure } from "./
 import { sourceFigureValues, checkNumberHonesty } from "./source-respect.js";
 import { targetWordsForDuration, resolveTempo, buildAvoidBlock } from "./voiceover-style.js";
 import { pickHookStyle, loadWeights } from "./analytics.js";
+import { styleInstruction } from "./hook-styles.js";
+import { CAPTION_LENGTH_BUCKETS } from "./variation.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -100,9 +102,23 @@ export function findCommunity(communityName, city) {
 }
 
 /**
- * Get a hook style instruction based on performance weights.
+ * Get a hook style instruction.
+ *
+ * When the variation engine chose a style (main.js passes it through), that
+ * choice is used verbatim — the caller records it on the posted-log entry, so
+ * the instruction here and the tag in the log can never disagree. With no
+ * chosen style (trial variants, direct callers), the legacy weighted pick
+ * remains, exactly as before.
  */
-function getHookInstruction(cityName) {
+function getHookInstruction(cityName, chosenStyle = null) {
+  if (chosenStyle) {
+    const instruction = styleInstruction(chosenStyle, cityName);
+    if (instruction) {
+      console.log(`[Caption] Using hook style: ${chosenStyle} (variation engine)`);
+      return instruction;
+    }
+    console.warn(`[Caption] Unknown hook style "${chosenStyle}" from variation engine — falling back to weighted pick`);
+  }
   const style = pickHookStyle();
   const instructions = {
     question: `Write a QUESTION hook. Example: "would you believe this is brand new construction in ${cityName}?" or "did you know you can get a brand new home in ${cityName} for less than rent?"`,
@@ -210,9 +226,18 @@ STYLE RULES:
 - NEVER use "comment", "DM", or any call-to-action language inside these sections. They INFORM only. All asking happens in the CTA at the end.
 `;
 
-const CAPTION_RULES = `
+/**
+ * The shared rule block. Length is a parameter now — the variation engine
+ * rotates caption length deliberately (short/medium/long buckets in
+ * variation.js) so performance can map to the choice. No bucket given, or an
+ * unknown one, keeps the long-standing 1,500-2,000 target.
+ */
+function buildCaptionRules(lengthBucketId = null) {
+  const bucket = lengthBucketId ? CAPTION_LENGTH_BUCKETS[lengthBucketId] : null;
+  const target = bucket ? bucket.target : "1,500-2,000 characters total (information-dense, not thin)";
+  return `
 RULES:
-- Target 1,500-2,000 characters total (information-dense, not thin)
+- Target ${target}
 - Line breaks between each section
 - Natural excited tone, like a real person posting who genuinely loves these homes
 - DO NOT use markdown formatting (no bold, no headers, no asterisks)
@@ -225,6 +250,7 @@ RULES:
 - You are NOT an assistant having a conversation. You are a caption generator. Your output IS the caption that will be published directly.
 - "comment TOUR" appears EXACTLY ONCE in the entire caption (in the primary CTA at the end). The word "comment" must not appear anywhere else.
 `;
+}
 
 // ─── Leak-scanner text normalization ─────────────────────────────────────────
 //
@@ -527,7 +553,7 @@ ${LEAD_GATING_RULES}
 STRUCTURE (follow this EXACT order):
 
 1. HOOK (first line, under 100 chars): A curiosity line that makes people stop scrolling.
-   ${options.trialAngle ? getTrialHookInstruction(options.trialAngle, captionCity) : getHookInstruction(captionCity)}
+   ${options.trialAngle ? getTrialHookInstruction(options.trialAngle, captionCity) : getHookInstruction(captionCity, options.hookStyle)}
    ${hasRealFacts ? `USE a real detail from the community KB in the hook (price, standout amenity description, etc.) but NEVER the community name.` : ""}
    NEVER start with a CTA. The hook must create curiosity.
 
@@ -562,7 +588,7 @@ CTA DISCIPLINE (NON-NEGOTIABLE):
 - The value sections (✨, 💸, 🌳, 🎓) INFORM and TEASE — they do NOT ask. No "comment", "DM", or requests in those sections.
 
 ${noKBInstructions}
-${CAPTION_RULES}`;
+${buildCaptionRules(options.captionLength)}`;
 
   // Attempt generation with validation gate (retry once on failure)
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -830,7 +856,7 @@ Example of the ENERGY to hit (do not copy the wording): "Three hundred twenty si
  * KB OVERRIDE: When a community KB entry exists, volatile numbers (HOA, tax, price ranges)
  * from the KB take precedence over the original caption's potentially stale values.
  */
-export async function generateCaptionFromOriginal(originalCaption, city, videoOverlays = null) {
+export async function generateCaptionFromOriginal(originalCaption, city, videoOverlays = null, options = {}) {
   const cityName = CITY_NAMES[city] || city;
 
   // Check if we can find a community match for KB override
@@ -881,7 +907,7 @@ ${originalCaption}
 NEW STRUCTURE (follow this EXACT order):
 
 1. HOOK (first line, under 100 chars): A curiosity line that references something specific from the original.
-   USE THIS SPECIFIC HOOK STYLE: ${getHookInstruction(cityName)}
+   USE THIS SPECIFIC HOOK STYLE: ${getHookInstruction(cityName, options.hookStyle)}
    Use the real price or a standout feature from the original. NEVER start with a CTA. NEVER include the community name.
 
 2. One short scarcity/story line (reference builder incentives or timing if mentioned in original)
@@ -913,7 +939,7 @@ PRESERVATION CHECKLIST — verify ALL of these from the original appear in your 
 - Every location detail at city/area level
 
 If any FACT (not name) from the original is missing in your output, you have failed the task.
-${CAPTION_RULES}`;
+${buildCaptionRules(null)}`;
 
   // Attempt generation with validation gate (retry once on failure)
   for (let attempt = 1; attempt <= 2; attempt++) {

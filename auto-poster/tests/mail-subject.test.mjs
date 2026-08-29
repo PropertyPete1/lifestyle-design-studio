@@ -64,7 +64,7 @@ describe("MAIL_PREFIX — a scannable inbox", () => {
   test("each class has its own prefix", () => {
     assert.deepEqual(
       Object.values(MAIL_PREFIX).sort(),
-      ["[CAROUSEL]", "[DAILY ALERT]", "[EDIT QUEUE]", "[REELS]", "[YT PIPELINE]"]
+      ["[CAROUSEL]", "[DAILY ALERT]", "[EDIT QUEUE]", "[REELS]", "[WEEKLY BRIEF]", "[YT PIPELINE]"]
     );
   });
 
