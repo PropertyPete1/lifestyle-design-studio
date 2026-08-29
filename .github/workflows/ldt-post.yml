@@ -1,0 +1,87 @@
+name: LDT Brand Post
+
+# LDT lane (brand 2): 2 posts/day per platform by default — one clip or promo
+# per slot. Central Time → UTC during CDT:
+#   Slot 1: 10:00 AM CT = 15:00 UTC
+#   Slot 2:  5:00 PM CT = 22:00 UTC
+# No backup crons on purpose: the lane's cadence + min-gap guards make any
+# re-run safe, and a missed slot alerts via daily-notify rather than retrying.
+on:
+  schedule:
+    - cron: '0 15 * * *'
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Content mode (auto = intake clip first, promo fallback)'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - clip
+          - promo
+      dry_run:
+        description: 'Dry run (no actual posting)'
+        required: false
+        default: false
+        type: boolean
+      force_video_id:
+        description: 'Pin a specific intake-folder Drive file ID'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  post-ldt:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: autopost-ldt
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install ffmpeg
+        run: |
+          # ffprobe drives the programmatic QC gate and ffmpeg the >95MB
+          # compression path. No tesseract/whisper here — the LDT lane adds no
+          # voiceover and burns no captions.
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Run LDT brand lane
+        id: run-ldt
+        working-directory: auto-poster
+        env:
+          MODE: ${{ github.event.inputs.mode || 'auto' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          FORCE_VIDEO_ID: ${{ github.event.inputs.force_video_id || '' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LDT_INTAKE_FOLDER_ID: ${{ secrets.LDT_INTAKE_FOLDER_ID }}
+        run: |
+          if node src/ldt-main.js; then
+            echo "post_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "post_success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      - name: Commit posted-log
+        if: always()
+        run: |
+          cd auto-poster
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs LDT "${{ steps.run-ldt.outputs.post_success }}"

@@ -55,6 +55,7 @@
 
 import { classifyCanonicalStyle, toCanonicalStyle } from "./hook-styles.js";
 import { validPosts } from "./state.js";
+import { DEFAULT_BRAND } from "./variation.js";
 
 export const MIN_SAMPLE = 3;
 export const KILL_FACTOR = 0.5;
@@ -82,11 +83,22 @@ export function linesMatch(a, b) {
   return longer.startsWith(shorter);
 }
 
-/** Reel entries eligible for learning, newest-last. */
-export function reelEntries(log, { days = DEFAULT_LOOKBACK_DAYS, now = new Date() } = {}) {
+/**
+ * Reel entries eligible for learning, newest-last, scoped to ONE brand.
+ *
+ * Brand scoping: legacy entries carry no `brand` field and belong to the
+ * default brand; brand-lane entries are stamped (brand:"ldt"). A lane's clip
+ * posts are its reels — they carry a type (`ldt_clip`) so every realty guard
+ * ignores them, which is why the type exclusion here admits `*_clip` and the
+ * brand filter does the separating. One brand's brief never scores another
+ * brand's posts.
+ */
+export function reelEntries(log, { brand = DEFAULT_BRAND, days = DEFAULT_LOOKBACK_DAYS, now = new Date() } = {}) {
   const cutoff = now.getTime() - days * 24 * 60 * 60 * 1000;
   return validPosts(log).filter((p) => {
-    if (p.type || p.platform === "instagram_main_native") return false;
+    if ((p.brand || DEFAULT_BRAND) !== brand) return false;
+    const isBrandClip = typeof p.type === "string" && p.type.endsWith("_clip");
+    if ((p.type && !isBrandClip) || p.platform === "instagram_main_native") return false;
     if (!p.city || !p.slot || !p.caption) return false;
     if (p.success === false) return false;
     const ts = new Date(p.timestamp).getTime();
@@ -121,8 +133,8 @@ export function generationFor(entry) {
  * Join posted-log entries to analytics rows. See the module header for the
  * matching rules. Returns { joined, unjoined_entries, unattributed_rows }.
  */
-export function joinPostsToAnalytics({ log, analytics, days = DEFAULT_LOOKBACK_DAYS, now = new Date() } = {}) {
-  const entries = reelEntries(log, { days, now });
+export function joinPostsToAnalytics({ log, analytics, brand = DEFAULT_BRAND, days = DEFAULT_LOOKBACK_DAYS, now = new Date() } = {}) {
+  const entries = reelEntries(log, { brand, days, now });
   const rows = Array.isArray(analytics?.recent_posts) ? analytics.recent_posts : [];
   const windowMs = JOIN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
@@ -300,7 +312,7 @@ export function killListFrom(table, axis) {
  * result to learning/brief-<brand>.json and emails renderBriefEmail(brief).
  */
 export function buildBrief({ brand, log, analytics, days = DEFAULT_LOOKBACK_DAYS, now = new Date() }) {
-  const { joined, unjoined_entries, unattributed_rows } = joinPostsToAnalytics({ log, analytics, days, now });
+  const { joined, unjoined_entries, unattributed_rows } = joinPostsToAnalytics({ log, analytics, brand, days, now });
 
   const scored = joined
     .map((jp) => ({ ...jp, scoring: scoreJoinedPost(jp) }))

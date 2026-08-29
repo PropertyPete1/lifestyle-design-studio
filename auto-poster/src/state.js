@@ -228,7 +228,11 @@ export function getRecentlyPostedIdsAllCities(log, days = 30) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return new Set(
     validPosts(log)
-      .filter(p => p.driveFileId && new Date(p.timestamp).getTime() > cutoff)
+      // Entries stamped with another brand went to DIFFERENT accounts from
+      // different source folders — they must not block a realty video that
+      // merely shares a driveFileId-free phone filename. Realty entries carry
+      // no brand field, so legacy data is unaffected.
+      .filter(p => (!p.brand || p.brand === "realty") && p.driveFileId && new Date(p.timestamp).getTime() > cutoff)
       .map(p => p.driveFileId)
   );
 }
@@ -242,7 +246,33 @@ export function getRecentlyPostedFileNamesAllCities(log, days = 30) {
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   return new Set(
     validPosts(log)
-      .filter(p => p.fileName && new Date(p.timestamp).getTime() > cutoff)
+      // Same brand scoping as getRecentlyPostedIdsAllCities: another brand's
+      // "IMG_1234.MOV" on its own accounts is not a realty repost.
+      .filter(p => (!p.brand || p.brand === "realty") && p.fileName && new Date(p.timestamp).getTime() > cutoff)
+      .map(p => p.fileName)
+  );
+}
+
+/**
+ * Every Drive file ID a brand has EVER posted (within log retention).
+ *
+ * The brand lanes (LDT) post each intake clip exactly once — there is no
+ * 30-day rotation like the realty city folders, so the window is the whole
+ * retained log, not a rolling month.
+ */
+export function getBrandPostedIds(log, brand) {
+  return new Set(
+    validPosts(log)
+      .filter(p => p.brand === brand && p.driveFileId)
+      .map(p => p.driveFileId)
+  );
+}
+
+/** Every fileName a brand has ever posted — the re-upload axis, brand-scoped. */
+export function getBrandPostedFileNames(log, brand) {
+  return new Set(
+    validPosts(log)
+      .filter(p => p.brand === brand && p.fileName)
       .map(p => p.fileName)
   );
 }

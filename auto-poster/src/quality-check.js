@@ -33,9 +33,15 @@ function getClient() {
 /**
  * Run all quality checks on a video file.
  * @param {string} videoPath - Path to the processed video (post-voiceover)
+ * @param {object} [opts] - Per-brand overrides. Defaults preserve the realty
+ *   behavior exactly (vertical required, realty vision prompt):
+ *   - requireVertical: set false for lanes posting landscape content
+ *     (LDT screen recordings of a desktop app are wider than 3:4)
+ *   - visionContent: the content-description clause of the vision check,
+ *     e.g. "a screen recording of a software product"
  * @returns {{ ok: boolean, reason: string, details: object }}
  */
-export async function prePostQualityCheck(videoPath) {
+export async function prePostQualityCheck(videoPath, opts = {}) {
   console.log("[QC] Running pre-post quality check...");
   const details = {};
 
@@ -59,7 +65,7 @@ export async function prePostQualityCheck(videoPath) {
     details.resolution = `${width}x${height}`;
     const aspectRatio = width / height;
 
-    if (aspectRatio > 0.75) {
+    if (aspectRatio > 0.75 && opts.requireVertical !== false) {
       // Not vertical enough (wider than 3:4)
       return { ok: false, reason: `Not vertical: ${width}x${height} (ratio ${aspectRatio.toFixed(2)}, need < 0.75)`, details };
     }
@@ -122,7 +128,7 @@ export async function prePostQualityCheck(videoPath) {
       return { ok: false, reason: "Could not extract frames for vision check", details };
     }
 
-    const visionResult = await checkFramesWithVision(frames);
+    const visionResult = await checkFramesWithVision(frames, opts);
     details.visionResult = visionResult;
 
     if (!visionResult.ok) {
@@ -207,7 +213,16 @@ function extractQCFrames(videoPath) {
 /**
  * Send frames to Claude Haiku for content verification.
  */
-async function checkFramesWithVision(framePaths) {
+async function checkFramesWithVision(framePaths, opts = {}) {
+  const contentLine = opts.visionContent
+    ? `Appears to be ${opts.visionContent}`
+    : "Appears to be a home/property tour (interior or exterior of a house/neighborhood)";
+  const orientationClause = opts.requireVertical === false
+    ? "video suitable for Instagram Reels? (Any orientation is acceptable.) Check:"
+    : "vertical (9:16) real estate property video suitable for Instagram Reels? Check:";
+  const orientationCheck = opts.requireVertical === false
+    ? "Correct orientation (not sideways or upside down)"
+    : "Correct orientation (vertical, not sideways or upside down)";
   const imageContent = framePaths.map(fp => {
     const buf = readFileSync(fp);
     const base64 = buf.toString("base64");
@@ -230,10 +245,10 @@ async function checkFramesWithVision(framePaths) {
         ...imageContent,
         {
           type: "text",
-          text: `Is this a vertical (9:16) real estate property video suitable for Instagram Reels? Check:
-1. Correct orientation (vertical, not sideways or upside down)
+          text: `Is this a ${orientationClause}
+1. ${orientationCheck}
 2. Not corrupted/black/glitched frames
-3. Appears to be a home/property tour (interior or exterior of a house/neighborhood)
+3. ${contentLine}
 
 Respond with ONLY valid JSON: {"ok": true/false, "reason": "brief explanation"}`,
         },

@@ -15,9 +15,10 @@ import { createHash } from "crypto";
 import { execSync } from "child_process";
 import { writeFileSync as fsWriteSync, readFileSync as fsReadSync, unlinkSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
+import { loadBrandRegistry, excludeClaimedProfiles } from "./brands.js";
 
 const BASE = "https://app.metricool.com/api";
-const MAX_UPLOAD_BYTES = 95 * 1024 * 1024; // 95MB safety margin (Metricool limit is 100MB)
+export const MAX_UPLOAD_BYTES = 95 * 1024 * 1024; // 95MB safety margin (Metricool limit is 100MB)
 
 function authParams(blogId = process.env.METRICOOL_BLOG_ID) {
   return `blogId=${blogId}&userId=${process.env.METRICOOL_USER_ID}`;
@@ -69,20 +70,39 @@ export async function getRecentIgPosts(days = 30) {
 }
 
 /**
- * Discover ALL brands on the Metricool account that have Instagram connected.
- * Each brand = a different IG account. We post to every one.
- * Uses /admin/simpleProfiles endpoint.
+ * Fetch the raw Metricool profile list (one entry per connected brand).
+ * Returns the parsed array, or null when the endpoint cannot be read —
+ * callers decide their own fallback.
  */
-export async function getAllBrands() {
+export async function listProfiles() {
   const url = `${BASE}/admin/simpleProfiles?userId=${process.env.METRICOOL_USER_ID}`;
   const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) {
-    console.warn(`[Metricool] getAllBrands failed (${res.status}) — falling back to default brand`);
+    console.warn(`[Metricool] listProfiles failed (${res.status})`);
+    return null;
+  }
+  return await res.json();
+}
+
+/**
+ * Discover the REALTY brands on the Metricool account that have Instagram
+ * connected. Each brand = a different IG account. We post to every one —
+ * except profiles claimed by another configured brand in brands.json (the
+ * LDT accounts must never receive realty content). With no other brand's
+ * profiles connected, the claimed-filter matches nothing and the result is
+ * identical to the pre-multi-brand discovery.
+ * Uses /admin/simpleProfiles endpoint.
+ */
+export async function getAllBrands() {
+  const profiles = await listProfiles();
+  if (!profiles) {
+    console.warn(`[Metricool] getAllBrands could not list profiles — falling back to default brand`);
     return [{ blogId: process.env.METRICOOL_BLOG_ID, label: "default", networks: ["INSTAGRAM", "TIKTOK", "YOUTUBE"] }];
   }
-  const profiles = await res.json();
+  // The claimed-profile exclusion runs through the SAME helper the isolation
+  // tests exercise (brands.js excludeClaimedProfiles) — one seam, tested.
   const brands = [];
-  for (const p of profiles) {
+  for (const p of excludeClaimedProfiles(profiles, loadBrandRegistry())) {
     if (p.deleted === true || p.isDemo === true) continue;
     const blogId = Number(p.id || p.blogId);
     if (!blogId) continue;
@@ -104,8 +124,10 @@ export async function getAllBrands() {
  * Returns the hosted CDN URL.
  * 
  * If prefetched is provided (buf + sha256b64), reuses those bytes.
+ * Exported for single-brand lanes (LDT) that must never touch the realty
+ * media libraries.
  */
-async function uploadToBrand(blogId, prefetched) {
+export async function uploadToBrand(blogId, prefetched) {
   const { buf, sha256b64 } = prefetched;
   const size = buf.length;
 
@@ -369,6 +391,66 @@ export async function createPost(mediaUrl, caption, options = {}) {
 }
 
 /**
+ * Create a video post on EXACTLY ONE brand — no discovery, no fan-out.
+ *
+ * This is the LDT lane's posting seam: the caller resolves the target blogId
+ * (fail-closed, from brands.json handle matching) and passes it in, so this
+ * function can never post anywhere the caller did not name. The result shape
+ * matches one element of createPost's `brands` array so reel-verify.js can
+ * consume it unchanged.
+ */
+export async function createSingleBrandPost({ blogId, label, mediaUrl, caption, networks, dryRun = false }) {
+  if (!blogId) throw new Error("createSingleBrandPost requires a blogId");
+  const wanted = (networks && networks.length ? networks : ["instagram", "tiktok"]).map(n => String(n).toLowerCase());
+
+  if (dryRun) {
+    console.log(`[Metricool] DRY RUN — would post to brand ${label} (${blogId}) on ${wanted.join(", ")}`);
+    console.log(`[Metricool] Caption: ${String(caption).slice(0, 120)}...`);
+    return { ok: true, dryRun: true, brands: [{ label, ok: true, blogId, networks: wanted.map(n => n.toUpperCase()), providers: wanted }] };
+  }
+
+  const body = {
+    text: caption,
+    publicationDate: {
+      dateTime: chicagoLocalDateTime(),
+      timezone: "America/Chicago",
+    },
+    providers: wanted.map(n => ({ network: n })),
+    media: [mediaUrl],
+    autoPublish: true,
+    shortener: false,
+    draft: false,
+    instagramData: {
+      type: "REEL",
+      showReelOnFeed: true,
+      autoPublish: true,
+    },
+    tiktokData: {
+      privacyOption: "PUBLIC_TO_EVERYONE",
+      autoPublish: true,
+      contentType: "VIDEO",
+    },
+  };
+
+  const url = `${BASE}/v2/scheduler/posts?${authParams(blogId)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify(body),
+  });
+  const raw = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(`Metricool single-brand post failed for ${label} (${res.status}): ${JSON.stringify(raw).slice(0, 200)}`);
+  }
+  const postId = raw?.data?.id || raw?.id || raw?.postId || "unknown";
+  console.log(`[Metricool] ✓ Brand ${label} posted (ID: ${postId}) — ${wanted.join(", ")}`);
+  return {
+    ok: true,
+    brands: [{ label, ok: true, blogId, networks: wanted.map(n => n.toUpperCase()), providers: wanted, postId }],
+  };
+}
+
+/**
  * Compress a video with ffmpeg to maximize quality within the upload limit.
  * 
  * Strategy:
@@ -377,7 +459,7 @@ export async function createPost(mediaUrl, caption, options = {}) {
  * 
  * Keeps original resolution (4K), audio at 192k AAC.
  */
-function compressVideoToFit(sourceBuffer, maxBytes) {
+export function compressVideoToFit(sourceBuffer, maxBytes) {
   const tmpDir = "/tmp/metricool-compress";
   if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
 

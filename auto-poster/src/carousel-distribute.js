@@ -25,6 +25,7 @@
  */
 
 import { createHash } from "crypto";
+import { loadBrandRegistry, excludeClaimedProfiles } from "./brands.js";
 
 const BASE = "https://app.metricool.com/api";
 
@@ -57,7 +58,10 @@ export async function getCarouselBrands() {
 
   const mainBlogId = Number(process.env.METRICOOL_BLOG_ID);
   const brands = [];
-  for (const p of await res.json()) {
+  // Profiles claimed by another configured brand (LDT) never receive realty
+  // carousels — the same tested seam getAllBrands() uses, same no-op when
+  // no claimed profile exists.
+  for (const p of excludeClaimedProfiles(await res.json(), loadBrandRegistry())) {
     if (p.deleted === true || p.isDemo === true) continue;
     const blogId = Number(p.id || p.blogId);
     if (!blogId) continue;
@@ -126,7 +130,7 @@ export async function uploadSlides(blogId, buffers, contentType = "image/png") {
   return urls;
 }
 
-async function schedulePost(blogId, body) {
+export async function schedulePost(blogId, body) {
   const res = await fetch(`${BASE}/v2/scheduler/posts?${authParams(blogId)}`, {
     method: "POST",
     headers: authHeaders(),
