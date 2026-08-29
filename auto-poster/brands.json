@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "cadenceHardCapPerDay": 6,
+  "brands": {
+    "realty": {
+      "label": "Lifestyle Design Realty",
+      "lane": "realty",
+      "discovery": "unclaimed",
+      "notes": "Brand 1 — the existing realty pipeline, PINNED. Posts to every Metricool profile NOT claimed by another brand in this file. With no other brand's accounts connected to Metricool, discovery is byte-identical to the pre-multi-brand fan-out (tests/brand-isolation.test.mjs proves it)."
+    },
+    "ldt": {
+      "label": "Lifestyle Design Technologies",
+      "lane": "ldt",
+      "handles": {
+        "instagram": ["lifestyledesigntechnologies"],
+        "tiktok": ["lifestyledesigntech"]
+      },
+      "labelPatterns": ["\\bldt\\b", "lifestyle\\s*design\\s*tech"],
+      "cadence": { "instagram": 2, "tiktok": 2 },
+      "minGapHours": 3,
+      "hashtags": "#PRIMARY #ai #aiassistant #automation #smallbusiness #realestatetech #crm",
+      "cta": { "keyword": "PRIMARY", "line": "Comment PRIMARY and I'll send you the demo." },
+      "site": "lifestyledesigntechnologies.com",
+      "claimsFile": "ldt-claims.json",
+      "contentSources": {
+        "intakeFolderEnv": "LDT_INTAKE_FOLDER_ID",
+        "promoWhenNoClip": true
+      },
+      "qc": {
+        "requireVertical": false,
+        "visionContent": "a screen recording or product demo of a software application (an AI business assistant called PRIMARY) or branded promotional footage"
+      },
+      "palette": {
+        "bg": "#000000",
+        "ink": "#F2F2F2",
+        "muted": "#9A9A9A",
+        "accent": "#5EE0A0"
+      }
+    }
+  }
+}

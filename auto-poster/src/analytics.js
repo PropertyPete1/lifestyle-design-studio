@@ -26,6 +26,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const WEIGHTS_PATH = join(__dirname, "..", "performance-weights.json");
 const BASE = "https://app.metricool.com/api";
 
+/**
+ * Per-brand weights files. The realty brand keeps the original filename so the
+ * existing pipeline, merge strategy, and history stay untouched; every other
+ * brand gets performance-weights.<brand>.json (each new file must also be
+ * registered in merge-strategies.mjs or merge-log-push will discard it).
+ */
+export function weightsPathForBrand(brandKey) {
+  if (!brandKey || brandKey === "realty") return WEIGHTS_PATH;
+  return join(__dirname, "..", `performance-weights.${brandKey}.json`);
+}
+
 function authHeaders() {
   return {
     "Content-Type": "application/json",
@@ -108,10 +119,10 @@ export function scoreReel(reel) {
 /**
  * Fetch last N days of IG Reel analytics from Metricool.
  */
-async function fetchReelAnalytics(days = 7) {
+async function fetchReelAnalytics(days = 7, blogId = undefined) {
   const to = new Date();
   const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  const url = `${BASE}/v2/analytics/reels/instagram?from=${fmtDate(from)}&to=${fmtDate(to)}&${authParams()}&timezone=America/Chicago`;
+  const url = `${BASE}/v2/analytics/reels/instagram?from=${fmtDate(from)}&to=${fmtDate(to)}&${authParams(blogId ?? process.env.METRICOOL_BLOG_ID)}&timezone=America/Chicago`;
 
   const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) {
@@ -125,12 +136,13 @@ async function fetchReelAnalytics(days = 7) {
 /**
  * Load existing performance weights.
  */
-export function loadWeights() {
-  if (!existsSync(WEIGHTS_PATH)) {
+export function loadWeights(brandKey = "realty") {
+  const path = weightsPathForBrand(brandKey);
+  if (!existsSync(path)) {
     return getDefaultWeights();
   }
   try {
-    return JSON.parse(readFileSync(WEIGHTS_PATH, "utf-8"));
+    return JSON.parse(readFileSync(path, "utf-8"));
   } catch {
     return getDefaultWeights();
   }
@@ -158,13 +170,13 @@ function getDefaultWeights() {
  * Fetches last 7 days of reels, classifies hooks, scores performance,
  * and updates performance-weights.json.
  */
-export async function runWeeklyAnalytics(days = 7) {
-  console.log(`[Analytics] Running weekly feedback loop (last ${days} days)...`);
+export async function runWeeklyAnalytics(days = 7, { brandKey = "realty", blogId = undefined } = {}) {
+  console.log(`[Analytics] Running weekly feedback loop for brand '${brandKey}' (last ${days} days)...`);
 
-  const reels = await fetchReelAnalytics(days);
+  const reels = await fetchReelAnalytics(days, blogId);
   if (reels.length === 0) {
     console.log("[Analytics] No reels found — keeping existing weights");
-    return loadWeights();
+    return loadWeights(brandKey);
   }
 
   console.log(`[Analytics] Analyzing ${reels.length} reels...`);
@@ -207,7 +219,7 @@ export async function runWeeklyAnalytics(days = 7) {
   const allAvgs = Object.values(avgScores);
   if (allAvgs.length === 0) {
     console.log("[Analytics] No classifiable hooks found — keeping existing weights");
-    return loadWeights();
+    return loadWeights(brandKey);
   }
 
   const median = allAvgs.sort((a, b) => a - b)[Math.floor(allAvgs.length / 2)];
@@ -226,7 +238,7 @@ export async function runWeeklyAnalytics(days = 7) {
   }
 
   // Blend with existing weights (70% new, 30% old) for stability
-  const existing = loadWeights();
+  const existing = loadWeights(brandKey);
   const blended = {};
   for (const style of ALL_STYLES) {
     const oldW = existing.weights[style] || 1.0;
@@ -272,8 +284,9 @@ export async function runWeeklyAnalytics(days = 7) {
   console.log(`[Analytics] Top performer: ${report.topPerformers[0]?.firstLine || "N/A"} (score: ${report.topPerformers[0]?.score || 0})`);
 
   // Save weights
-  writeFileSync(WEIGHTS_PATH, JSON.stringify(report, null, 2) + "\n");
-  console.log(`[Analytics] Weights saved to ${WEIGHTS_PATH}`);
+  const outPath = weightsPathForBrand(brandKey);
+  writeFileSync(outPath, JSON.stringify(report, null, 2) + "\n");
+  console.log(`[Analytics] Weights saved to ${outPath}`);
 
   return report;
 }
