@@ -187,8 +187,15 @@ describe("TEETH — the shipped copy passes its own gate", () => {
       seen.add(pickAngle({ claims, dateStr: d }).key);
     }
     assert.equal(seen.size, angles.length, "consecutive days walk the whole rotation");
-    // Determinism: the same date always tells the same story.
-    assert.equal(pickAngle({ claims, dateStr: "2026-09-01" }).key, pickAngle({ claims, dateStr: "2026-09-01" }).key);
+    // Pinned date→angle mappings, carried over from the retired promo lane's
+    // guard: these catch an off-by-one in pickAngle's day-number arithmetic
+    // that a determinism check would wave through (comparing a pure function
+    // to itself can never fail). An off-by-one tells the wrong day's story on
+    // every self-made post at once.
+    assert.equal(pickAngle({ claims, dateStr: "2026-09-01" }).key, "honest_numbers");
+    assert.equal(pickAngle({ claims, dateStr: "2026-09-02" }).key, "any_business");
+    assert.equal(pickAngle({ claims, dateStr: "2026-09-03" }).key, "meta");
+    assert.equal(pickAngle({ claims, dateStr: "2027-01-15" }).key, "any_business");
     // The no-immediate-repeat rule: yesterday's angle is excluded.
     for (let i = 0; i < angles.length; i++) {
       const d = new Date(Date.UTC(2026, 8, 1 + i)).toISOString().slice(0, 10);

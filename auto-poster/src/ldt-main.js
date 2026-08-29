@@ -614,6 +614,19 @@ async function main() {
       process.exit(1);
     }
     if (attempted === 0) {
+      // Nothing was even tried: every format has already posted today. Green
+      // when the lane is simply out of new things to say — but RED when we
+      // only got here because every intake clip failed. A degrade that
+      // degrades into nothing is a slot where something broke and nothing
+      // published; exiting green there would report post_success=true and
+      // make it indistinguishable from a healthy run.
+      if (clipError) {
+        console.error("[LDT] Every intake clip failed AND every self-made format has already posted today — nothing published this slot.");
+        await notify(OUTCOME.FAILED,
+          `Every eligible intake clip failed (${clipError.message}) and the self-made chain had nothing left to post today (every format is already used), so NOTHING went out this slot.`,
+          "Check the run log — the clips need attention; inherent failures are now blocklisted.", clipError.stack);
+        process.exit(1);
+      }
       console.log("[LDT] Every self-made format has already posted today — per-format dedup, exiting green.");
       process.exit(0);
     }

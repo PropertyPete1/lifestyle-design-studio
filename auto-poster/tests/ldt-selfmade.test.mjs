@@ -15,9 +15,12 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { execSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { mkdtempSync, rmSync, readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
+
+const SRC_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
 import sharp from "sharp";
 
 import { sourceFigureValues, checkNumberHonesty } from "../src/source-respect.js";
@@ -338,6 +341,23 @@ describe("selfMadeAllowed — when the generated chain may run at all", () => {
 
   test("MODE=clip never generates", () => {
     assert.equal(selfMadeAllowed({ mode: "clip", forceVideoId: "", brand: CONFIGURED }), false);
+  });
+
+  // Source-text guard, same idiom as ldt-learning.test.mjs's stamp guard: the
+  // runner's exit codes are integration behavior, and the failure this pins is
+  // silent by construction — a slot where every clip broke and every format
+  // was already used would exit 0, so the workflow writes post_success=true
+  // and a broken slot reads as a healthy one in the Actions list.
+  test("a walk that tries NOTHING after a clip failure exits red, not green", () => {
+    const src = readFileSync(join(SRC_ROOT, "ldt-main.js"), "utf-8");
+    const branch = src.slice(src.indexOf("if (attempted === 0)"));
+    assert.ok(branch.length > 0, "the attempted===0 branch exists");
+    const green = branch.indexOf("process.exit(0)");
+    const red = branch.indexOf("process.exit(1)");
+    assert.ok(red !== -1, "the branch has a red exit at all");
+    assert.ok(red < green, "the clipError red exit must come BEFORE the green one");
+    assert.match(branch.slice(0, red), /if \(clipError\)/,
+      "the red exit is guarded on a clip failure having happened");
   });
 });
 
