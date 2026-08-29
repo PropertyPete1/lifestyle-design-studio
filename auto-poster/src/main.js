@@ -34,6 +34,7 @@ import { applyFreshness } from "./freshness.js";
 import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { planVariation } from "./variation.js";
+import { burnHookPlate, plateTextFromCaption } from "./reel-hook-burn.js";
 import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
 import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
@@ -1155,6 +1156,30 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
       }
     }
 
+    // ─── HOOK PLATE: the chosen hook, on the video's first 3 seconds ─────────
+    // The plate half of the variation engine's decision. The text is the
+    // caption's own first line — the same words, on a second surface — burned
+    // with the trial path's plate renderer at the source's own dimensions.
+    // Gated (source with burned text, unverifiable scan, unfit line) and
+    // self-checked; a failed burn degrades to the un-plated video, never to a
+    // lost slot. See src/reel-hook-burn.js for the rules.
+    let hookPlate = { burned: false, reason: "not_attempted", text: null, hold_seconds: null };
+    if (caption && !DRY_RUN && !TEST_DELIVERY_ONLY) {
+      const videoForPlate = existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath;
+      hookPlate = await burnHookPlate(videoForPlate, caption, { captionScan });
+      if (hookPlate.burned && hookPlate.videoPath) {
+        if (videoForPlate !== tempVideoPath) cleanup(videoForPlate);
+        finalVideoPath = hookPlate.videoPath;
+        console.log(`[Post] ✓ Hook plate burned: "${hookPlate.text}" (first ${hookPlate.hold_seconds}s)`);
+      } else {
+        console.log(`[Post] Hook plate NOT burned (non-fatal): ${hookPlate.reason}`);
+      }
+    } else if (caption && DRY_RUN) {
+      const preview = plateTextFromCaption(caption);
+      hookPlate = { burned: false, reason: "dry_run", text: preview.text, hold_seconds: null };
+      console.log(`[DRY_RUN] Hook plate would ${preview.text ? `burn: "${preview.text}"` : `be skipped: ${preview.reason}`}`);
+    }
+
     // Upload to Metricool (compress once, reuse across all brands)
     console.log("[Post] Uploading to Metricool...");
     const videoToUpload = existsSync(finalVideoPath) ? finalVideoPath : tempVideoPath;
@@ -1270,11 +1295,20 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         // guessing from the published caption. Length applies to fresh
         // captions only — a restructured caption preserves the original's
         // facts and was never subject to the length rotation.
+        // The plate outcome, both as its own audit block and as a learn-step
+        // axis on `generation`. burned:false always carries the gate's reason.
+        hook_plate: {
+          burned: hookPlate.burned,
+          reason: hookPlate.reason || null,
+          text: hookPlate.text || null,
+          hold_seconds: hookPlate.hold_seconds ?? null,
+        },
         generation: {
           engine: variation.engine,
           hook_style: variation.hook_style,
           hook_style_source: variation.hook_style_source,
           excluded_style: variation.excluded_style,
+          hook_plate_burned: hookPlate.burned,
           caption_source: captionSource,
           caption_length_bucket: captionSource === "fresh" ? variation.caption_length_bucket : null,
           caption_length_source: captionSource === "fresh" ? variation.caption_length_source : "restructured",

@@ -119,6 +119,9 @@ export function generationFor(entry) {
       provenance: "tagged",
       hook_style: toCanonicalStyle(entry.generation.hook_style) || entry.generation.hook_style,
       caption_length_bucket: entry.generation.caption_length_bucket || null,
+      // true/false when the plate feature tagged the post; null on posts that
+      // predate it — null is dropped by rankAxis, never counted as "no plate".
+      hook_plate_burned: typeof entry.generation.hook_plate_burned === "boolean" ? entry.generation.hook_plate_burned : null,
     };
   }
   const classified = classifyCanonicalStyle(entry.caption);
@@ -126,6 +129,7 @@ export function generationFor(entry) {
     provenance: "inferred",
     hook_style: classified === "unknown" ? null : classified,
     caption_length_bucket: null,
+    hook_plate_burned: null,
   };
 }
 
@@ -322,11 +326,19 @@ export function buildBrief({ brand, log, analytics, days = DEFAULT_LOOKBACK_DAYS
   const lengthRows = scored.map((jp) => ({ value: jp.generation.caption_length_bucket, score: jp.scoring.headline }));
   const slotRows = scored.map((jp) => ({ value: `${jp.entry.slot}`, score: jp.scoring.headline }));
   const cityRows = scored.map((jp) => ({ value: jp.entry.city, score: jp.scoring.headline }));
+  // Analyzed-only, like slots: whether a post GOT a plate is decided by its
+  // source (burned text skips it), not freely rotated — so this is an
+  // observation to read, never an axis to kill.
+  const plateRows = scored.map((jp) => ({
+    value: jp.generation.hook_plate_burned === true ? "burned" : jp.generation.hook_plate_burned === false ? "no_plate" : null,
+    score: jp.scoring.headline,
+  }));
 
   const hookStyles = rankAxis(styleRows, { controlled: true });
   const captionLengths = rankAxis(lengthRows, { controlled: true });
   const postingSlots = rankAxis(slotRows, { controlled: false });
   const cities = rankAxis(cityRows, { controlled: false });
+  const hookPlate = rankAxis(plateRows, { controlled: false });
 
   const killList = [...killListFrom(hookStyles, "hook_style"), ...killListFrom(captionLengths, "caption_length")];
 
@@ -378,6 +390,7 @@ export function buildBrief({ brand, log, analytics, days = DEFAULT_LOOKBACK_DAYS
     caption_lengths: captionLengths,
     posting_slots: { analyzed_only: true, table: postingSlots },
     cities: { analyzed_only: true, table: cities },
+    hook_plate: { analyzed_only: true, table: hookPlate },
     top_hooks: topHooks,
     kill_list: killList,
     guidance: { exploit_ratio: 0.7, explore_ratio: 0.3 },
@@ -425,6 +438,13 @@ export function renderBriefEmail(brief) {
   lines.push("POSTING SLOTS (analysis only — the cron owns the schedule)");
   lines.push(...axisLines(brief.posting_slots.table, (v) => v.toUpperCase()));
   lines.push("");
+
+  const plateTable = brief.hook_plate?.table || {};
+  if (Object.keys(plateTable).length > 0) {
+    lines.push("HOOK PLATE ON THE VIDEO (analysis only — the source decides eligibility)");
+    lines.push(...axisLines(plateTable));
+    lines.push("");
+  }
 
   lines.push("TOP HOOKS, VERBATIM");
   for (const h of brief.top_hooks) {
