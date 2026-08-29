@@ -5815,6 +5815,118 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1tH86_-7bSTa6HpaAJerYaxPOZC2Vahip/view"
+    },
+    {
+      "driveFileId": "selfmade:2026-08-29:carousel:meta",
+      "fileName": "carousel-meta-2026-08-29",
+      "city": "ldt",
+      "caption": "7:05 AM. The briefing is already on my phone.\n\nPRIMARY watched the pipeline overnight. Drafted the follow-ups. Contacted new leads. Sorted what matters from what doesn't. All before I had coffee.\n\nThi",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok"
+      ],
+      "timestamp": "2026-08-29T23:11:30.963Z",
+      "success": true,
+      "type": "ldt_carousel",
+      "brand": "ldt",
+      "slot": "pm",
+      "caption_source": "generated",
+      "hook_style": "pov",
+      "angle": "meta",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "legacy_weights_explore",
+        "excluded_style": null,
+        "caption_source": "generated",
+        "caption_length_bucket": null,
+        "caption_length_source": "brand_fixed",
+        "brief_generated_at": null
+      },
+      "blogId": 6804409,
+      "postIds": [
+        {
+          "networks": [
+            "instagram"
+          ],
+          "postId": 368331645
+        },
+        {
+          "networks": [
+            "tiktok"
+          ],
+          "postId": 368331649
+        }
+      ],
+      "distribution": [
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 368331645,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-08-29T23:18:31.469Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/p/DcpF3h6DCoB/"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 368331649,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-08-29T23:18:31.566Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesigntech/video/7679595583878860045"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-08-29T23:18:31.566Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 368331645,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/p/DcpF3h6DCoB/"
+              }
+            ]
+          },
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 368331649,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesigntech/video/7679595583878860045"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
