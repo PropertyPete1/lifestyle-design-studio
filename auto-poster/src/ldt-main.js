@@ -6,13 +6,17 @@
  * Metricool profile list. FAIL-CLOSED: no matching profile means no post and
  * a loud notice with the connect steps — never a fallback to "all brands".
  *
- * CONTENT, in priority order:
+ * CONTENT — the fillPlan walk (ldt-slot-filler.js), in priority order:
  *   1. Operator-supplied clips from the intake Drive folder
  *      (LDT_INTAKE_FOLDER_ID) — screen recordings of PRIMARY working —
  *      QC'd, captioned in the LDT voice, posted once each, oldest first.
- *   2. A generated promo carousel ($99/mo positioning) when the intake
- *      queue is empty and the config allows it — at most ONE per day (the
- *      angle is deterministic per date; a second would be byte-identical).
+ *   2. The self-made chain when no clip lands and the config allows it:
+ *      the 8-slide narrative carousel leads, the promo card and the silent
+ *      text-motion reel alternate behind it (no-immediate-repeat rotation).
+ *      Each format posts at most ONCE per day (the angle is deterministic
+ *      per date; a second would tell the same story) — per-format dedup, on
+ *      top of cadence. A generator that fails hands the slot to the next
+ *      format, never to silence.
  *
  * GUARDS, in the order they run:
  *   - resolveCadence: refuses (red run) any configured cadence above the
@@ -21,11 +25,17 @@
  *     profile present but no networks connected yet → the same notice, not
  *     a silent green.
  *   - minGap + per-platform daily cadence: a slot that would exceed either
- *     exits green and says so. A FORCE_VIDEO_ID dispatch blocked by cadence
- *     exits RED instead — a pin that did nothing must never look green.
+ *     exits green and says so, and gates the WHOLE walk — clips and
+ *     self-made alike; nothing posts on a platform without budget. A
+ *     FORCE_VIDEO_ID dispatch blocked by cadence exits RED instead — a pin
+ *     that did nothing must never look green. A pin also short-circuits ALL
+ *     self-made fallback: a pin names a clip, and a blocked pin exits red
+ *     rather than quietly posting a generated piece.
  *   - Claims gate: every caption is checked against ldt-claims.json;
  *     ungateable captions fall back to the pinned caption, which is itself
- *     gate-checked in CI.
+ *     gate-checked in CI. Every self-made format's full visible copy is
+ *     gate-checked AGAIN at runtime, before rendering — CI sweeps the same
+ *     text, but the runner never renders copy this process hasn't blessed.
  *
  * Everything here is LDT-scoped: posted-log entries carry brand:"ldt" and a
  * type, so no realty guard ever counts them and no LDT guard counts realty.
@@ -43,10 +53,13 @@ import {
 import {
   loadBrandRegistry, findBrandProfiles, resolveCadence, cadenceAllows, minGapOk, chicagoDayOf,
 } from "./brands.js";
-import { pickIntakeCandidates, hasBrandPromoToday } from "./ldt-intake.js";
-import { generateLdtCaption } from "./ldt-caption.js";
+import { pickIntakeCandidates, hasBrandTypeToday } from "./ldt-intake.js";
+import { generateLdtCaption, pickLdtVariation } from "./ldt-caption.js";
 import { loadLdtClaims, checkClaimsCompliance, describeViolations } from "./ldt-claims-gate.js";
-import { angleForDate, renderPromoDeck, promoDeckText } from "./ldt-promo.js";
+import { selfMadePlan, selfMadeAllowed, todaysSelfMadeAngle } from "./ldt-slot-filler.js";
+import { pickAngle, deckText, renderNarrativeDeck } from "./ldt-carousel-gen.js";
+import { cardText, renderCard } from "./ldt-card-gen.js";
+import { reelText, renderTextReel } from "./ldt-text-reel.js";
 import { prePostQualityCheck } from "./quality-check.js";
 import { loadLog, saveLog, recordPost, loadBlocklist, blocklistVideo } from "./state.js";
 import { verifyReelPublication, applyReelVerification } from "./reel-verify.js";
@@ -56,7 +69,10 @@ import { routeWarnChannel } from "./yt-evidence.js";
 routeWarnChannel();
 
 const DRY_RUN = process.env.DRY_RUN === "true";
-const MODE = process.env.MODE || "auto"; // auto | clip | promo
+// auto | clip | selfmade. "promo" is the retired name for the generated-only
+// mode — honored as an alias so a stale dispatch or muscle memory still runs.
+const MODE_RAW = process.env.MODE || "auto";
+const MODE = MODE_RAW === "promo" ? "selfmade" : MODE_RAW;
 const FORCE_VIDEO_ID = process.env.FORCE_VIDEO_ID || "";
 const BRAND_KEY = "ldt";
 
@@ -187,94 +203,171 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
   }
 }
 
-/** Post today's promo carousel. Same containment rule after scheduling. */
-async function postPromo({ log, brand, claims, blogId, label, platforms }) {
+/**
+ * Post one self-made piece — kind: "carousel" | "card" | "text_reel".
+ *
+ * The slot's variation plan and angle are picked ONCE by the caller and
+ * shared across every format the walk tries, so the rendered hook line and
+ * the caption always tell the same story in the same style, whichever
+ * generator ends up landing.
+ *
+ * Throws ONLY while nothing has been published yet (gate refusal, render
+ * failure, every network failing) — the walk reacts to a throw by trying the
+ * next format. Same containment rule as postClip after publishing: a
+ * post-success hiccup is contained and reported on the result, never thrown.
+ */
+async function postSelfMade(kind, { log, brand, claims, blogId, label, platforms, variation, angle }) {
   const today = chicagoDayOf(new Date());
-  const angle = angleForDate(today, claims);
-  console.log(`\n[LDT] Promo lane — angle: ${angle.key}`);
+  const style = variation.hook_style;
+  console.log(`\n[LDT] Self-made lane — format: ${kind}, angle: ${angle.key}, hook style: ${style}`);
 
-  // The deck copy passes the same claims gate as captions. A drifted edit to
-  // the angle table fails here at runtime as well as in CI.
-  const deckCheck = checkClaimsCompliance(promoDeckText(angle, brand, claims), claims);
-  if (!deckCheck.ok) {
-    throw new Error(`[LDT Promo] Deck copy failed the claims gate: ${describeViolations(deckCheck.violations)}`);
+  // Runtime claims gate BEFORE rendering. CI sweeps every angle × style ×
+  // format through the same gate, but the runner must never render copy this
+  // process hasn't blessed — a drifted angle-table edit fails here too.
+  const textOf = {
+    carousel: () => deckText(angle, style, { claims, brand }),
+    card: () => cardText(angle, style, { claims, brand }),
+    text_reel: () => reelText(angle, style, { claims, brand }),
+  };
+  const gateCheck = checkClaimsCompliance(textOf[kind](), claims);
+  if (!gateCheck.ok) {
+    throw new Error(`[LDT ${kind}] Copy failed the claims gate: ${describeViolations(gateCheck.violations)}`);
   }
 
-  const { caption, generation } = await generateLdtCaption({ kind: "promo", angle: angle.key, brand, claims, log });
-  const { pngs, jpegs } = await renderPromoDeck(angle, brand, claims);
-  console.log(`[LDT] Rendered ${pngs.length} promo slides (self-QC passed)`);
+  const { caption, source, generation } = await generateLdtCaption({
+    kind, angle: angle.key, brand, claims, log, variation,
+  });
 
-  if (DRY_RUN) {
-    console.log("[LDT DRY_RUN] ═══════ PROMO CAPTION ═══════");
-    console.log(caption);
-    console.log("[LDT DRY_RUN] ═══════ END ═══════");
-    return { ok: true, dryRun: true };
-  }
-
-  const publishAt = chicagoDateTime();
-  const results = [];
-  if (platforms.includes("instagram")) {
-    const urls = await uploadSlides(blogId, pngs, "image/png");
-    const res = await schedulePost(blogId, instagramCarouselBody(urls, caption, publishAt));
-    results.push({ network: "instagram", ...res });
-  }
-  if (platforms.includes("tiktok")) {
-    const urls = await uploadSlides(blogId, jpegs, "image/jpeg");
-    const res = await schedulePost(blogId, tiktokCarouselBody(urls, caption, publishAt));
-    results.push({ network: "tiktok", ...res });
-  }
-
-  const okResults = results.filter(r => r.ok);
-  const failed = results.filter(r => !r.ok);
-  if (okResults.length === 0 && results.length > 0) {
-    throw new Error(`All promo networks failed: ${failed.map(f => `${f.network}: ${f.error}`).join("; ")}`);
-  }
-  for (const f of failed) {
-    console.warn(`::warning::[LDT] Promo ${f.network} failed: ${f.error}`);
+  // ── Render (every renderer self-QCs its own output) ──
+  let images = null;   // { pngs, jpegs } for carousel/card
+  let videoPath = null; // for text_reel
+  if (kind === "carousel") {
+    const deck = await renderNarrativeDeck(angle, style, { claims, brand });
+    console.log(`[LDT] Rendered ${deck.slideCount} carousel slides (self-QC passed)`);
+    images = deck;
+  } else if (kind === "card") {
+    images = await renderCard(angle, style, { claims, brand });
+    console.log("[LDT] Rendered the promo card (self-QC passed)");
+  } else {
+    const reel = await renderTextReel(angle, style, { claims, brand });
+    if (!reel.ok) {
+      throw new Error(`[LDT text_reel] Render failed: ${reel.reason}`);
+    }
+    console.log(`[LDT] Rendered the text reel (${reel.duration_seconds.toFixed(1)}s, structural check passed)`);
+    videoPath = reel.videoPath;
   }
 
-  const out = { ok: true, results, verification: null };
   try {
-    recordPost(log, {
-      brand: BRAND_KEY,
-      type: "ldt_promo",
-      driveFileId: `promo:${today}:${angle.key}`,
-      fileName: `promo-${angle.key}-${today}`,
-      city: BRAND_KEY,
-      slot: chicagoSlot(),
-      caption,
-      promo_angle: angle.key,
-      generation,
-      platforms: okResults.map(r => r.network),
-      blogId,
-      postIds: okResults.map(r => ({ network: r.network, postId: r.postId })),
-      success: true,
-    });
-  } catch (err) {
-    console.error(`[LDT] CRITICAL: promo posted but posted-log write failed: ${err.message}`);
-    out.recordFailed = err;
-    return out;
-  }
+    if (DRY_RUN) {
+      console.log(`[LDT DRY_RUN] ═══════ ${kind.toUpperCase()} CAPTION ═══════`);
+      console.log(caption);
+      console.log("[LDT DRY_RUN] ═══════ END ═══════");
+      return { ok: true, dryRun: true };
+    }
 
-  // Verify what actually PUBLISHED — scheduler acceptance is not publication
-  // (the 2026-08-03 'image/png not allowed' class failed exactly there).
-  try {
-    const targets = okResults
-      .filter(r => r.postId && r.postId !== "unknown")
-      .map(r => ({ label, ok: true, postId: r.postId, blogId, providers: [r.network] }));
-    if (targets.length > 0) {
-      const verified = await verifyReelPublication(targets);
-      if (verified.verification) {
-        const idx = log.posts.length - 1;
-        log.posts[idx] = applyReelVerification(log.posts[idx], verified);
-        saveLog(log);
-        out.verification = verified.verification;
+    // ── Publish ──
+    const okResults = [];
+    if (videoPath) {
+      let uploadBuf = readFileSync(videoPath);
+      if (uploadBuf.length > MAX_UPLOAD_BYTES) {
+        const compressed = compressVideoToFit(uploadBuf, MAX_UPLOAD_BYTES);
+        if (!compressed) throw new Error("Compression failed — text reel exceeds the 95MB upload cap");
+        uploadBuf = compressed.buffer;
+      }
+      const sha256b64 = createHash("sha256").update(uploadBuf).digest("base64");
+      const mediaUrl = await uploadToBrand(blogId, { buf: uploadBuf, sha256b64 });
+      const result = await createSingleBrandPost({
+        blogId, label, mediaUrl, caption, networks: platforms, dryRun: false,
+      });
+      okResults.push({ networks: platforms, postId: result.brands[0]?.postId || null });
+    } else {
+      const publishAt = chicagoDateTime();
+      const results = [];
+      // Per-network throws are contained as failed results: once ONE network
+      // has scheduled, a throw here would send the walk to the next format on
+      // top of a live post. All-networks-failed still throws below, where
+      // nothing has published yet.
+      const bodies = [
+        { network: "instagram", bufs: () => images.pngs, type: "image/png", body: instagramCarouselBody },
+        { network: "tiktok", bufs: () => images.jpegs, type: "image/jpeg", body: tiktokCarouselBody },
+      ];
+      for (const net of bodies) {
+        if (!platforms.includes(net.network)) continue;
+        try {
+          const urls = await uploadSlides(blogId, net.bufs(), net.type);
+          const res = await schedulePost(blogId, net.body(urls, caption, publishAt));
+          results.push({ network: net.network, ...res });
+        } catch (err) {
+          results.push({ network: net.network, ok: false, error: err.message });
+        }
+      }
+      const failed = results.filter(r => !r.ok);
+      if (results.every(r => !r.ok) && results.length > 0) {
+        throw new Error(`All ${kind} networks failed: ${failed.map(f => `${f.network}: ${f.error}`).join("; ")}`);
+      }
+      for (const f of failed) {
+        console.warn(`::warning::[LDT] ${kind} ${f.network} failed: ${f.error}`);
+      }
+      for (const r of results.filter(x => x.ok)) {
+        okResults.push({ networks: [r.network], postId: r.postId });
       }
     }
-  } catch (err) {
-    console.warn(`[LDT] Promo verification could not run (non-fatal): ${err.message}`);
+
+    // ── From here on, nothing may throw out of this function. ──
+    const postedNetworks = okResults.flatMap(r => r.networks);
+    const out = { ok: true, verification: null };
+    try {
+      recordPost(log, {
+        brand: BRAND_KEY,
+        type: `ldt_${kind}`,
+        driveFileId: `selfmade:${today}:${kind}:${angle.key}`,
+        fileName: `${kind}-${angle.key}-${today}`,
+        // city/slot make self-made entries first-class citizens of the learn
+        // step; "ldt" is never a city any realty guard queries.
+        city: BRAND_KEY,
+        slot: chicagoSlot(),
+        caption,
+        caption_source: source,
+        // The DECK's visible hook line is the planned style even when the
+        // caption fell back to pinned copy — the rotation must exclude what
+        // the feed actually shows.
+        hook_style: style,
+        angle: angle.key,
+        generation,
+        platforms: postedNetworks,
+        blogId,
+        postIds: okResults.map(r => ({ networks: r.networks, postId: r.postId })),
+        success: true,
+      });
+    } catch (err) {
+      console.error(`[LDT] CRITICAL: ${kind} posted but posted-log write failed: ${err.message}`);
+      out.recordFailed = err;
+      return out;
+    }
+
+    // Verify what actually PUBLISHED — scheduler acceptance is not
+    // publication (the 2026-08-03 'image/png not allowed' class failed
+    // exactly there).
+    try {
+      const targets = okResults
+        .filter(r => r.postId && r.postId !== "unknown")
+        .map(r => ({ label, ok: true, postId: r.postId, blogId, providers: r.networks }));
+      if (targets.length > 0) {
+        const verified = await verifyReelPublication(targets);
+        if (verified.verification) {
+          const idx = log.posts.length - 1;
+          log.posts[idx] = applyReelVerification(log.posts[idx], verified);
+          saveLog(log);
+          out.verification = verified.verification;
+        }
+      }
+    } catch (err) {
+      console.warn(`[LDT] ${kind} verification could not run (non-fatal): ${err.message}`);
+    }
+    return out;
+  } finally {
+    if (videoPath) { try { unlinkSync(videoPath); } catch {} }
   }
-  return out;
 }
 
 async function main() {
@@ -297,8 +390,8 @@ async function main() {
   // A pin must be honorable before anything else runs — a FORCE dispatch
   // that quietly does something else (or nothing) is worse than a red run.
   if (FORCE_VIDEO_ID) {
-    if (MODE === "promo") {
-      console.error("[LDT] FORCE_VIDEO_ID with MODE=promo makes no sense — a pin names a clip. Aborting.");
+    if (MODE === "selfmade") {
+      console.error("[LDT] FORCE_VIDEO_ID with MODE=selfmade makes no sense — a pin names a clip. Aborting.");
       process.exit(1);
     }
     if (!folderId) {
@@ -357,10 +450,15 @@ async function main() {
   }
   console.log(`[LDT] Postable platforms this run: ${platforms.join(", ")}`);
 
-  // ─── Intake clips ──────────────────────────────────────────────────────────
+  // The self-made chain may run only when no pin is set and the mode/config
+  // allow generation — decided ONCE, because the clip section's failure
+  // handling depends on whether a degrade path exists.
+  const selfMadeCan = selfMadeAllowed({ mode: MODE, forceVideoId: FORCE_VIDEO_ID, brand });
+
+  // ─── The fillPlan walk, part 1: intake clips, oldest first ─────────────────
   let clipError = null;
   let clipCandidateCount = 0;
-  if (MODE !== "promo" && folderId) {
+  if (MODE !== "selfmade" && folderId) {
     const blocklist = loadBlocklist();
     const files = await listFolderFiles(folderId);
     const { eligible, skipped } = pickIntakeCandidates(files, log, blocklist);
@@ -438,51 +536,109 @@ async function main() {
     }
 
     if (clipCandidateCount > 0 && clipError) {
+      // A FORCE pin never degrades (selfMadeCan is false with a pin set):
+      // a pin that did not post is a red run. Without a pin, the fillPlan
+      // doctrine applies — every clip failing hands the slot to the
+      // self-made chain, never to silence — but Peter still hears that the
+      // clips are broken.
+      if (!selfMadeCan) {
+        await notify(OUTCOME.FAILED,
+          `Every eligible intake clip failed${FORCE_VIDEO_ID ? " (including the pinned one)" : ""}. Last error: ${clipError.message}`,
+          "Check the run log; if the clips themselves are bad they are now blocklisted.", clipError.stack);
+        process.exit(1);
+      }
+      console.warn(`::warning::[LDT] Every eligible intake clip failed (${clipError.message}) — degrading to the self-made chain, not to silence.`);
       await notify(OUTCOME.FAILED,
-        `Every eligible intake clip failed${FORCE_VIDEO_ID ? " (including the pinned one)" : ""}. Last error: ${clipError.message}`,
-        "Check the run log; if the clips themselves are bad they are now blocklisted.", clipError.stack);
-      process.exit(1);
+        `Every eligible intake clip failed (last error: ${clipError.message}). The slot is degrading to a self-made post; the clips need a look.`,
+        "Check the run log; clips with inherent failures are now blocklisted.", clipError.stack);
     }
-  } else if (MODE !== "promo" && !folderId) {
+  } else if (MODE !== "selfmade" && !folderId) {
     console.log(`::warning::[LDT] ${brand.contentSources?.intakeFolderEnv || "LDT_INTAKE_FOLDER_ID"} is not set — intake lane disabled until it is.`);
   }
 
-  // ─── Promo fallback (never for a FORCE dispatch — a pin names a clip) ──────
-  const promoAllowed = !FORCE_VIDEO_ID &&
-    (MODE === "promo" || (MODE === "auto" && brand.contentSources?.promoWhenNoClip));
-  if (promoAllowed) {
-    if (hasBrandPromoToday(log, BRAND_KEY)) {
-      console.log("[LDT] Today's promo already posted — one per day, exiting green.");
-      process.exit(0);
+  // ─── The fillPlan walk, part 2: the self-made chain ────────────────────────
+  // (Never for a FORCE dispatch — a pin names a clip; selfMadeAllowed owns
+  // that rule.)
+  if (selfMadeCan) {
+    const today = chicagoDayOf(new Date());
+    // ONE variation plan and ONE angle per slot: every format the walk tries
+    // renders the same story in the same hook style, and the caption engine
+    // is handed the same plan — whichever generator lands, the entry's tags
+    // describe what was actually published.
+    const variation = pickLdtVariation(log);
+    // Exclude only an angle already used TODAY — see todaysSelfMadeAngle:
+    // excluding yesterday's too starves one angle out of the table.
+    const angle = pickAngle({ claims, dateStr: today, previousAngle: todaysSelfMadeAngle(log, BRAND_KEY) });
+
+    const plan = selfMadePlan({ log, brandKey: BRAND_KEY });
+    console.log(`[LDT] Self-made plan for this slot: ${plan.join(" → ")}`);
+
+    let selfMadeError = null;
+    let attempted = 0;
+    for (const kind of plan) {
+      // Per-format-per-day dedup, on top of cadence: the angle is
+      // deterministic per date, so a second same-day post of one format
+      // would tell the same story — the walk skips to a format today has
+      // not seen.
+      if (hasBrandTypeToday(log, BRAND_KEY, `ldt_${kind}`)) {
+        console.log(`[LDT] A ${kind} already posted today (one per format per day) — trying the next format`);
+        continue;
+      }
+      attempted++;
+      try {
+        const res = await postSelfMade(kind, { log, brand, claims, blogId, label, platforms, variation, angle });
+        if (res.recordFailed) {
+          await notify(OUTCOME.FAILED,
+            `The LDT ${kind} POSTED but the posted-log write failed (${res.recordFailed.message}). Until an entry exists, the next slot would post this format again today.`,
+            "Check the run log; add the entry to posted-log.json by hand if needed.");
+          process.exit(1);
+        }
+        if (res.verification?.anyFailed) {
+          await notify(OUTCOME.UNVERIFIED,
+            `The LDT ${kind} was accepted by Metricool but a provider reported FAILED.`,
+            "Open Metricool, check the post, and publish the failed network manually if needed.");
+          process.exit(1);
+        }
+        console.log(`\n[LDT] ✓ Done — posted self-made ${kind}`);
+        process.exit(0);
+      } catch (err) {
+        selfMadeError = err;
+        console.error(`[LDT] Self-made ${kind} failed: ${err.message}`);
+        console.log("[LDT] Trying the next format...");
+      }
     }
-    try {
-      const res = await postPromo({ log, brand, claims, blogId, label, platforms });
-      if (res.recordFailed) {
-        await notify(OUTCOME.FAILED,
-          `The LDT promo POSTED but the posted-log write failed (${res.recordFailed.message}). Until an entry exists, the next slot would post today's promo again.`,
-          "Check the run log; add the entry to posted-log.json by hand if needed.");
-        process.exit(1);
-      }
-      if (res.verification?.anyFailed) {
-        await notify(OUTCOME.UNVERIFIED,
-          "The LDT promo was accepted by Metricool but a provider reported FAILED.",
-          "Open Metricool, check the post, and publish the failed network manually if needed.");
-        process.exit(1);
-      }
-      console.log("\n[LDT] ✓ Done — posted promo");
-      process.exit(0);
-    } catch (err) {
-      await notify(OUTCOME.FAILED, `Promo generation/post failed: ${err.message}`,
-        "Check the run log — if the claims gate refused the deck, ldt-claims.json and ldt-promo.js have drifted apart.", err.stack);
+
+    if (attempted > 0 && selfMadeError) {
+      await notify(OUTCOME.FAILED,
+        `Every self-made format failed. Last error: ${selfMadeError.message}`,
+        "Check the run log — if the claims gate refused the copy, ldt-claims.json and the angle tables have drifted apart.",
+        selfMadeError.stack);
       process.exit(1);
+    }
+    if (attempted === 0) {
+      // Nothing was even tried: every format has already posted today. Green
+      // when the lane is simply out of new things to say — but RED when we
+      // only got here because every intake clip failed. A degrade that
+      // degrades into nothing is a slot where something broke and nothing
+      // published; exiting green there would report post_success=true and
+      // make it indistinguishable from a healthy run.
+      if (clipError) {
+        console.error("[LDT] Every intake clip failed AND every self-made format has already posted today — nothing published this slot.");
+        await notify(OUTCOME.FAILED,
+          `Every eligible intake clip failed (${clipError.message}) and the self-made chain had nothing left to post today (every format is already used), so NOTHING went out this slot.`,
+          "Check the run log — the clips need attention; inherent failures are now blocklisted.", clipError.stack);
+        process.exit(1);
+      }
+      console.log("[LDT] Every self-made format has already posted today — per-format dedup, exiting green.");
+      process.exit(0);
     }
   }
 
   // Nothing posted and nothing failed loudly yet: say so.
   await notify(OUTCOME.NOTHING_TO_POST,
     folderId
-      ? "The intake folder has no eligible clips and the promo lane is disabled — nothing to post."
-      : "No intake folder is configured (LDT_INTAKE_FOLDER_ID) and the promo lane is disabled — the LDT lane has no content source.",
+      ? "The intake folder has no eligible clips and the self-made lane is disabled — nothing to post."
+      : "No intake folder is configured (LDT_INTAKE_FOLDER_ID) and the self-made lane is disabled — the LDT lane has no content source.",
     folderId
       ? "Drop new screen recordings into the LDT intake folder, or enable contentSources.promoWhenNoClip in brands.json."
       : "Create the intake Drive folder, share it with the poster's Google account, and set the LDT_INTAKE_FOLDER_ID secret. See auto-poster/LDT-SETUP.md.");

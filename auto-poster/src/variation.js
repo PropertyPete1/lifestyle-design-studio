@@ -212,9 +212,15 @@ export function legacyStyleWeights() {
  * Returns the full decision record, ready to be written onto the posted-log
  * entry as `generation`. Never throws.
  */
-export function planVariation({ log, brand = DEFAULT_BRAND, rand = Math.random, now = new Date(), brief: injectedBrief } = {}) {
+export function planVariation({ log, brand = DEFAULT_BRAND, rand = Math.random, now = new Date(), brief: injectedBrief, previousStyle } = {}) {
   // `brief` is injectable so tests can exercise the picker without touching
   // the real learning/ directory. Production callers omit it.
+  //
+  // `previousStyle` lets a caller with its OWN notion of "the previous post"
+  // supply it directly — the LDT lane's log entries are brand-scoped rather
+  // than city/slot-shaped, so previousHookStyle() cannot see them. Pass a
+  // style id to exclude it, an explicit null to exclude nothing; omit the
+  // option entirely for the realty behavior (scan the log).
   const brief = injectedBrief !== undefined ? injectedBrief : loadBrief(brand);
   const fresh = brief ? briefIsFresh(brief, now) : false;
   if (brief && !fresh) {
@@ -223,7 +229,7 @@ export function planVariation({ log, brand = DEFAULT_BRAND, rand = Math.random, 
   const activeBrief = fresh ? brief : null;
 
   // ── hook style ────────────────────────────────────────────────────────────
-  const previous = previousHookStyle(log);
+  const previous = previousStyle !== undefined ? previousStyle : previousHookStyle(log);
   const killedStyles = killedValues(activeBrief, "hook_style");
   let stylePool = HOOK_STYLE_IDS.filter((id) => id !== previous && !killedStyles.has(id));
   let killListIgnored = false;

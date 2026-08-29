@@ -54,7 +54,8 @@
     { "pattern": "no\\s+approval\\s+needed|fully\\s+autonomous|hands[\\s-]?off", "why": "approval-gated is the doctrine; nothing sends without a yes" },
     { "pattern": "\\b(the\\s+)?(#\\s*1|number\\s+one|best|leading)\\s+(ai|crm|assistant|platform)", "why": "unsubstantiated superlative" },
     { "pattern": "replaces?\\s+your\\s+(team|agents|staff)", "why": "not a claim the site makes" },
-    { "pattern": "signed\\s+(by\\s+)?(primary|lifestyle\\s+design\\s+technologies)", "why": "email is signed in the CLIENT'S name from the client's address — the inverse claim is test-banned" }
+    { "pattern": "signed\\s+(by\\s+)?(primary|lifestyle\\s+design\\s+technologies)", "why": "email is signed in the CLIENT'S name from the client's address — the inverse claim is test-banned" },
+    { "pattern": "(the\\s+)?product\\s+(it'?s|this\\s+post\\s+is)\\s+about|product\\s+is\\s+doing\\s+its\\s+own\\s+marketing", "why": "the poster is LDT's internal automation, not PRIMARY the product — attributing one system's work to another is the overclaim metaAngle.note pins; say 'our own automation'" }
   ],
   "metaAngle": {
     "enabled": true,

@@ -1,11 +1,13 @@
 /**
  * ldt-caption.js — captions in the Lifestyle Design Technologies voice.
  *
- * Two kinds of copy come out of here:
+ * Two families of copy come out of here:
  *   - CLIP captions: for operator-supplied screen recordings of PRIMARY doing
  *     real work (compose-card sends, voice turns, THE FLOOR). The caption's
  *     job is to say what the viewer is actually watching, honestly.
- *   - PROMO captions: for generated promo carousels ($99/mo positioning).
+ *   - SELF-MADE captions: for the generated formats ($99/mo positioning) —
+ *     the 8-slide narrative carousel, the single promo card, and the silent
+ *     text-motion reel (kind: "carousel" | "card" | "text_reel").
  *
  * Every caption — generated, retried, or fallback — passes through the
  * deterministic claims gate (ldt-claims-gate.js). The model is TOLD the rules,
@@ -23,6 +25,7 @@ import { sanitizeCaption } from "./sanitize.js";
 import { loadLdtClaims, buildAllowedFigures, checkClaimsCompliance, describeViolations } from "./ldt-claims-gate.js";
 import { planVariation } from "./variation.js";
 import { validPosts } from "./state.js";
+import { kindOfEntry, previousLdtHookStyle } from "./ldt-slot-filler.js";
 
 let client = null;
 function getClient() {
@@ -55,14 +58,23 @@ const LDT_HOOK_INSTRUCTIONS = {
  *
  * The engine's previous-style scan skips typed entries by design (that rule
  * keeps linkedin/trial receipts out of the realty rotation), so the LDT view
- * hands it ONLY this brand's clip entries with the type field dropped —
- * brand-scoped history in, brand-scoped anti-repeat out.
+ * hands it ONLY this brand's content entries — clips AND self-made formats,
+ * with the type field dropped — brand-scoped history in, brand-scoped
+ * anti-repeat out. The previous style itself comes from previousLdtHookStyle
+ * (the #117 `previousStyle` seam): ONE rotation for the whole lane, so a
+ * morning carousel's hook style is excluded from the evening clip's caption
+ * and vice versa.
  */
 export function pickLdtVariation(log, { rand, now, brief } = {}) {
-  const clipPosts = validPosts(log)
-    .filter(p => p.brand === "ldt" && p.type === "ldt_clip")
+  const ldtPosts = validPosts(log)
+    .filter(p => p.brand === "ldt" && (p.type === "ldt_clip" || kindOfEntry(p)))
     .map(({ type: _type, ...rest }) => rest);
-  return planVariation({ log: { posts: clipPosts }, brand: "ldt", rand, now, brief });
+  return planVariation({
+    log: { posts: ldtPosts },
+    brand: "ldt",
+    previousStyle: previousLdtHookStyle(log),
+    rand, now, brief,
+  });
 }
 
 /**
@@ -119,9 +131,9 @@ export function validateLdtCaption(caption, brand, claims = loadLdtClaims(), all
  */
 export function getLdtFallbackCaption(brand, claims = loadLdtClaims(), kind = "clip") {
   const meta = claims.metaAngle?.enabled ? `\n\n${claims.metaAngle.line}` : "";
-  const opener = kind === "promo"
-    ? "Meet PRIMARY. Your business's brain."
-    : "This is PRIMARY, working. Not a mockup, not a demo reel. Our own software running our own business.";
+  const opener = kind === "clip"
+    ? "This is PRIMARY, working. Not a mockup, not a demo reel. Our own software running our own business."
+    : "Meet PRIMARY. Your business's brain.";
   const body =
     `${opener}\n\n` +
     `A voice-operated AI command center that watches your pipeline, runs your follow-up, and briefs you every morning at 7:05. ` +
@@ -143,10 +155,17 @@ function buildPrompt({ kind, clipName, angle, brand, claims, hookStyle }) {
 
   const banned = (claims.bannedPatterns || []).map(b => `- ${b.why}`).join("\n");
 
-  const context = kind === "promo"
-    ? `You are writing an Instagram/TikTok caption for a PROMO image carousel about PRIMARY. Today's angle: ${angle}.`
-    : `You are writing an Instagram/TikTok caption for a REAL screen recording of PRIMARY working (file: "${clipName}"). ` +
-      `Describe it as what it is: our own product doing real work in our own business. Do not invent what the clip shows — speak generally about what PRIMARY does, from the pinned claims.`;
+  // The self-made formats share one caption doctrine; the format line only
+  // tells the model what the viewer is looking at while reading.
+  const SELF_MADE_FORMAT = {
+    carousel: "an 8-slide narrative image carousel",
+    card: "a single promo card image",
+    text_reel: "a short, silent text-motion reel",
+  };
+  const context = kind === "clip"
+    ? `You are writing an Instagram/TikTok caption for a REAL screen recording of PRIMARY working (file: "${clipName}"). ` +
+      `Describe it as what it is: our own product doing real work in our own business. Do not invent what the clip shows — speak generally about what PRIMARY does, from the pinned claims.`
+    : `You are writing an Instagram/TikTok caption for ${SELF_MADE_FORMAT[kind] || "a promo post"} about PRIMARY. Today's angle: ${angle}.`;
 
   const meta = claims.metaAngle?.enabled
     ? `\nMETA ANGLE (optional, encouraged, use at most once, verbatim or near-verbatim because it is literally true): "${claims.metaAngle.line}"`
@@ -201,16 +220,21 @@ function generationTag(variation, captionSource) {
 
 /**
  * Generate a gate-checked LDT caption.
- * kind: "clip" (intake screen recording) | "promo" (generated promo post).
+ * kind: "clip" (intake screen recording) | "carousel" | "card" | "text_reel"
+ * (the self-made formats).
  * `log` feeds the variation engine (brand-scoped anti-repeat + brief).
+ * `variation` lets a caller that already planned this post's variation (the
+ * self-made walk picks ONE style per slot and renders the visuals with it)
+ * hand it in, so the caption and the rendered hook line always share a style;
+ * omitted, the plan is picked here.
  * Never throws for quality reasons — falls back to the pinned caption.
  * Returns { caption, hookStyle, source, generation } — `generation` is the
  * decision-tag block the caller must record on the posted-log entry so the
  * weekly learn step can score the choice.
  */
-export async function generateLdtCaption({ kind = "clip", clipName = "", angle = "", brand, claims = loadLdtClaims(), log = { posts: [] } }) {
+export async function generateLdtCaption({ kind = "clip", clipName = "", angle = "", brand, claims = loadLdtClaims(), log = { posts: [] }, variation: plannedVariation = null }) {
   const allowed = buildAllowedFigures(claims);
-  const variation = pickLdtVariation(log);
+  const variation = plannedVariation || pickLdtVariation(log);
   const hookStyle = variation.hook_style;
   let prompt = buildPrompt({ kind, clipName, angle, brand, claims, hookStyle });
 

@@ -74,18 +74,21 @@ export function pickIntakeCandidates(files, log, blocklist, { brandKey = "ldt" }
 }
 
 /**
- * Has this brand already posted a promo today (Chicago day)?
+ * Has this brand already posted an entry of this TYPE today (Chicago day)?
  *
- * The promo angle is deterministic per DATE, so without this guard the two
- * daily slots would publish the byte-identical deck twice — the cadence
- * budget (2/day) and the 3h min-gap both pass at the second slot. Promos are
- * capped at one per day; the second slot is for a clip or for nothing.
+ * Per-format-per-day dedup for the self-made lane: the angle is deterministic
+ * per DATE, so two same-day posts of the same format would tell the same
+ * story in the same clothes — the cadence budget (2/day) and the 3h min-gap
+ * both pass at the second slot, and the rotation's no-repeat rule only
+ * demotes a kind, it never bans it (a walk whose other generators all fail
+ * lands right back on the morning's format). Each format gets at most one
+ * post per day; the second slot is for a clip or a DIFFERENT format.
  */
-export function hasBrandPromoToday(log, brandKey, now = new Date()) {
+export function hasBrandTypeToday(log, brandKey, type, now = new Date()) {
   const today = chicagoDayOf(now);
   return validPosts(log).some(p =>
     p.brand === brandKey &&
-    p.type === "ldt_promo" &&
+    p.type === type &&
     p.success !== false &&
     chicagoDayOf(p.timestamp) === today);
 }
