@@ -22,12 +22,23 @@ import {
 const registry = loadBrandRegistry();
 
 describe("resolveCadence refusal and warnings", () => {
-  test("the shipped LDT config resolves clean: 2/day, no warnings", () => {
+  test("the shipped LDT config resolves at 3/day, under the cap, and says so every run", () => {
+    // 3/day is ABOVE the 2/day default and below the 6/day hard cap, so it
+    // resolves — but never silently. The warning per platform is the point of
+    // the tier: an elevated cadence is a deliberate config decision, and every
+    // run restates it in the log so it can't become invisible background.
     const warned = [];
     const resolved = resolveCadence(registry.brands.ldt, registry, (m) => warned.push(m));
-    assert.deepEqual(resolved.perPlatform, { instagram: 2, tiktok: 2 });
-    assert.deepEqual(resolved.warnings, []);
-    assert.deepEqual(warned, []);
+    assert.deepEqual(resolved.perPlatform, { instagram: 3, tiktok: 3 });
+    assert.equal(resolved.warnings.length, 2, "one warning per configured platform");
+    assert.deepEqual(warned, resolved.warnings, "every warning is actually logged, not just collected");
+    for (const w of resolved.warnings) {
+      assert.match(w, /3\/day/, "the warning names the configured rate");
+      assert.match(w, /hard cap 6\/day/, "the warning names the ceiling it is still under");
+    }
+    // The raise must not have touched the ceiling itself.
+    assert.equal(resolved.hardCap, 6);
+    assert.equal(resolved.defaultPerDay, 2);
   });
 
   test("above the hard cap is REFUSED, not clamped", () => {

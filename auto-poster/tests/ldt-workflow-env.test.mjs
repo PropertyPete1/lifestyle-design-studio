@@ -4,11 +4,18 @@
  * the required keys are pinned here as text assertions (no YAML parser, by
  * the same reasoning documented in workflow-env.test.mjs).
  *
- * The cron-count pin is this file's one novel guard: the workflow fires the
+ * The schedule guards are this file's novel ones: the workflow fires the
  * lane, the lane's cadence guard enforces the per-day budget — but a workflow
  * with six crons and a cadence of two would burn four Actions runs a day on
- * green no-ops. Two crons = the default 2/day cadence; changing the cadence
- * legitimately means changing both, together, in one PR.
+ * green no-ops, and a cadence of three with two crons leaves the third post
+ * unreachable. So the cron count is derived from brands.json rather than
+ * hardcoded: changing one without the other fails here.
+ *
+ * The spacing guard is the second half of that contract. The lane skips —
+ * silently and green — any slot inside minGapHours of the last post, so
+ * slots bunched tighter than the gap would schedule runs that can never
+ * post. Both are checked against the real config, so this file stays correct
+ * across cadence changes instead of needing an edit each time.
  */
 
 import { test, describe } from "node:test";
@@ -16,6 +23,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadBrandRegistry } from "../src/brands.js";
 
 const WORKFLOWS_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "..", ".github", "workflows");
 const ldtYml = readFileSync(join(WORKFLOWS_DIR, "ldt-post.yml"), "utf-8");
@@ -57,11 +65,49 @@ describe("ldt-post.yml", () => {
     });
   }
 
-  test("exactly two LIVE schedule crons — matching the 2/day default cadence", () => {
+  test("one LIVE schedule cron per post of the configured cadence", () => {
     // Count only uncommented cron lines, so a commented-out example can
-    // never stand in for a deleted live schedule.
+    // never stand in for a deleted live schedule. The count is derived from
+    // brands.json rather than hardcoded: raising the cadence without adding a
+    // slot leaves the extra post unreachable (the lane can only post once per
+    // firing), and adding slots without raising the cadence burns Actions
+    // runs on green no-ops. Either drift fails here.
     const crons = ldtYml.split("\n").filter(l => /^\s*- cron:/.test(l) && !/^\s*#/.test(l));
-    assert.equal(crons.length, 2, "cadence and cron count must change together");
+    const cadence = loadBrandRegistry().brands.ldt.cadence;
+    const perDay = Math.max(...Object.values(cadence));
+    assert.equal(crons.length, perDay, "cadence and cron count must change together");
+  });
+
+  test("the slots are SPREAD across the day, never bunched under the min-gap", () => {
+    // The guard this pins: the lane skips — silently and green — any slot
+    // that lands within minGapHours of the previous post. Crons closer
+    // together than the gap would therefore schedule runs that can never
+    // post. Checked on the real UTC cron minutes, which is also what makes
+    // the answer DST-proof: the spacing lives in UTC, only the CT labels move.
+    const brand = loadBrandRegistry().brands.ldt;
+    const minutes = ldtYml.split("\n")
+      .filter(l => /^\s*- cron:/.test(l) && !/^\s*#/.test(l))
+      .map(l => {
+        const m = /'(\d+)\s+(\d+)\s/.exec(l);
+        assert.ok(m, `cron line is a plain minute/hour schedule: ${l.trim()}`);
+        return Number(m[2]) * 60 + Number(m[1]);
+      })
+      .sort((a, b) => a - b);
+
+    // Gaps around the 24h clock, so the last slot vs the next day's first is
+    // checked too — a late-night slot that crowds the next morning counts.
+    const gaps = minutes.map((m, i) =>
+      i === 0 ? m + 1440 - minutes[minutes.length - 1] : m - minutes[i - 1]);
+    const minGapMinutes = brand.minGapHours * 60;
+    for (const [i, gap] of gaps.entries()) {
+      assert.ok(gap >= minGapMinutes,
+        `slot gap ${gap}min is under the ${minGapMinutes}min min-gap — that slot would always be skipped (gaps: ${gaps.join(", ")})`);
+    }
+    // Slack beyond the bare minimum: schedule triggers run late, and a slot
+    // delayed relative to its neighbour eats into the gap. Require a full
+    // hour of headroom so an ordinary delay cannot turn into a skipped slot.
+    assert.ok(Math.min(...gaps) >= minGapMinutes + 60,
+      `tightest gap ${Math.min(...gaps)}min leaves under an hour of slack over the ${minGapMinutes}min min-gap`);
   });
 
   test("has its own concurrency group, never queued behind a realty job", () => {

@@ -16,7 +16,7 @@
         "tiktok": ["lifestyledesigntech"]
       },
       "labelPatterns": ["\\bldt\\b", "lifestyle\\s*design\\s*tech"],
-      "cadence": { "instagram": 2, "tiktok": 2 },
+      "cadence": { "instagram": 3, "tiktok": 3 },
       "minGapHours": 3,
       "hashtags": "#PRIMARY #ai #aiassistant #automation #smallbusiness #realestatetech #crm",
       "cta": { "keyword": "PRIMARY", "line": "Comment PRIMARY and I'll send you the demo." },
