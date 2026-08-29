@@ -36,7 +36,7 @@ import {
 } from "../src/ldt-text-reel.js";
 import {
   selfMadePlan, fillPlan, previousSelfMadeKind, previousLdtHookStyle, previousSelfMadeAngle,
-  kindOfEntry, planNeverEmpty, selfMadeAllowed, SELF_MADE_KINDS,
+  kindOfEntry, planNeverEmpty, selfMadeAllowed, todaysSelfMadeAngle, SELF_MADE_KINDS,
 } from "../src/ldt-slot-filler.js";
 
 // ─── Fixture: mirror of the pinned claims list ───────────────────────────────
@@ -314,6 +314,93 @@ describe("the slot filler", () => {
     assert.equal(kindOfEntry({ type: "ldt_carousel" }), "carousel");
     assert.equal(kindOfEntry({ type: "ldt_clip" }), null);
     assert.equal(kindOfEntry({ type: "linkedin" }), null);
+  });
+});
+
+// ─── Angle rotation across days ──────────────────────────────────────────────
+
+describe("the angle rotation reaches every angle in the table", () => {
+  const dayStr = (i) => new Date(Date.UTC(2026, 8, 1 + i)).toISOString().slice(0, 10);
+
+  test("as the runner drives it, 30 consecutive days use ALL angles", () => {
+    // The regression this pins: feeding the PREVIOUS DAY's angle into
+    // pickAngle shrinks the pool to n-1, and the day-number modulo over that
+    // smaller pool settles into a fixed (n-1)-cycle that never reaches one
+    // angle at all. The runner therefore excludes only an angle already used
+    // TODAY (todaysSelfMadeAngle), which is the sole repeat the date rotation
+    // cannot prevent by itself.
+    const all = carouselAngles(CLAIMS).map((a) => a.key);
+    const seen = new Set();
+    for (let i = 0; i < 30; i++) {
+      seen.add(pickAngle({ claims: CLAIMS, dateStr: dayStr(i) }).key);
+    }
+    assert.deepEqual([...seen].sort(), [...all].sort(),
+      `every angle must reach the feed; missing: ${all.filter((k) => !seen.has(k)).join(", ")}`);
+  });
+
+  test("THE PRODUCTION REGIME: one self-made post a day, log fed forward, still reaches every angle", () => {
+    // The regime that starved an angle: a clip fills one slot and a self-made
+    // piece fills the other, so exactly one angle is chosen per Chicago day
+    // and the previous choice is in the log. This walks that loop the way the
+    // runner does — recording each pick and re-deriving the exclusion from the
+    // log — so a re-wiring back to a cross-day exclusion fails HERE rather
+    // than silently dropping a fifth of the authored table from the feed.
+    const all = carouselAngles(CLAIMS).map((a) => a.key);
+    const posts = [];
+    const picked = [];
+    for (let i = 0; i < 60; i++) {
+      const dateStr = dayStr(i);
+      const now = new Date(`${dateStr}T20:00:00Z`); // 3 PM CT, same Chicago day
+      const angle = pickAngle({
+        claims: CLAIMS,
+        dateStr,
+        previousAngle: todaysSelfMadeAngle({ posts }, "ldt", now),
+      });
+      picked.push(angle.key);
+      posts.push({
+        brand: "ldt", type: "ldt_carousel", angle: angle.key,
+        timestamp: now.toISOString(), success: true,
+      });
+    }
+    const counts = Object.fromEntries(all.map((k) => [k, picked.filter((p) => p === k).length]));
+    for (const key of all) {
+      assert.ok(counts[key] > 0, `angle '${key}' never reached the feed over 60 days: ${JSON.stringify(counts)}`);
+    }
+  });
+
+  test("two self-made posts in ONE day never tell the same story", () => {
+    const dateStr = "2026-09-03";
+    const morning = new Date(`${dateStr}T15:00:00Z`);
+    const evening = new Date(`${dateStr}T22:00:00Z`);
+    const first = pickAngle({ claims: CLAIMS, dateStr, previousAngle: todaysSelfMadeAngle({ posts: [] }, "ldt", morning) });
+    const posts = [{
+      brand: "ldt", type: "ldt_carousel", angle: first.key,
+      timestamp: morning.toISOString(), success: true,
+    }];
+    const second = pickAngle({ claims: CLAIMS, dateStr, previousAngle: todaysSelfMadeAngle({ posts }, "ldt", evening) });
+    assert.notEqual(second.key, first.key, "the evening slot must not retell the morning's story");
+  });
+
+  test("consecutive days never repeat, so no cross-day exclusion is needed", () => {
+    for (let i = 1; i < 30; i++) {
+      assert.notEqual(
+        pickAngle({ claims: CLAIMS, dateStr: dayStr(i) }).key,
+        pickAngle({ claims: CLAIMS, dateStr: dayStr(i - 1) }).key,
+      );
+    }
+  });
+
+  test("todaysSelfMadeAngle excludes only a story already told TODAY", () => {
+    const NOW = new Date("2026-08-29T22:00:00Z"); // 5 PM CT
+    const entry = (ts) => ({
+      brand: "ldt", type: "ldt_carousel", angle: "meta", timestamp: ts, success: true,
+    });
+    // Posted this morning, Chicago time — the evening slot must not retell it.
+    assert.equal(todaysSelfMadeAngle({ posts: [entry("2026-08-29T15:05:00.000Z")] }, "ldt", NOW), "meta");
+    // Yesterday's story is fair game again; the date rotation handles spacing.
+    assert.equal(todaysSelfMadeAngle({ posts: [entry("2026-08-28T15:05:00.000Z")] }, "ldt", NOW), null);
+    // Another brand's post is never this brand's history.
+    assert.equal(todaysSelfMadeAngle({ posts: [entry("2026-08-29T15:05:00.000Z")] }, "otherbrand", NOW), null);
   });
 });
 

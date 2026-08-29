@@ -27,6 +27,7 @@
 
 import { HOOK_STYLE_IDS, toCanonicalStyle, classifyCanonicalStyle } from "./hook-styles.js";
 import { validPosts } from "./state.js";
+import { chicagoDayOf } from "./brands.js";
 
 /** The self-made kinds, strongest first. Log types are `ldt_<kind>`. */
 export const SELF_MADE_KINDS = ["carousel", "card", "text_reel"];
@@ -82,6 +83,33 @@ export function previousSelfMadeAngle(log, brandKey = "ldt") {
     const p = posts[i];
     if (p.brand !== brandKey) continue;
     if (kindOfEntry(p)) return p.angle || p.promo_angle || null;
+  }
+  return null;
+}
+
+/**
+ * The angle a self-made post already used EARLIER TODAY (Chicago day), or
+ * null.
+ *
+ * This — not previousSelfMadeAngle — is what the runner feeds pickAngle, and
+ * the distinction is load-bearing. pickAngle rotates by date, so consecutive
+ * DAYS already land on different angles; excluding yesterday's angle as well
+ * shrinks the pool from five to four, and the day-number modulo over that
+ * smaller pool settles into a fixed four-cycle that starves one angle out of
+ * the table completely (measured: `after_hours` never posts). The only
+ * repeat the date rotation cannot prevent is the one within a single day —
+ * both slots share a date, so both would tell the same story. Scoping the
+ * exclusion to today fixes that without costing an angle.
+ */
+export function todaysSelfMadeAngle(log, brandKey = "ldt", now = new Date()) {
+  const today = chicagoDayOf(now);
+  const posts = validPosts(log);
+  for (let i = posts.length - 1; i >= 0; i--) {
+    const p = posts[i];
+    if (p.brand !== brandKey) continue;
+    if (!kindOfEntry(p)) continue;
+    if (chicagoDayOf(p.timestamp) !== today) return null; // newest is older than today
+    return p.angle || p.promo_angle || null;
   }
   return null;
 }

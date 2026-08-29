@@ -135,11 +135,17 @@ export function carouselAngles(claims) {
     angles.push({
       key: "meta",
       meta: true,
+      // WORDING IS LOAD-BEARING: "our own automation", never "the product
+      // this post is about". The poster is LDT's internal pipeline; PRIMARY
+      // the software does not run it, and attributing one system's work to
+      // another is the overclaim class ldt-claims.json exists to ban — see
+      // the metaAngle.note there, which pins the sanctioned line. The
+      // mechanical guard is a banned pattern in that same file.
       hooks: {
         question: "Who do you think scheduled this post?",
-        bold_claim: "This post was scheduled and captioned by the product it's about.",
-        pov: "POV: the product is doing its own marketing right now.",
-        stat: "This post was scheduled and captioned by the product it's about.",
+        bold_claim: "This post was scheduled and captioned by our own automation.",
+        pov: "POV: our own automation is doing the marketing right now.",
+        stat: "0 numbers invented. Ever.",
         story_open: "Nobody sat down to design this carousel today.",
         pattern_interrupt: "Stop. Read this one twice.",
       },
@@ -149,7 +155,7 @@ export function carouselAngles(claims) {
         "The demo that can't lie is the demo running in front of you.",
       ],
       solution: [
-        "This post was scheduled and captioned by the product it's about.",
+        "This post was scheduled and captioned by our own automation.",
         "Automated nurture works your cold database daily, with instant human handoff the moment a lead replies.",
         "If PRIMARY can't verify a number, it says so. Every claim carries its evidence.",
       ],
