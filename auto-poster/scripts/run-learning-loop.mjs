@@ -44,11 +44,14 @@ const MAX_ATTEMPTS = 5;
 const DRY_RUN = process.env.DRY_RUN === "true";
 
 /**
- * Every brand that learns. Each entry names the brand's brief and, for
- * brands beyond the first, will name its own log/analytics scope. Today there
- * is one: the whole pipeline posts one brand's content.
+ * Every brand that learns. Each gets its own brief file, scoped to its own
+ * posted-log entries (learn.js reelEntries filters on the entry's `brand`
+ * field — legacy untagged entries belong to the default brand, the LDT
+ * lane stamps brand:"ldt"), so no brand ever inherits another's winners.
+ * Before the LDT accounts have analytics, its brief simply reports zero
+ * scored posts — visible, never invented.
  */
-const BRANDS = [DEFAULT_BRAND];
+const BRANDS = [DEFAULT_BRAND, "ldt"];
 
 function run(cmd, opts = {}) {
   return execSync(cmd, { cwd: REPO_DIR, encoding: "utf-8", stdio: "pipe", ...opts });

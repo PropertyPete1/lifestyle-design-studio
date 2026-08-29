@@ -73,16 +73,13 @@ describe("ldt-post.yml", () => {
     assert.ok(/merge-log-push\.mjs LDT/.test(ldtYml));
   });
 
-  test("the LDT weights file is registered with the merge machinery", async () => {
-    // merge-log-push git-resets to origin/main before merging; an
-    // unregistered file is silently DISCARDED. The registered name is
-    // DERIVED from the code seam that writes the file, so a rename in
-    // analytics.js desyncs this test instead of silently orphaning the file.
-    const { MERGE_STRATEGIES } = await import("../merge-strategies.mjs");
-    const { weightsPathForBrand } = await import("../src/analytics.js");
+  test("the LDT brief path is what the learn workflow commits", async () => {
+    // The brief is committed by the learning-loop workflow's own push loop
+    // (not merge-log-push), so what matters is that the variation engine
+    // reads the exact file the learn step writes: briefPath is the single
+    // seam both sides share, per brand.
+    const { briefPath } = await import("../src/variation.js");
     const { basename } = await import("node:path");
-    const written = basename(weightsPathForBrand("ldt"));
-    assert.equal(written, "performance-weights.ldt.json");
-    assert.ok(MERGE_STRATEGIES[written], `${written} (what analytics.js writes) has a merge strategy`);
+    assert.equal(basename(briefPath("ldt")), "brief-ldt.json");
   });
 });

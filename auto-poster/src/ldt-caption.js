@@ -21,7 +21,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { sanitizeCaption } from "./sanitize.js";
 import { loadLdtClaims, buildAllowedFigures, checkClaimsCompliance, describeViolations } from "./ldt-claims-gate.js";
-import { pickHookStyle, loadWeights } from "./analytics.js";
+import { planVariation } from "./variation.js";
+import { validPosts } from "./state.js";
 
 let client = null;
 function getClient() {
@@ -33,14 +34,36 @@ function getClient() {
 
 const MODEL = "claude-haiku-4-5-20251001";
 
-/** Hook-style instructions in the LDT voice, keyed by the shared taxonomy. */
+/**
+ * Hook-style instructions in the LDT voice, keyed by the CANONICAL taxonomy
+ * (hook-styles.js) so the variation engine's picks and the learn step's
+ * scoring speak the same names.
+ */
 const LDT_HOOK_INSTRUCTIONS = {
   question: `Open with a direct question a busy owner would actually ask, e.g. "What did your CRM do for you this morning?"`,
   bold_claim: `Open with a bold-but-pinned claim, e.g. "My software briefed me before my coffee did." Only claims from the pinned list.`,
-  wait_tease: `Open with a watch-this tease, e.g. "Watch what happens when a lead replies." It must describe what the clip actually shows.`,
-  reaction: `Open with a genuine reaction, e.g. "Still not used to my CRM talking back."`,
-  vibe: `Open with a calm, matter-of-fact scene line, e.g. "7:05 AM. The briefing is already on my phone."`,
+  pov: `Open with a calm, matter-of-fact scene line, e.g. "7:05 AM. The briefing is already on my phone."`,
+  stat: `Open with one pinned proof number doing the work, e.g. "150 nurture emails in one day. Every one logged." Pinned figures only.`,
+  story_open: `Open mid-story with a genuine moment, e.g. "Still not used to my CRM talking back."`,
+  pattern_interrupt: `Open with a watch-this interrupt, e.g. "Watch what happens when a lead replies." It must describe what the clip actually shows.`,
 };
+
+/**
+ * The LDT lane's variation plan — hook style via the shared engine, steered
+ * by learning/brief-ldt.json (written weekly by run-learning-loop.mjs) and
+ * never by another brand's brief.
+ *
+ * The engine's previous-style scan skips typed entries by design (that rule
+ * keeps linkedin/trial receipts out of the realty rotation), so the LDT view
+ * hands it ONLY this brand's clip entries with the type field dropped —
+ * brand-scoped history in, brand-scoped anti-repeat out.
+ */
+export function pickLdtVariation(log, { rand, now, brief } = {}) {
+  const clipPosts = validPosts(log)
+    .filter(p => p.brand === "ldt" && p.type === "ldt_clip")
+    .map(({ type: _type, ...rest }) => rest);
+  return planVariation({ log: { posts: clipPosts }, brand: "ldt", rand, now, brief });
+}
 
 /**
  * Append the brand's locked hashtag set. Same doctrine as the realty
@@ -138,7 +161,7 @@ ${claimsBlock}
 NEVER (each of these has burned someone before):
 ${banned}
 
-${LDT_HOOK_INSTRUCTIONS[hookStyle] || LDT_HOOK_INSTRUCTIONS.vibe}
+${LDT_HOOK_INSTRUCTIONS[hookStyle] || LDT_HOOK_INSTRUCTIONS.pov}
 ${meta}
 
 RULES:
@@ -160,15 +183,35 @@ async function generateOnce(prompt) {
   return response.content?.[0]?.text?.trim() || "";
 }
 
+/** The learning-loop tags an LDT entry records, mirroring main.js's shape. */
+function generationTag(variation, captionSource) {
+  return {
+    engine: variation.engine,
+    hook_style: variation.hook_style,
+    hook_style_source: variation.hook_style_source,
+    excluded_style: variation.excluded_style,
+    caption_source: captionSource,
+    // The LDT lane fixes its own 300-900 char range (business captions, not
+    // the realty length rotation) — recorded as such, never as a bucket.
+    caption_length_bucket: null,
+    caption_length_source: "brand_fixed",
+    brief_generated_at: variation.brief_generated_at,
+  };
+}
+
 /**
  * Generate a gate-checked LDT caption.
  * kind: "clip" (intake screen recording) | "promo" (generated promo post).
+ * `log` feeds the variation engine (brand-scoped anti-repeat + brief).
  * Never throws for quality reasons — falls back to the pinned caption.
+ * Returns { caption, hookStyle, source, generation } — `generation` is the
+ * decision-tag block the caller must record on the posted-log entry so the
+ * weekly learn step can score the choice.
  */
-export async function generateLdtCaption({ kind = "clip", clipName = "", angle = "", brand, claims = loadLdtClaims() }) {
+export async function generateLdtCaption({ kind = "clip", clipName = "", angle = "", brand, claims = loadLdtClaims(), log = { posts: [] } }) {
   const allowed = buildAllowedFigures(claims);
-  const weights = loadWeights("ldt").weights;
-  const hookStyle = pickHookStyle(weights);
+  const variation = pickLdtVariation(log);
+  const hookStyle = variation.hook_style;
   let prompt = buildPrompt({ kind, clipName, angle, brand, claims, hookStyle });
 
   for (let attempt = 1; attempt <= 2; attempt++) {
@@ -182,8 +225,9 @@ export async function generateLdtCaption({ kind = "clip", clipName = "", angle =
     const caption = lockLdtHashtags(sanitizeCaption(raw), brand);
     const check = validateLdtCaption(caption, brand, claims, allowed);
     if (check.valid) {
+      const source = attempt === 1 ? "generated" : "generated_retry";
       console.log(`[LDT Caption] ✓ Attempt ${attempt} passed the claims gate (hook: ${hookStyle}, ${caption.length} chars)`);
-      return { caption, hookStyle, source: attempt === 1 ? "generated" : "generated_retry" };
+      return { caption, hookStyle, source, generation: generationTag(variation, source) };
     }
     console.warn(`[LDT Caption] Attempt ${attempt} failed the gate: ${check.failures.join("; ")}`);
     prompt += `\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED: ${describeViolations(
@@ -193,5 +237,9 @@ export async function generateLdtCaption({ kind = "clip", clipName = "", angle =
 
   console.warn("[LDT Caption] Falling back to the pinned caption (both attempts failed the gate)");
   const fallback = getLdtFallbackCaption(brand, claims, kind);
-  return { caption: fallback, hookStyle: "pinned", source: "fallback" };
+  // The fallback's opener is the pinned copy, NOT the planned style — tagging
+  // the plan's style would score a caption under a hook it doesn't exhibit.
+  // hook_style:null lets the learn step classify from the published text.
+  const fallbackTag = { ...generationTag(variation, "fallback"), hook_style: null, hook_style_source: "fallback_pinned" };
+  return { caption: fallback, hookStyle: "pinned", source: "fallback", generation: fallbackTag };
 }

@@ -769,10 +769,6 @@ export const MERGE_STRATEGIES = {
   "posted-log.json": (l, r, log) => mergePostedLog(l, r || { posts: [] }, log),
   "video-matches.json": mergeVideoMatches,
   "performance-weights.json": mergePerformanceWeights,
-  // The LDT brand's learning-loop brief (analytics.js weightsPathForBrand).
-  // Same shape, same newer-lastUpdated rule; unregistered it would be
-  // discarded by merge-log-push's reset --hard.
-  "performance-weights.ldt.json": mergePerformanceWeights,
   "qc-blocklist.json": mergeBlocklist,
   "linkedin-history.json": (l, r, log) => mergeLinkedinHistory(l, r || { posts: [] }, log),
   "trial-variants.json": (l, r, log) => mergeTrialVariants(l, r || { variants: [] }, log),

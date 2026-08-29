@@ -48,8 +48,7 @@ import { generateLdtCaption } from "./ldt-caption.js";
 import { loadLdtClaims, checkClaimsCompliance, describeViolations } from "./ldt-claims-gate.js";
 import { angleForDate, renderPromoDeck, promoDeckText } from "./ldt-promo.js";
 import { prePostQualityCheck } from "./quality-check.js";
-import { loadLog, saveLog, recordPost, loadBlocklist, blocklistVideo, validPosts } from "./state.js";
-import { loadWeights, runWeeklyAnalytics } from "./analytics.js";
+import { loadLog, saveLog, recordPost, loadBlocklist, blocklistVideo } from "./state.js";
 import { verifyReelPublication, applyReelVerification } from "./reel-verify.js";
 import { uploadSlides, schedulePost, instagramCarouselBody, tiktokCarouselBody, chicagoDateTime } from "./carousel-distribute.js";
 import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
@@ -60,6 +59,14 @@ const DRY_RUN = process.env.DRY_RUN === "true";
 const MODE = process.env.MODE || "auto"; // auto | clip | promo
 const FORCE_VIDEO_ID = process.env.FORCE_VIDEO_ID || "";
 const BRAND_KEY = "ldt";
+
+/** This slot's label, Chicago clock: before 2 PM CT is "am". */
+function chicagoSlot(now = new Date()) {
+  const hour = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago", hour: "2-digit", hour12: false,
+  }).format(now));
+  return hour < 14 ? "am" : "pm";
+}
 
 const CONNECT_STEPS =
   "Connect the LDT accounts in Metricool: app.metricool.com → add a new Brand " +
@@ -116,8 +123,8 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
       throw new Error(`[QC] FAILED: ${qc.reason}`);
     }
 
-    const { caption, hookStyle, source } = await generateLdtCaption({
-      kind: "clip", clipName: candidate.name, brand, claims,
+    const { caption, hookStyle, source, generation } = await generateLdtCaption({
+      kind: "clip", clipName: candidate.name, brand, claims, log,
     });
 
     if (DRY_RUN) {
@@ -153,9 +160,15 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
           type: "ldt_clip",
           driveFileId: candidate.id,
           fileName: candidate.name,
+          // city/slot make LDT clip entries first-class citizens of the
+          // learn step (reelEntries requires both); "ldt" is never a city
+          // any realty guard queries.
+          city: BRAND_KEY,
+          slot: chicagoSlot(),
           caption,
           caption_source: source,
           hook_style: hookStyle,
+          generation,
           platforms,
           blogId,
           postId: result.brands[0]?.postId || null,
@@ -187,7 +200,7 @@ async function postPromo({ log, brand, claims, blogId, label, platforms }) {
     throw new Error(`[LDT Promo] Deck copy failed the claims gate: ${describeViolations(deckCheck.violations)}`);
   }
 
-  const { caption } = await generateLdtCaption({ kind: "promo", angle: angle.key, brand, claims });
+  const { caption, generation } = await generateLdtCaption({ kind: "promo", angle: angle.key, brand, claims, log });
   const { pngs, jpegs } = await renderPromoDeck(angle, brand, claims);
   console.log(`[LDT] Rendered ${pngs.length} promo slides (self-QC passed)`);
 
@@ -227,8 +240,11 @@ async function postPromo({ log, brand, claims, blogId, label, platforms }) {
       type: "ldt_promo",
       driveFileId: `promo:${today}:${angle.key}`,
       fileName: `promo-${angle.key}-${today}`,
+      city: BRAND_KEY,
+      slot: chicagoSlot(),
       caption,
       promo_angle: angle.key,
+      generation,
       platforms: okResults.map(r => r.network),
       blogId,
       postIds: okResults.map(r => ({ network: r.network, postId: r.postId })),
@@ -326,26 +342,9 @@ async function main() {
     process.exit(0);
   }
 
-  // Per-brand learning loop: the brief starts once the brand has reels to
-  // learn from. Before the first posted clip there is nothing to fetch, and
-  // runWeeklyAnalytics's no-reels path never writes the file — checking
-  // every run would just re-fetch empty analytics twice a day.
-  const hasClipHistory = validPosts(log).some(p => p.brand === BRAND_KEY && p.type === "ldt_clip");
-  if (hasClipHistory) {
-    try {
-      const weights = loadWeights(BRAND_KEY);
-      const last = weights.lastUpdated ? new Date(weights.lastUpdated) : null;
-      const days = last ? (Date.now() - last.getTime()) / 86400000 : Infinity;
-      if (days >= 7) {
-        console.log(`[LDT] Brand weights stale (${last ? Math.round(days) + "d" : "never run"}) — running analytics on blogId ${blogId}...`);
-        await runWeeklyAnalytics(7, { brandKey: BRAND_KEY, blogId });
-      }
-    } catch (err) {
-      console.warn(`[LDT] Analytics update failed (non-fatal): ${err.message}`);
-    }
-  } else {
-    console.log("[LDT] No LDT clips posted yet — the learning brief starts after the first one.");
-  }
+  // The LDT learning brief (learning/brief-ldt.json) is built by the weekly
+  // learning-loop workflow — "ldt" is on its BRANDS roster — and consumed at
+  // caption time via the variation engine. Nothing to refresh here.
 
   const platforms = resolvePostablePlatforms(log, connected, cadence, brand);
   if (platforms.length === 0) {
