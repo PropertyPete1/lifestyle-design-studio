@@ -5770,6 +5770,51 @@
       "timestamp": "2026-08-29T19:07:32.897Z",
       "runId": "33269805741",
       "success": true
+    },
+    {
+      "driveFileId": "1CDfmUlFw3uOrx1iv0j89HStWqcfRUKO7",
+      "fileName": "60731120-BE09-423F-BE4D-51B42DDBBFA7.mp4",
+      "city": "san_antonio",
+      "caption": "I've never seen finishes like this at the $299,990 price point in San Antonio.\n\nNew construction like this moves fast. Builder incentives are real right now.\n\n✨ open floor plan with natural light, mod",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-29T19:07:32.476Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (48 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Alright, quick payment math price is 29999. He was 3% down that's 89999. Loan is 290,000 rate is 58.99. Fix just kidding. The real rate is 3.99. Fix taxes are 6,000 year, insurance is 1,500 year, PMI's 0.5%. That's the made payment. It is 2,133 dollars a month.",
+      "content_hash": "000073f3001778fe:fffe37f0f0027870:e6a77efea606781c:fffffefc1c40c000:6f2cfcfdf9ae0f00",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "bold_claim",
+        "hook_style_source": "legacy_weights_exploit",
+        "excluded_style": "question",
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "explore",
+        "brief_generated_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1tH86_-7bSTa6HpaAJerYaxPOZC2Vahip/view"
     }
   ],
   "lastTemplateIndex": -1
