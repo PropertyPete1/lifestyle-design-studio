@@ -26,6 +26,7 @@ import sharp from "sharp";
 import { sourceFigureValues, checkNumberHonesty } from "../src/source-respect.js";
 import { HOOK_STYLE_IDS } from "../src/hook-styles.js";
 import { planVariation } from "../src/variation.js";
+import { loadBrandRegistry } from "../src/brands.js";
 import {
   carouselAngles, pickAngle, hookLineFor, deckText, narrativeDeckSvgs, renderNarrativeDeck, DECK_SLIDES,
 } from "../src/ldt-carousel-gen.js";
@@ -36,7 +37,7 @@ import {
 } from "../src/ldt-text-reel.js";
 import {
   selfMadePlan, fillPlan, previousSelfMadeKind, previousLdtHookStyle, previousSelfMadeAngle,
-  kindOfEntry, planNeverEmpty, selfMadeAllowed, todaysSelfMadeAngle, SELF_MADE_KINDS,
+  kindOfEntry, planNeverEmpty, selfMadeAllowed, todaysSelfMadeAngle, todaysSelfMadeAngles, SELF_MADE_KINDS,
 } from "../src/ldt-slot-filler.js";
 
 // ─── Fixture: mirror of the pinned claims list ───────────────────────────────
@@ -368,17 +369,51 @@ describe("the angle rotation reaches every angle in the table", () => {
     }
   });
 
-  test("two self-made posts in ONE day never tell the same story", () => {
-    const dateStr = "2026-09-03";
-    const morning = new Date(`${dateStr}T15:00:00Z`);
-    const evening = new Date(`${dateStr}T22:00:00Z`);
-    const first = pickAngle({ claims: CLAIMS, dateStr, previousAngle: todaysSelfMadeAngle({ posts: [] }, "ldt", morning) });
-    const posts = [{
-      brand: "ldt", type: "ldt_carousel", angle: first.key,
-      timestamp: morning.toISOString(), success: true,
-    }];
-    const second = pickAngle({ claims: CLAIMS, dateStr, previousAngle: todaysSelfMadeAngle({ posts }, "ldt", evening) });
-    assert.notEqual(second.key, first.key, "the evening slot must not retell the morning's story");
+  test("EVERY self-made post in one day tells a different story, at the real cadence", () => {
+    // The regression this pins: excluding only the NEWEST of today's angles
+    // lets slot 3 exclude slot 2's and land straight back on slot 1's. At
+    // the 3/day schedule that repeated a story on 7 days in 14 — half the
+    // days showing the same copy twice, in different wrappers. The slot
+    // count is read from brands.json so this scales with the cadence rather
+    // than pinning today's number.
+    const slotsPerDay = Math.max(...Object.values(loadBrandRegistry().brands.ldt.cadence));
+    assert.ok(slotsPerDay >= 2, "the guard is only meaningful with 2+ slots");
+    for (let d = 0; d < 30; d++) {
+      const dateStr = new Date(Date.UTC(2026, 8, 1 + d)).toISOString().slice(0, 10);
+      const posts = [];
+      const picked = [];
+      for (let s = 0; s < slotsPerDay; s++) {
+        const now = new Date(`${dateStr}T${String(15 + s * 4).padStart(2, "0")}:00:00Z`);
+        const angle = pickAngle({
+          claims: CLAIMS, dateStr,
+          previousAngle: todaysSelfMadeAngles({ posts }, "ldt", now),
+        });
+        picked.push(angle.key);
+        posts.push({
+          brand: "ldt", type: `ldt_${SELF_MADE_KINDS[s % SELF_MADE_KINDS.length]}`,
+          angle: angle.key, timestamp: now.toISOString(), success: true,
+        });
+      }
+      assert.equal(new Set(picked).size, picked.length,
+        `${dateStr} repeated a story within the day: ${picked.join(" → ")}`);
+    }
+  });
+
+  test("todaysSelfMadeAngles returns the whole day's set, newest first", () => {
+    const NOW = new Date("2026-08-29T23:30:00Z");
+    const at = (ts, angle) => ({
+      brand: "ldt", type: "ldt_carousel", angle, timestamp: ts, success: true,
+    });
+    const posts = [
+      at("2026-08-28T20:00:00.000Z", "meta"),            // yesterday — excluded
+      at("2026-08-29T15:00:00.000Z", "leads_going_cold"),
+      at("2026-08-29T19:00:00.000Z", "after_hours"),
+    ];
+    assert.deepEqual(todaysSelfMadeAngles({ posts }, "ldt", NOW), ["after_hours", "leads_going_cold"]);
+    // The singular helper stays the newest of that set, for any caller that
+    // only needs one.
+    assert.equal(todaysSelfMadeAngle({ posts }, "ldt", NOW), "after_hours");
+    assert.deepEqual(todaysSelfMadeAngles({ posts: [] }, "ldt", NOW), []);
   });
 
   test("consecutive days never repeat, so no cross-day exclusion is needed", () => {

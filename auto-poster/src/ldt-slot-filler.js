@@ -102,16 +102,34 @@ export function previousSelfMadeAngle(log, brandKey = "ldt") {
  * exclusion to today fixes that without costing an angle.
  */
 export function todaysSelfMadeAngle(log, brandKey = "ldt", now = new Date()) {
+  return todaysSelfMadeAngles(log, brandKey, now)[0] || null;
+}
+
+/**
+ * EVERY angle a self-made post used today (Chicago day), newest first.
+ *
+ * This is what the runner feeds pickAngle, and taking the whole set rather
+ * than the newest one matters as soon as a day holds more than two posts:
+ * excluding only the most recent angle lets the third slot exclude the
+ * second's and land straight back on the first's — measured at 7 days in 14
+ * on the 3/day schedule, i.e. half of all days showing the same story twice.
+ * Excluding the full set costs nothing (the table has five angles and a day
+ * holds at most three posts) and the fallback in pickAngle keeps it safe
+ * even if that ever stops being true.
+ */
+export function todaysSelfMadeAngles(log, brandKey = "ldt", now = new Date()) {
   const today = chicagoDayOf(now);
   const posts = validPosts(log);
+  const out = [];
   for (let i = posts.length - 1; i >= 0; i--) {
     const p = posts[i];
     if (p.brand !== brandKey) continue;
     if (!kindOfEntry(p)) continue;
-    if (chicagoDayOf(p.timestamp) !== today) return null; // newest is older than today
-    return p.angle || p.promo_angle || null;
+    if (chicagoDayOf(p.timestamp) !== today) break; // everything older is another day
+    const angle = p.angle || p.promo_angle || null;
+    if (angle && !out.includes(angle)) out.push(angle);
   }
-  return null;
+  return out;
 }
 
 /**

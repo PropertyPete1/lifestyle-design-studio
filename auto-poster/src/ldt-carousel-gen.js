@@ -165,13 +165,23 @@ export function carouselAngles(claims) {
 }
 
 /**
- * Deterministic angle rotation with a no-immediate-repeat rule, mirroring the
- * hook-style rule one level up: two consecutive self-made decks never share
- * an angle, so the feed cannot show the same story twice in a row.
+ * Deterministic angle rotation with a no-repeat rule, mirroring the
+ * hook-style rule one level up: self-made decks posted close together never
+ * share an angle, so the feed cannot show the same story twice in a row.
+ *
+ * `previousAngle` accepts a single key OR a list of keys. The list form is
+ * what the runner uses, and it is load-bearing above two posts a day:
+ * excluding only the MOST RECENT angle means the third slot excludes the
+ * second's and lands straight back on the first's — measured at 7 days in 14
+ * before this took a list. Every angle already used today must be excluded,
+ * not just the last one.
  */
 export function pickAngle({ claims, dateStr, previousAngle = null }) {
   const angles = carouselAngles(claims);
-  const pool = angles.filter((a) => a.key !== previousAngle);
+  const excluded = new Set(
+    (Array.isArray(previousAngle) ? previousAngle : [previousAngle]).filter(Boolean)
+  );
+  const pool = angles.filter((a) => !excluded.has(a.key));
   const usable = pool.length > 0 ? pool : angles;
   const [y, m, d] = String(dateStr).split("-").map(Number);
   const dayNumber = Math.floor(Date.UTC(y || 0, (m || 1) - 1, d || 1) / 86_400_000);

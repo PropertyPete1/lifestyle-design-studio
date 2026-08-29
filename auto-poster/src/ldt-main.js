@@ -56,7 +56,7 @@ import {
 import { pickIntakeCandidates, hasBrandTypeToday } from "./ldt-intake.js";
 import { generateLdtCaption, pickLdtVariation } from "./ldt-caption.js";
 import { loadLdtClaims, checkClaimsCompliance, describeViolations } from "./ldt-claims-gate.js";
-import { selfMadePlan, selfMadeAllowed, todaysSelfMadeAngle } from "./ldt-slot-filler.js";
+import { selfMadePlan, selfMadeAllowed, todaysSelfMadeAngles } from "./ldt-slot-filler.js";
 import { pickAngle, deckText, renderNarrativeDeck } from "./ldt-carousel-gen.js";
 import { cardText, renderCard } from "./ldt-card-gen.js";
 import { reelText, renderTextReel } from "./ldt-text-reel.js";
@@ -566,9 +566,11 @@ async function main() {
     // is handed the same plan — whichever generator lands, the entry's tags
     // describe what was actually published.
     const variation = pickLdtVariation(log);
-    // Exclude only an angle already used TODAY — see todaysSelfMadeAngle:
-    // excluding yesterday's too starves one angle out of the table.
-    const angle = pickAngle({ claims, dateStr: today, previousAngle: todaysSelfMadeAngle(log, BRAND_KEY) });
+    // Exclude every angle already used TODAY, and only today. Excluding
+    // yesterday's too starves an angle out of the table; excluding only the
+    // NEWEST of today's lets slot 3 land back on slot 1's story. See
+    // todaysSelfMadeAngles.
+    const angle = pickAngle({ claims, dateStr: today, previousAngle: todaysSelfMadeAngles(log, BRAND_KEY) });
 
     const plan = selfMadePlan({ log, brandKey: BRAND_KEY });
     console.log(`[LDT] Self-made plan for this slot: ${plan.join(" → ")}`);
