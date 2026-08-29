@@ -33,6 +33,7 @@ import { prePostQualityCheck } from "./quality-check.js";
 import { applyFreshness } from "./freshness.js";
 import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
+import { planVariation } from "./variation.js";
 import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds } from "./state.js";
 import { postToLinkedin } from "./linkedin.js";
 import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
@@ -1063,9 +1064,20 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     // Generate caption — ASYMMETRIC CONFIDENCE for reuse
     console.log("[Post] Generating caption...");
 
+    // THE VARIATION ENGINE decides hook style and caption length BEFORE any
+    // caption is written, and the decision is recorded on the log entry below.
+    // The old path chose a style inside the caption builder and threw the
+    // choice away, which is why performance could never map to a decision.
+    const variation = planVariation({ log });
+    const captionOptions = {
+      hookStyle: variation.hook_style,
+      captionLength: variation.caption_length_bucket,
+    };
+    let captionSource = "fresh";
+
     let caption;
     const cachedMatch = matchCache[video.id];
-    
+
     if (cachedMatch && cachedMatch.length > 0 && cachedMatch[0].caption) {
       const matchDist = cachedMatch[0].hashDistance ?? Math.round((1 - (cachedMatch[0].confidence || 0)) * 64);
       const matchCaption = cachedMatch[0].caption;
@@ -1073,11 +1085,12 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
 
       if (cityMismatch) {
         console.log(`[Post] Matched caption references a DIFFERENT city — generating fresh caption`);
-        caption = await generateCaption(CITY, videoOverlays);
+        caption = await generateCaption(CITY, videoOverlays, captionOptions);
       } else if (matchDist < CAPTION_AUTO_REUSE_THRESHOLD) {
         // Distance 0-4: extremely high confidence, auto-reuse
         console.log(`[Post] Very high-confidence match (dist: ${matchDist} < ${CAPTION_AUTO_REUSE_THRESHOLD}) — restructuring original caption`);
-        caption = await generateCaptionFromOriginal(matchCaption, CITY);
+        captionSource = "restructured";
+        caption = await generateCaptionFromOriginal(matchCaption, CITY, null, { hookStyle: variation.hook_style });
       } else if (matchDist < CAPTION_REUSE_THRESHOLD) {
         // Distance 5-9: needs AI vision confirmation before reusing caption
         // (wrong caption = publishing another property's details = very bad)
@@ -1103,19 +1116,20 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         }
         if (visionConfirmed) {
           console.log(`[Post] AI confirms same property — restructuring original caption`);
-          caption = await generateCaptionFromOriginal(matchCaption, CITY);
+          captionSource = "restructured";
+          caption = await generateCaptionFromOriginal(matchCaption, CITY, null, { hookStyle: variation.hook_style });
         } else {
           console.log(`[Post] AI did NOT confirm same property — generating fresh caption (safety)`);
-          caption = await generateCaption(CITY, videoOverlays);
+          caption = await generateCaption(CITY, videoOverlays, captionOptions);
         }
       } else {
         // Distance 10+: not confident enough to reuse caption
         console.log(`[Post] Match distance ${matchDist} >= ${CAPTION_REUSE_THRESHOLD} — not confident enough to reuse caption, generating fresh`);
-        caption = await generateCaption(CITY, videoOverlays);
+        caption = await generateCaption(CITY, videoOverlays, captionOptions);
       }
     } else {
       console.log("[Post] No original caption found — generating fresh");
-      caption = await generateCaption(CITY, videoOverlays);
+      caption = await generateCaption(CITY, videoOverlays, captionOptions);
     }
 
     // Log full caption in DRY_RUN mode for testing/approval
@@ -1251,6 +1265,25 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
           ? { detected: captionScan.detected, ocr_unavailable: captionScan.ocrUnavailable, text_frames: captionScan.textFrames, novel_texts: captionScan.novelTexts }
           : null,
         freshness: freshnessResult.applied ? "re_encoded" : freshnessResult.reason,
+        // THE LEARNING LOOP'S TAGS: every decision that shaped this post, so
+        // the weekly learn step can map performance back to choices instead of
+        // guessing from the published caption. Length applies to fresh
+        // captions only — a restructured caption preserves the original's
+        // facts and was never subject to the length rotation.
+        generation: {
+          engine: variation.engine,
+          hook_style: variation.hook_style,
+          hook_style_source: variation.hook_style_source,
+          excluded_style: variation.excluded_style,
+          caption_source: captionSource,
+          caption_length_bucket: captionSource === "fresh" ? variation.caption_length_bucket : null,
+          caption_length_source: captionSource === "fresh" ? variation.caption_length_source : "restructured",
+          brief_generated_at: variation.brief_generated_at,
+          topic: {
+            price_overlay: !!videoOverlays?.price,
+            community_kb: !!videoOverlays?.community,
+          },
+        },
         platforms: ["tiktok", "youtube", "satellite_ig"],
         mainIgDelivery: deliveryResult ? "delivered" : "delivery_failed_owner_must_post",
         deliveryDriveLink: deliveryResult?.driveLink || null,

@@ -1,0 +1,60 @@
+name: Learning Loop
+
+# The weekly learn step: joins posted-log.json to status/social_analytics.json,
+# ranks what worked (retention-weighted, min-sample thresholds), writes the
+# per-brand "what's working" brief to auto-poster/learning/, and emails Peter
+# the one-page version.
+#
+# READ-ONLY AGAINST EVERYTHING EXTERNAL. It calls no Metricool endpoint at all
+# — its inputs are two files already committed by other jobs. The only secrets
+# it needs are the Google trio, for the Gmail send.
+#
+# ─── SCHEDULE ────────────────────────────────────────────────────────────────
+#
+# Mondays 15:30 UTC (10:30 CT): ninety minutes after the 14:00 UTC Social
+# Analytics collection, so the brief always ranks numbers refreshed the same
+# morning, and half an hour clear of the 16:00 UTC SA-am posting slot so the
+# two never contend for the push to main. No backup cron: a missed week means
+# generation steers on last week's brief, which the variation engine already
+# tolerates (briefs stay valid for 14 days before it falls back).
+on:
+  schedule:
+    - cron: '30 15 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (build + print the brief, no commit, no email)'
+        required: false
+        default: false
+        type: boolean
+
+# The job commits auto-poster/learning/brief-*.json to main.
+permissions:
+  contents: write
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: learning-loop
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm ci --no-audit --no-fund
+      - name: Build brief, commit, email
+        working-directory: auto-poster
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node scripts/run-learning-loop.mjs
