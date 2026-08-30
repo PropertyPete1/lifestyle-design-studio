@@ -430,6 +430,13 @@ export async function createSingleBrandPost({ blogId, label, mediaUrl, caption, 
       autoPublish: true,
       contentType: "VIDEO",
     },
+    // Video to a Facebook Page goes out as a REEL, the same shape the realty
+    // fan-out (createPost above) has used in production. Per-network *Data
+    // blocks are inert for networks not in `providers`, so this is a no-op
+    // for callers that never pass facebook.
+    facebookData: {
+      type: "REEL",
+    },
   };
 
   const url = `${BASE}/v2/scheduler/posts?${authParams(blogId)}`;

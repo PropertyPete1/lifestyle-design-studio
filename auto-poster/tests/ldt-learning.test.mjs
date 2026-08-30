@@ -22,8 +22,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { reelEntries, generationFor, buildBrief, renderBriefEmail } from "../src/learn.js";
-import { pickLdtVariation } from "../src/ldt-caption.js";
+import { reelEntries, scoreableEntries, generationFor, buildBrief, renderBriefEmail } from "../src/learn.js";
+import { planLdtVoice, pickLdtVariation } from "../src/ldt-caption.js";
+import { chicagoSlot, LDT_SLOT_LABELS } from "../src/ldt-slot-filler.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -141,4 +142,141 @@ describe("TEETH — the roster and the stamps that make all of this run", () => 
     const tagged = src.match(/^\s+generation,$/gm) || [];
     assert.equal(tagged.length, 2, "both recordPost calls persist the generation tag block");
   });
+});
+
+describe("voice and closer are tagged for the learn step", () => {
+  test("the voice rotates and never repeats the lane's previous voice", () => {
+    assert.deepEqual(planLdtVoice({ posts: [] }).voice, "operator");
+    const after = (v) => planLdtVoice({ posts: [{ brand: "ldt", generation: { voice: v }, timestamp: iso(2), success: true }] });
+    assert.equal(after("operator").voice, "primary");
+    assert.equal(after("primary").voice, "operator");
+    assert.equal(after("operator").excluded_voice, "operator");
+  });
+
+  test("another brand's voice never steers the LDT rotation", () => {
+    const log = { posts: [{ brand: "other", generation: { voice: "primary" }, timestamp: iso(2), success: true }] };
+    assert.equal(planLdtVoice(log).voice, "operator", "no LDT history means no exclusion");
+  });
+
+  test("the variation plan carries voice alongside hook style, as its own axis", () => {
+    // Voice and hook style must be independent: the same hook can be spoken
+    // by either voice, so they cannot share one rotation slot.
+    const plan = pickLdtVariation(LOG, { brief: null, rand: () => 0.99, now: NOW });
+    assert.ok(["operator", "primary"].includes(plan.voice));
+    assert.ok(plan.hook_style, "hook style still planned");
+    assert.ok("voice_source" in plan, "the choice records how it was made");
+  });
+
+  test("ldt-main stamps voice and meta_closer on BOTH paths — clips get a null closer", () => {
+    const src = readFileSync(join(ROOT, "src", "ldt-main.js"), "utf-8");
+    const voices = src.match(/^\s+voice,$/gm) || [];
+    assert.equal(voices.length, 2, "both recordPost calls persist the voice");
+    // The clip path must stamp the closer as an explicit null, so "no closer"
+    // is distinguishable from an entry written before closers existed.
+    assert.match(src, /meta_closer: null,/, "clip entries record an explicit null closer");
+    assert.match(src, /meta_closer: metaCloser \|\| null,/, "self-made entries record the line they used");
+  });
+});
+
+describe("three slots score separately in the brief", () => {
+  const SLOT_NOW = new Date("2026-09-10T18:00:00Z");
+  const at = (h) => new Date(SLOT_NOW.getTime() - h * 3600_000).toISOString();
+
+  /** A clipless week: carousel in the am, card at midday, text reel in the pm. */
+  function week() {
+    const posts = [];
+    const rows = [];
+    const PLAN = [["am", "ldt_carousel", 60], ["midday", "ldt_card", 20], ["pm", "ldt_text_reel", 140]];
+    let n = 0;
+    for (let d = 0; d < 5; d++) {
+      for (const [slot, type, views] of PLAN) {
+        const caption = `Unique opening line number ${++n} for join matching in this test`;
+        const ts = at(24 * d + 2);
+        posts.push({
+          brand: "ldt", type, city: "ldt", slot, caption, timestamp: ts, success: true,
+          driveFileId: `x${n}`, generation: { hook_style: "pov", caption_length_bucket: null },
+        });
+        rows.push({
+          slug: caption, published: ts, platform: "instagram",
+          account: "lifestyledesigntechnologies",
+          metrics: { views, likes: Math.round(views / 10), comments: 1, shares: 0 },
+        });
+      }
+    }
+    return { log: { posts }, analytics: { recent_posts: rows } };
+  }
+
+  test("every slot label gets its own bucket — the point of the third label", () => {
+    const { log, analytics } = week();
+    const brief = buildBrief({ brand: "ldt", log, analytics, now: SLOT_NOW });
+    const table = brief.posting_slots.table;
+    assert.deepEqual(Object.keys(table).sort(), ["am", "midday", "pm"]);
+    for (const label of LDT_SLOT_LABELS) {
+      assert.equal(table[label].n, 5, `${label} scored every one of its posts`);
+    }
+    assert.equal(table.pm.verdict, "winner", "the best-performing slot is named");
+  });
+
+  test("the slot axis sees ALL media; the controlled axes stay reel-only", () => {
+    // Answering "which time of day earns" from the reel-only third of the
+    // schedule would answer nothing — but pooling reels and carousels into
+    // the CONTROLLED axes could kill a hook style for the medium it landed
+    // on rather than its own performance.
+    const { log, analytics } = week();
+    const brief = buildBrief({ brand: "ldt", log, analytics, now: SLOT_NOW });
+    assert.equal(brief.sample.posts_scored, 5, "controlled axes: text reels only");
+    assert.equal(brief.sample.posts_scored_all_media, 15, "slot axis: every post");
+    const slotTotal = Object.values(brief.posting_slots.table).reduce((n, r) => n + r.n, 0);
+    assert.equal(slotTotal, 15);
+    assert.deepEqual(brief.kill_list, [], "image posts never feed the kill list");
+  });
+
+  test("the brief email says which sample the slots were scored over", () => {
+    const { log, analytics } = week();
+    const email = renderBriefEmail(buildBrief({ brand: "ldt", log, analytics, now: SLOT_NOW }));
+    assert.match(email, /MIDDAY/, "the third slot is reported");
+    assert.match(email, /over all 15 posts/, "the wider sample is stated, not left to be inferred");
+  });
+
+  test("scoreableEntries: images admitted only on request, realty unaffected either way", () => {
+    const { log } = week();
+    const reels = scoreableEntries(log, { brand: "ldt", now: SLOT_NOW });
+    const all = scoreableEntries(log, { brand: "ldt", now: SLOT_NOW, includeImages: true });
+    assert.equal(reels.length, 5);
+    assert.equal(all.length, 15);
+    assert.ok(reels.every((e) => e.type === "ldt_text_reel"));
+    // Legacy realty entries carry no type, so both settings admit them.
+    const realtyLog = { posts: [realtyEntry] };
+    assert.equal(scoreableEntries(realtyLog, { now: NOW }).length, 1);
+    assert.equal(scoreableEntries(realtyLog, { now: NOW, includeImages: true }).length, 1);
+  });
+});
+
+describe("chicagoSlot labels one bucket per cron slot, year round", () => {
+  const CRONS = [15, 19, 23]; // the LDT schedule, in UTC
+
+  for (const [regime, [y, m, d]] of [["CDT", [2026, 7, 29]], ["CST", [2026, 0, 15]]]) {
+    test(`${regime}: the three slots land in three different buckets`, () => {
+      // The crons are fixed UTC, so the LOCAL hours shift by one across the
+      // DST boundary (10/2/6 in summer, 9/1/5 in winter). Boundaries placed
+      // ON a slot hour would relabel a slot every autumn and split its
+      // history across two buckets.
+      const labels = CRONS.map((h) => chicagoSlot(new Date(Date.UTC(y, m, d, h, 0))));
+      assert.deepEqual(labels, LDT_SLOT_LABELS, `${regime} produced ${labels.join(", ")}`);
+    });
+
+    test(`${regime}: a slot delayed up to an hour keeps its own label`, () => {
+      // Schedule triggers run late. A slot relabelled by its own lateness
+      // would file its post under a neighbour and corrupt the axis.
+      for (const [i, h] of CRONS.entries()) {
+        const base = chicagoSlot(new Date(Date.UTC(y, m, d, h, 0)));
+        for (const offset of [-60, -30, -10, 10, 30, 60]) {
+          assert.equal(
+            chicagoSlot(new Date(Date.UTC(y, m, d, h, 0) + offset * 60_000)), base,
+            `${regime} slot ${i + 1} changed label at ${offset}min`
+          );
+        }
+      }
+    });
+  }
 });

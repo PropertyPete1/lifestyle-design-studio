@@ -78,11 +78,13 @@ export function pickIntakeCandidates(files, log, blocklist, { brandKey = "ldt" }
  *
  * Per-format-per-day dedup for the self-made lane: the angle is deterministic
  * per DATE, so two same-day posts of the same format would tell the same
- * story in the same clothes — the cadence budget (2/day) and the 3h min-gap
- * both pass at the second slot, and the rotation's no-repeat rule only
+ * story in the same clothes — the cadence budget (3/day) and the 3h min-gap
+ * both pass at a later slot, and the rotation's no-repeat rule only
  * demotes a kind, it never bans it (a walk whose other generators all fail
- * lands right back on the morning's format). Each format gets at most one
- * post per day; the second slot is for a clip or a DIFFERENT format.
+ * lands right back on an earlier slot's format). Each format gets at most
+ * one post per day; a later slot is for a clip or a DIFFERENT format. With
+ * three slots and three self-made formats, a clipless day fills every slot
+ * exactly once — the dedup is what makes that a rotation and not a repeat.
  */
 export function hasBrandTypeToday(log, brandKey, type, now = new Date()) {
   const today = chicagoDayOf(now);

@@ -61,10 +61,14 @@ Nothing else. No new tokens, no code changes, no redeploys.
   text-motion reel alternate behind it ($99/mo positioning, angle rotating
   daily, one post per format per day, every line of copy backed by
   `ldt-claims.json`). See `LDT-SELFMADE.md`.
-- **Cadence**: 2/day per platform (config: `brands.json`). Hard cap 6/day —
-  a config above the cap is **refused at startup**; 3–6 runs only with the
-  explicit config change and logs a warning every run. A 3-hour minimum gap
-  applies between any two LDT posts.
+- **Cadence**: 3/day per platform (config: `brands.json`), fired by three
+  spread slots — 10:00 AM, 2:00 PM and 6:00 PM CT. Hard cap 6/day — a config
+  above the cap is **refused at startup**; 3–6 runs only with the explicit
+  config change and logs a warning every run (3/day does, by design). A
+  3-hour minimum gap applies between any two LDT posts, which is why the
+  slots sit on a four-hour pitch: an hour of slack, so a late-firing slot
+  isn't silently skipped. Raising the cadence again means adding a slot and
+  keeping that gap — CI pins the cron count to the cadence.
 - **Learning loop**: the LDT brand gets its own brief
   (`performance-weights.ldt.json`) fed from its own blogId's reel analytics —
   fully separate from the realty weights. (The read-only daily collector,

@@ -32,6 +32,35 @@ import { chicagoDayOf } from "./brands.js";
 /** The self-made kinds, strongest first. Log types are `ldt_<kind>`. */
 export const SELF_MADE_KINDS = ["carousel", "card", "text_reel"];
 
+/** The slot labels, in clock order. One per cron slot. */
+export const LDT_SLOT_LABELS = ["am", "midday", "pm"];
+
+/**
+ * This post's slot label on the Chicago clock — "am" | "midday" | "pm".
+ *
+ * ONE LABEL PER CRON SLOT (10 AM / 2 PM / 6 PM CT), so the learning brief's
+ * posting_slots axis scores each slot separately. A two-label scheme
+ * collapsed the afternoon slots into one bucket the moment a third cron was
+ * added, which made the axis unable to answer the question it exists for:
+ * which time of day earns.
+ *
+ * The boundaries (12:00 and 16:00) sit BETWEEN the slots in BOTH daylight
+ * regimes, and that is what keeps the mapping stable year-round. The crons
+ * are fixed UTC, so the local hours shift by one in winter — 9 AM / 1 PM /
+ * 5 PM CST versus 10 AM / 2 PM / 6 PM CDT — and every slot still lands in
+ * its own bucket on both sides of the change. Boundaries placed ON a slot
+ * hour (say 14:00) would have relabelled the afternoon slot every autumn and
+ * silently split one slot's history across two buckets.
+ */
+export function chicagoSlot(now = new Date()) {
+  const hour = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago", hour: "2-digit", hour12: false,
+  }).format(now));
+  if (hour < 12) return "am";
+  if (hour < 16) return "midday";
+  return "pm";
+}
+
 /** Map a log entry's type to a self-made kind, or null. */
 export function kindOfEntry(entry) {
   const m = /^ldt_(carousel|card|text_reel)$/.exec(String(entry?.type || ""));
@@ -91,27 +120,49 @@ export function previousSelfMadeAngle(log, brandKey = "ldt") {
  * The angle a self-made post already used EARLIER TODAY (Chicago day), or
  * null.
  *
- * This — not previousSelfMadeAngle — is what the runner feeds pickAngle, and
- * the distinction is load-bearing. pickAngle rotates by date, so consecutive
- * DAYS already land on different angles; excluding yesterday's angle as well
- * shrinks the pool from five to four, and the day-number modulo over that
- * smaller pool settles into a fixed four-cycle that starves one angle out of
- * the table completely (measured: `after_hours` never posts). The only
- * repeat the date rotation cannot prevent is the one within a single day —
- * both slots share a date, so both would tell the same story. Scoping the
- * exclusion to today fixes that without costing an angle.
+ * The singular form — the newest of today's angles. The RUNNER uses the
+ * plural (todaysSelfMadeAngles) below; this one remains for callers that
+ * only need the latest, and because the distinction between them is exactly
+ * where a bug lived.
+ *
+ * Why the exclusion is scoped to today at all: pickAngle rotates by date, so
+ * consecutive DAYS already land on different angles. Excluding yesterday's
+ * angle as well shrinks the pool from five to four, and the day-number
+ * modulo over that smaller pool settles into a fixed four-cycle that starves
+ * one angle out of the table completely (measured: `after_hours` never
+ * posts). The only repeat the date rotation cannot prevent is the one WITHIN
+ * a single day — every slot that day shares a date, so each would otherwise
+ * tell the same story.
  */
 export function todaysSelfMadeAngle(log, brandKey = "ldt", now = new Date()) {
+  return todaysSelfMadeAngles(log, brandKey, now)[0] || null;
+}
+
+/**
+ * EVERY angle a self-made post used today (Chicago day), newest first.
+ *
+ * This is what the runner feeds pickAngle, and taking the whole set rather
+ * than the newest one matters as soon as a day holds more than two posts:
+ * excluding only the most recent angle lets the third slot exclude the
+ * second's and land straight back on the first's — measured at 7 days in 14
+ * on the 3/day schedule, i.e. half of all days showing the same story twice.
+ * Excluding the full set costs nothing (the table has five angles and a day
+ * holds at most three posts) and the fallback in pickAngle keeps it safe
+ * even if that ever stops being true.
+ */
+export function todaysSelfMadeAngles(log, brandKey = "ldt", now = new Date()) {
   const today = chicagoDayOf(now);
   const posts = validPosts(log);
+  const out = [];
   for (let i = posts.length - 1; i >= 0; i--) {
     const p = posts[i];
     if (p.brand !== brandKey) continue;
     if (!kindOfEntry(p)) continue;
-    if (chicagoDayOf(p.timestamp) !== today) return null; // newest is older than today
-    return p.angle || p.promo_angle || null;
+    if (chicagoDayOf(p.timestamp) !== today) break; // everything older is another day
+    const angle = p.angle || p.promo_angle || null;
+    if (angle && !out.includes(angle)) out.push(angle);
   }
-  return null;
+  return out;
 }
 
 /**

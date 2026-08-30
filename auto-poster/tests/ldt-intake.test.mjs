@@ -108,10 +108,10 @@ describe("brand scoping of the shared posted-log", () => {
 describe("one post per format per day", () => {
   // The self-made angle is deterministic per Chicago DATE — without this
   // guard a second same-day post of one format would tell the same story
-  // (cadence 2/day and the 3h gap both pass at the second slot, and the
+  // (cadence 3/day and the 3h gap both pass at a later slot, and the
   // rotation only DEMOTES the previous kind — a walk whose other generators
-  // fail lands right back on the morning's format).
-  const NOW = new Date("2026-08-29T22:00:00Z"); // 5 PM CT, the second slot
+  // fail lands right back on an earlier slot's format).
+  const NOW = new Date("2026-08-29T23:00:00Z"); // 6 PM CT, the last slot
   const entry = (over) => ({
     brand: "ldt", type: "ldt_carousel", platforms: ["instagram", "tiktok"],
     timestamp: "2026-08-29T15:05:00.000Z", success: true, ...over,

@@ -1,16 +1,33 @@
 name: LDT Brand Post
 
-# LDT lane (brand 2): 2 posts/day per platform by default — one clip or
-# self-made piece (carousel / card / text reel) per slot. Central Time → UTC
-# during CDT:
+# LDT lane (brand 2): 3 posts/day per platform — one clip or self-made piece
+# (carousel / card / text reel) per slot. Central Time → UTC during CDT:
 #   Slot 1: 10:00 AM CT = 15:00 UTC
-#   Slot 2:  5:00 PM CT = 22:00 UTC
+#   Slot 2:  2:00 PM CT = 19:00 UTC
+#   Slot 3:  6:00 PM CT = 23:00 UTC
+#
+# SPACING IS LOAD-BEARING, not cosmetic. The lane enforces a 3h minimum gap
+# (brands.json minGapHours), and a slot that lands inside that gap is SKIPPED
+# — silently and green. So the slots are spread on a uniform FOUR-hour pitch,
+# which buys a full hour of slack: GitHub's schedule triggers are best-effort
+# and routinely run late, and only a >60min delay of one slot RELATIVE to the
+# next could push a pair under the gap. Bunching them tighter (e.g. three
+# slots inside the old 10-5 window, a 3.5h pitch) would halve that slack and
+# make a skipped middle slot an ordinary occurrence rather than an alarm.
+# The pitch is in UTC, so it survives DST — only the CT labels above shift.
+#
+# Raising the cadence again means adding a slot AND keeping the gap: at the
+# 6/day hard cap, four-hour spacing no longer fits in a day, so the min-gap
+# would have to come down with it. tests/ldt-workflow-env.test.mjs pins the
+# cron count to the cadence so the two can never drift apart.
+#
 # No backup crons on purpose: the lane's cadence + min-gap guards make any
 # re-run safe, and a missed slot alerts via daily-notify rather than retrying.
 on:
   schedule:
     - cron: '0 15 * * *'
-    - cron: '0 22 * * *'
+    - cron: '0 19 * * *'
+    - cron: '0 23 * * *'
   workflow_dispatch:
     inputs:
       mode:
