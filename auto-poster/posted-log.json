@@ -6395,6 +6395,58 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1dy8XR_o8UfM2ikHi9EUhhxEmkKj-uCAb",
+      "fileName": "3F37BDA3-B4C6-46EF-8ACB-6CC7908E5443.mp4",
+      "city": "austin",
+      "caption": "I've never seen finishes like this at a $470k price point in North Austin.\n\nNew construction like this doesn't sit around long. Builder incentives are real right now.\n\n✨ everyday living hits\nOpen floo",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-30T22:34:30.105Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "North Austin",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (63 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Are you looking for luxury at an affordable price? Today we're out at this amazing community just north of Slugerville. Quick payment math. The price is starting at $470,000. We're using 3.5% down which is $16,450. The rates for 0.99, 30 year fixed. Texas is our $8,000 a year. Insurance is $1,200 a year. PMI is 0.5%. Estimated payment is $3,362 a month.",
+      "content_hash": "fcfec30110f27bfc:fcfec30010f27b7c:ffffff7f01c07078:ff3f3f3736070080:f3abfffd000f0e98",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "bold_claim",
+        "hook_style_source": "legacy_weights_exploit",
+        "excluded_style": "pattern_interrupt",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "explore",
+        "brief_generated_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1ApRm207CjW6ygsZZ9_iuhEt8LVGCwUti/view"
     }
   ],
   "lastTemplateIndex": -1
