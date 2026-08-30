@@ -5927,6 +5927,75 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1-gmPTIpypiOZJnJ8iE_ZOA6LB4VJxbat",
+      "fileName": "4F403C7C-FAC2-408C-9550-2FE8AFD6EAEB.mp4",
+      "city": "san_antonio",
+      "caption": "this is the kind of new construction that makes you walk through twice just to take it all in\n\nNew construction in San Antonio at $549,900 moves fast, and honestly, I see why the moment you step insid",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-30T16:20:05.258Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "checklist_sprint",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 2,
+        "violations": [
+          {
+            "raw": "five forty nine thousand nine hundred",
+            "value": 54900,
+            "attempt": 1
+          },
+          {
+            "raw": "five forty nine thousand nine hundred",
+            "value": 54900,
+            "attempt": 2
+          }
+        ],
+        "fallback_used": true
+      },
+      "content_hash": "ffff070b000c5ff3:ff3d0000c3ffff00:ff18ffff18010000:c0fe07fffc3202f7:061ffeefe7c08000",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "legacy_weights_exploit",
+        "excluded_style": "bold_claim",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "explore",
+        "brief_generated_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1esKk_TERGYNeR7TBCAlS4gEewTkP1ygz/view"
     }
   ],
   "lastTemplateIndex": -1
