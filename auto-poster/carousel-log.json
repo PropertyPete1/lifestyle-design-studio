@@ -4511,6 +4511,189 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-30",
+      "timestamp": "2026-08-30T17:51:50.403Z",
+      "pillar": "market_insight",
+      "topic": "Texas builders are cutting payments, not prices, and what that hides in the comps",
+      "hook": "Texas builders are not cutting prices right now. They are cutting something else.",
+      "closeType": "dm",
+      "keyword": "LIST",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Texas builders are cutting payments, not prices, and what that hides in the comps",
+        "hook": "Texas builders are not cutting prices right now. They are cutting something else.",
+        "map": [
+          "Why prices hold",
+          "Where the money hides",
+          "What the comps miss",
+          "The resale seller squeeze",
+          "When offers get best"
+        ],
+        "points": [
+          {
+            "title": "The Sticker Price Holds",
+            "body": [
+              "Builders hate dropping the list price.",
+              "It upsets everyone who bought there last quarter, and it drags the appraisals down for the whole street."
+            ],
+            "loop": "So the discount moves somewhere quieter."
+          },
+          {
+            "title": "It Goes Into The Loan",
+            "body": [
+              "The money shows up as a rate buydown, closing costs covered, or upgrade credit instead.",
+              "Right now that package is often worth more than a price cut would have been."
+            ],
+            "loop": "The paperwork hides it well."
+          },
+          {
+            "title": "The Comps Look Wrong",
+            "body": [
+              "The sale records at full price. The incentive never lands in that number.",
+              "So the data says values are flat while the real cost to buy is lower."
+            ],
+            "loop": "One group pays for that."
+          },
+          {
+            "title": "Resale Sellers Get Squeezed",
+            "body": [
+              "You look at the numbers and think you can hold your price.",
+              "But the builder a mile away is beating you on the monthly cost, and you cannot buy down a buyer's rate. Price is your only lever."
+            ],
+            "loop": "Buyers have a lever too."
+          },
+          {
+            "title": "Timing Moves The Number",
+            "body": [
+              "Incentives get richest on finished homes still sitting at the end of a quarter.",
+              "What is posted online is the opening offer, not the best one."
+            ],
+            "loop": "The best offers move weekly."
+          }
+        ],
+        "cta": {
+          "payoff": "the current new builds list, with what each one is paying in incentives this week"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 5,
+        "cta": 9,
+        "worst_problem": "Two of the five loops don't open anything forward — \"The paperwork hides it well\" just re-describes the slide's own point, and \"The best offers move weekly\" summarises the timing slide instead of teasing the close.",
+        "fix": "Rewrite those two loops to point at the next unknown — e.g. after the loan slide, \"That breaks the price data\"; after the timing slide, \"Ask for the sitting inventory.\""
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 368514690,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-30T17:54:51.014Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7679883966459022606"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368514691,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-30T17:54:51.157Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499886878603612160"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368514710,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-30T17:54:51.300Z",
+          "publicUrl": "https://www.instagram.com/p/DcrF99UjQDn/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368514739,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-30T17:54:51.444Z",
+          "publicUrl": "https://www.instagram.com/p/DcrGCmiCsCe/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368514741,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-30T17:54:51.586Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499886881388814336"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 368514758,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-30T17:54:51.982Z",
+          "publicUrl": "https://www.instagram.com/p/DcrGDmqCE0-/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 368514760,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-30T17:54:52.124Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122118124473400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 368514761,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-30T17:54:52.267Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7499886879165841408"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-30T17:54:52.268Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
