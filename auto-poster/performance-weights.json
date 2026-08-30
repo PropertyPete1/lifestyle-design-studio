@@ -1,76 +1,76 @@
 {
   "weights": {
-    "question": 0.9,
-    "bold_claim": 1.47,
-    "wait_tease": 0.91,
-    "reaction": 0.91,
-    "vibe": 0.87
+    "question": 0.62,
+    "bold_claim": 1.14,
+    "wait_tease": 1.07,
+    "reaction": 0.97,
+    "vibe": 0.72
   },
-  "lastUpdated": "2026-08-23T19:26:20.974Z",
+  "lastUpdated": "2026-08-30T19:43:10.699Z",
   "reelsAnalyzed": 15,
-  "classifiedCount": 7,
+  "classifiedCount": 12,
   "styleBreakdown": {
     "question": {
-      "count": 2,
-      "avgScore": 1486,
-      "weight": 0.9
+      "count": 5,
+      "avgScore": 1015,
+      "weight": 0.62
     },
     "bold_claim": {
       "count": 2,
-      "avgScore": 2256,
-      "weight": 1.47
+      "avgScore": 2048,
+      "weight": 1.14
     },
     "wait_tease": {
-      "count": 1,
-      "avgScore": 1280,
-      "weight": 0.91
+      "count": 2,
+      "avgScore": 2323,
+      "weight": 1.07
     },
     "reaction": {
       "count": 0,
       "avgScore": 0,
-      "weight": 0.91
+      "weight": 0.97
     },
     "vibe": {
-      "count": 2,
-      "avgScore": 1139,
-      "weight": 0.87
+      "count": 3,
+      "avgScore": 1334,
+      "weight": 0.72
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/DcJ0lCts0mN/",
+      "url": "https://www.instagram.com/reel/Dcjj9iBsMfe/",
       "hookStyle": "bold_claim",
-      "score": 3647,
-      "views": 2664,
-      "firstLine": "this might be the best new construction I’ve toured this month"
+      "score": 2657,
+      "views": 1767,
+      "firstLine": "I’ve never seen finishes like this at this price point in San Antonio right now."
     },
     {
-      "url": "https://www.instagram.com/reel/DcHEWxRMWjg/",
-      "hookStyle": "question",
-      "score": 2947,
-      "views": 2263,
-      "firstLine": "would you believe brand new construction in San Antonio starts at $469,990?"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DcHO7adskpE/",
-      "hookStyle": "vibe",
-      "score": 1635,
-      "views": 1400,
-      "firstLine": "this is what new construction is supposed to feel like"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DcKSwksMC59/",
-      "hookStyle": "unknown",
-      "score": 1514,
-      "views": 1246,
-      "firstLine": "the monthly payment on this one is lower than most people guess"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DcJ0ULQMMmA/",
+      "url": "https://www.instagram.com/reel/Dcgznz_sxfU/",
       "hookStyle": "wait_tease",
-      "score": 1280,
-      "views": 962,
-      "firstLine": "Wait until you see the kitchen in this one 😮‍💨"
+      "score": 2479,
+      "views": 1939,
+      "firstLine": "Wait until you see this kitchen 😮‍💨"
+    },
+    {
+      "url": "https://www.instagram.com/reel/Dcbygy2sVyK/",
+      "hookStyle": "wait_tease",
+      "score": 2167,
+      "views": 1696,
+      "firstLine": "Wait until you see what starts at $339,990 in South Austin."
+    },
+    {
+      "url": "https://www.instagram.com/reel/DcoWih1s1iJ/",
+      "hookStyle": "question",
+      "score": 1811,
+      "views": 1309,
+      "firstLine": "Would you believe this is brand new construction in San Antonio starting at $379"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DceGeWOMrBy/",
+      "hookStyle": "vibe",
+      "score": 1773,
+      "views": 1211,
+      "firstLine": "this is what new construction is supposed to feel like"
     }
   ],
   "history": [
@@ -137,6 +137,17 @@
         "wait_tease": 0.91,
         "reaction": 0.91,
         "vibe": 0.87
+      },
+      "reelsAnalyzed": 15
+    },
+    {
+      "date": "2026-08-30",
+      "weights": {
+        "question": 0.62,
+        "bold_claim": 1.14,
+        "wait_tease": 1.07,
+        "reaction": 0.97,
+        "vibe": 0.72
       },
       "reelsAnalyzed": 15
     }
