@@ -32,6 +32,35 @@ import { chicagoDayOf } from "./brands.js";
 /** The self-made kinds, strongest first. Log types are `ldt_<kind>`. */
 export const SELF_MADE_KINDS = ["carousel", "card", "text_reel"];
 
+/** The slot labels, in clock order. One per cron slot. */
+export const LDT_SLOT_LABELS = ["am", "midday", "pm"];
+
+/**
+ * This post's slot label on the Chicago clock — "am" | "midday" | "pm".
+ *
+ * ONE LABEL PER CRON SLOT (10 AM / 2 PM / 6 PM CT), so the learning brief's
+ * posting_slots axis scores each slot separately. A two-label scheme
+ * collapsed the afternoon slots into one bucket the moment a third cron was
+ * added, which made the axis unable to answer the question it exists for:
+ * which time of day earns.
+ *
+ * The boundaries (12:00 and 16:00) sit BETWEEN the slots in BOTH daylight
+ * regimes, and that is what keeps the mapping stable year-round. The crons
+ * are fixed UTC, so the local hours shift by one in winter — 9 AM / 1 PM /
+ * 5 PM CST versus 10 AM / 2 PM / 6 PM CDT — and every slot still lands in
+ * its own bucket on both sides of the change. Boundaries placed ON a slot
+ * hour (say 14:00) would have relabelled the afternoon slot every autumn and
+ * silently split one slot's history across two buckets.
+ */
+export function chicagoSlot(now = new Date()) {
+  const hour = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago", hour: "2-digit", hour12: false,
+  }).format(now));
+  if (hour < 12) return "am";
+  if (hour < 16) return "midday";
+  return "pm";
+}
+
 /** Map a log entry's type to a self-made kind, or null. */
 export function kindOfEntry(entry) {
   const m = /^ldt_(carousel|card|text_reel)$/.exec(String(entry?.type || ""));

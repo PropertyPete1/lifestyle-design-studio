@@ -98,12 +98,42 @@ export function linesMatch(a, b) {
  * brand's brief never scores another brand's posts.
  */
 export function reelEntries(log, { brand = DEFAULT_BRAND, days = DEFAULT_LOOKBACK_DAYS, now = new Date() } = {}) {
+  return scoreableEntries(log, { brand, days, now, includeImages: false });
+}
+
+/** Types a lane publishes AS A REEL — they land in reel analytics. */
+const BRAND_REEL_SUFFIXES = ["_clip", "_text_reel"];
+/** Types a lane publishes as FEED IMAGES — /analytics/posts/*, not /reels/*. */
+const BRAND_IMAGE_SUFFIXES = ["_carousel", "_card"];
+
+/**
+ * Scoreable entries for one brand, newest-last.
+ *
+ * `includeImages` widens the admit rule from a lane's reels to everything it
+ * publishes. Both populations are real and joinable — Metricool serves feed
+ * posts from /v2/analytics/posts/* alongside /reels/* — but they are NOT
+ * interchangeable, which is why this is a parameter and not the default:
+ *
+ *   - The CONTROLLED axes (hook style, caption length) and the kill list read
+ *     reels only. A reel and a carousel draw wildly different view counts, so
+ *     scoring them in one pool would let a hook style be killed for having
+ *     landed on carousels rather than for underperforming.
+ *   - The ANALYZED-ONLY axes — posting slot above all — want every post,
+ *     because "which time of day earns" is a question about the schedule, and
+ *     answering it from a third of the schedule answers nothing.
+ *
+ * Legacy realty entries carry no type and are admitted either way, so realty
+ * behavior is identical for both values.
+ */
+export function scoreableEntries(log, { brand = DEFAULT_BRAND, days = DEFAULT_LOOKBACK_DAYS, now = new Date(), includeImages = false } = {}) {
   const cutoff = now.getTime() - days * 24 * 60 * 60 * 1000;
+  const suffixes = includeImages
+    ? [...BRAND_REEL_SUFFIXES, ...BRAND_IMAGE_SUFFIXES]
+    : BRAND_REEL_SUFFIXES;
   return validPosts(log).filter((p) => {
     if ((p.brand || DEFAULT_BRAND) !== brand) return false;
-    const isBrandReel = typeof p.type === "string" &&
-      (p.type.endsWith("_clip") || p.type.endsWith("_text_reel"));
-    if ((p.type && !isBrandReel) || p.platform === "instagram_main_native") return false;
+    const isBrandScoreable = typeof p.type === "string" && suffixes.some((s) => p.type.endsWith(s));
+    if ((p.type && !isBrandScoreable) || p.platform === "instagram_main_native") return false;
     if (!p.city || !p.slot || !p.caption) return false;
     if (p.success === false) return false;
     const ts = new Date(p.timestamp).getTime();
@@ -142,8 +172,8 @@ export function generationFor(entry) {
  * Join posted-log entries to analytics rows. See the module header for the
  * matching rules. Returns { joined, unjoined_entries, unattributed_rows }.
  */
-export function joinPostsToAnalytics({ log, analytics, brand = DEFAULT_BRAND, days = DEFAULT_LOOKBACK_DAYS, now = new Date() } = {}) {
-  const entries = reelEntries(log, { brand, days, now });
+export function joinPostsToAnalytics({ log, analytics, brand = DEFAULT_BRAND, days = DEFAULT_LOOKBACK_DAYS, now = new Date(), includeImages = false } = {}) {
+  const entries = scoreableEntries(log, { brand, days, now, includeImages });
   const rows = Array.isArray(analytics?.recent_posts) ? analytics.recent_posts : [];
   const windowMs = JOIN_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
@@ -327,9 +357,20 @@ export function buildBrief({ brand, log, analytics, days = DEFAULT_LOOKBACK_DAYS
     .map((jp) => ({ ...jp, scoring: scoreJoinedPost(jp) }))
     .filter((jp) => jp.scoring.headline !== null);
 
+  // The posting-slot axis reads EVERY post the lane published, reels and feed
+  // images alike. It is analyzed-only (it can never kill anything), and the
+  // question it answers — which of the day's slots earns — is unanswerable
+  // from the reel-only subset once most slots are filled by carousels and
+  // cards. The controlled axes below stay reel-only on purpose; see
+  // scoreableEntries for why the two populations must not be pooled.
+  const allMedia = joinPostsToAnalytics({ log, analytics, brand, days, now, includeImages: true });
+  const scoredAllMedia = allMedia.joined
+    .map((jp) => ({ ...jp, scoring: scoreJoinedPost(jp) }))
+    .filter((jp) => jp.scoring.headline !== null);
+
   const styleRows = scored.map((jp) => ({ value: jp.generation.hook_style, score: jp.scoring.headline }));
   const lengthRows = scored.map((jp) => ({ value: jp.generation.caption_length_bucket, score: jp.scoring.headline }));
-  const slotRows = scored.map((jp) => ({ value: `${jp.entry.slot}`, score: jp.scoring.headline }));
+  const slotRows = scoredAllMedia.map((jp) => ({ value: `${jp.entry.slot}`, score: jp.scoring.headline }));
   const cityRows = scored.map((jp) => ({ value: jp.entry.city, score: jp.scoring.headline }));
   // Analyzed-only, like slots: whether a post GOT a plate is decided by its
   // source (burned text skips it), not freely rotated — so this is an
@@ -386,6 +427,10 @@ export function buildBrief({ brand, log, analytics, days = DEFAULT_LOOKBACK_DAYS
     window_days: days,
     sample: {
       posts_scored: scored.length,
+      // The slot axis draws on a wider pool than the controlled axes, so its
+      // sample is reported separately — a reader comparing a slot's `n`
+      // against posts_scored would otherwise think the numbers disagreed.
+      posts_scored_all_media: scoredAllMedia.length,
       posts_unjoined: unjoined_entries.length,
       analytics_rows_joined: scored.reduce((n, jp) => n + jp.rows.length, 0),
       analytics_rows_unattributed: unattributed_rows,
@@ -441,6 +486,14 @@ export function renderBriefEmail(brief) {
   lines.push("");
 
   lines.push("POSTING SLOTS (analysis only — the cron owns the schedule)");
+  // Stated explicitly because the numbers here legitimately exceed the
+  // headline sample: slots are scored over EVERY post, reels and feed images
+  // alike, while the sections above are reel-only. Without this line a reader
+  // would reasonably think the two disagreed.
+  const allMedia = brief.sample.posts_scored_all_media;
+  if (typeof allMedia === "number" && allMedia !== brief.sample.posts_scored) {
+    lines.push(`  (over all ${allMedia} posts — carousels and cards included, unlike the sections above)`);
+  }
   lines.push(...axisLines(brief.posting_slots.table, (v) => v.toUpperCase()));
   lines.push("");
 

@@ -68,7 +68,7 @@ import {
 import { pickIntakeCandidates, hasBrandTypeToday } from "./ldt-intake.js";
 import { generateLdtCaption, pickLdtVariation } from "./ldt-caption.js";
 import { loadLdtClaims, checkClaimsCompliance, describeViolations } from "./ldt-claims-gate.js";
-import { selfMadePlan, selfMadeAllowed, todaysSelfMadeAngles } from "./ldt-slot-filler.js";
+import { selfMadePlan, selfMadeAllowed, todaysSelfMadeAngles, chicagoSlot } from "./ldt-slot-filler.js";
 import { pickAngle, deckText, renderNarrativeDeck } from "./ldt-carousel-gen.js";
 import { cardText, renderCard } from "./ldt-card-gen.js";
 import { reelText, renderTextReel } from "./ldt-text-reel.js";
@@ -87,14 +87,6 @@ const MODE_RAW = process.env.MODE || "auto";
 const MODE = MODE_RAW === "promo" ? "selfmade" : MODE_RAW;
 const FORCE_VIDEO_ID = process.env.FORCE_VIDEO_ID || "";
 const BRAND_KEY = "ldt";
-
-/** This slot's label, Chicago clock: before 2 PM CT is "am". */
-function chicagoSlot(now = new Date()) {
-  const hour = Number(new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Chicago", hour: "2-digit", hour12: false,
-  }).format(now));
-  return hour < 14 ? "am" : "pm";
-}
 
 const CONNECT_STEPS =
   "Connect the LDT accounts in Metricool: app.metricool.com → add a new Brand " +
