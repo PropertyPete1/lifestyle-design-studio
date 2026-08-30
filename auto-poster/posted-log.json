@@ -5996,6 +5996,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1esKk_TERGYNeR7TBCAlS4gEewTkP1ygz/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-08-30T16:22:27.465Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1esKk_TERGYNeR7TBCAlS4gEewTkP1ygz",
+      "captionSnippet": "this is the kind of new construction that makes you walk through twice just to take it all in\n\nNew construction in San A",
+      "mainIgPostedAt": "2026-08-30T16:22:27.465Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
