@@ -6193,6 +6193,58 @@
       "timestamp": "2026-08-30T19:06:21.490Z",
       "runId": "33329670720",
       "success": true
+    },
+    {
+      "driveFileId": "1cc073h2GsbN-XpQjrmfplvIVuYB-NA8T",
+      "fileName": "5B24EDCA-5E87-4207-B99C-E99A3B9DE8D6.mp4",
+      "city": "san_antonio",
+      "caption": "stop scrolling. this is $579,990 in san antonio new construction.\n\nnew construction like this moves fast. builder incentives available right now.\n\n✨ everyday living hits\nopen floor plan with natural l",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-30T19:06:21.325Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (51 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Quit payment math prices 5.79.99. We're using 3.5% down. That's 20,299,000. So the loan is 5.596.90. Rate is 4.9% on a 30 year fixed rate. Taxes are $10,000 a year. Insurance is 1,400 a year. PMI is 0.5%. Estimated monthly payments are $4,153 a month. Comment home and let's get started.",
+      "content_hash": "7fffc30000fefef8:0008013ffffc3c00:03068fefe3a30600:602000797b3fff00:fcfe04787878f800",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pattern_interrupt",
+        "hook_style_source": "legacy_weights_exploit",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "explore",
+        "brief_generated_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1fZQGUYPPO5ypLInElOk6dNqWRlqiDB3_/view"
     }
   ],
   "lastTemplateIndex": -1

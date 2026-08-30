@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "team_wins",
-      "body": "We just wrapped a week where the team closed out deals others were sitting on. Not because we're better agents. Because we move together. One agent handled a buyer problem. Another jumped in on the inspection issue. Someone else managed the lender hiccup. That's it. That's the culture here?",
-      "format": "short_punchy",
-      "ending": "question",
-      "date": "2026-08-23"
-    },
-    {
       "topic": "unpopular_opinion",
       "body": "I started as a solo agent convinced that high commission splits were the only reason people stuck around at brokerages. I paid out 80.20 splits thinking that's what kept agents happy. Then I watched my best people leave anyway. They didn't want more money. They wanted to not feel alone. They wanted someone to call when a deal got complicated. They wanted to be part of something that made them better. Now we run lower splits and agents stay longer because they're actually building something. The money was never the real offer. The support was. Most brokerages still don't get this.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
       "format": "story",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "question",
       "date": "2026-08-29"
+    },
+    {
+      "topic": "time_to_level_up",
+      "body": "You're outgrowing your brokerage if you're solving problems alone that should be solved with a team.\n\nI see it all the time. An agent is closing deals, hitting their numbers, but they're doing it in isolation. Nobody's helping them think through the hard transactions. Nobody's backing them up when something breaks. They call their broker and get a voicemail. They're winning but they feel like they're losing because there's no one in the trenches with them. That's not sustainable. That's not a career. That's a grind that has an expiration date. The best agents don't leave because they're unhappy with money. They leave because they're tired of being alone while they're building something.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
+      "format": "bold_statement",
+      "ending": "dm_cta",
+      "date": "2026-08-30"
     }
   ]
 }
