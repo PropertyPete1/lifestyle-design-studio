@@ -69,12 +69,84 @@ export function pickLdtVariation(log, { rand, now, brief } = {}) {
   const ldtPosts = validPosts(log)
     .filter(p => p.brand === "ldt" && (p.type === "ldt_clip" || kindOfEntry(p)))
     .map(({ type: _type, ...rest }) => rest);
-  return planVariation({
+  const plan = planVariation({
     log: { posts: ldtPosts },
     brand: "ldt",
     previousStyle: previousLdtHookStyle(log),
     rand, now, brief,
   });
+  // Voice rides alongside the hook style on the same no-immediate-repeat
+  // rule, and is tagged on the entry so the learn step can eventually score
+  // which voice earns more. It is a SEPARATE axis from hook style: the same
+  // hook can be spoken by the operator or by PRIMARY itself.
+  return { ...plan, ...planLdtVoice(log) };
+}
+
+/** The canonical caption voices. Stored on entries; the learn step scores them. */
+export const LDT_VOICES = ["operator", "primary"];
+
+/** The brand's most recent tagged voice, or null. */
+export function previousLdtVoice(log, brandKey = "ldt") {
+  for (const p of [...validPosts(log)].reverse()) {
+    if (p.brand !== brandKey) continue;
+    const v = p.generation?.voice || p.voice;
+    if (v && LDT_VOICES.includes(v)) return v;
+  }
+  return null;
+}
+
+/**
+ * Choose this post's voice: never the same as the last one, so the feed
+ * alternates between the operator talking about PRIMARY and PRIMARY talking
+ * about its own work.
+ */
+export function planLdtVoice(log, brandKey = "ldt") {
+  const previous = previousLdtVoice(log, brandKey);
+  const pool = LDT_VOICES.filter((v) => v !== previous);
+  const voice = (pool.length ? pool : LDT_VOICES)[0];
+  return { voice, voice_source: previous ? "rotated" : "default", excluded_voice: previous };
+}
+
+/** Self-made kinds — the only posts the meta closer may ride. */
+const SELF_MADE_CAPTION_KINDS = new Set(["carousel", "card", "text_reel"]);
+
+/** The brand's most recently used closer line, or null. */
+export function previousMetaCloser(log, brandKey = "ldt") {
+  for (const p of [...validPosts(log)].reverse()) {
+    if (p.brand !== brandKey) continue;
+    if (p.meta_closer) return p.meta_closer;
+  }
+  return null;
+}
+
+/**
+ * The meta closer for this post, or null.
+ *
+ * Rides SELF-MADE posts only. An operator clip is a screen recording a human
+ * filmed; "posted by PRIMARY" would be false on it, and the claims file says
+ * so. Wording rotates off the log so two posts in a row never close with the
+ * same sentence.
+ */
+export function pickMetaCloser(kind, claims = loadLdtClaims(), log = { posts: [] }) {
+  if (!SELF_MADE_CAPTION_KINDS.has(kind)) return null;
+  if (!claims?.metaCloser?.enabled) return null;
+  const lines = Array.isArray(claims.metaCloser.lines) ? claims.metaCloser.lines.filter(Boolean) : [];
+  if (lines.length === 0) return null;
+  const previous = previousMetaCloser(log);
+  const pool = lines.filter((l) => l !== previous);
+  return (pool.length ? pool : lines)[0];
+}
+
+/**
+ * Attach the closer as the caption's final beat — after the CTA, before the
+ * hashtags the lock step appends. The CTA stays the post's one ask; this is
+ * a footer, not a competing pitch.
+ */
+export function appendMetaCloser(caption, closer) {
+  const body = String(caption || "").trim();
+  if (!closer) return body;
+  if (body.includes(closer)) return body; // the model already wrote it verbatim
+  return `${body}\n\n${closer}`;
 }
 
 /**
@@ -129,8 +201,26 @@ export function validateLdtCaption(caption, brand, claims = loadLdtClaims(), all
  * The pinned fallback caption — used when generation fails the gate twice.
  * Built ONLY from pinned claims; tests assert it passes validateLdtCaption.
  */
-export function getLdtFallbackCaption(brand, claims = loadLdtClaims(), kind = "clip") {
+export function getLdtFallbackCaption(brand, claims = loadLdtClaims(), kind = "clip", { voice = "operator", closer = null } = {}) {
   const meta = claims.metaAngle?.enabled ? `\n\n${claims.metaAngle.line}` : "";
+  const keyword = brand?.cta?.keyword || "PRIMARY";
+
+  // PRIMARY narrating its own work. Every sentence maps to a pinned claim —
+  // first person changes the speaker, not what may be said.
+  if (voice === "primary") {
+    const body =
+      (kind === "clip"
+        ? "That is me working. Not a mockup, not a demo reel. I run the business I was built inside.\n\n"
+        : "I am PRIMARY. I am the brain of this business.\n\n") +
+      `I watch the pipeline. I work the follow-up. I brief my operator every morning at 7:05, on his phone. ` +
+      `I answer to my name. And nothing goes out until he approves it.\n\n` +
+      `I was born inside a working Texas brokerage. I am running live today.\n\n` +
+      `I start at $99/mo with $0 setup. Cancel anytime, no contracts.` +
+      meta +
+      `\n\nComment ${keyword} and I'll send you the demo.`;
+    return lockLdtHashtags(appendMetaCloser(body, closer), brand);
+  }
+
   const opener = kind === "clip"
     ? "This is PRIMARY, working. Not a mockup, not a demo reel. Our own software running our own business."
     : "Meet PRIMARY. Your business's brain.";
@@ -141,11 +231,34 @@ export function getLdtFallbackCaption(brand, claims = loadLdtClaims(), kind = "c
     `Born inside a working Texas brokerage. Running live today.\n\n` +
     `Solo starts at $99/mo with $0 setup. Cancel anytime, no contracts.` +
     meta +
-    `\n\nComment ${brand?.cta?.keyword || "PRIMARY"} and I'll send you the demo.`;
-  return lockLdtHashtags(body, brand);
+    `\n\nComment ${keyword} and I'll send you the demo.`;
+  return lockLdtHashtags(appendMetaCloser(body, closer), brand);
 }
 
-function buildPrompt({ kind, clipName, angle, brand, claims, hookStyle }) {
+/**
+ * The two voices, as prompt instructions.
+ *
+ * "primary" is the product narrating its OWN work in first person — the
+ * assistant reporting what it did, not marketing copy about a product. It is
+ * still bound by every pinned claim: first person changes who is speaking,
+ * never what may be said.
+ */
+const LDT_VOICE_INSTRUCTIONS = {
+  operator:
+    `VOICE — THE OPERATOR. You are the company, talking about PRIMARY in the third person. ` +
+    `Speak as the people who built it and use it every day.`,
+  primary:
+    `VOICE — PRIMARY, FIRST PERSON. You ARE the assistant, narrating your own work. Say "I". ` +
+    `Refer to the operator in the third person ("he", "the owner", "my operator") — never "you" for him. ` +
+    `Report what you actually did, plainly and in order, the way a colleague recounts a shift: ` +
+    `"I watched the pipeline while he slept. I drafted the follow-ups. He approved every send." ` +
+    `Matter-of-fact, a little dry, never eager and never boastful. No exclamation marks. ` +
+    `You may only describe work the pinned claims below cover — first person is a change of ` +
+    `speaker, NOT a licence to invent what you did. Never claim a number, an outcome, or a ` +
+    `capability that is not pinned. Address the reader directly ONLY in the closing CTA line.`,
+};
+
+function buildPrompt({ kind, clipName, angle, brand, claims, hookStyle, voice = "operator", closer = null }) {
   const claimsBlock = [
     "PINNED CLAIMS — the ONLY factual claims you may make (rephrase freely, but never add a fact or number that is not here):",
     ...claims.claims.map(c => `- ${c}`),
@@ -171,9 +284,22 @@ function buildPrompt({ kind, clipName, angle, brand, claims, hookStyle }) {
     ? `\nMETA ANGLE (optional, encouraged, use at most once, verbatim or near-verbatim because it is literally true): "${claims.metaAngle.line}"`
     : "";
 
+  // The closer is appended in code, not asked for — but its length is spent
+  // from the same caption budget, so the BODY target shrinks to make room.
+  // That is what "the closer stays and the body shortens" means in practice:
+  // the footer is fixed, the prose yields.
+  const closerBudget = closer
+    ? `${Math.max(200, 300 - closer.length - 2)} to ${900 - closer.length - 2} characters. A short closing line is appended after your text, so leave it room.`
+    : "300 to 900 characters.";
+  const closerRule = closer
+    ? `\n- Do NOT write any sign-off after the CTA. A closing line ("${closer}") is appended automatically; writing your own would duplicate it.`
+    : "";
+
   return `${context}
 
-VOICE: ${claims.company} (LDT). Plain-spoken, confident, a little wry. Short sentences. No hype adjectives where a receipt would do. Honest to a fault: this brand's whole pitch is that it never invents a number.
+HOUSE VOICE: ${claims.company} (LDT). Plain-spoken, confident, a little wry. Short sentences. No hype adjectives where a receipt would do. Honest to a fault: this brand's whole pitch is that it never invents a number.
+
+${LDT_VOICE_INSTRUCTIONS[voice] || LDT_VOICE_INSTRUCTIONS.operator}
 
 ${claimsBlock}
 
@@ -184,9 +310,9 @@ ${LDT_HOOK_INSTRUCTIONS[hookStyle] || LDT_HOOK_INSTRUCTIONS.pov}
 ${meta}
 
 RULES:
-- 300 to 900 characters. Plain text only: no markdown, no em-dashes, no bullet symbols.
+- ${closerBudget} Plain text only: no markdown, no em-dashes, no bullet symbols.
 - Mention PRIMARY by name.
-- End with exactly this CTA line, once: "Comment ${brand?.cta?.keyword || "PRIMARY"} and I'll send you the demo."
+- End with exactly this CTA line, once: "Comment ${brand?.cta?.keyword || "PRIMARY"} and I'll send you the demo."${closerRule}
 - Do NOT write hashtags; they are appended separately.
 - Every number you state must appear in the pinned claims above, exactly.
 
@@ -209,6 +335,10 @@ function generationTag(variation, captionSource) {
     hook_style: variation.hook_style,
     hook_style_source: variation.hook_style_source,
     excluded_style: variation.excluded_style,
+    // Voice is its own scoring axis, independent of hook style.
+    voice: variation.voice || "operator",
+    voice_source: variation.voice_source || "default",
+    excluded_voice: variation.excluded_voice ?? null,
     caption_source: captionSource,
     // The LDT lane fixes its own 300-900 char range (business captions, not
     // the realty length rotation) — recorded as such, never as a bucket.
@@ -236,7 +366,11 @@ export async function generateLdtCaption({ kind = "clip", clipName = "", angle =
   const allowed = buildAllowedFigures(claims);
   const variation = plannedVariation || pickLdtVariation(log);
   const hookStyle = variation.hook_style;
-  let prompt = buildPrompt({ kind, clipName, angle, brand, claims, hookStyle });
+  const voice = variation.voice || "operator";
+  // Self-made posts close with the meta line; operator clips never do.
+  const closer = pickMetaCloser(kind, claims, log);
+  const finish = (text) => lockLdtHashtags(appendMetaCloser(sanitizeCaption(text), closer), brand);
+  let prompt = buildPrompt({ kind, clipName, angle, brand, claims, hookStyle, voice, closer });
 
   for (let attempt = 1; attempt <= 2; attempt++) {
     let raw;
@@ -246,12 +380,12 @@ export async function generateLdtCaption({ kind = "clip", clipName = "", angle =
       console.warn(`[LDT Caption] Generation attempt ${attempt} failed: ${err.message?.slice(0, 150)}`);
       continue;
     }
-    const caption = lockLdtHashtags(sanitizeCaption(raw), brand);
+    const caption = finish(raw);
     const check = validateLdtCaption(caption, brand, claims, allowed);
     if (check.valid) {
       const source = attempt === 1 ? "generated" : "generated_retry";
-      console.log(`[LDT Caption] ✓ Attempt ${attempt} passed the claims gate (hook: ${hookStyle}, ${caption.length} chars)`);
-      return { caption, hookStyle, source, generation: generationTag(variation, source) };
+      console.log(`[LDT Caption] ✓ Attempt ${attempt} passed the claims gate (voice: ${voice}, hook: ${hookStyle}, ${caption.length} chars${closer ? ", + meta closer" : ""})`);
+      return { caption, hookStyle, voice, metaCloser: closer, source, generation: generationTag(variation, source) };
     }
     console.warn(`[LDT Caption] Attempt ${attempt} failed the gate: ${check.failures.join("; ")}`);
     prompt += `\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED: ${describeViolations(
@@ -260,10 +394,12 @@ export async function generateLdtCaption({ kind = "clip", clipName = "", angle =
   }
 
   console.warn("[LDT Caption] Falling back to the pinned caption (both attempts failed the gate)");
-  const fallback = getLdtFallbackCaption(brand, claims, kind);
+  const fallback = getLdtFallbackCaption(brand, claims, kind, { voice, closer });
   // The fallback's opener is the pinned copy, NOT the planned style — tagging
   // the plan's style would score a caption under a hook it doesn't exhibit.
   // hook_style:null lets the learn step classify from the published text.
+  // The VOICE tag survives, because the pinned copy has a per-voice variant:
+  // what shipped really was written in that voice.
   const fallbackTag = { ...generationTag(variation, "fallback"), hook_style: null, hook_style_source: "fallback_pinned" };
-  return { caption: fallback, hookStyle: "pinned", source: "fallback", generation: fallbackTag };
+  return { caption: fallback, hookStyle: "pinned", voice, metaCloser: closer, source: "fallback", generation: fallbackTag };
 }

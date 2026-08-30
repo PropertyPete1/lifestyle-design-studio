@@ -19,7 +19,7 @@ import {
   loadLdtClaims, buildAllowedFigures, checkClaimsCompliance, describeViolations,
 } from "../src/ldt-claims-gate.js";
 import {
-  validateLdtCaption, getLdtFallbackCaption, lockLdtHashtags,
+  validateLdtCaption, getLdtFallbackCaption, lockLdtHashtags, pickMetaCloser, planLdtVoice,
 } from "../src/ldt-caption.js";
 import { carouselAngles, deckText, pickAngle } from "../src/ldt-carousel-gen.js";
 import { cardText } from "../src/ldt-card-gen.js";
@@ -203,5 +203,90 @@ describe("TEETH — the shipped copy passes its own gate", () => {
         assert.notEqual(pickAngle({ claims, dateStr: d, previousAngle: prev }).key, prev);
       }
     }
+  });
+});
+
+describe("PRIMARY as narrator, and the meta closer's scope", () => {
+  test("the closer rides self-made posts and NEVER an operator clip", () => {
+    // A clip is a screen recording a human filmed and dropped in the intake
+    // folder. "Written, designed, and posted by PRIMARY" would simply be
+    // false on it — the one place this line could become a lie.
+    assert.equal(pickMetaCloser("clip", claims, { posts: [] }), null);
+    for (const kind of ["carousel", "card", "text_reel"]) {
+      assert.ok(pickMetaCloser(kind, claims, { posts: [] }), `${kind} should carry a closer`);
+    }
+  });
+
+  test("the closer wording rotates so two posts never close identically", () => {
+    const lines = claims.metaCloser.lines;
+    assert.ok(lines.length >= 2, "rotation needs at least two phrasings");
+    const first = pickMetaCloser("carousel", claims, { posts: [] });
+    const log = { posts: [{ brand: "ldt", type: "ldt_carousel", meta_closer: first, success: true, timestamp: "2026-08-29T15:00:00Z" }] };
+    assert.notEqual(pickMetaCloser("card", claims, log), first);
+  });
+
+  test("the closer is the LAST line and the CTA still comes first", () => {
+    const closer = pickMetaCloser("carousel", claims, { posts: [] });
+    const caption = getLdtFallbackCaption(brand, claims, "carousel", { closer });
+    const withoutTags = caption.split(brand.hashtags)[0].trim();
+    assert.ok(withoutTags.endsWith(closer), "the closer is the final beat before the hashtags");
+    const ctaAt = caption.indexOf(`Comment ${brand.cta.keyword}`);
+    assert.ok(ctaAt !== -1 && ctaAt < caption.indexOf(closer), "the CTA is the post's first ask");
+  });
+
+  test("OUT-OF-SCOPE phrasings are refused by the gate, not by a polite prompt", () => {
+    // The boundary: the studio generates creative, writes captions,
+    // schedules, posts, and scores. Anything implying brand strategy or
+    // account management is a promise nobody built.
+    const OVERCLAIMS = [
+      "PRIMARY handles your brand strategy end to end.",
+      "It also does account management for you.",
+      "Think of it as your social media manager.",
+      "PRIMARY manages your social accounts.",
+      "It runs your brand while you sleep.",
+      "PRIMARY handles your marketing.",
+    ];
+    for (const text of OVERCLAIMS) {
+      const r = checkClaimsCompliance(text, claims, allowed);
+      assert.equal(r.ok, false, `overclaim slipped through: ${text}`);
+    }
+  });
+
+  test("the permitted closers and the pinned 'runs your follow-up' still pass", () => {
+    // The scope ban must not swallow what IS pinned: "runs your follow-up"
+    // is a claim the sales site makes, and the closers are the approved copy.
+    const MUST_PASS = [
+      ...claims.metaCloser.lines,
+      "A voice-operated AI command center that watches your pipeline, runs your follow-up, and briefs you every morning at 7:05.",
+      "Automated nurture works your cold database daily, with instant human handoff the moment a lead replies.",
+    ];
+    for (const text of MUST_PASS) {
+      const r = checkClaimsCompliance(text, claims, allowed);
+      assert.equal(r.ok, true, `false positive on permitted copy: ${text} — ${describeViolations(r.violations)}`);
+    }
+  });
+
+  test("TEETH — both voices' pinned captions are gate-clean, with the closer attached", () => {
+    // The fallback is what ships when generation fails twice. A first-person
+    // fallback that failed validation would mean the primary voice could
+    // never post at all.
+    for (const voice of ["operator", "primary"]) {
+      for (const kind of ["clip", "carousel", "card", "text_reel"]) {
+        const closer = pickMetaCloser(kind, claims, { posts: [] });
+        const caption = getLdtFallbackCaption(brand, claims, kind, { voice, closer });
+        const v = validateLdtCaption(caption, brand, claims, allowed);
+        assert.equal(v.valid, true, `${voice}/${kind}: ${v.failures.join("; ")}`);
+        assert.equal(Boolean(closer), kind !== "clip");
+      }
+    }
+  });
+
+  test("the first-person voice actually speaks in first person, about its own work", () => {
+    const caption = getLdtFallbackCaption(brand, claims, "carousel", { voice: "primary" });
+    assert.match(caption, /\bI\b/, "PRIMARY refers to itself as I");
+    assert.match(caption, /\bhe\b|\bhis\b|operator/i, "and to its operator in the third person");
+    // The approval doctrine survives the voice change — it is the claim that
+    // most matters and the easiest to lose when rewriting to first person.
+    assert.match(caption, /nothing goes out until he approves it/i);
   });
 });

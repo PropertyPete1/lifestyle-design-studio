@@ -152,7 +152,7 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
       throw new Error(`[QC] FAILED: ${qc.reason}`);
     }
 
-    const { caption, hookStyle, source, generation } = await generateLdtCaption({
+    const { caption, hookStyle, source, generation, voice } = await generateLdtCaption({
       kind: "clip", clipName: candidate.name, brand, claims, log,
     });
 
@@ -197,6 +197,12 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
           caption,
           caption_source: source,
           hook_style: hookStyle,
+          voice,
+          // Operator clips never carry the meta closer: a human filmed the
+          // screen recording, so "posted by PRIMARY" would be false. Stamped
+          // explicitly as null so the learn step can tell "no closer" from
+          // "an older entry that predates closers".
+          meta_closer: null,
           generation,
           platforms,
           blogId,
@@ -247,7 +253,7 @@ async function postSelfMade(kind, { log, brand, claims, blogId, label, platforms
     throw new Error(`[LDT ${kind}] Copy failed the claims gate: ${describeViolations(gateCheck.violations)}`);
   }
 
-  const { caption, source, generation } = await generateLdtCaption({
+  const { caption, source, generation, voice, metaCloser } = await generateLdtCaption({
     kind, angle: angle.key, brand, claims, log, variation,
   });
 
@@ -361,6 +367,12 @@ async function postSelfMade(kind, { log, brand, claims, blogId, label, platforms
         // the feed actually shows.
         hook_style: style,
         angle: angle.key,
+        // Voice and closer are stamped top-level as well as inside
+        // `generation`, so the learn step can group on them directly and a
+        // human reading posted-log.json can see which voice spoke and
+        // whether the meta line rode along.
+        voice,
+        meta_closer: metaCloser || null,
         generation,
         platforms: postedNetworks,
         blogId,

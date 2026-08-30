@@ -23,7 +23,7 @@ import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { reelEntries, generationFor, buildBrief, renderBriefEmail } from "../src/learn.js";
-import { pickLdtVariation } from "../src/ldt-caption.js";
+import { planLdtVoice, pickLdtVariation } from "../src/ldt-caption.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -140,5 +140,39 @@ describe("TEETH — the roster and the stamps that make all of this run", () => 
     assert.match(src, /slot: chicagoSlot\(\)/, "entries carry a slot");
     const tagged = src.match(/^\s+generation,$/gm) || [];
     assert.equal(tagged.length, 2, "both recordPost calls persist the generation tag block");
+  });
+});
+
+describe("voice and closer are tagged for the learn step", () => {
+  test("the voice rotates and never repeats the lane's previous voice", () => {
+    assert.deepEqual(planLdtVoice({ posts: [] }).voice, "operator");
+    const after = (v) => planLdtVoice({ posts: [{ brand: "ldt", generation: { voice: v }, timestamp: iso(2), success: true }] });
+    assert.equal(after("operator").voice, "primary");
+    assert.equal(after("primary").voice, "operator");
+    assert.equal(after("operator").excluded_voice, "operator");
+  });
+
+  test("another brand's voice never steers the LDT rotation", () => {
+    const log = { posts: [{ brand: "other", generation: { voice: "primary" }, timestamp: iso(2), success: true }] };
+    assert.equal(planLdtVoice(log).voice, "operator", "no LDT history means no exclusion");
+  });
+
+  test("the variation plan carries voice alongside hook style, as its own axis", () => {
+    // Voice and hook style must be independent: the same hook can be spoken
+    // by either voice, so they cannot share one rotation slot.
+    const plan = pickLdtVariation(LOG, { brief: null, rand: () => 0.99, now: NOW });
+    assert.ok(["operator", "primary"].includes(plan.voice));
+    assert.ok(plan.hook_style, "hook style still planned");
+    assert.ok("voice_source" in plan, "the choice records how it was made");
+  });
+
+  test("ldt-main stamps voice and meta_closer on BOTH paths — clips get a null closer", () => {
+    const src = readFileSync(join(ROOT, "src", "ldt-main.js"), "utf-8");
+    const voices = src.match(/^\s+voice,$/gm) || [];
+    assert.equal(voices.length, 2, "both recordPost calls persist the voice");
+    // The clip path must stamp the closer as an explicit null, so "no closer"
+    // is distinguishable from an entry written before closers existed.
+    assert.match(src, /meta_closer: null,/, "clip entries record an explicit null closer");
+    assert.match(src, /meta_closer: metaCloser \|\| null,/, "self-made entries record the line they used");
   });
 });

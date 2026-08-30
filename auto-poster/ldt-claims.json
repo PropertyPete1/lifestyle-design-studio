@@ -55,8 +55,21 @@
     { "pattern": "\\b(the\\s+)?(#\\s*1|number\\s+one|best|leading)\\s+(ai|crm|assistant|platform)", "why": "unsubstantiated superlative" },
     { "pattern": "replaces?\\s+your\\s+(team|agents|staff)", "why": "not a claim the site makes" },
     { "pattern": "signed\\s+(by\\s+)?(primary|lifestyle\\s+design\\s+technologies)", "why": "email is signed in the CLIENT'S name from the client's address — the inverse claim is test-banned" },
-    { "pattern": "(the\\s+)?product\\s+(it'?s|this\\s+post\\s+is)\\s+about|product\\s+is\\s+doing\\s+its\\s+own\\s+marketing", "why": "the poster is LDT's internal automation, not PRIMARY the product — attributing one system's work to another is the overclaim metaAngle.note pins; say 'our own automation'" }
+    { "pattern": "(the\\s+)?product\\s+(it'?s|this\\s+post\\s+is)\\s+about|product\\s+is\\s+doing\\s+its\\s+own\\s+marketing", "why": "the poster is LDT's internal automation, not PRIMARY the product — attributing one system's work to another is the overclaim metaAngle.note pins; say 'our own automation'" },
+    { "pattern": "brand\\s+strateg", "why": "OUT OF SCOPE: the studio makes and posts creative, it does not do brand strategy — see metaCloser.scope" },
+    { "pattern": "account\\s+manage(ment|r)|social\\s+media\\s+manager", "why": "OUT OF SCOPE: nobody manages the account — the studio generates, schedules, posts and scores, nothing more" },
+    { "pattern": "manages?\\s+your\\s+(account|accounts|brand|social|marketing|presence)", "why": "OUT OF SCOPE: managing a brand or account is not a thing this system does" },
+    { "pattern": "(runs?|handles?|owns?)\\s+your\\s+(brand|social|marketing|account)", "why": "OUT OF SCOPE: it runs your FOLLOW-UP (pinned); running your brand or marketing is a different, unbuilt promise" }
   ],
+  "metaCloser": {
+    "enabled": true,
+    "lines": [
+      "Written, designed, and posted by PRIMARY.",
+      "PRIMARY made this post. It also runs the follow-up."
+    ],
+    "scope": "generates the creative, writes the caption, schedules, posts, and scores performance",
+    "note": "The closer rides SELF-MADE posts only (carousel/card/text_reel) and is the last line before the hashtags, after the primary CTA. It must never appear on an operator clip: a screen recording a human filmed was not made by PRIMARY, and the line would be false. Scope is exactly the `scope` string above — the bannedPatterns list mechanically refuses brand strategy, account management, and 'runs your brand', so a drifted line fails the gate rather than shipping. Wording rotates so consecutive posts do not close identically."
+  },
   "metaAngle": {
     "enabled": true,
     "line": "This post was scheduled and captioned by our own automation.",

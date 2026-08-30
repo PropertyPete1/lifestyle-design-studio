@@ -91,15 +91,19 @@ export function previousSelfMadeAngle(log, brandKey = "ldt") {
  * The angle a self-made post already used EARLIER TODAY (Chicago day), or
  * null.
  *
- * This — not previousSelfMadeAngle — is what the runner feeds pickAngle, and
- * the distinction is load-bearing. pickAngle rotates by date, so consecutive
- * DAYS already land on different angles; excluding yesterday's angle as well
- * shrinks the pool from five to four, and the day-number modulo over that
- * smaller pool settles into a fixed four-cycle that starves one angle out of
- * the table completely (measured: `after_hours` never posts). The only
- * repeat the date rotation cannot prevent is the one within a single day —
- * both slots share a date, so both would tell the same story. Scoping the
- * exclusion to today fixes that without costing an angle.
+ * The singular form — the newest of today's angles. The RUNNER uses the
+ * plural (todaysSelfMadeAngles) below; this one remains for callers that
+ * only need the latest, and because the distinction between them is exactly
+ * where a bug lived.
+ *
+ * Why the exclusion is scoped to today at all: pickAngle rotates by date, so
+ * consecutive DAYS already land on different angles. Excluding yesterday's
+ * angle as well shrinks the pool from five to four, and the day-number
+ * modulo over that smaller pool settles into a fixed four-cycle that starves
+ * one angle out of the table completely (measured: `after_hours` never
+ * posts). The only repeat the date rotation cannot prevent is the one WITHIN
+ * a single day — every slot that day shares a date, so each would otherwise
+ * tell the same story.
  */
 export function todaysSelfMadeAngle(log, brandKey = "ldt", now = new Date()) {
   return todaysSelfMadeAngles(log, brandKey, now)[0] || null;
