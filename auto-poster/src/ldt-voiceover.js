@@ -29,6 +29,17 @@
  * read that cannot fit inside the clip at TEMPO_MAX is a fallback, not a
  * trim.
  *
+ * CLAIMS GATE: every resolved script line — sidecar and OCR alike — passes
+ * through the LDT claims gate (ldt-claims-gate.js) BEFORE any TTS is spent.
+ * A rejection is a CONTENT refusal and is the one deliberate exception to
+ * the fail-toward-the-silent-clip doctrine below: the verdict comes back
+ * `blocked` and the runner must NOT post the clip at all (silent included),
+ * because the refused words are the operator's own captions — they are in
+ * the video whether or not we voice them. The exact rejected line(s) are
+ * logged and the runner alerts Peter. Note the gate's number-honesty rule
+ * applies as-is: a figure the pinned claims list doesn't back ("47 leads
+ * today") blocks the clip until it is pinned or the line is edited.
+ *
  * SKIPS AND FALLBACKS — the doctrine is fail-toward-the-silent-clip:
  *   - "-novo" in the filename skips the voiceover on purpose.
  *   - A clip with an audible audio track keeps it (a silent track — screen
@@ -59,6 +70,7 @@ import { join } from "path";
 import { generateTTS } from "./voiceover.js";
 import { TEMPO_MAX } from "./voiceover-style.js";
 import { ocrAvailable, ocrNormaliseTokens } from "./source-respect.js";
+import { loadLdtClaims, checkClaimsCompliance, buildAllowedFigures, describeViolations } from "./ldt-claims-gate.js";
 import { downloadFileById } from "./drive.js";
 
 // ─── Filename flag ──────────────────────────────────────────────────────────
@@ -583,9 +595,15 @@ function cleanupPaths(...paths) {
  * entryFields are non-null — recordPost's pass-through silently drops nulls,
  * and a reason that doesn't persist is a reason nobody can act on.
  *
+ * A claims-gate rejection additionally carries `blocked: true` and
+ * `rejections: [{ line, violations, why }]` — the caller must treat that as
+ * a refusal of the CLIP, not of the voiceover (see the header): don't post,
+ * alert.
+ *
  * opts: clipName, files (the intake folder listing, for the sidecar),
- * dryRun, plus injectable seams — downloadText, tts, run, ocr, extract,
- * exec, workDir — all defaulting to the real implementations.
+ * dryRun, plus injectable seams — downloadText, tts, claims, claimsCheck,
+ * run, ocr, extract, exec, workDir — all defaulting to the real
+ * implementations (claims to ldt-claims.json).
  */
 export async function applyLdtVoiceover(videoPath, opts = {}) {
   const {
@@ -594,6 +612,8 @@ export async function applyLdtVoiceover(videoPath, opts = {}) {
     dryRun = false,
     downloadText = defaultDownloadText,
     tts = generateTTS,
+    claims = null,
+    claimsCheck = null,
     run = spawnSync,
     ocr = undefined,
     extract = undefined,
@@ -661,6 +681,40 @@ export async function applyLdtVoiceover(videoPath, opts = {}) {
       voiceover_timed: parsed.timed,
       ...ocrEntryFields(ocrStats),
     };
+
+    // ── Claims gate, line by line, before a cent of TTS ──────────────────
+    // A rejection is NOT a fallback: the refused words are burned into the
+    // clip, so posting it silent would publish them anyway. The caller gets
+    // `blocked` and must refuse the whole clip, loudly.
+    const claimsData = claims || loadLdtClaims();
+    const gateFn = claimsCheck || (() => {
+      const allowed = buildAllowedFigures(claimsData);
+      return (text) => checkClaimsCompliance(text, claimsData, allowed);
+    })();
+    const rejections = [];
+    for (const cue of parsed.cues) {
+      const check = gateFn(cue.text);
+      if (!check.ok) {
+        rejections.push({ line: cue.text, violations: check.violations, why: describeViolations(check.violations) });
+      }
+    }
+    if (rejections.length > 0) {
+      for (const r of rejections) {
+        console.error(`::error::[LDT VO] ⛔ Claims gate rejected line: "${r.line}" — ${r.why}`);
+      }
+      return {
+        videoPath,
+        applied: false,
+        blocked: true,
+        rejections,
+        entryFields: {
+          voiceover: false,
+          voiceover_reason: "claims_gate_blocked",
+          ...scriptFields,
+          voiceover_rejected_lines: rejections.map(r => r.line).join(" | "),
+        },
+      };
+    }
 
     if (dryRun) {
       console.log(`[LDT VO] DRY RUN — would voice (${source}): "${script.slice(0, 160)}${script.length > 160 ? "…" : ""}"`);

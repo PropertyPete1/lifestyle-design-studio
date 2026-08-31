@@ -151,7 +151,22 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
     // ── Voiceover: sidecar/OCR script read in Peter's voice. Never throws —
     // a failed voiceover posts the silent clip rather than costing the slot,
     // and vo.entryFields carries what happened into the posted-log entry.
-    const vo = await applyLdtVoiceover(tmpPath, { clipName: candidate.name, files, dryRun: DRY_RUN });
+    // The one exception is a CLAIMS-GATE rejection (vo.blocked): the refused
+    // words are the operator's own burned captions, so posting silent would
+    // publish them anyway — the clip is refused outright, Peter is alerted
+    // with the exact line(s), and the walk moves to the next candidate. Not
+    // an inherent-failure blocklist: a fixed sidecar (or a pinned claim)
+    // makes the same clip postable tomorrow.
+    const vo = await applyLdtVoiceover(tmpPath, { clipName: candidate.name, files, dryRun: DRY_RUN, claims });
+    if (vo.blocked) {
+      const detail = vo.rejections.map(r => `"${r.line}" — ${r.why}`).join("; ");
+      await notify(OUTCOME.FAILED,
+        `The LDT clip ${candidate.name} was NOT posted: its voiceover script (${vo.entryFields.voiceover_source}) failed the claims gate. Rejected: ${detail}`,
+        vo.entryFields.voiceover_source === "sidecar"
+          ? "Edit the sidecar .txt so every line passes ldt-claims.json, or remove the clip from the intake folder, then re-run."
+          : "The rejected text is burned into the clip itself — fix or remove the clip from the intake folder. If the claim is true and belongs in LDT copy, pin it in ldt-claims.json first.");
+      throw new Error(`[VO CLAIMS] script rejected by the claims gate: ${detail}`);
+    }
     if (vo.applied) voPath = vo.videoPath;
     const postPath = vo.applied ? vo.videoPath : tmpPath;
 
