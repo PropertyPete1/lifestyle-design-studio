@@ -6711,6 +6711,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/12X-1RmWiKwbIsqVnd4YRb8kGOuX0TP7C/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-08-31T19:08:54.987Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "12X-1RmWiKwbIsqVnd4YRb8kGOuX0TP7C",
+      "captionSnippet": "Stop scrolling. This is what $479,999 gets you in San Antonio right now.\n\nNew construction like this doesn't wait around",
+      "mainIgPostedAt": "2026-08-31T19:08:54.987Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
