@@ -4694,6 +4694,193 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-08-31",
+      "timestamp": "2026-08-31T19:46:12.641Z",
+      "pillar": "real_estate_education",
+      "topic": "The three inspection windows on a Texas new build",
+      "hook": "You get three chances to inspect a Texas new build. Most buyers use zero.",
+      "closeType": "dm",
+      "keyword": "CHECKLIST",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "The three inspection windows on a Texas new build",
+        "hook": "You get three chances to inspect a Texas new build. Most buyers use zero.",
+        "map": [
+          "Code vs quality",
+          "Before the drywall",
+          "The punch list",
+          "The month eleven cutoff",
+          "Who pays for it",
+          "What gets flagged"
+        ],
+        "points": [
+          {
+            "title": "Code Is Not Quality",
+            "body": [
+              "The city inspector works for the city, not for you.",
+              "He checks the legal minimum and moves on.",
+              "Passing means legal. It does not mean well built."
+            ],
+            "loop": "Chance one closes before drywall."
+          },
+          {
+            "title": "Chance One: Pre Drywall",
+            "body": [
+              "Once the walls close up, the wiring, pipes and framing are gone from view.",
+              "Your own inspector can walk it while everything is still open."
+            ],
+            "loop": "Chance two is easy to waste."
+          },
+          {
+            "title": "Chance Two: The Walkthrough",
+            "body": [
+              "The builder walks you through and writes a punch list before closing.",
+              "Bring your own inspector and that list gets a lot longer."
+            ],
+            "loop": "Chance three has an expiry date."
+          },
+          {
+            "title": "Chance Three: Month Eleven",
+            "body": [
+              "Most builder warranties on workmanship run one year.",
+              "Get inspected at month eleven, while they still have to fix it.",
+              "At month thirteen the repair bill is yours."
+            ],
+            "loop": "None of this is free."
+          },
+          {
+            "title": "Who Pays For It",
+            "body": [
+              "You hire the inspector yourself, a few hundred dollars per visit.",
+              "The builder cannot stop you from bringing one.",
+              "It is the cheapest money you will spend on the house."
+            ],
+            "loop": "Six things they flag first."
+          }
+        ],
+        "cta": {
+          "payoff": "the new build inspection checklist I use at all three stages"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 8,
+        "worst_problem": "The final loop promises \"Six things they flag first\" — and the map bills \"What gets flagged\" as a section — but that slide never exists, so the deck's last open loop dead-ends into the CTA unpaid.",
+        "fix": "Either add the sixth slide listing the six most-flagged defects, or change the last loop to point at the checklist itself (e.g. \"The list I hand my inspector\")."
+      },
+      "attemptsUsed": 2,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 369067839,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-31T19:49:13.143Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7680284478371089677"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 369067843,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-31T19:49:13.238Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500278162124181504"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 369067872,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-31T19:49:13.336Z",
+          "publicUrl": "https://www.instagram.com/p/Dct35PQFdXk/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 369067905,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-31T19:49:13.418Z",
+          "publicUrl": "https://www.instagram.com/p/Dct35a-lX-R/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 369067909,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-31T19:49:13.500Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500278160702287872"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 369067935,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-31T19:50:44.183Z",
+          "publicUrl": "https://www.instagram.com/p/Dct3_aYCD1_/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 369067942,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-31T19:49:13.664Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122118359463400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 369067945,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-08-31T19:49:13.746Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500278159523860480"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-08-31T19:50:44.183Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
