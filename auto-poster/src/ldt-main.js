@@ -21,7 +21,9 @@
  * CONTENT — the fillPlan walk (ldt-slot-filler.js), in priority order:
  *   1. Operator-supplied clips from the intake Drive folder
  *      (LDT_INTAKE_FOLDER_ID) — screen recordings of PRIMARY working —
- *      QC'd, captioned in the LDT voice, posted once each, oldest first.
+ *      QC'd, voiced (ldt-voiceover.js: sidecar/OCR script, Peter's cloned
+ *      voice; failures post the silent clip), captioned in the LDT voice,
+ *      posted once each, oldest first.
  *   2. The self-made chain when no clip lands and the config allows it:
  *      the 8-slide narrative carousel leads, the promo card and the silent
  *      text-motion reel alternate behind it (no-immediate-repeat rotation).
@@ -66,6 +68,7 @@ import {
   loadBrandRegistry, findBrandProfiles, resolveCadence, cadenceAllows, minGapOk, chicagoDayOf,
 } from "./brands.js";
 import { pickIntakeCandidates, hasBrandTypeToday } from "./ldt-intake.js";
+import { applyLdtVoiceover } from "./ldt-voiceover.js";
 import { generateLdtCaption, pickLdtVariation } from "./ldt-caption.js";
 import { loadLdtClaims, checkClaimsCompliance, describeViolations } from "./ldt-claims-gate.js";
 import { selfMadePlan, selfMadeAllowed, todaysSelfMadeAngles, chicagoSlot } from "./ldt-slot-filler.js";
@@ -129,12 +132,13 @@ function resolvePostablePlatforms(log, connected, cadence, brand) {
  * reported on the result, so the candidate loop can never react to a
  * post-success hiccup by publishing a second clip in the same slot.
  */
-async function postClip(candidate, { log, brand, claims, blogId, label, platforms }) {
+async function postClip(candidate, { log, brand, claims, blogId, label, platforms, files }) {
   console.log(`\n[LDT] Trying clip: ${candidate.name} (${candidate.id})`);
   const tmpPath = join(tmpdir(), `ldt_${Date.now()}.mp4`);
   const buffer = await downloadVideo(candidate.id, candidate.name);
   writeFileSync(tmpPath, buffer);
 
+  let voPath = null;
   try {
     const qc = await prePostQualityCheck(tmpPath, {
       requireVertical: brand.qc?.requireVertical !== false,
@@ -143,6 +147,13 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
     if (!qc.ok) {
       throw new Error(`[QC] FAILED: ${qc.reason}`);
     }
+
+    // ── Voiceover: sidecar/OCR script read in Peter's voice. Never throws —
+    // a failed voiceover posts the silent clip rather than costing the slot,
+    // and vo.entryFields carries what happened into the posted-log entry.
+    const vo = await applyLdtVoiceover(tmpPath, { clipName: candidate.name, files, dryRun: DRY_RUN });
+    if (vo.applied) voPath = vo.videoPath;
+    const postPath = vo.applied ? vo.videoPath : tmpPath;
 
     const { caption, hookStyle, source, generation, voice } = await generateLdtCaption({
       kind: "clip", clipName: candidate.name, brand, claims, log,
@@ -154,7 +165,7 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
       console.log("[LDT DRY_RUN] ═══════ END ═══════");
     }
 
-    let uploadBuf = readFileSync(tmpPath);
+    let uploadBuf = readFileSync(postPath);
     if (uploadBuf.length > MAX_UPLOAD_BYTES) {
       console.log(`[LDT] Clip is ${(uploadBuf.length / 1024 / 1024).toFixed(1)}MB — compressing to fit the upload cap...`);
       const compressed = compressVideoToFit(uploadBuf, MAX_UPLOAD_BYTES);
@@ -200,6 +211,9 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
           blogId,
           postId: result.brands[0]?.postId || null,
           success: true,
+          // What the voiceover step did and why — including the exact script
+          // it spoke (voiceover_script), so a human can check the OCR read.
+          ...vo.entryFields,
         });
       }
     } catch (err) {
@@ -211,6 +225,7 @@ async function postClip(candidate, { log, brand, claims, blogId, label, platform
     return result;
   } finally {
     try { unlinkSync(tmpPath); } catch {}
+    if (voPath && voPath !== tmpPath) { try { unlinkSync(voPath); } catch {} }
   }
 }
 
@@ -518,7 +533,7 @@ async function main() {
     let postedCandidate = null;
     for (const candidate of candidates) {
       try {
-        postResult = await postClip(candidate, { log, brand, claims, blogId, label, platforms });
+        postResult = await postClip(candidate, { log, brand, claims, blogId, label, platforms, files });
         postedCandidate = candidate;
         break;
       } catch (err) {

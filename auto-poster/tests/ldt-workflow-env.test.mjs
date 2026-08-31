@@ -48,6 +48,11 @@ const REQUIRED_ENV = [
   "METRICOOL_USER_ID",
   "ANTHROPIC_API_KEY",
   "LDT_INTAKE_FOLDER_ID",
+  // The voiceover step (ldt-voiceover.js) reuses the realty pipeline's
+  // ElevenLabs voice — missing keys would silently fall back to posting
+  // every clip silent, which is exactly the failure this guard exists for.
+  "ELEVENLABS_API_KEY",
+  "ELEVENLABS_VOICE_ID",
 ];
 
 describe("ldt-post.yml", () => {
@@ -55,6 +60,12 @@ describe("ldt-post.yml", () => {
     // A guard that matched nothing would pass forever.
     assert.ok(ldtYml.includes("post-ldt:"), "job post-ldt is present");
     assert.ok(ldtYml.includes("node src/ldt-main.js"), "runs the LDT entrypoint");
+  });
+
+  test("tesseract is installed on the runner", () => {
+    // The OCR script path (ldt-voiceover.js) needs the tesseract CLI; a
+    // runner without it would quietly post every sidecar-less clip silent.
+    assert.ok(/apt-get install[^\n]*tesseract-ocr/.test(ldtYml), "ldt-post.yml must apt-get install tesseract-ocr");
   });
 
   for (const key of REQUIRED_ENV) {

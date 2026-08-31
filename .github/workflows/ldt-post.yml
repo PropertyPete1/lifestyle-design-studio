@@ -64,12 +64,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install ffmpeg
+      - name: Install ffmpeg & tesseract
         run: |
-          # ffprobe drives the programmatic QC gate and ffmpeg the >95MB
-          # compression path. No tesseract/whisper here — the LDT lane adds no
-          # voiceover and burns no captions.
-          sudo apt-get update && sudo apt-get install -y ffmpeg
+          # ffprobe drives the programmatic QC gate, ffmpeg the >95MB
+          # compression path and the voiceover mux. tesseract reads the
+          # burned-in captions when an intake clip has no sidecar script
+          # (ldt-voiceover.js) — without it the OCR path falls back to
+          # posting the clip silent. No whisper: the lane never transcribes.
+          sudo apt-get update && sudo apt-get install -y ffmpeg tesseract-ocr
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
@@ -89,6 +91,8 @@ jobs:
           METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LDT_INTAKE_FOLDER_ID: ${{ secrets.LDT_INTAKE_FOLDER_ID }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
         run: |
           if node src/ldt-main.js; then
             echo "post_success=true" >> $GITHUB_OUTPUT
