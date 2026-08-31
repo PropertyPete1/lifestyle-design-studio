@@ -1,0 +1,113 @@
+{
+  "brand": "ldt",
+  "engine": "learn-v1",
+  "generated_at": "2026-08-31T20:55:41.746Z",
+  "window_days": 28,
+  "sample": {
+    "posts_scored": 1,
+    "posts_scored_all_media": 4,
+    "posts_unjoined": 1,
+    "analytics_rows_joined": 2,
+    "analytics_rows_unattributed": 748,
+    "provenance": {
+      "tagged": 1,
+      "inferred": 0
+    }
+  },
+  "hook_styles": {
+    "pattern_interrupt": {
+      "n": 1,
+      "score": 31,
+      "median": 31,
+      "verdict": "insufficient_sample"
+    }
+  },
+  "caption_lengths": {},
+  "posting_slots": {
+    "analyzed_only": true,
+    "table": {
+      "pm": {
+        "n": 3,
+        "score": 123,
+        "median": 86,
+        "verdict": "winner"
+      },
+      "midday": {
+        "n": 1,
+        "score": 34,
+        "median": 34,
+        "verdict": "insufficient_sample"
+      }
+    }
+  },
+  "cities": {
+    "analyzed_only": true,
+    "table": {
+      "ldt": {
+        "n": 1,
+        "score": 31,
+        "median": 31,
+        "verdict": "insufficient_sample"
+      }
+    }
+  },
+  "hook_plate": {
+    "analyzed_only": true,
+    "table": {}
+  },
+  "top_hooks": [
+    {
+      "hook": "Watch what happens when a lead replies. PRIMARY drafts the call notes from your speaker call, posts them to your CRM, and logs everything. a",
+      "hook_style": "pattern_interrupt",
+      "provenance": "tagged",
+      "score": 31,
+      "score_basis": "instagram_median",
+      "ig_views_median": 16,
+      "city": "ldt",
+      "posted": "2026-08-31T01:01:36.437Z"
+    }
+  ],
+  "kill_list": [],
+  "guidance": {
+    "exploit_ratio": 0.7,
+    "explore_ratio": 0.3
+  },
+  "unavailable": [
+    {
+      "metric": "followers",
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "youtube_shorts"
+      ]
+    },
+    {
+      "metric": "follower_delta",
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "youtube_shorts"
+      ]
+    },
+    {
+      "metric": "saves",
+      "platforms": [
+        "tiktok",
+        "youtube_shorts"
+      ]
+    },
+    {
+      "metric": "reach",
+      "platforms": [
+        "tiktok",
+        "youtube_shorts"
+      ]
+    }
+  ],
+  "caveats": [
+    "1 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
+    "1 posted reels had no matching analytics rows (usually: posted within the last day, before metrics exist). They are excluded, not zeroed.",
+    "Posting slots are set by the cron, not chosen per post — the slot table is analysis, not a controlled experiment.",
+    "Scores are not comparable across platforms; the headline score is the median across the brand's Instagram accounts."
+  ]
+}
