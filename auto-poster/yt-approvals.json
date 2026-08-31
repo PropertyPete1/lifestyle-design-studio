@@ -1718,6 +1718,175 @@
         "assignedAt": "2026-08-26T01:27:33.044Z",
         "via": "assigned"
       }
+    },
+    {
+      "requestId": "topic_pick-2026-08-31-f4a39608",
+      "kind": "topic_pick",
+      "requestedAt": "2026-08-31T20:17:56.192Z",
+      "payload": {
+        "requestId": "topic_pick-2026-08-31-f4a39608",
+        "kind": "topic_pick",
+        "generatedAt": "2026-08-31T20:17:53.096Z",
+        "candidates": [
+          {
+            "index": 1,
+            "title": "Moving to San Antonio: what to know before you actually move",
+            "intent": "relocation",
+            "market": "san_antonio",
+            "query": "moving to san antonio",
+            "hook": "The decision that shapes your life in San Antonio isn't the house, it's whether you land inside Loop 1604 or outside it. That one line decides your commute, your tax rate and your school district for the next ten years.",
+            "outline": [
+              "Why people are landing in San Antonio instead of Austin",
+              "Inside Loop 1604 vs outside: Alamo Ranch, Converse and the commute math",
+              "The school district map: NEISD, NISD, Judson and Alamo Heights ISD",
+              "The tax bill nobody budgets for, plus insurance on the west side",
+              "Where to rent first: Stone Oak, Medical Center, Southtown",
+              "What to do on your scouting trip, in order"
+            ],
+            "why": "Someone with a job offer in the Medical Center or at Port San Antonio is picking a side of town this month and has no idea 1604 is the dividing line.",
+            "footage": "Loop 1604 and US-281 interchange at rush hour, Stone Oak retail strips, Alamo Ranch subdivisions, Southtown historic streets, the Pearl and River Walk, Medical Center campus, a drive through Converse",
+            "proposedClips": [
+              {
+                "driveFileId": "1PCUXAl0Ic9HRiJgznGhkTHPtY0o0vbtF",
+                "fileName": "01F4C007-1610-4820-96C7-DA9F3B04C18E.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1OfV7aePdeAUCNW9WalLHA-G9t4J66k-C",
+                "fileName": "0ADF5F6D-2142-46B8-B7FF-92A47E26BBBA.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1AZEmO_PhCEBihd3aAGxLrVCPjGItXh7D",
+                "fileName": "0DD30D6E-844B-4927-9DF1-B8B7C97BC3A6.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1myE-M7tZy2FdxIqxqET020MI_0-emu0u",
+                "fileName": "0E10E0D1-9C5B-448E-AE06-2C0A75CE59A1.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1KSUmrce9sOq90aUkKmMbq-1Sq9ZIa8wq",
+                "fileName": "13527 Henri Castro, 78253.mov",
+                "reused": false
+              },
+              {
+                "driveFileId": "12z20Q19sKmJ9W457ykytyv6Xj6lkjik8",
+                "fileName": "136D8B22-84C0-4972-96E7-C5CE6EABF123.mp4",
+                "reused": false
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "title": "Austin suburbs: Round Rock vs Georgetown vs Leander compared",
+            "intent": "comparison",
+            "market": "austin",
+            "query": "round rock vs georgetown vs leander",
+            "hook": "These three suburbs sit on the same side of Austin and get shopped against each other constantly, but they solve completely different problems. One is about commute, one is about square footage, one is about downtown Georgetown existing at all.",
+            "outline": [
+              "The three north corridors: I-35, Toll 130 and 183A",
+              "Round Rock: older established neighborhoods, Round Rock ISD, closest in",
+              "Georgetown: the square, Sun City, Georgetown ISD and the water question",
+              "Leander and Cedar Park: newer builds, Leander ISD, the 183A toll cost",
+              "Commute reality to downtown Austin, the Domain and Apple's Parmer campus",
+              "Who should pick which, and what each one costs you in tradeoffs"
+            ],
+            "why": "A family relocating for a north-Austin tech job is deciding between three suburbs that look identical on a map and are not.",
+            "footage": "Georgetown courthouse square, 183A toll road driving shots, Round Rock older tree-lined neighborhoods, Leander newer subdivisions and the CapMetro rail station, Cedar Park retail, I-35 traffic north of Austin",
+            "proposedClips": [
+              {
+                "driveFileId": "1W5AsGs4nA-yl988zQPTnqPmlyGKM7-X6",
+                "fileName": "07F9BF6C-7BF5-49CA-8281-FF8CAF11AC16.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1o3-yTnUY5-21wNwv-EH99sZQz-w20Ecf",
+                "fileName": "38AC81FB-0672-47C6-830C-B6EF01D3D044.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1P8zBnXRH39iBCRltI0SGm3OsnPM2D1rS",
+                "fileName": "43F026AE-08BC-49B4-9FA4-874AC786EA24.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "11lfUvvb6EN8D4EupsLuOfETdlYQ-JwCV",
+                "fileName": "55230395-251B-4699-9EA1-6FC5C6DD89BE.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1CDCKZ613tCnDj3vSMX9CAic0ONMB4Ld2",
+                "fileName": "59961A71-7309-493E-B0A2-EA1B219A4EBE.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1rjDOfPXR6CdqxlYMlu_Gy9N5HNtZ7UVL",
+                "fileName": "7896A69E-AB0E-4C38-8050-2F2DB6A38E06.mp4",
+                "reused": false
+              }
+            ]
+          },
+          {
+            "index": 3,
+            "title": "New construction near San Antonio: Cibolo, Schertz or Boerne?",
+            "intent": "new_build",
+            "market": "san_antonio",
+            "query": "new construction homes near san antonio",
+            "hook": "Two brand-new homes with the same sticker price on opposite sides of San Antonio can carry very different annual tax bills, and the difference is a line item on the tax record most buyers never look up before they sign.",
+            "outline": [
+              "The three new-build corridors: I-10 west to Boerne, I-35 north to Schertz and Cibolo, and 1604 west",
+              "Schertz and Cibolo: SCUC ISD, commute to Randolph AFB and the northeast side",
+              "Boerne and Fair Oaks Ranch: Boerne ISD, hill country lots, the I-10 drive",
+              "Cibolo Canyons and the 1604 north corridor: what a MUD or PID line actually means",
+              "Spec home vs build-to-order: what's negotiable and what isn't",
+              "How to pull the tax rate for a specific address before you write an offer"
+            ],
+            "why": "A buyer touring model homes this weekend is comparing prices across three counties without realizing the tax rate, not the price, is what changes their number.",
+            "footage": "Walkthrough of a finished spec home, wide new subdivision streets, model home park signage, downtown Boerne Main Street, Schertz and Cibolo retail corridors, I-10 west driving shots, hill country lots under construction",
+            "proposedClips": [
+              {
+                "driveFileId": "1PCUXAl0Ic9HRiJgznGhkTHPtY0o0vbtF",
+                "fileName": "01F4C007-1610-4820-96C7-DA9F3B04C18E.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1OfV7aePdeAUCNW9WalLHA-G9t4J66k-C",
+                "fileName": "0ADF5F6D-2142-46B8-B7FF-92A47E26BBBA.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1AZEmO_PhCEBihd3aAGxLrVCPjGItXh7D",
+                "fileName": "0DD30D6E-844B-4927-9DF1-B8B7C97BC3A6.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1myE-M7tZy2FdxIqxqET020MI_0-emu0u",
+                "fileName": "0E10E0D1-9C5B-448E-AE06-2C0A75CE59A1.mp4",
+                "reused": false
+              },
+              {
+                "driveFileId": "1KSUmrce9sOq90aUkKmMbq-1Sq9ZIa8wq",
+                "fileName": "13527 Henri Castro, 78253.mov",
+                "reused": false
+              },
+              {
+                "driveFileId": "12z20Q19sKmJ9W457ykytyv6Xj6lkjik8",
+                "fileName": "136D8B22-84C0-4972-96E7-C5CE6EABF123.mp4",
+                "reused": false
+              }
+            ]
+          }
+        ]
+      },
+      "presenter": {
+        "id": "peter",
+        "name": "Peter Allen",
+        "role": "owner",
+        "assignedAt": "2026-08-31T20:17:56.192Z",
+        "via": "default"
+      }
     }
   ]
 }
