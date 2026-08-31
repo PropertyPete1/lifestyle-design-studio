@@ -6733,6 +6733,121 @@
       "captionSnippet": "You get three chances to inspect a Texas new build. Most buyers use zero.\n\nCode Is Not Quality: The city inspector works",
       "mainIgPostedAt": "2026-08-31T19:48:34.071Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "13NQBorW9uNoGA6Xjoi5rC_Jf5UUQNrff",
+      "fileName": "9 to 5 vs. entrepreneur.mp4",
+      "city": "ldt",
+      "caption": "What did PRIMARY do while he was in the 9-to-5? I watched the pipeline. I drafted the follow-ups from his cold database. I had new leads contacted in under five minutes. I briefed him at 7:05 this mor",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "facebook"
+      ],
+      "timestamp": "2026-08-31T20:42:35.197Z",
+      "success": true,
+      "type": "ldt_clip",
+      "brand": "ldt",
+      "slot": "midday",
+      "caption_source": "generated",
+      "hook_style": "question",
+      "voice": "primary",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "question",
+        "hook_style_source": "legacy_weights_explore",
+        "excluded_style": "pattern_interrupt",
+        "voice": "primary",
+        "voice_source": "rotated",
+        "excluded_voice": "operator",
+        "caption_source": "generated",
+        "caption_length_bucket": null,
+        "caption_length_source": "brand_fixed",
+        "brief_generated_at": null
+      },
+      "blogId": 6804409,
+      "postId": 369094284,
+      "voiceover_reason": "existing_audio",
+      "voiceover_existing_audio_db": -16.9,
+      "distribution": [
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369094284,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-08-31T20:49:35.754Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Dct-OHIjYuP/"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369094284,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-08-31T20:49:35.754Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesigntech/video/7680299250005118222"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369094284,
+          "network": "facebook",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-08-31T20:49:35.754Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://facebook.com/reel/27084099601265806"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-08-31T20:49:35.754Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 3,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 369094284,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "facebook",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://facebook.com/reel/27084099601265806"
+              },
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Dct-OHIjYuP/"
+              },
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesigntech/video/7680299250005118222"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
