@@ -696,6 +696,128 @@ describe("applyLdtVoiceover — existing-audio skip", () => {
   }));
 });
 
+describe("applyLdtVoiceover — claims gate", () => {
+  const rejectGuarantee = (text) => text.toLowerCase().includes("guarantee")
+    ? { ok: false, violations: [{ type: "banned_phrase", detail: "guarantee", why: "overclaim" }] }
+    : { ok: true, violations: [] };
+
+  test("a rejected sidecar line blocks the CLIP — no TTS, no silent fallback", () => withTmpDir(async (dir) => {
+    const ttsCalls = [];
+    const res = await applyLdtVoiceover("/fake/clip.mp4", {
+      clipName: "clip.mp4",
+      files: [{ id: "s1", name: "clip.txt" }],
+      downloadText: async () => "We guarantee results\nSecond line is fine",
+      tts: makeTts(ttsCalls),
+      claimsCheck: rejectGuarantee,
+      run: makeRun({ durations: { "clip.mp4": 30 } }),
+      exec: makeExec(),
+      workDir: dir,
+    });
+    assert.equal(res.blocked, true, "a content refusal is not a fallback");
+    assert.equal(res.applied, false);
+    assert.equal(res.videoPath, "/fake/clip.mp4");
+    assert.equal(ttsCalls.length, 0, "not a cent of TTS on a rejected script");
+    // The EXACT rejected line, for the alert and the run log.
+    assert.deepEqual(res.rejections.map(r => r.line), ["We guarantee results"]);
+    assert.ok(res.rejections[0].why.length > 0);
+    assert.equal(res.entryFields.voiceover_reason, "claims_gate_blocked");
+    assert.equal(res.entryFields.voiceover_rejected_lines, "We guarantee results");
+  }));
+
+  test("an OCR'd caption line failing the gate blocks the clip the same way", () => withTmpDir(async (dir) => {
+    const { extract, ocr } = makeOcrFakes([
+      { lines: ["Results are guaranteed here"], meanConf: 92 },
+    ]);
+    const res = await applyLdtVoiceover("/fake/clip.mp4", {
+      clipName: "clip.mp4",
+      files: [],
+      tts: makeTts(),
+      claimsCheck: rejectGuarantee,
+      run: makeRun({ durations: { "clip.mp4": 12 } }),
+      extract, ocr,
+      exec: makeExec(),
+      workDir: dir,
+    });
+    assert.equal(res.blocked, true);
+    assert.deepEqual(res.rejections.map(r => r.line), ["Results are guaranteed here"]);
+    assert.equal(res.entryFields.voiceover_source, "ocr");
+  }));
+
+  test("the gate sees every line, and a clean script proceeds to voicing", () => withTmpDir(async (dir) => {
+    const gated = [];
+    const res = await applyLdtVoiceover("/fake/clip.mp4", {
+      clipName: "clip.mp4",
+      files: [{ id: "s1", name: "clip.txt" }],
+      downloadText: async () => "Line one\nLine two",
+      tts: makeTts(),
+      claimsCheck: (text) => { gated.push(text); return { ok: true, violations: [] }; },
+      run: makeRun({ durations: { "clip.mp4": 30, "tts-0.mp3": 10, "ldt_vo_": 30 } }),
+      exec: makeExec(),
+      workDir: dir,
+    });
+    assert.deepEqual(gated, ["Line one", "Line two"], "gated line by line, before joining");
+    assert.equal(res.applied, true);
+  }));
+
+  test("the gate runs even in DRY RUN — a rejection is visible before anything is live", () => withTmpDir(async (dir) => {
+    const res = await applyLdtVoiceover("/fake/clip.mp4", {
+      clipName: "clip.mp4",
+      files: [{ id: "s1", name: "clip.txt" }],
+      downloadText: async () => "We guarantee results",
+      dryRun: true,
+      tts: makeTts(),
+      claimsCheck: rejectGuarantee,
+      run: makeRun({ durations: { "clip.mp4": 30 } }),
+      exec: makeExec(),
+      workDir: dir,
+    });
+    assert.equal(res.blocked, true);
+  }));
+
+  test("the REAL gate wiring: a banned phrase blocks, innocuous copy passes", () => withTmpDir(async (dir) => {
+    // No claimsCheck injected — this pins the default to ldt-claims.json,
+    // whose banned patterns include "guarantee" (site-mirrored doctrine).
+    const blocked = await applyLdtVoiceover("/fake/clip.mp4", {
+      clipName: "clip.mp4",
+      files: [{ id: "s1", name: "clip.txt" }],
+      downloadText: async () => "We guarantee it works",
+      tts: makeTts(),
+      run: makeRun({ durations: { "clip.mp4": 30 } }),
+      exec: makeExec(),
+      workDir: dir,
+    });
+    assert.equal(blocked.blocked, true);
+
+    const clean = await applyLdtVoiceover("/fake/clip.mp4", {
+      clipName: "clip.mp4",
+      files: [{ id: "s1", name: "clip.txt" }],
+      downloadText: async () => "Watch the intake fill itself",
+      tts: makeTts(),
+      run: makeRun({ durations: { "clip.mp4": 30, "tts-0.mp3": 10, "ldt_vo_": 30 } }),
+      exec: makeExec(),
+      workDir: dir,
+    });
+    assert.equal(clean.applied, true);
+  }));
+
+  test("the REAL gate's number honesty applies: an unpinned figure blocks the clip", () => withTmpDir(async (dir) => {
+    // Deliberate consequence, called out in the docs: operator captions
+    // stating figures the pinned claims list doesn't back do not get voiced
+    // OR posted until the number is pinned or the line edited.
+    const res = await applyLdtVoiceover("/fake/clip.mp4", {
+      clipName: "clip.mp4",
+      files: [{ id: "s1", name: "clip.txt" }],
+      downloadText: async () => "We handled 47 leads today",
+      tts: makeTts(),
+      run: makeRun({ durations: { "clip.mp4": 30 } }),
+      exec: makeExec(),
+      workDir: dir,
+    });
+    assert.equal(res.blocked, true);
+    assert.match(res.rejections[0].why, /47/);
+  }));
+});
+
 describe("applyLdtVoiceover — the -novo flag", () => {
   test("skips before any probe, TTS never called, clip untouched", () => withTmpDir(async (dir) => {
     const ttsCalls = [];
