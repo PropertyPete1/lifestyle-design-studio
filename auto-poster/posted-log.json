@@ -6447,6 +6447,119 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1ApRm207CjW6ygsZZ9_iuhEt8LVGCwUti/view"
+    },
+    {
+      "driveFileId": "1B9wrZOhy_hpzGa8bWZ6Oret5jgEaPXnT",
+      "fileName": "PRIMARY Reel B - Call Games.mp4",
+      "city": "ldt",
+      "caption": "Watch what happens when a lead replies. PRIMARY drafts the call notes from your speaker call, posts them to your CRM, and logs everything. all without touching your keyboard. This is PRIMARY running l",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "facebook"
+      ],
+      "timestamp": "2026-08-31T01:01:36.437Z",
+      "success": true,
+      "type": "ldt_clip",
+      "brand": "ldt",
+      "slot": "pm",
+      "caption_source": "generated",
+      "hook_style": "pattern_interrupt",
+      "voice": "operator",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pattern_interrupt",
+        "hook_style_source": "legacy_weights_exploit",
+        "excluded_style": "bold_claim",
+        "voice": "operator",
+        "voice_source": "rotated",
+        "excluded_voice": "primary",
+        "caption_source": "generated",
+        "caption_length_bucket": null,
+        "caption_length_source": "brand_fixed",
+        "brief_generated_at": null
+      },
+      "blogId": 6804409,
+      "postId": 368613187,
+      "distribution": [
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 368613187,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-08-31T01:08:37.073Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Dcr3FtyiuBZ/"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 368613187,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-08-31T01:08:37.073Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesigntech/video/7679995030039186702"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 368613187,
+          "network": "facebook",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-08-31T01:08:37.073Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://facebook.com/reel/1590211502761986"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-08-31T01:08:37.074Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 3,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 368613187,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "facebook",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://facebook.com/reel/1590211502761986"
+              },
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Dcr3FtyiuBZ/"
+              },
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesigntech/video/7679995030039186702"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1

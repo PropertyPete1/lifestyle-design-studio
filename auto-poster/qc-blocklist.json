@@ -284,6 +284,11 @@
       "filename": "38AC81FB-0672-47C6-830C-B6EF01D3D044.mp4",
       "reason": "content duplicate of 3F37BDA3-B4C6-46EF-8ACB-6CC7908E5443.mp4 posted 2026-07-31T20:13:24.511Z (distance 0.00)",
       "blockedAt": "2026-08-30T17:34:44.998Z"
+    },
+    "1E-eaeh1vjQT-qFtKmBFIxDhhkg5nrMQZ": {
+      "filename": "PRIMARY Reel A - Speed to Lead.mp4",
+      "reason": "AI vision: These appear to be static visualizations of a temperature/heat map interface rather than a video screen recording or product demo. No movement, interaction, or software application demonstration is evident.",
+      "blockedAt": "2026-08-31T01:01:28.289Z"
     }
   }
 }
