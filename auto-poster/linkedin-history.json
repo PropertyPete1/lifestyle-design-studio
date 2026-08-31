@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "unpopular_opinion",
-      "body": "I started as a solo agent convinced that high commission splits were the only reason people stuck around at brokerages. I paid out 80.20 splits thinking that's what kept agents happy. Then I watched my best people leave anyway. They didn't want more money. They wanted to not feel alone. They wanted someone to call when a deal got complicated. They wanted to be part of something that made them better. Now we run lower splits and agents stay longer because they're actually building something. The money was never the real offer. The support was. Most brokerages still don't get this.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
-      "format": "story",
-      "ending": "dm_cta",
-      "date": "2026-08-24"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We're carrying more buyer and lease leads than we can work efficiently right now. New construction in San Antonio and Austin. Out-of-state relocations. They're warm leads but they need real vetting and consistent nurture before they're ready to move.\n\n1. These aren't cold prospects. They have buying intent. They just need someone disciplined enough to stay in front of them until they actually close.\n\n2. We can hand them off fully qualified. You're not starting from scratch. You're stepping into pipeline that's already warmed up.\n\n3. The agent who takes this on builds their own book while we focus on what we do best.\n\nIf this sounds like something you'd take on, send me a DM.",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "dm_cta",
       "date": "2026-08-30"
+    },
+    {
+      "topic": "deal_story",
+      "body": "Had a buyer go cold Monday. Inspection found foundation issues. Seller wouldn't budge on price. Agent panicked. Wanted to walk. I told him to stop. We built a repair escrow instead. Deal closed Thursday. Agent learned that dead deals aren't always dead. They're just stuck. You need someone to see the angle you're missing when you're too close to it.",
+      "format": "short_punchy",
+      "ending": "strong_close",
+      "date": "2026-08-31"
     }
   ]
 }

@@ -6659,6 +6659,58 @@
       "timestamp": "2026-08-31T19:08:01.622Z",
       "runId": "33428358142",
       "success": true
+    },
+    {
+      "driveFileId": "1yzoUKJ-UnGaWflLZRr4qsCz-A74YXb09",
+      "fileName": "6468A7E2-328F-4341-A677-AE4BC2BCEA8B.mp4",
+      "city": "san_antonio",
+      "caption": "Stop scrolling. This is what $479,999 gets you in San Antonio right now.\n\nNew construction like this doesn't wait around long. Builder incentives are on the table if you move fast.\n\n✨ Open floor plan ",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-31T19:08:01.419Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (32 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "I'm finally here I'm 100, I'm the only one I'm the safest guy I pledge allegiance to your hand And you'll see your arms You're the only one I'm the only one",
+      "content_hash": "c0fdff01181c7e7f:fffffe8080203eff:ffffff270101fef8:ff9fce7e021e0f0f:ffeffdbcbdfe8080",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pattern_interrupt",
+        "hook_style_source": "legacy_weights_exploit",
+        "excluded_style": "pov",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "explore",
+        "brief_generated_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/12X-1RmWiKwbIsqVnd4YRb8kGOuX0TP7C/view"
     }
   ],
   "lastTemplateIndex": -1
