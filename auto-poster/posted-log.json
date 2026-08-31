@@ -6575,6 +6575,58 @@
       "variantNumber": 2,
       "window": "pm",
       "deliveryDriveLink": "https://drive.google.com/file/d/18_Cf0Kjl9aOgeq6KeMiIMdGBtqJXMgY3/view"
+    },
+    {
+      "driveFileId": "19Gg10vc-EO4n1ncjRCu8fJOId1tN0fdZ",
+      "fileName": "64051B6C-3775-40CA-AD36-EF40E78D8EBA.mp4",
+      "city": "san_antonio",
+      "caption": "POV: you just walked into your first brand new home and everything feels like it was built just for you.\n\nNew construction like this doesn't sit long in San Antonio.\n\n✨ everyday living hits\nOpen floor",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-08-31T16:08:13.219Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (45 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Quick payment math price is $326990 with 3.5% down that's $11,444. So the loan is $315,545. Rate is 78.99%. Fix just kidding at 3.990. Fix on a 30 year. Taxes are $3,000 a year insurance is $1,000 a year. Estimated payment is $1,161 a month.",
+      "content_hash": "0000df13ff7f7fdc:00007ccc70f8d8fc:fffdcfc7c07c6483:7ff9ffb7c5440800:c0c0e0c0f0fcc7ff",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "legacy_weights_exploit",
+        "excluded_style": "bold_claim",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "explore",
+        "brief_generated_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1YF_x_jvpYe5xINwWKJy6hxkaE-T6UDYW/view"
     }
   ],
   "lastTemplateIndex": -1
