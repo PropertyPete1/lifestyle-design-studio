@@ -7381,6 +7381,58 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1aEBWjoDPE2Ucx0xXm1xMA8Cg7FhlzV55",
+      "fileName": "C756555D-A9E9-4061-8699-5A9BFC3180F8.mp4",
+      "city": "dallas",
+      "caption": "POV: you just walked into your brand new home and the payment actually makes sense\n\nbrand new construction starting around $295K with quick move-in options climbing into the low $300s depending on you",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-01T22:59:01.958Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "Fort Worth",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (33 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Peter, I know you thought you were coming to Dallas, but where are we? Dallas, forward. We are in Fort Worth Bay, and we've got an investor-friendly option here. Let's check it out.",
+      "content_hash": "c79d01e7f67f0980:00c0c8fcfce0e7cf:c79903e3f27f0900:fefefc08a2e0c3c0:03ffff9a763f0307",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "pattern_interrupt",
+        "hook_plate_burned": false,
+        "caption_source": "restructured",
+        "caption_length_bucket": null,
+        "caption_length_source": "restructured",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1gMejybKi-mJu_ycXZI6tn0cJY9WiX74y/view"
     }
   ],
   "lastTemplateIndex": -1
