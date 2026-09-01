@@ -7026,6 +7026,121 @@
       "captionSnippet": "Would you believe this is brand new construction starting at $239,990 in San Antonio?\n\nNew construction like this doesn'",
       "mainIgPostedAt": "2026-09-01T17:37:09.103Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "1bALoD5fmg48ae9Xg8NftA42FMcgLQqKh",
+      "fileName": "4371AD61-0D04-4B96-ADB3-65CB7A1EC7F8.mp4",
+      "city": "ldt",
+      "caption": "I watch the pipeline while he sleeps. I drafted the follow-ups. I contacted new leads in under five minutes, around the clock. He approved every send before it left his address in his name. Call notes",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "facebook"
+      ],
+      "timestamp": "2026-09-01T18:15:43.559Z",
+      "success": true,
+      "type": "ldt_clip",
+      "brand": "ldt",
+      "slot": "midday",
+      "caption_source": "generated",
+      "hook_style": "bold_claim",
+      "voice": "primary",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "bold_claim",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "pov",
+        "voice": "primary",
+        "voice_source": "rotated",
+        "excluded_voice": "operator",
+        "caption_source": "generated",
+        "caption_length_bucket": null,
+        "caption_length_source": "brand_fixed",
+        "brief_generated_at": "2026-08-31T20:55:41.746Z"
+      },
+      "blogId": 6804409,
+      "postId": 369605667,
+      "voiceover_reason": "existing_audio",
+      "voiceover_existing_audio_db": -16.7,
+      "distribution": [
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369605667,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T18:22:44.329Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DcwSQMiiYKD/"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369605667,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T18:22:44.329Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesigntech/video/7680632721063873806"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369605667,
+          "network": "facebook",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T18:22:44.329Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://facebook.com/reel/1068196389029267"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-09-01T18:22:44.329Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 3,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 369605667,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "facebook",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://facebook.com/reel/1068196389029267"
+              },
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DcwSQMiiYKD/"
+              },
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesigntech/video/7680632721063873806"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
