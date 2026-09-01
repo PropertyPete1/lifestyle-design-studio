@@ -6963,6 +6963,58 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1iHTkR2bAisZYEzlguEGu-meFMe4EB57z",
+      "fileName": "6A84DB08-64EA-4D71-8BE2-13D9D5E03EA5.mp4",
+      "city": "san_antonio",
+      "caption": "Would you believe this is brand new construction starting at $239,990 in San Antonio?\n\nNew construction like this doesn't sit around long. Builder incentives are real right now if you move fast.\n\n✨ ev",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-01T16:16:21.867Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (68 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "If you love wide open spaces and houses in neighborhoods, this one special why? Because it's less than you pay for rent. Just under $2,000 a month. And with everything you need to pay. Quick payment math, the price is $239,000. We're using 3.5% down, so that's $8,365. Rate is $4.9,9,930. Taxes are $3,400 a year, insurance is $1,169 a year. The estimated payment is $1,750 a month.",
+      "content_hash": "001f87173c7f94c0:3cf0e7e7473f3f03:fcffff7f7f7c0000:fef2f8f919f8e0c0:3e007fff00071c1e",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "question",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "pattern_interrupt",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1bf2UZbNP4LMfvmAl0szrBpTjwSjTs535/view"
     }
   ],
   "lastTemplateIndex": -1
