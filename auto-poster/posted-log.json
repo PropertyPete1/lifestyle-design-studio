@@ -7015,6 +7015,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1bf2UZbNP4LMfvmAl0szrBpTjwSjTs535/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-09-01T17:37:09.103Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1bf2UZbNP4LMfvmAl0szrBpTjwSjTs535",
+      "captionSnippet": "Would you believe this is brand new construction starting at $239,990 in San Antonio?\n\nNew construction like this doesn'",
+      "mainIgPostedAt": "2026-09-01T17:37:09.103Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
