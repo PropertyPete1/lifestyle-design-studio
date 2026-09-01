@@ -7231,6 +7231,156 @@
       "captionSnippet": "Stop scrolling. This is what $314,990 looks like in San Antonio.\n\nNew construction at this price point moves fast.\n\n✨ Op",
       "mainIgPostedAt": "2026-09-01T19:20:32.464Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "selfmade:2026-09-01:carousel:honest_numbers",
+      "fileName": "carousel-honest_numbers-2026-09-01",
+      "city": "ldt",
+      "caption": "4,400 contacts live on the floor today. Every one worked by PRIMARY while you sleep.\n\nVoice-operated, approval-gated, honest about what it found. New leads get contacted in under five minutes. Cold da",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "facebook",
+        "tiktok"
+      ],
+      "timestamp": "2026-09-01T21:36:33.639Z",
+      "success": true,
+      "type": "ldt_carousel",
+      "brand": "ldt",
+      "slot": "pm",
+      "caption_source": "generated_retry",
+      "hook_style": "stat",
+      "angle": "honest_numbers",
+      "voice": "operator",
+      "meta_closer": "Written, designed, and posted by PRIMARY.",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "stat",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "bold_claim",
+        "voice": "operator",
+        "voice_source": "rotated",
+        "excluded_voice": "primary",
+        "caption_source": "generated_retry",
+        "caption_length_bucket": null,
+        "caption_length_source": "brand_fixed",
+        "brief_generated_at": "2026-08-31T20:55:41.746Z"
+      },
+      "blogId": 6804409,
+      "postIds": [
+        {
+          "networks": [
+            "instagram"
+          ],
+          "postId": 369689820
+        },
+        {
+          "networks": [
+            "facebook"
+          ],
+          "postId": 369689821
+        },
+        {
+          "networks": [
+            "tiktok"
+          ],
+          "postId": 369689843
+        }
+      ],
+      "distribution": [
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369689820,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T21:43:34.383Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/p/DcwpZfCnPSv/"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369689821,
+          "network": "facebook",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T21:43:34.524Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://facebook.com/122099966859458029/posts/122102167743458029"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369689843,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T21:43:34.660Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesigntech/video/7680684369622617358"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-09-01T21:43:34.660Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 3,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 369689820,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/p/DcwpZfCnPSv/"
+              }
+            ]
+          },
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 369689821,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "facebook",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://facebook.com/122099966859458029/posts/122102167743458029"
+              }
+            ]
+          },
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 369689843,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesigntech/video/7680684369622617358"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
