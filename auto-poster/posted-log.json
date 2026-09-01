@@ -6848,6 +6848,121 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1gxEOhXvdlef1FTSBG_IbElQdGnbmOMkP",
+      "fileName": "E92D4992-F4FA-4537-916C-48C2601D6B8F.mp4",
+      "city": "ldt",
+      "caption": "7:05 AM. The briefing hits my phone before I'm out of bed. PRIMARY watched the pipeline all night, ran follow-up on cold leads, and has the summary ready. Voice-operated. Answers to its name. Contacts",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "facebook"
+      ],
+      "timestamp": "2026-09-01T01:32:08.638Z",
+      "success": true,
+      "type": "ldt_clip",
+      "brand": "ldt",
+      "slot": "pm",
+      "caption_source": "generated",
+      "hook_style": "pov",
+      "voice": "operator",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "question",
+        "voice": "operator",
+        "voice_source": "rotated",
+        "excluded_voice": "primary",
+        "caption_source": "generated",
+        "caption_length_bucket": null,
+        "caption_length_source": "brand_fixed",
+        "brief_generated_at": "2026-08-31T20:55:41.746Z"
+      },
+      "blogId": 6804409,
+      "postId": 369183176,
+      "voiceover_reason": "existing_audio",
+      "voiceover_existing_audio_db": -16.9,
+      "distribution": [
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369183176,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T01:39:09.165Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DcuffTEknmn/"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369183176,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T01:39:09.165Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesigntech/video/7680374167488744717"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 369183176,
+          "network": "facebook",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-01T01:39:09.165Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://facebook.com/reel/1830673391097095"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-09-01T01:39:09.165Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 3,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 369183176,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "facebook",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://facebook.com/reel/1830673391097095"
+              },
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DcuffTEknmn/"
+              },
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesigntech/video/7680374167488744717"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
