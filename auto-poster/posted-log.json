@@ -7433,6 +7433,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1gMejybKi-mJu_ycXZI6tn0cJY9WiX74y/view"
+    },
+    {
+      "city": "dallas",
+      "timestamp": "2026-09-01T23:04:26.064Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1gMejybKi-mJu_ycXZI6tn0cJY9WiX74y",
+      "captionSnippet": "POV: you just walked into your brand new home and the payment actually makes sense\n\nbrand new construction starting arou",
+      "mainIgPostedAt": "2026-09-01T23:04:26.064Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
