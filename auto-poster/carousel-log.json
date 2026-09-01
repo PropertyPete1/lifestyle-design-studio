@@ -4881,6 +4881,189 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-09-01",
+      "timestamp": "2026-09-01T17:32:02.280Z",
+      "pillar": "texas_lifestyle",
+      "topic": "Cedar fever in Austin and San Antonio",
+      "hook": "Transplants in Austin get sick every January. It is almost never the flu.",
+      "closeType": "question",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Cedar fever in Austin and San Antonio",
+        "hook": "Transplants in Austin get sick every January. It is almost never the flu.",
+        "map": [
+          "Not a virus",
+          "Wrong season entirely",
+          "Austin hit hardest",
+          "The cold front trigger",
+          "What actually helps"
+        ],
+        "points": [
+          {
+            "title": "It Is Cedar Pollen",
+            "body": [
+              "Mountain cedar trees cover the Hill Country.",
+              "They dump pollen and it wrecks people. Chills, exhaustion, a stuffed head that feels like fever."
+            ],
+            "loop": "The timing is what fools everyone."
+          },
+          {
+            "title": "Winter, Not Spring",
+            "body": [
+              "This runs December through February.",
+              "Newcomers think allergy season means April, so they never connect the dots."
+            ],
+            "loop": "Your address changes the dose."
+          },
+          {
+            "title": "Austin Gets It Worst",
+            "body": [
+              "Austin sits right against the cedar. San Antonio catches plenty of it too.",
+              "DFW gets a much lighter version of the same thing."
+            ],
+            "loop": "One weather pattern makes it brutal."
+          },
+          {
+            "title": "Blame The Cold Fronts",
+            "body": [
+              "A front blows through, the wind swings around dry and cold.",
+              "That wind carries pollen off the hills in visible clouds."
+            ],
+            "loop": "Most people react far too late."
+          },
+          {
+            "title": "Start Before It Starts",
+            "body": [
+              "Locals begin their meds in late November, not after the first bad day.",
+              "Fresh air filters, windows shut, shower when you come in from outside."
+            ],
+            "loop": "Locals argue about which is worse."
+          }
+        ],
+        "cta": {
+          "question": "Which would you rather ride out: cedar season or a Texas August?"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 7,
+        "cta": 7,
+        "worst_problem": "The final point slide's loop (\"Locals argue about which is worse\") doesn't grow out of that slide's content about starting meds early — it's a bolted-on bridge to the CTA rather than a tease of what's coming next.",
+        "fix": "Rewrite the last loop so it emerges from the prevention advice and genuinely sets up the debate (e.g. \"Still, one season beats this\"), and cut \"Save this for later\" so the closing question is the only ask."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 369584211,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-01T17:35:02.911Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7680621084365917454"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 369584219,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-01T17:35:03.033Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500606728611397632"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 369584255,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-01T17:36:34.404Z",
+          "publicUrl": "https://www.instagram.com/p/DcwNZxBiHh9/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 369584302,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-01T17:35:03.261Z",
+          "publicUrl": "https://www.instagram.com/p/DcwNZJmiFhH/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 369584304,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-01T17:35:03.389Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500606727348961280"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 369584340,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-01T17:36:34.519Z",
+          "publicUrl": "https://www.instagram.com/p/DcwNZ8SihAX/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 369584353,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-01T17:35:03.666Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122118542445400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 369584359,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-01T17:35:03.792Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500606731685687296"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-09-01T17:36:34.519Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
