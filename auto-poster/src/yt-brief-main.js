@@ -7,6 +7,13 @@
  * first (latestRequestOfKind takes the newest), quietly discarding a pick Peter
  * had already made.
  *
+ * And it does nothing while a video is still being RECORDED. On 2026-08-31 the
+ * previous brief had its decision, so this guard let a fresh Monday brief out
+ * twenty-three minutes before Peter finished uploading 35 takes for it — and
+ * that newer, unanswered card is what the pipeline then waited on instead of
+ * building. One topic gate open at a time, whichever side of it the work is
+ * on. See briefBlockedBy in yt-stage.js.
+ *
  * Writes to yt-approvals.json and leaves the commit to merge-log-push, the same
  * as every other managed file.
  */
@@ -20,10 +27,10 @@ import {
   saveApprovals,
   appendRequest,
   newRequestId,
-  latestRequestOfKind,
-  hasDecision,
   KIND_TOPIC_PICK,
 } from "./yt-approvals.js";
+import { briefBlockedBy } from "./yt-stage.js";
+import { loadLog as loadVideoLog } from "./yt-log.js";
 import { BRIEFS_PER_WEEK, TOPIC_CANDIDATES } from "./yt-config.js";
 import { loadPresenters, savePresenters, consumeNextAssignment, presenterStamp, findById, OWNER_ID } from "./presenters.js";
 import { routeWarnChannel } from "./yt-evidence.js";
@@ -41,11 +48,16 @@ async function main() {
 
   // An unanswered brief blocks a new one. Answering is Peter's move, and
   // sending another would silently supersede the one he has not got to yet.
-  const open = latestRequestOfKind(approvals, KIND_TOPIC_PICK);
-  if (open && !hasDecision(open) && !FORCE) {
+  // A kit still being recorded blocks one too — see the header.
+  const block = FORCE ? { blocked: false } : briefBlockedBy(approvals, loadVideoLog());
+  if (block.blocked) {
     console.log(
-      `[YTBrief] ${open.requestId} is still waiting for a decision (sent ${open.requestedAt}) — ` +
-      `not sending another. Use FORCE=true to override.`
+      block.reason === "unanswered"
+        ? `[YTBrief] ${block.record.requestId} is still waiting for a decision (sent ${block.record.requestedAt}) — ` +
+          `not sending another. Use FORCE=true to override.`
+        : `[YTBrief] ${block.record.requestId} has a delivered kit and no upload yet — a video is still being ` +
+          `recorded, and a second topic card on top of it is what shadowed the 2026-08-31 build. ` +
+          `Not sending a brief until it is built. Use FORCE=true to override.`
     );
     return;
   }

@@ -366,6 +366,18 @@ function mergeApprovalRecord(x, y) {
     .pop();
   if (nudgedAt) out.stallNudgedAt = nudgedAt;
 
+  // reconcile — the "card not visible on the dashboard, Peter mailed" stamp
+  // (markReconcileAlerted in yt-approvals.js, written by
+  // dashboard-smoke/reconcile.mjs). Same rule as the nudge stamp and for the
+  // same reason: latest wins, and a field without a group here is deleted by
+  // the next two-sided merge, which would re-arm the hourly sweep into an
+  // hourly mail.
+  const reconciledAt = [x.reconcileAlertedAt, y.reconcileAlertedAt]
+    .filter((v) => typeof v === "string" && v)
+    .sort()
+    .pop();
+  if (reconciledAt) out.reconcileAlertedAt = reconciledAt;
+
   return out;
 }
 

@@ -481,3 +481,20 @@ export function markStallNudged(log, requestId, at = new Date().toISOString()) {
   );
   return { ...log, requests };
 }
+
+/**
+ * Stamp a waiting record as "the dashboard was swept and this card was not
+ * there, and Peter was told" (see dashboard-smoke/reconcile.mjs).
+ *
+ * Same discipline as the nudge stamp: NOT a latch — the alert repeats every
+ * RECONCILE_ALERT_REPEAT_HOURS until the card is answered — and its own merge
+ * group where the latest stamp wins (mergeYtApprovals), because a field with
+ * no group is a field the next concurrent commit silently deletes, and a
+ * deleted stamp re-arms an hourly sweep into an hourly mail.
+ */
+export function markReconcileAlerted(log, requestId, at = new Date().toISOString()) {
+  const requests = (log?.requests || []).map((r) =>
+    r.requestId === requestId ? { ...r, reconcileAlertedAt: at } : r
+  );
+  return { ...log, requests };
+}

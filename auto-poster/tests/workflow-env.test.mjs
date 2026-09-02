@@ -141,13 +141,21 @@ describe("the distribution sweep's credentials reach the job that runs it", () =
     assert.match(all["record-decision"], /cancel-in-progress:\s*false/, "must queue, not kill a build mid-upload");
   });
 
-  test("the reconcile sweep is read-only and can both see the dashboard and send the alert", () => {
+  test("the reconcile sweep is hourly, read-only against the dashboard, and commits only its alert stamp", () => {
     // Its one invariant check needs the passcode wall's secret and Gmail for
-    // the alarm; contents: read is what makes "read-only against the
-    // dashboard" true of the repo half too.
+    // the alarm. It used to hold contents: read and commit nothing — and it
+    // ran daily, which is how the 2026-08-31 card was flagged 23 hours after
+    // it went out. Hourly detection needs a memory of what it already mailed
+    // (reconcileAlertedAt, merge group of its own), so the job now holds
+    // write permission for exactly that: the commit step is gated on the
+    // sweep having stamped something, and the sweep itself still clicks and
+    // posts nothing on the dashboard.
     const text = readFileSync(join(WF_DIR, "decision-reconcile.yml"), "utf-8");
-    assert.match(text, /contents:\s*read/, "the sweep must not be able to commit");
-    assert.ok(!/merge-log-push/.test(text), "the sweep must not write state");
+    assert.match(text, /cron:\s*'15 \* \* \* \*'/, "must sweep hourly — daily found the Aug 31 card a day late");
+    assert.match(text, /contents:\s*write/, "the alert stamp has to land, or hourly detection is hourly mail");
+    assert.match(text, /reconcile-waiting\.mjs/, "the cheap pre-check must gate the browser install");
+    assert.match(text, /if:\s*steps\.precheck\.outputs\.waiting == 'true'[\s\S]*playwright install/, "Chromium only when something is waiting");
+    assert.match(text, /if:\s*always\(\) && steps\.sweep\.outputs\.stamped == 'true'[\s\S]*merge-log-push\.mjs RECONCILE/, "commit only on a run that stamped, and after a red sweep too");
     assert.match(text, /DASHBOARD_PASS:/, "cannot get past the passcode wall without it");
     assert.match(text, /GOOGLE_REFRESH_TOKEN:/, "the alert mail needs the Gmail token");
     assert.match(text, /reconcile\.mjs/, "must run the sweep script");
