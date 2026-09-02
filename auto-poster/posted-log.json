@@ -7672,6 +7672,58 @@
       "captionSnippet": "This kitchen hits different when you walk in.\n\nNew construction starting at $499,990 in San Antonio. The kind of home th",
       "mainIgPostedAt": "2026-09-02T16:09:48.047Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "1wMXWiwUevD9mzO3OEhHQ72CDmC5KRYv2",
+      "fileName": "E7B4A10C-4CD6-4CE3-BA6C-F73BB0170935.mp4",
+      "city": "austin",
+      "caption": "Stop scrolling. Hill Country views and protected canyons don't look like this every day 😮‍✨\n\nLimited-time incentives and preferred lending programs are live right now on move-in ready homes.\n\n✨ every",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-02T17:37:44.483Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "Bee Cave",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (8 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Hope Goodbye Hope But Hope Thanks to You",
+      "content_hash": "ffffff01023fe301:ffff38000205ffff:ff3713c1858bfe7f:3e9cdba38700faff:fefefe3a38387e7c",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pattern_interrupt",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "restructured",
+        "caption_length_bucket": null,
+        "caption_length_source": "restructured",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1fWrcyW_-yL0xkswDh7rfUq5m5fDlVilb/view"
     }
   ],
   "lastTemplateIndex": -1
