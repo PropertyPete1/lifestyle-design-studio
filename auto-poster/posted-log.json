@@ -7661,6 +7661,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1qdPfOOslmPVgkNv14atPItH4RCJR5ALO/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-09-02T16:09:48.047Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1qdPfOOslmPVgkNv14atPItH4RCJR5ALO",
+      "captionSnippet": "This kitchen hits different when you walk in.\n\nNew construction starting at $499,990 in San Antonio. The kind of home th",
+      "mainIgPostedAt": "2026-09-02T16:09:48.047Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
