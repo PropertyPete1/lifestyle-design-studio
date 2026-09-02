@@ -615,6 +615,90 @@ async function resolveStockWindow(seg, block, {
   // the window's own derivation produced.
   let clip = null;
 
+  // ── WHAT THIS TAKE HAS ALREADY BEEN REFUSED ──────────────────────────────
+  //
+  // Every refusal recorded for this take so far — the mechanical rung's and
+  // the concept rung's, this window's and earlier windows' — as
+  // [{ query, subject, reasons, viaConcept, exhausted }], for the concept
+  // rung to hand the model so its next answer is not its last answer again.
+  //
+  // What counts: a reviewer VERDICT (stage vision / concept-vision with a
+  // reason), a search that found nothing, and a query whose every result is
+  // already used in this video. What does not: a reviewer that could not
+  // answer (visionCheckClip reports a thrown call, a reply with no JSON and
+  // an unparseable reply as ok:false with the prefixes below, and the fetcher
+  // records them at stage "vision" like a verdict), and download / grade /
+  // transport errors — those are outages, not judgements, and telling the
+  // model "this did not work" about a query nobody judged is a lie that
+  // steers it away from a scene that may be right.
+  //
+  // NOT a reason to skip a search. An earlier version of this branch had the
+  // retry's mechanical rung skip a query the first pass refused, on the
+  // theory that the same query returns the same candidates. The s6t2 ladder
+  // record disproves it: s4t3's retry re-searched the 3x-refused "cheapest
+  // agent" and MATCHED, because the retry window's length shifts the
+  // ranker's coverage cutoff and different candidates surface. A refused
+  // query is still worth its three reviewer calls on the retry.
+  const refusedSoFar = () => {
+    const byQuery = new Map();
+    const isOutage = (reason) => /^vision check (failed|returned no JSON|response was not parseable)/i.test(String(reason || ""));
+    const note = (a) => {
+      if (!a || !a.keyword) return;
+      const stage = String(a.stage || "");
+      const viaConcept = /^concept-/.test(stage);
+      const bare = stage.replace(/^concept-/, "");
+      const k = String(a.keyword).toLowerCase();
+      const row = byQuery.get(k) || { query: a.keyword, subject: a.subject || a.keyword, reasons: [], viaConcept, exhausted: false, counted: false };
+      if (a.subject) row.subject = a.subject;
+      row.viaConcept = row.viaConcept || viaConcept;
+      if (bare === "vision" && a.reason && !isOutage(a.reason)) { row.reasons.push(String(a.reason)); row.counted = true; }
+      else if (bare === "search") row.counted = true;
+      else if (bare === "no-repeat") { row.exhausted = true; row.counted = true; }
+      if (row.counted) byQuery.set(k, row);
+    };
+    // SCOPED TO THIS WINDOW'S SPAN, not the take. A retry window covers the
+    // beat that survived — the span of the first-pass window that failed —
+    // and what the model must not repeat is what was refused for THOSE
+    // words. Rows from windows elsewhere in the take are refusals of other
+    // words (review found them evicting the span's own rows from the prompt
+    // and the repeat guard blocking proposals never put to the reviewer for
+    // this span).
+    const spanStart = Number(block.startAt ?? 0);
+    const spanEnd = spanStart + Number(block.seconds || 0);
+    const overlaps = (w) => {
+      const a = Number(w.startAt ?? 0);
+      const b = a + Number(w.seconds || 0);
+      return a < spanEnd - 0.01 && b > spanStart + 0.01;
+    };
+    const spanOf = new Map();
+    for (const w of stockWindows) {
+      if (w.takeId === seg.takeId) spanOf.set(w.phase ?? 0, w);
+    }
+    for (const row of stockAttempts) {
+      if (row.takeId !== seg.takeId) continue;
+      const w = spanOf.get(row.phase ?? 0);
+      if (w && !overlaps(w)) continue;
+      for (const a of row.attempts || []) note(a);
+    }
+    for (const a of attempts) note(a);
+    // A query that WON somewhere in this take is not a refusal, whatever it
+    // was refused before it won.
+    for (const w of stockWindows) {
+      if (w.takeId === seg.takeId && w.matched && w.query) byQuery.delete(String(w.query).toLowerCase());
+    }
+    // The subject the reviewer was actually asked about, where the record has it.
+    for (const w of stockWindows) {
+      if (w.takeId !== seg.takeId) continue;
+      for (const kw of w.keywords || []) {
+        const r = byQuery.get(String(kw).toLowerCase());
+        if (r && w.subject && !r.viaConcept) r.subject = w.subject;
+      }
+    }
+    const own = byQuery.get(String(win.keywords[0] || "").toLowerCase());
+    if (own && !own.viaConcept && (win.verifySubject || win.subject)) own.subject = win.verifySubject || win.subject;
+    return [...byQuery.values()].map(({ counted, ...r }) => r);
+  };
+
   const mechanicalRung = async () => {
     if (clip || win.keywords.length === 0) {
       if (!clip && win.keywords.length === 0) attempts.push({ stage: "keywords", reason: "no searchable concept in this window" });
@@ -636,7 +720,11 @@ async function resolveStockWindow(seg, block, {
         ...fetchOpts,
       });
       clip = r?.clip || null;
-      attempts.push(...(r?.attempts || []));
+      // Stamp the subject the reviewer was actually asked about (the
+      // depiction phrase, not the query words), so a later concept ask can
+      // say what was refused in the reviewer's own terms.
+      const asked = win.verifySubject || win.subject;
+      attempts.push(...(r?.attempts || []).map((a) => (a && a.keyword && !a.subject ? { ...a, subject: asked } : a)));
     } catch (err) {
       // Quota exhaustion is not a rung failure — it is the whole layer gone,
       // and pretending otherwise is how a rate limit became all-beat takes.
@@ -646,21 +734,60 @@ async function resolveStockWindow(seg, block, {
     }
   };
 
+  // ── THE CONCEPT RUNG ASKS TWICE, AND THE SECOND ASK KNOWS THE FIRST ──────
+  //
+  // One concept per window used to be the whole rung, and the retry pass
+  // asked the identical question again: video 2's build died twice on s6t2
+  // (runs 33586116393, 33606652718) with "pickup truck parked in a
+  // residential driveway" proposed both times, semi-trucks and a STOP sign
+  // returned both times, all six refused both times. Now a concept whose
+  // every clip is refused earns ONE more ask — with the refusals in the
+  // prompt (rejectedBlock in yt-concept-fallback.js) — before the window
+  // gives up. Two asks per window, never more: the rung is a ladder, not a
+  // loop, and the reviewer budget is real.
   const conceptRung = async () => {
     if (clip || !visionClient) return;
-    conceptCalls.asked++;
     const banned = new Set([
       ...(win.dropped || []).map((w) => String(w).toLowerCase()),
       ...lexicon,
     ]);
-    const concept = await deriveConcept({
-      phrase: win.phrase,
-      takeText: seg.text,
-      sectionTitle: seg.section || "",
-      banned,
-      client: visionClient,
-    });
-    if (concept) {
+    // The second ask is EARNED: only a concept that was searched and came back
+    // empty buys another. "Not filmable" from the model is an answer, and
+    // asking the same question again is the re-run this rung stopped doing.
+    // ...or by a first answer that merely repeated a refused proposal — on a
+    // retry window every refusal came from the first pass, so nothing was
+    // searched in THIS window yet, and without this the repeat would have
+    // consumed the retry's only ask (found in review before it shipped).
+    let conceptSearched = false;
+    let repeated = false;
+    for (let ask = 0; ask < 2 && !clip; ask++) {
+      if (ask === 1 && !conceptSearched && !repeated) break;
+      const rejected = refusedSoFar();
+      conceptCalls.asked++;
+      const concept = await deriveConcept({
+        phrase: win.phrase,
+        takeText: seg.text,
+        sectionTitle: seg.section || "",
+        banned,
+        rejected,
+        client: visionClient,
+      });
+      if (!concept) {
+        attempts.push({ stage: "concept", reason: ask === 0 ? "no filmable concept derived" : "no different concept derived after the refusals" });
+        break;
+      }
+      // A second answer that is the first answer again is not a second try.
+      // The reviewer's verdict is a function of (query, subject): a refused
+      // CONCEPT with this query is the same proposal; the mechanical rung's
+      // refusal of the same query was a different question (its subject was
+      // the window's own depiction phrase), so a concept that reuses those
+      // words with its own subject is new and gets searched.
+      const same = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+      if (rejected.some((r) => same(r.query, concept.query) && (r.viaConcept || same(r.subject, concept.subject)))) {
+        attempts.push({ stage: "concept", reason: `the model proposed "${concept.query}" again after it was refused — not re-searching it` });
+        repeated = true;
+        continue;
+      }
       conceptCalls.answered++;
       try {
         const r = await stockFetcher({
@@ -677,12 +804,20 @@ async function resolveStockWindow(seg, block, {
           windowRow.subject = concept.subject;
         }
         attempts.push(...(r?.attempts || []).map((a) => ({ ...a, stage: `concept-${a.stage}` })));
+        if (!r?.clip) {
+          conceptSearched = true;
+          // Record the subject the reviewer was asked about, so a later ask
+          // (and the ladder record) can say what was refused, not just what
+          // was searched — and record the miss even when the search itself
+          // returned nothing to refuse.
+          const rows = attempts.filter((a) => a.keyword === concept.query);
+          if (rows.length === 0) attempts.push({ keyword: concept.query, stage: "concept-search", reason: "no usable clip" });
+          for (const a of attempts.filter((x) => x.keyword === concept.query)) a.subject = concept.subject;
+        }
       } catch (err) {
         if (err instanceof StockQuotaError) throw err;
         attempts.push({ stage: "concept-error", reason: err.message });
       }
-    } else {
-      attempts.push({ stage: "concept", reason: "no filmable concept derived" });
     }
   };
 
