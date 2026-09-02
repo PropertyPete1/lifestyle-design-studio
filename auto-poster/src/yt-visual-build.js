@@ -615,10 +615,65 @@ async function resolveStockWindow(seg, block, {
   // the window's own derivation produced.
   let clip = null;
 
+  // ── WHAT THIS TAKE HAS ALREADY BEEN REFUSED ──────────────────────────────
+  //
+  // Every rejection recorded for this take so far — the mechanical rung's and
+  // the concept rung's, this window's and earlier windows' — as
+  // [{ subject, query, reasons }]. Two readers: the retry's mechanical rung,
+  // which must not re-spend three reviewer calls on a query already refused
+  // with identical results, and the concept rung, which hands the list to the
+  // model so its second answer is not its first answer again.
+  const refusedSoFar = () => {
+    const byQuery = new Map();
+    const note = (keyword, stage, reason, subject) => {
+      if (!keyword) return;
+      const k = String(keyword).toLowerCase();
+      if (!byQuery.has(k)) byQuery.set(k, { query: keyword, subject: subject || keyword, reasons: [] });
+      if (/vision/.test(String(stage)) && reason) byQuery.get(k).reasons.push(String(reason));
+    };
+    for (const row of stockAttempts) {
+      if (row.takeId !== seg.takeId) continue;
+      for (const a of row.attempts || []) note(a.keyword, a.stage, a.reason, a.subject || null);
+    }
+    for (const a of attempts) note(a.keyword, a.stage, a.reason, a.subject || null);
+    // A query that WON somewhere in this take is not a refusal, whatever it
+    // was refused before it won.
+    for (const w of stockWindows) {
+      if (w.takeId === seg.takeId && w.matched && w.query) byQuery.delete(String(w.query).toLowerCase());
+    }
+    // The subject the reviewer was actually asked about, where the record has it.
+    for (const w of stockWindows) {
+      if (w.takeId !== seg.takeId) continue;
+      for (const kw of w.keywords || []) {
+        const r = byQuery.get(String(kw).toLowerCase());
+        if (r && w.subject) r.subject = w.subject;
+      }
+    }
+    const own = byQuery.get(String(win.keywords[0] || "").toLowerCase());
+    if (own && win.subject) own.subject = win.subject;
+    return [...byQuery.values()];
+  };
+
   const mechanicalRung = async () => {
     if (clip || win.keywords.length === 0) {
       if (!clip && win.keywords.length === 0) attempts.push({ stage: "keywords", reason: "no searchable concept in this window" });
       return;
+    }
+    // THE RETRY DOES NOT RE-ASK A QUESTION IT HAS THE ANSWER TO. A second-
+    // chance window (block.retry) carries the words spoken during the beat,
+    // which are the words the first pass already searched; the same query
+    // returns the same candidates and the reviewer refuses them the same way
+    // (run 33606652718 re-spent six reviewer calls proving it). Skip straight
+    // to the concept rung, which is the only rung that can answer differently.
+    if (block.retry) {
+      const refused = new Set(refusedSoFar().map((r) => String(r.query).toLowerCase()));
+      if (win.keywords.every((k) => refused.has(String(k).toLowerCase()))) {
+        attempts.push({
+          stage: "keywords",
+          reason: `"${win.keywords.join(" ")}" was already searched and every result refused on the first pass — not re-spending the check on the same results`,
+        });
+        return;
+      }
     }
     try {
       const r = await stockFetcher({
@@ -646,22 +701,49 @@ async function resolveStockWindow(seg, block, {
     }
   };
 
+  // ── THE CONCEPT RUNG ASKS TWICE, AND THE SECOND ASK KNOWS THE FIRST ──────
+  //
+  // One concept per window used to be the whole rung, and the retry pass
+  // asked the identical question again: video 2's build died twice on s6t2
+  // (runs 33586116393, 33606652718) with "pickup truck parked in a
+  // residential driveway" proposed both times, semi-trucks and a STOP sign
+  // returned both times, all six refused both times. Now a concept whose
+  // every clip is refused earns ONE more ask — with the refusals in the
+  // prompt (rejectedBlock in yt-concept-fallback.js) — before the window
+  // gives up. Two asks per window, never more: the rung is a ladder, not a
+  // loop, and the reviewer budget is real.
   const conceptRung = async () => {
     if (clip || !visionClient) return;
-    conceptCalls.asked++;
     const banned = new Set([
       ...(win.dropped || []).map((w) => String(w).toLowerCase()),
       ...lexicon,
     ]);
-    const concept = await deriveConcept({
-      phrase: win.phrase,
-      takeText: seg.text,
-      sectionTitle: seg.section || "",
-      banned,
-      client: visionClient,
-    });
-    if (concept) {
+    // The second ask is EARNED: only a concept that was searched and came back
+    // empty buys another. "Not filmable" from the model is an answer, and
+    // asking the same question again is the re-run this rung stopped doing.
+    let conceptSearched = false;
+    for (let ask = 0; ask < 2 && !clip; ask++) {
+      if (ask === 1 && !conceptSearched) break;
+      const rejected = refusedSoFar();
+      conceptCalls.asked++;
+      const concept = await deriveConcept({
+        phrase: win.phrase,
+        takeText: seg.text,
+        sectionTitle: seg.section || "",
+        banned,
+        rejected,
+        client: visionClient,
+      });
+      if (!concept) {
+        attempts.push({ stage: "concept", reason: ask === 0 ? "no filmable concept derived" : "no different concept derived after the refusals" });
+        break;
+      }
       conceptCalls.answered++;
+      // A second answer that is the first answer again is not a second try.
+      if (rejected.some((r) => String(r.query).toLowerCase() === String(concept.query).toLowerCase())) {
+        attempts.push({ stage: "concept", reason: `the model proposed "${concept.query}" again after it was refused — not re-searching it` });
+        continue;
+      }
       try {
         const r = await stockFetcher({
           keywords: [concept.query],
@@ -677,12 +759,20 @@ async function resolveStockWindow(seg, block, {
           windowRow.subject = concept.subject;
         }
         attempts.push(...(r?.attempts || []).map((a) => ({ ...a, stage: `concept-${a.stage}` })));
+        if (!r?.clip) {
+          conceptSearched = true;
+          // Record the subject the reviewer was asked about, so a later ask
+          // (and the ladder record) can say what was refused, not just what
+          // was searched — and record the miss even when the search itself
+          // returned nothing to refuse.
+          const rows = attempts.filter((a) => a.keyword === concept.query);
+          if (rows.length === 0) attempts.push({ keyword: concept.query, stage: "concept-search", reason: "no usable clip" });
+          for (const a of attempts.filter((x) => x.keyword === concept.query)) a.subject = concept.subject;
+        }
       } catch (err) {
         if (err instanceof StockQuotaError) throw err;
         attempts.push({ stage: "concept-error", reason: err.message });
       }
-    } else {
-      attempts.push({ stage: "concept", reason: "no filmable concept derived" });
     }
   };
 

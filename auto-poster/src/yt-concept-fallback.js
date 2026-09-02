@@ -131,6 +131,45 @@ export function sanitiseSubject(phrase, { banned = new Set(), maxWords = 10 } = 
 }
 
 /**
+ * The part of the prompt that makes a second ask different from the first.
+ *
+ * Video 2's build died twice (runs 33586116393 and 33606652718) on one
+ * 6-second window of s6t2 — "trips, the truck, the savings" — and the ladder
+ * record shows why a retry could not help: the model was asked the same
+ * question twice and answered "pickup truck parked in a residential driveway"
+ * twice, the search returned semi-trucks and a man holding a STOP sign twice,
+ * and the reviewer rejected all six twice. A retry that carries no memory of
+ * the first attempt is a re-run.
+ *
+ * So the second ask names what was tried and what the reviewer said, and asks
+ * for a DIFFERENT KIND of scene — a different object class, not a variation.
+ * The reasons are the reviewer's own words, clipped; the subjects are the
+ * sanitised strings this module produced or the window's own name-stripped
+ * words, so nothing new can reach the model that did not already pass the
+ * proper-noun rules. The model's answer goes through the same sanitiser as
+ * a first answer regardless.
+ */
+export function rejectedBlock(rejected = []) {
+  const rows = (Array.isArray(rejected) ? rejected : [])
+    .filter((r) => r && (r.subject || r.query))
+    .slice(-4);
+  if (rows.length === 0) return "";
+  const lines = rows.map((r) => {
+    const reasons = (Array.isArray(r.reasons) ? r.reasons : [])
+      .filter((x) => typeof x === "string" && x.trim())
+      .slice(0, 2)
+      .map((x) => x.replace(/\s+/g, " ").trim().slice(0, 140));
+    const what = r.subject && r.query && r.subject !== r.query ? `"${r.subject}" (searched "${r.query}")` : `"${r.subject || r.query}"`;
+    return `- ${what}${reasons.length ? `: ${reasons.join(" / ")}` : ""}`;
+  });
+  return `
+ALREADY TRIED for these exact words, and it did not work — the search returned nothing usable, or the frame reviewer refused every clip it returned:
+${lines.join("\n")}
+Do not propose these again, or anything of the same kind. Name a DIFFERENT kind of scene — a different object class, not a variation on the same one — that a generic stock library reliably has and a reviewer would accept as a candid everyday shot: a house exterior, a family in a kitchen, a person at a table, a residential street, a yard.
+`;
+}
+
+/**
  * Ask the model for a concrete, filmable stand-in for one window.
  *
  * @returns {{ query, subject, source: "concept" } | null}
@@ -140,6 +179,10 @@ export async function deriveConcept({
   takeText = "",
   sectionTitle = "",
   banned = new Set(),
+  // What was already tried for THESE words and rejected by the frame reviewer
+  // — [{ subject, query, reasons: [..] }]. See rejectedBlock for why this is
+  // the difference between a retry and a re-run.
+  rejected = [],
   client,
   model = CONCEPT_MODEL,
 } = {}) {
@@ -149,7 +192,7 @@ export async function deriveConcept({
 
 While these words are spoken: "${phrase}"
 (from a passage about: "${String(takeText).slice(0, 300)}"; section topic: "${sectionTitle}")
-
+${rejectedBlock(rejected)}
 Name the ONE concrete, filmable thing generic stock footage should show during those words.
 
 Rules:
