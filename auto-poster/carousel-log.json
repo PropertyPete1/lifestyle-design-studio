@@ -5064,6 +5064,200 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-09-02",
+      "timestamp": "2026-09-02T17:31:24.241Z",
+      "pillar": "motivation_business",
+      "topic": "The cash cushion after closing: why buyers get in trouble",
+      "hook": "The buyers who get in trouble in Texas almost never overpaid for the house.",
+      "closeType": "share",
+      "keyword": null,
+      "accent": "#C8AA6A",
+      "slideCount": 9,
+      "deck": {
+        "topic": "The cash cushion after closing: why buyers get in trouble",
+        "hook": "The buyers who get in trouble in Texas almost never overpaid for the house.",
+        "map": [
+          "The real problem",
+          "Month one costs",
+          "The year two bill",
+          "The 24 percent fence",
+          "Three months, untouched",
+          "Why cushions win"
+        ],
+        "points": [
+          {
+            "title": "Nobody Overpays Into Trouble",
+            "body": [
+              "Almost every buyer I have watched struggle paid a fair price for a fine house.",
+              "They just closed with nothing left in the bank."
+            ],
+            "loop": "The house asks first."
+          },
+          {
+            "title": "Month One Wants Money",
+            "body": [
+              "Bare windows. No fridge, no fence, no blinds, no grass.",
+              "That list runs into the thousands before the boxes are unpacked."
+            ],
+            "loop": "Then the mail arrives."
+          },
+          {
+            "title": "Year Two Sends A Bill",
+            "body": [
+              "On a lot of new builds, the first tax bill is based on dirt.",
+              "The second one is based on the finished house, and your escrow has to catch up."
+            ],
+            "loop": "Most people patch it the same way."
+          },
+          {
+            "title": "The 24 Percent Fence",
+            "body": [
+              "Fence, furniture and the tax gap all land on credit cards.",
+              "The interest ends up costing more than the fence ever did."
+            ],
+            "loop": "One habit prevents all of it."
+          },
+          {
+            "title": "Three Months, Untouched",
+            "body": [
+              "After closing, keep three months of house payments sitting in cash.",
+              "Not invested. Not in the house. Just boring and available.",
+              "If that means buying under your approval number, buy under it."
+            ],
+            "loop": "That cash does something else too."
+          },
+          {
+            "title": "It Buys You Time",
+            "body": [
+              "People rarely sell at a loss because the market dipped.",
+              "They sell because a bad month showed up and there was no runway.",
+              "The cushion is what lets you wait the market out."
+            ],
+            "loop": "You already know who needs this."
+          }
+        ],
+        "cta": {
+          "shareLine": "Send this to someone who is about to spend every dollar they have on the down payment."
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 6,
+        "cta": 8,
+        "worst_problem": "The first loop, \"The house asks first,\" is cryptic enough that the reader has to decode it rather than crave the next slide, breaking the swipe chain at the earliest and most fragile point.",
+        "fix": "Rewrite loop one as a concrete tease of the immediate spend, e.g. \"Move-in week costs thousands\" or \"The house bills you first,\" so every loop names a thing the reader wants to see."
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 370126082,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-02T17:34:24.774Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7680991890073865486"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 370126092,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-02T17:34:24.961Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500969008439996416"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 370126130,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-02T17:35:56.301Z",
+          "publicUrl": "https://www.instagram.com/p/DcyyLPwiH4f/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 370126168,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-02T17:35:56.427Z",
+          "publicUrl": "https://www.instagram.com/p/DcyyK3liGdY/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 370126174,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-02T17:34:25.314Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500969016589660161"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 370126220,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-02T17:35:56.628Z",
+          "publicUrl": "https://www.instagram.com/p/DcyyLbbiD5-/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 370126221,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-02T17:34:25.547Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122118734595400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 370126228,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-02T17:34:25.663Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7500969010235142144"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-09-02T17:35:56.629Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
