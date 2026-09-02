@@ -7609,6 +7609,58 @@
       "variantNumber": 1,
       "window": "pm",
       "deliveryDriveLink": "https://drive.google.com/file/d/1cTx1V2oMSqfp1M0DJpx-4Ddt-npou0Gd/view"
+    },
+    {
+      "driveFileId": "14pBv8be-5SbttS5LHp0ZZM7rs3zy1Lwn",
+      "fileName": "7DEE1FFF-A46D-4D3F-A921-A4F680825A9B.mp4",
+      "city": "san_antonio",
+      "caption": "This kitchen hits different when you walk in.\n\nNew construction starting at $499,990 in San Antonio. The kind of home that doesn't wait around.\n\n✨ Open floor plan with natural light pouring through. M",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-02T16:09:14.121Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (51 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Tell me yet to love Tell me yet to love Tell you love with my heart And don't walk away before Tell me yet to love Tell you why I hold on to you I'll be with you once you've got Give it away to start a love Be happy before",
+      "content_hash": "ff073f1f0000e73f:fe1e0ffefc1c0703:e0ffffff0100f8f0:710447fffce0f840:9f87ffff1810f0c1",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "pov",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1qdPfOOslmPVgkNv14atPItH4RCJR5ALO/view"
     }
   ],
   "lastTemplateIndex": -1
