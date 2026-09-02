@@ -53,6 +53,23 @@ import {
  */
 export const STALL_NUDGE_HOURS = 72;
 
+/**
+ * How often the dashboard reconcile sweep re-mails about a card it still
+ * cannot find. The sweep itself is hourly (a card that is not visible is a
+ * SYSTEM fault, not Peter taking his time, and it costs a day per day it goes
+ * unnoticed); this is what keeps hourly detection from being hourly mail.
+ */
+export const RECONCILE_ALERT_REPEAT_HOURS = 24;
+
+/**
+ * How long after a card goes out before the reconcile sweep expects to see it.
+ * The approval webhook is synchronous and the dashboard renders on receipt, so
+ * an hour is generous — it exists so a sweep landing seconds after a send does
+ * not alarm on a card the dashboard is still painting. Was two hours; with the
+ * sweep hourly, two meant the third sweep was the first that could alert.
+ */
+export const RECONCILE_GRACE_HOURS = 1;
+
 const HOUR_MS = 3600 * 1000;
 
 /**
@@ -158,7 +175,7 @@ export async function maybeNudgeStalledRequest(approvals, record, { dryRun = fal
  * record every scheduled job keys off), and a card is only worth checking once
  * the dashboard has had time to receive and render it — hence the grace.
  */
-export function waitingRecords(approvals, { now = new Date(), graceHours = 2 } = {}) {
+export function waitingRecords(approvals, { now = new Date(), graceHours = RECONCILE_GRACE_HOURS } = {}) {
   const out = [];
   for (const kind of [KIND_TOPIC_PICK, KIND_VIDEO_REVIEW]) {
     const s = decisionState(approvals, kind);
@@ -169,4 +186,22 @@ export function waitingRecords(approvals, { now = new Date(), graceHours = 2 } =
     out.push(s.record);
   }
   return out;
+}
+
+/**
+ * Should the reconcile sweep mail about this missing card on THIS run?
+ *
+ * Due when it has never alerted, or when the last alert is older than
+ * RECONCILE_ALERT_REPEAT_HOURS. A stamp that does not parse makes the record
+ * NOT due — the same asymmetry as nudgeDue: an unreadable clock degrades to
+ * silence, never to a mail on every hourly run. The stamp is only ever
+ * written by markReconcileAlerted with an ISO string, so that branch is a
+ * corruption tripwire, not a path anything walks on purpose.
+ */
+export function reconcileAlertDue(record, now = new Date()) {
+  const stamp = record?.reconcileAlertedAt;
+  if (!stamp) return true;
+  const at = Date.parse(stamp);
+  if (!Number.isFinite(at)) return false;
+  return now - at >= RECONCILE_ALERT_REPEAT_HOURS * HOUR_MS;
 }

@@ -99,6 +99,7 @@ import {
   isUploaded,
   recentBrollHashes,
 } from "./yt-log.js";
+import { inflightKits, reviewGateFor } from "./yt-stage.js";
 import { RESOLUTION, renderLayerSummary, layerKnobs, BEAT_BRIDGE_MAX_SECONDS } from "./yt-config.js";
 import { routeWarnChannel } from "./yt-evidence.js";
 // The Actions log drops the warn channel entirely (proven on two preserved
@@ -1515,6 +1516,40 @@ async function deliverTeaserToTrialTab(entry) {
   }
 }
 
+/**
+ * Advance ONE delivered kit: build when the recordings are complete, say what
+ * is missing when they are not.
+ *
+ * The review gate is scoped to THIS video (reviewGateFor), never to whichever
+ * review happens to be newest. A rejected review cleared the upload markers
+ * (recordRework), which is what put the kit back in flight — so "review
+ * already recorded, entry not uploaded" means rebuild with the same takes.
+ */
+async function advanceDeliveredKit(approvals, record) {
+  const review = reviewGateFor(approvals, record);
+  if (review.state === "waiting") {
+    console.log(
+      `[YTPipeline] ${review.record.requestId} is waiting on Peter's review of ${record.requestId} — exiting cleanly`
+    );
+    // A review card that has sat three days unanswered needs a human told.
+    await maybeNudgeStalledRequest(approvals, review.record, { dryRun: DRY_RUN });
+    return;
+  }
+  if (review.state === "already-acted") {
+    const entry = findByRequest(loadVideoLog(), record.requestId);
+    if (entry && !isUploaded(entry)) {
+      console.log(
+        `[YTPipeline] ${review.record.requestId} was rejected and queued for rework ` +
+        `(revision ${entry.revision || 2}) — rebuilding ${record.requestId} with the same takes`
+      );
+    } else {
+      console.log(`[YTPipeline] ${review.record.requestId} review already recorded — nothing further for ${record.requestId}`);
+      return;
+    }
+  }
+  await buildFromRecordings(approvals, record);
+}
+
 async function main() {
   // Distribution first: it is independent of the stage machine below, and a
   // video Peter published overnight gets its comment posted on this run rather
@@ -1534,23 +1569,27 @@ async function main() {
     return;
   }
 
+  // THE TOPIC GATE. Only the newest brief is a question. An approval or a
+  // rejection on it is acted here and ends the run; "waiting" and "none" FALL
+  // THROUGH to the build stage, which is keyed off delivered kits and not off
+  // this switch. That fall-through is the 2026-08-31 fix: the Monday brief for
+  // video 3 went out while video 2's 35 takes were uploading, the switch
+  // returned on "waiting", and six green runs built nothing. See yt-stage.js.
   const topic = decisionState(approvals, KIND_TOPIC_PICK);
-
   switch (topic.state) {
     case "none":
-      console.log("[YTPipeline] no brief has been sent yet — nothing to advance");
-      return;
+      console.log("[YTPipeline] no brief has been sent yet");
+      break;
 
     case "waiting":
       console.log(
-        `[YTPipeline] ${topic.record.requestId} is waiting on Peter (sent ${topic.record.requestedAt}) — ` +
-        `exiting cleanly, will check again next run`
+        `[YTPipeline] ${topic.record.requestId} is waiting on Peter (sent ${topic.record.requestedAt})`
       );
       // Waiting is normal for a day and evidence of a problem after three: he
       // has not seen the card, or the dashboard dropped his answer (2026-08-19
       // cost video 2 a week). Either way the fix starts with telling him.
       await maybeNudgeStalledRequest(approvals, topic.record, { dryRun: DRY_RUN });
-      return;
+      break;
 
     case "approved":
       await deliverKitForApprovedTopic(approvals, topic.record);
@@ -1560,41 +1599,40 @@ async function main() {
       await reBriefAfterRejection(approvals, topic.record);
       return;
 
-    case "already-acted": {
-      // The kit is out. An ANSWERED review never reaches this switch — it is
-      // acted above, before the topic is even consulted — so the states left
-      // here are waiting and already-acted.
-      const review = decisionState(approvals, KIND_VIDEO_REVIEW);
-      if (review.state === "waiting") {
-        console.log(
-          `[YTPipeline] ${review.record.requestId} is waiting on Peter's review — exiting cleanly`
-        );
-        // Same clock as the topic branch above: a review card that has sat
-        // three days unanswered needs a human told, whichever half is stuck.
-        await maybeNudgeStalledRequest(approvals, review.record, { dryRun: DRY_RUN });
-        return;
-      }
-      if (review.state === "already-acted") {
-        // A recorded APPROVAL is final — nothing further. A recorded REJECTION
-        // queued a rework, which cleared the upload markers, so the build gate
-        // below is open again: fall through and rebuild with the same takes.
-        const entry = findByRequest(loadVideoLog(), topic.record.requestId);
-        if (entry && !isUploaded(entry)) {
-          console.log(
-            `[YTPipeline] ${review.record.requestId} was rejected and queued for rework ` +
-            `(revision ${entry.revision || 2}) — rebuilding with the same takes`
-          );
-        } else {
-          console.log(`[YTPipeline] ${review.record.requestId} review already recorded — nothing further`);
-          return;
-        }
-      }
-      await buildFromRecordings(approvals, topic.record);
-      return;
-    }
+    case "already-acted":
+      // The kit is out; the build stage below owns it from here.
+      break;
 
     default:
       console.log(`[YTPipeline] unrecognised state "${topic.state}" — doing nothing`);
+      return;
+  }
+
+  // THE BUILD STAGE. Every delivered kit whose video has no upload, oldest
+  // first — a kit in flight outranks a question not yet answered.
+  const kits = inflightKits(approvals, loadVideoLog());
+  if (kits.length === 0) {
+    // Nothing is being recorded. The only thing left to wait on is a review.
+    const review = decisionState(approvals, KIND_VIDEO_REVIEW);
+    if (review.state === "waiting") {
+      console.log(`[YTPipeline] ${review.record.requestId} is waiting on Peter's review — exiting cleanly`);
+      await maybeNudgeStalledRequest(approvals, review.record, { dryRun: DRY_RUN });
+    } else {
+      console.log("[YTPipeline] nothing in flight — exiting cleanly, will check again next run");
+    }
+    return;
+  }
+  if (topic.state === "waiting") {
+    console.log(
+      `[YTPipeline] ${kits.map((k) => k.requestId).join(", ")} ${kits.length === 1 ? "has" : "have"} a delivered kit ` +
+      `and no upload — the newer brief does not gate a video already being recorded; advancing`
+    );
+  }
+  for (const kit of kits) {
+    await advanceDeliveredKit(approvals, kit);
+    // One render per run. An upload logged for this kit means the build ran;
+    // anything after it waits for the next poll (and the 180-minute clock).
+    if (isUploaded(findByRequest(loadVideoLog(), kit.requestId))) return;
   }
 }
 

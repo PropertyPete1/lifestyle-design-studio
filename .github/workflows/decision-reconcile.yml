@@ -1,28 +1,36 @@
 name: Decision Reconcile
 
-# Daily read-only sweep: every card the pipeline believes is WAITING must be
+# Hourly read-only sweep: every card the pipeline believes is WAITING must be
 # VISIBLE on the deployed dashboard. If one is not, Peter either answered it
 # and the dashboard dropped the write-back (2026-08-19 — video 2 lost a week),
-# or he was never shown it. Both are alarms; he gets mailed the recovery steps
-# (the record-decision job) the same day. See dashboard-smoke/reconcile.mjs
-# for why this is the strongest check possible against a dashboard with no
-# read API, and why it never tries to recover the decision content itself.
+# or he was never shown it (2026-08-31 — the video 3 brief was not on any
+# tab). Both are alarms; he gets mailed the recovery steps (the record-decision
+# job) within about two hours of the card going out. See
+# dashboard-smoke/reconcile.mjs for why visibility is the strongest check
+# possible against a dashboard with no read API, and why it never tries to
+# recover the decision content itself.
 #
-# Nothing here commits, clicks, or posts to the dashboard. The alert channel
-# is Gmail, per daily-notify.js — a reconcile alarm is not a delivery, and the
-# dashboard's webhooks each create a card in a tab Peter reads.
+# WHY HOURLY. The daily sweep found the 2026-08-31 card 23 hours after it was
+# sent — exactly as designed, and a day too late. A card that is not visible is
+# a system fault, not Peter taking his time, so it is checked on the hour. The
+# pre-check step keeps that cheap: Chromium is installed only when something is
+# waiting past the grace, which is a few hours a week, not 24 runs a day.
+#
+# WHAT IT WRITES. Nothing to the dashboard — the sweep clicks nothing and posts
+# nothing there. One field to the repo: `reconcileAlertedAt` on the record it
+# mailed about (markReconcileAlerted), so hourly detection is not hourly mail —
+# the alert repeats every RECONCILE_ALERT_REPEAT_HOURS until a decision lands.
+# That stamp is the only reason this job holds write permission, and the
+# commit step runs only on a run that stamped something.
 on:
   schedule:
-    # 11:15 AM CT daily, offset from every other cron here, with the same :30
-    # backup pattern as post.yml — scheduled runs get dropped under load, and
-    # this job is idempotent enough that a duplicate costs one extra mail in
-    # the rare case both fire AND a card is missing.
-    - cron: '15 16 * * *'
-    - cron: '45 16 * * *'
+    # On the hour, offset from every other cron here. No :30 backup: the next
+    # hour is the backup, and a duplicate would only mean two pre-checks.
+    - cron: '15 * * * *'
   workflow_dispatch: {}
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   reconcile:
@@ -40,13 +48,21 @@ jobs:
       - name: Install auto-poster dependencies
         working-directory: auto-poster
         run: npm install
+      - name: Is anything waiting past the grace?
+        id: precheck
+        working-directory: auto-poster
+        run: node scripts/reconcile-waiting.mjs
       - name: Install smoke dependencies
+        if: steps.precheck.outputs.waiting == 'true'
         working-directory: dashboard-smoke
         run: npm install
       - name: Install Chromium
+        if: steps.precheck.outputs.waiting == 'true'
         working-directory: dashboard-smoke
         run: npx playwright install --with-deps chromium
       - name: Sweep the dashboard for waiting cards
+        id: sweep
+        if: steps.precheck.outputs.waiting == 'true'
         working-directory: dashboard-smoke
         env:
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
@@ -58,3 +74,14 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
         run: node reconcile.mjs
+      # `always()` because the sweep exits red on the run that mails — and that
+      # is exactly the run whose stamp must land. Gated on `stamped` so a
+      # no-op hour commits nothing (merge-log-push would otherwise push a
+      # telemetry-only commit every hour).
+      - name: Commit the alert stamp
+        if: always() && steps.sweep.outputs.stamped == 'true'
+        working-directory: auto-poster
+        run: |
+          git config user.name "Auto Poster Bot"
+          git config user.email "bot@lifestyle-design.com"
+          node merge-log-push.mjs RECONCILE "false"

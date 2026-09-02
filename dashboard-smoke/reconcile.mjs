@@ -34,16 +34,29 @@
  * of the posting path" — package.json). The approvals-reading half lives in
  * auto-poster (waitingRecords in yt-stall-nudge.js) so `npm test` covers it
  * without a browser. Read-only against the dashboard: this script clicks
- * nothing, posts nothing, and commits nothing.
+ * nothing and posts nothing there.
+ *
+ * CADENCE. This ran daily and found the 2026-08-31 card missing 23 hours after
+ * it was sent — not slowly, just at the one time of day it looked. It now runs
+ * HOURLY (the workflow pre-checks yt-approvals.json and only launches a
+ * browser when something is waiting past RECONCILE_GRACE_HOURS), so a card
+ * the dashboard is not showing is mailed within about two hours of going out.
+ * Hourly detection must not be hourly mail: a missing card is mailed once,
+ * stamped `reconcileAlertedAt` on its record (the ONE thing this script
+ * writes; the workflow commits it through merge-log-push), and mailed again
+ * every RECONCILE_ALERT_REPEAT_HOURS until it is answered. The run goes red
+ * only on the runs that mail, so GitHub's own failure notification tracks the
+ * same cadence.
  *
  * Env: DASHBOARD_URL, DASHBOARD_PASS (the passcode wall), and the GOOGLE_*
  * trio for the alert mail. The passcode is typed, never printed, never
  * screenshotted — same rules as auth.setup.mjs, minus the artifacts entirely.
  */
 
+import { appendFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
-import { loadApprovals } from "../auto-poster/src/yt-approvals.js";
-import { waitingRecords } from "../auto-poster/src/yt-stall-nudge.js";
+import { loadApprovals, saveApprovals, markReconcileAlerted } from "../auto-poster/src/yt-approvals.js";
+import { waitingRecords, reconcileAlertDue, RECONCILE_ALERT_REPEAT_HOURS } from "../auto-poster/src/yt-stall-nudge.js";
 import { getAccessToken } from "../auto-poster/src/drive.js";
 import { sendOwnerEmail, MAIL_PREFIX } from "../auto-poster/src/delivery.js";
 
@@ -58,6 +71,11 @@ const MAX_PAGES = 12;
 function fail(msg) {
   console.log(`::error::${msg}`);
   process.exitCode = 1;
+}
+
+/** A step output for the workflow (the commit step keys off `stamped`). */
+function setOutput(name, value) {
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
 }
 
 /**
@@ -192,10 +210,28 @@ async function main() {
       console.log(`[Reconcile] ${r.requestId}: ${found ? "visible — genuinely waiting on Peter" : "NOT FOUND on any page"}`);
     }
 
-    if (missing.length > 0) {
-      await alert(missing);
-      fail(`${missing.length} waiting card(s) not visible on the dashboard — Peter has been mailed the recovery steps`);
+    if (missing.length === 0) return;
+
+    // Mail once per RECONCILE_ALERT_REPEAT_HOURS per card, not once per sweep.
+    const due = missing.filter((r) => reconcileAlertDue(r));
+    for (const r of missing.filter((r) => !due.includes(r))) {
+      console.log(
+        `::warning::${r.requestId} is STILL not visible on the dashboard — Peter was mailed at ` +
+        `${r.reconcileAlertedAt}; this repeats every ${RECONCILE_ALERT_REPEAT_HOURS}h until a decision lands`
+      );
     }
+    if (due.length === 0) return;
+
+    await alert(due);
+    // Stamp AFTER the mail went, like the nudge: a failed send left unstamped
+    // is retried by the next hourly sweep. The stamp is written to
+    // auto-poster/yt-approvals.json; the workflow's commit step pushes it.
+    const at = new Date().toISOString();
+    let next = loadApprovals();
+    for (const r of due) next = markReconcileAlerted(next, r.requestId, at);
+    saveApprovals(next);
+    setOutput("stamped", "true");
+    fail(`${due.length} waiting card(s) not visible on the dashboard — Peter has been mailed the recovery steps`);
   } finally {
     await browser.close();
   }

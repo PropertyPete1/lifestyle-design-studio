@@ -15,11 +15,15 @@ import {
   stallNudgeText,
   maybeNudgeStalledRequest,
   waitingRecords,
+  reconcileAlertDue,
   STALL_NUDGE_HOURS,
+  RECONCILE_ALERT_REPEAT_HOURS,
+  RECONCILE_GRACE_HOURS,
 } from "../src/yt-stall-nudge.js";
 import {
   applyManualDecision,
   markStallNudged,
+  markReconcileAlerted,
   recordDecision,
   KIND_TOPIC_PICK,
   KIND_VIDEO_REVIEW,
@@ -240,12 +244,73 @@ describe("waitingRecords — what the reconcile sweep must find on the dashboard
   });
 
   test("a card inside the grace window is not checked yet — the dashboard needs time to render it", () => {
-    const approvals = { requests: [topicRecord({ requestedAt: hoursAgo(1) })] };
+    const approvals = { requests: [topicRecord({ requestedAt: hoursAgo(0.5) })] };
     assert.deepEqual(waitingRecords(approvals, { now: NOW }), []);
+  });
+
+  test("the grace is ONE hour, so an hourly sweep can alert on the second pass — the 2026-08-31 card took 23h", () => {
+    assert.equal(RECONCILE_GRACE_HOURS, 1);
+    const approvals = { requests: [topicRecord({ requestedAt: hoursAgo(1.5) })] };
+    assert.equal(waitingRecords(approvals, { now: NOW }).length, 1, "ninety minutes old must be swept");
   });
 
   test("smoke fixtures are invisible here, like everywhere scheduled", () => {
     const approvals = { requests: [topicRecord({ requestId: "TEST-topic_pick-z" })] };
     assert.deepEqual(waitingRecords(approvals, { now: NOW }), []);
+  });
+});
+
+
+describe("reconcileAlertDue — hourly detection is not hourly mail", () => {
+  test("never alerted is due", () => {
+    assert.equal(reconcileAlertDue(topicRecord(), NOW), true);
+  });
+
+  test("alerted an hour ago is not due — the sweep keeps looking, quietly", () => {
+    assert.equal(reconcileAlertDue(topicRecord({ reconcileAlertedAt: hoursAgo(1) }), NOW), false);
+  });
+
+  test("alerted a day ago is due again, and keeps being due daily until a decision lands", () => {
+    assert.equal(RECONCILE_ALERT_REPEAT_HOURS, 24);
+    assert.equal(reconcileAlertDue(topicRecord({ reconcileAlertedAt: hoursAgo(24) }), NOW), true);
+    assert.equal(reconcileAlertDue(topicRecord({ reconcileAlertedAt: hoursAgo(23.5) }), NOW), false);
+  });
+
+  test("an unreadable stamp degrades to silence, never to a mail on every run", () => {
+    assert.equal(reconcileAlertDue(topicRecord({ reconcileAlertedAt: "not a date" }), NOW), false);
+  });
+
+  test("markReconcileAlerted stamps only the named record and is not a latch", () => {
+    const log = { requests: [topicRecord(), topicRecord({ requestId: "topic_pick-other" })] };
+    const once = markReconcileAlerted(log, "topic_pick-2026-08-17-aaaa1111", hoursAgo(30));
+    assert.equal(once.requests[0].reconcileAlertedAt, hoursAgo(30));
+    assert.equal(once.requests[1].reconcileAlertedAt, undefined);
+    const twice = markReconcileAlerted(once, "topic_pick-2026-08-17-aaaa1111", hoursAgo(1));
+    assert.equal(twice.requests[0].reconcileAlertedAt, hoursAgo(1), "a later alert replaces the stamp");
+  });
+
+  test("the stamp survives a merge with the dashboard's bare-array decision write", () => {
+    const poster = { requests: [markReconcileAlerted({ requests: [topicRecord()] }, "topic_pick-2026-08-17-aaaa1111", hoursAgo(1)).requests[0]] };
+    const dashboard = [{ requestId: "topic_pick-2026-08-17-aaaa1111", decision: "approve", decidedAt: NOW.toISOString(), selection: 2 }];
+    const merged = mergeYtApprovals(poster, dashboard, () => {});
+    const rec = merged.requests.find((r) => r.requestId === "topic_pick-2026-08-17-aaaa1111");
+    assert.equal(rec.reconcileAlertedAt, hoursAgo(1), "the stamp was merged away — the sweep would mail every hour");
+    assert.equal(rec.decision, "approve");
+  });
+
+  test("two stamps: the later wins, because that is when Peter was last told", () => {
+    const a = { requests: [topicRecord({ reconcileAlertedAt: hoursAgo(30) })] };
+    const b = { requests: [topicRecord({ reconcileAlertedAt: hoursAgo(2) })] };
+    assert.equal(mergeYtApprovals(a, b, () => {}).requests[0].reconcileAlertedAt, hoursAgo(2));
+    assert.equal(mergeYtApprovals(b, a, () => {}).requests[0].reconcileAlertedAt, hoursAgo(2));
+  });
+
+  test("the nudge stamp and the reconcile stamp are independent fields", () => {
+    const log = { requests: [topicRecord({ stallNudgedAt: hoursAgo(5) })] };
+    const stamped = markReconcileAlerted(log, "topic_pick-2026-08-17-aaaa1111", hoursAgo(1));
+    assert.equal(stamped.requests[0].stallNudgedAt, hoursAgo(5));
+    const merged = mergeYtApprovals(stamped, { requests: [topicRecord()] }, () => {});
+    assert.equal(merged.requests[0].stallNudgedAt, hoursAgo(5));
+    assert.equal(merged.requests[0].reconcileAlertedAt, hoursAgo(1));
   });
 });
