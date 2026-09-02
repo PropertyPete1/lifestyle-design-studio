@@ -7906,6 +7906,58 @@
       "timestamp": "2026-09-02T19:08:20.680Z",
       "runId": "33670880483",
       "success": true
+    },
+    {
+      "driveFileId": "1yLUkkkVH5wIbM1OrtkHxnlOVWj5qWuFL",
+      "fileName": "7FF299C3-BFA6-44B0-BD68-D91993A3DE45.mp4",
+      "city": "san_antonio",
+      "caption": "POV: you just walked into your first brand new home in San Antonio.\n\nNew construction like this doesn't sit long.\n\n✨ everyday living hits\nOpen floor plan flooded with natural light. Modern finishes th",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-02T19:08:20.329Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (41 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Baby do it right, hold up money or I like yeah Guess what I, I could see what we do at the night I said it don't fire, turn this up, get wild We don't retire, keep this shit going up",
+      "content_hash": "c04c0f001eff7e00:f8fcfefe7c782000:ff4fffff4f000000:3f1c38ff79f8fcfc:fffffffcfc04c081",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "pattern_interrupt",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": false,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1mOWWK9Y2RUMqxoaN7v9YM1ODm6pd3o_e/view"
     }
   ],
   "lastTemplateIndex": -1
