@@ -150,23 +150,35 @@ export function sanitiseSubject(phrase, { banned = new Set(), maxWords = 10 } = 
  * a first answer regardless.
  */
 export function rejectedBlock(rejected = []) {
-  const rows = (Array.isArray(rejected) ? rejected : [])
-    .filter((r) => r && (r.subject || r.query))
-    .slice(-4);
+  const rows = (Array.isArray(rejected) ? rejected : []).filter((r) => r && (r.subject || r.query));
   if (rows.length === 0) return "";
-  const lines = rows.map((r) => {
+  const line = (r) => {
     const reasons = (Array.isArray(r.reasons) ? r.reasons : [])
       .filter((x) => typeof x === "string" && x.trim())
       .slice(0, 2)
       .map((x) => x.replace(/\s+/g, " ").trim().slice(0, 140));
     const what = r.subject && r.query && r.subject !== r.query ? `"${r.subject}" (searched "${r.query}")` : `"${r.subject || r.query}"`;
-    return `- ${what}${reasons.length ? `: ${reasons.join(" / ")}` : ""}`;
-  });
-  return `
-ALREADY TRIED for these exact words, and it did not work — the search returned nothing usable, or the frame reviewer refused every clip it returned:
-${lines.join("\n")}
-Do not propose these again, or anything of the same kind. Name a DIFFERENT kind of scene — a different object class, not a variation on the same one — that a generic stock library reliably has and a reviewer would accept as a candid everyday shot: a house exterior, a family in a kitchen, a person at a table, a residential street, a yard.
-`;
+    const why = r.exhausted ? "every clip it finds is already used in this video" : reasons.length ? reasons.join(" / ") : "the search found nothing usable";
+    return `- ${what}: ${why}`;
+  };
+  const words = rows.filter((r) => !r.viaConcept).slice(-2);
+  const scenes = rows.filter((r) => r.viaConcept).slice(-3);
+  const parts = [];
+  if (words.length) {
+    // THE RAW WORDS ARE NOT A DESCRIBED SCENE. "highway running" pulled up
+    // joggers and the scene that then landed was "highway traffic driving" —
+    // the same object class, described properly. So a words-only refusal is
+    // information about the query, not a ban on the subject.
+    parts.push(
+      `The window's own words were searched as-is (not as a described scene) and the results were refused:\n${words.map(line).join("\n")}\nThat says the bare words pull up the wrong footage, not that the subject is wrong — describe the right scene properly.`
+    );
+  }
+  if (scenes.length) {
+    parts.push(
+      `Scenes ALREADY PROPOSED for these exact words and refused:\n${scenes.map(line).join("\n")}\nDo not propose these again, or anything of the same kind. Name a DIFFERENT kind of everyday scene — a different object class, not a variation on the same one — that fits these words and that a generic stock library reliably has.`
+    );
+  }
+  return `\n${parts.join("\n\n")}\n`;
 }
 
 /**
