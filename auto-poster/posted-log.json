@@ -8232,6 +8232,58 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1vlVUjiYva1v5c-QQtierLwATkKKZUKPQ",
+      "fileName": "81481D25-2DD7-4C02-81BF-3A30A2B307F3.mp4",
+      "city": "san_antonio",
+      "caption": "This might be the best new build value I've toured all month.\n\nNew construction like this doesn't sit long in this market. Starting at $369,990 in San Antonio gives you brand new finishes at a price p",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-03T16:12:24.820Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (45 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "I bet you wanna know what I'm thinking, I'm always getting up doing something, getting up there's my best lead me alone I'm always having good enough with you, not gonna knock my throat in a towel, I'm giving you up so we have gone",
+      "content_hash": "80ffff000000ffff:ff7fedf94141fcdc:ffffffff93c0e0f0:00fff37fe7c30101:f8e3c3c7c3808890",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "bold_claim",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "pov",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1hW5-M0nr9T62fEhXDKp53mZs-VU8G6Je/view"
     }
   ],
   "lastTemplateIndex": -1
