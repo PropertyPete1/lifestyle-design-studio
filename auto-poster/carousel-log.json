@@ -5258,6 +5258,190 @@
         "anyFailed": false,
         "pendingRecheck": false
       }
+    },
+    {
+      "date": "2026-09-03",
+      "timestamp": "2026-09-03T17:23:12.661Z",
+      "pillar": "real_estate_education",
+      "topic": "Why the third price cut on a listing is the expensive one",
+      "hook": "On a Texas listing, the third price cut costs more than the first two combined.",
+      "closeType": "dm",
+      "keyword": "REPORT",
+      "accent": "#C8AA6A",
+      "slideCount": 8,
+      "deck": {
+        "topic": "Why the third price cut on a listing is the expensive one",
+        "hook": "On a Texas listing, the third price cut costs more than the first two combined.",
+        "map": [
+          "Week one traffic",
+          "The quiet drop off",
+          "Chasing the market down",
+          "Why cut three hurts",
+          "Season and timing"
+        ],
+        "points": [
+          {
+            "title": "Week One Is Everything",
+            "body": [
+              "A fresh listing hits every saved search in the area at once.",
+              "Most homes get more showings in the first ten days than the next sixty."
+            ],
+            "loop": "Then something quiet happens."
+          },
+          {
+            "title": "The Drop Off",
+            "body": [
+              "After two weeks the new buyers have already seen it and passed.",
+              "Now the only thing growing is the days on market counter."
+            ],
+            "loop": "Buyers read that number."
+          },
+          {
+            "title": "Chasing The Market",
+            "body": [
+              "Most sellers cut a small amount and wait to see what happens.",
+              "The market keeps moving while you wait, so the new price is stale in three weeks."
+            ],
+            "loop": "You are always one step behind."
+          },
+          {
+            "title": "Why Cut Three Hurts",
+            "body": [
+              "By the third cut you have burned two months of calendar.",
+              "Buyers stop asking what the house costs and start asking what is wrong with it.",
+              "That is why cut three costs more than the first two combined."
+            ],
+            "loop": "The calendar is not neutral."
+          },
+          {
+            "title": "The Month You List In",
+            "body": [
+              "Buyer traffic in Texas is not the same in July as it is in March.",
+              "Pricing off what your neighbor got last spring is how the chase starts."
+            ],
+            "loop": "Last year's numbers will fool you."
+          }
+        ],
+        "cta": {
+          "payoff": "this month's Texas market numbers, including how long homes are actually sitting before they sell"
+        }
+      },
+      "scores": {
+        "clarity": 8,
+        "hook": 8,
+        "loops": 5,
+        "cta": 8,
+        "worst_problem": "Two of the five loops ('You are always one step behind.', 'Last year's numbers will fool you.') just restate the slide they close instead of pointing forward, so the swipe reason dies mid-deck.",
+        "fix": "Rewrite the loops on slides 3 and 5 to withhold the next slide's content — e.g. 'Cut three is the expensive one.' and 'There is a right month to list.'"
+      },
+      "attemptsUsed": 3,
+      "regenerated": true,
+      "belowBar": true,
+      "criticUnavailable": false,
+      "leaksStripped": 0,
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "instagram",
+          "ok": true,
+          "skipped": "deliverToOwner"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "tiktok",
+          "ok": true,
+          "postId": 370648753,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-03T17:26:13.096Z",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7681361034862480654"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 370648757,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-03T17:26:13.190Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7501329367265083392"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "network": "instagram",
+          "ok": true,
+          "postId": 370648777,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-03T17:27:44.146Z",
+          "publicUrl": "https://www.instagram.com/p/Dc1V-H1iJO-/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "instagram",
+          "ok": true,
+          "postId": 370648798,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-03T17:26:13.365Z",
+          "publicUrl": "https://www.instagram.com/p/Dc1V87uCkBf/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 370648801,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-03T17:26:13.445Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7501329368372322306"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "instagram",
+          "ok": true,
+          "postId": 370648826,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-03T17:26:13.543Z",
+          "publicUrl": "https://www.instagram.com/p/Dc1V4C9jU0a/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "facebook",
+          "ok": true,
+          "postId": 370648829,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-03T17:26:13.625Z",
+          "publicUrl": "https://facebook.com/122104822677400881/posts/122118968565400881"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "network": "linkedin",
+          "ok": true,
+          "postId": 370648834,
+          "verified": true,
+          "verdict": "published",
+          "verifiedAt": "2026-09-03T17:26:13.705Z",
+          "publicUrl": "https://linkedin.com/feed/update/urn:li:ugcPost:7501329366585425920"
+        }
+      ],
+      "deliveredToOwner": true,
+      "verification": {
+        "checkedAt": "2026-09-03T17:27:44.147Z",
+        "anyFailed": false,
+        "pendingRecheck": false
+      }
     }
   ]
 }
