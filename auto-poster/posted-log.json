@@ -8108,6 +8108,130 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "selfmade:2026-09-02:text_reel:after_hours",
+      "fileName": "text_reel-after_hours-2026-09-02",
+      "city": "ldt",
+      "caption": "4,400+ contacts live on the floor today. Cold calls running at 2 AM. Pipeline briefed at 7:05 AM. PRIMARY watches it all while you sleep, then answers to its name the moment you're back. Voice-operate",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "facebook"
+      ],
+      "timestamp": "2026-09-03T00:53:37.778Z",
+      "success": true,
+      "type": "ldt_text_reel",
+      "brand": "ldt",
+      "slot": "pm",
+      "caption_source": "generated_retry",
+      "hook_style": "stat",
+      "angle": "after_hours",
+      "voice": "operator",
+      "meta_closer": "Written, designed, and posted by PRIMARY.",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "stat",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "question",
+        "voice": "operator",
+        "voice_source": "rotated",
+        "excluded_voice": "primary",
+        "caption_source": "generated_retry",
+        "caption_length_bucket": null,
+        "caption_length_source": "brand_fixed",
+        "brief_generated_at": "2026-08-31T20:55:41.746Z"
+      },
+      "blogId": 6804409,
+      "postIds": [
+        {
+          "networks": [
+            "instagram",
+            "tiktok",
+            "facebook"
+          ],
+          "postId": 370279199
+        }
+      ],
+      "distribution": [
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 370279199,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-03T01:00:38.438Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DczkjiRkYLS/"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 370279199,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-03T01:00:38.438Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesigntech/video/7681106125743328526"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 370279199,
+          "network": "facebook",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-03T01:00:38.438Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://facebook.com/reel/1044494851925952"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-09-03T01:00:38.438Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 3,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 370279199,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "facebook",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://facebook.com/reel/1044494851925952"
+              },
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DczkjiRkYLS/"
+              },
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesigntech/video/7681106125743328526"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
