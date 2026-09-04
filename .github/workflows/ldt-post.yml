@@ -23,11 +23,45 @@ name: LDT Brand Post
 #
 # No backup crons on purpose: the lane's cadence + min-gap guards make any
 # re-run safe, and a missed slot alerts via daily-notify rather than retrying.
+#
+# ALL OF THE ABOVE describes the lane when it is RUNNING. It is paused right
+# now (see the banner below), so no slot fires and nothing can alert on a
+# missed one — silence from this workflow currently means "paused", not
+# "healthy". The paragraphs are kept because they are the contract the
+# schedule comes back under.
+# ══════════════════════════════════════════════════════════════════════════
+# LANE PAUSED — 2026-09-04, by operator request.
+#
+# No automated posting to @lifestyledesigntechnologies (Instagram),
+# @lifestyledesigntech (TikTok), or the Lifestyle Design Technologies
+# Facebook Page, on any slot.
+#
+# TWO independent switches hold this, either one sufficient:
+#   1. auto-poster/brands.json  →  brands.ldt.enabled = false
+#      The runner exits green at its pause gate before generating,
+#      rendering, voicing, uploading or scheduling anything.
+#   2. the schedule block below, commented out
+#      No slot fires at all, so the runner is never even invoked.
+#
+# The crons are COMMENTED, NOT DELETED, so restoring the lane is an
+# uncomment rather than a rewrite — and tests/ldt-workflow-env.test.mjs
+# holds the commented schedule to the same contract as a live one (count
+# against the configured cadence, spacing against the min-gap), so the
+# state it restores to stays provably correct while it rests.
+#
+# TO RESUME (both steps, either order):
+#   1. brands.json: "enabled": false  →  true
+#   2. uncomment the three cron lines and the `schedule:` key below
+#
+# workflow_dispatch stays live throughout: the lane is still manually
+# runnable, and a dispatch with dry_run=true runs the full pipeline
+# without publishing (see the pause gate in src/ldt-main.js).
+# ══════════════════════════════════════════════════════════════════════════
 on:
-  schedule:
-    - cron: '0 15 * * *'
-    - cron: '0 19 * * *'
-    - cron: '0 23 * * *'
+  # schedule:
+  #   - cron: '0 15 * * *'
+  #   - cron: '0 19 * * *'
+  #   - cron: '0 23 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -104,6 +138,16 @@ jobs:
         if: always()
         run: |
           cd auto-poster
+          # A paused lane exits 0 without posting, which merge-log-push would
+          # read as post_success=true and commit as "📸 LDT post <date>" —
+          # a false claim in git history for a run that published nothing.
+          # There is no posted-log entry to merge either, so the whole step is
+          # skipped while the lane rests. Only reachable via manual dispatch
+          # today (no cron fires), but the history it writes is permanent.
+          if [ "$(node -p "require('./brands.json').brands.ldt.enabled === false")" = "true" ]; then
+            echo "LDT brand is paused — no post was made, nothing to commit."
+            exit 0
+          fi
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
           node merge-log-push.mjs LDT "${{ steps.run-ldt.outputs.post_success }}"

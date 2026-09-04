@@ -1,5 +1,19 @@
 # LDT Brand Lane — Setup & Auth Reality
 
+> ## ⏸ THIS LANE IS PAUSED (2026-09-04)
+>
+> No automated posting to @lifestyledesigntechnologies, @lifestyledesigntech,
+> or the LDT Facebook Page. Two switches hold it: `brands.json`
+> (`brands.ldt.enabled: false`) stops the runner, and the commented-out
+> schedule in `.github/workflows/ldt-post.yml` means no slot fires at all.
+> **Everything below describes the lane as it behaves when running** — it is
+> the contract it comes back under, not what is happening today.
+>
+> **To resume, two edits:** set `"enabled": true` in `brands.json`, and
+> uncomment the `schedule:` block and its three `- cron:` lines in
+> `.github/workflows/ldt-post.yml`. CI fails if you do only one of them.
+
+
 Brand 2: **Lifestyle Design Technologies** — IG `@lifestyledesigntechnologies`,
 TikTok `@lifestyledesigntech`. Marketing PRIMARY, from the system PRIMARY's
 company builds.
@@ -20,7 +34,8 @@ is a profile inside the same account; once the LDT accounts are connected as a
 new brand, the existing token can post to it. The lane finds the LDT brand **by
 handle** (from `brands.json`) and fails closed — until the connect below is
 done, every scheduled run exits green with a `[DAILY ALERT]` notice instead of
-posting.
+posting. (While the lane is paused no scheduled run happens at all — the
+runner stops at its pause gate before it ever reaches this check.)
 
 Google Drive access reuses the existing `GOOGLE_CLIENT_ID` /
 `GOOGLE_CLIENT_SECRET` / `GOOGLE_REFRESH_TOKEN` — same account that owns the
@@ -62,13 +77,15 @@ Nothing else. No new tokens, no code changes, no redeploys.
   daily, one post per format per day, every line of copy backed by
   `ldt-claims.json`). See `LDT-SELFMADE.md`.
 - **Cadence**: 3/day per platform (config: `brands.json`), fired by three
-  spread slots — 10:00 AM, 2:00 PM and 6:00 PM CT. Hard cap 6/day — a config
+  spread slots — 10:00 AM, 2:00 PM and 6:00 PM CT. **Paused since 2026-09-04:
+  those three slots are commented out, so none of them currently fires.** Hard cap 6/day — a config
   above the cap is **refused at startup**; 3–6 runs only with the explicit
   config change and logs a warning every run (3/day does, by design). A
   3-hour minimum gap applies between any two LDT posts, which is why the
   slots sit on a four-hour pitch: an hour of slack, so a late-firing slot
   isn't silently skipped. Raising the cadence again means adding a slot and
-  keeping that gap — CI pins the cron count to the cadence.
+  keeping that gap — CI pins the cron count to the cadence, and holds the
+  commented-out schedule to the same contract while the lane rests.
 - **Learning loop**: the LDT brand gets its own brief
   (`performance-weights.ldt.json`) fed from its own blogId's reel analytics —
   fully separate from the realty weights. (The read-only daily collector,

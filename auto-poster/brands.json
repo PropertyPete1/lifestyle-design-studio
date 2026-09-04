@@ -11,6 +11,8 @@
     "ldt": {
       "label": "Lifestyle Design Technologies",
       "lane": "ldt",
+      "enabled": false,
+      "pausedNote": "PAUSED 2026-09-04 by operator request — no automated posting to @lifestyledesigntechnologies (IG), @lifestyledesigntech (TikTok), or the LDT Facebook Page on any slot. To resume: set \"enabled\" back to true here AND uncomment the schedule block in .github/workflows/ldt-post.yml. Nothing else was removed — the handles below still CLAIM these Metricool profiles, which is what keeps the realty fan-out from inheriting the LDT accounts while the lane rests.",
       "handles": {
         "instagram": ["lifestyledesigntechnologies"],
         "tiktok": ["lifestyledesigntech"]

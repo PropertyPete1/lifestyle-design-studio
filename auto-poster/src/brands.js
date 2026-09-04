@@ -17,6 +17,12 @@
  *     claimed by another brand — which today is every profile, so realty
  *     behavior is byte-identical until another brand's accounts exist.
  *
+ * ENABLED is the pause switch: a brand with `"enabled": false` keeps its
+ * claim, its handles and its cadence but posts nothing. It is read ONLY by
+ * that brand's own runner — never by the claim path — because an unclaimed
+ * profile is a profile the realty fan-out will happily adopt. See
+ * brandPostingEnabled below.
+ *
  * CADENCE is the anti-spam guard: per-brand, per-platform posts per Chicago
  * calendar day. Default 2. Anything above the hard cap (6) is REFUSED at
  * config-load time — resolveCadence throws, the run goes red before a single
@@ -48,6 +54,11 @@ const FALLBACK_REGISTRY = {
     ldt: {
       label: "Lifestyle Design Technologies",
       lane: "ldt",
+      // The pause travels with the fallback. If brands.json goes missing or
+      // unparseable, the LDT lane must stay DOWN — a config file that fails to
+      // read is not consent to start posting again. Flipping the lane back on
+      // means editing both, and the test suite says so out loud.
+      enabled: false,
       handles: {
         instagram: ["lifestyledesigntechnologies"],
         tiktok: ["lifestyledesigntech"],
@@ -73,6 +84,45 @@ export function loadBrandRegistry() {
     cachedRegistry = FALLBACK_REGISTRY;
   }
   return cachedRegistry;
+}
+
+/**
+ * Is this brand's posting lane enabled?
+ *
+ * The pause switch. A brand with `"enabled": false` in brands.json still
+ * exists, still CLAIMS its Metricool profiles, still carries its cadence and
+ * handles — it simply does not post. One key, one edit, fully reversible.
+ *
+ * DEFAULT TRUE: a brand with no `enabled` key is enabled, so introducing this
+ * flag changes no existing brand's behavior (realty has no key and never
+ * gains one). Only an explicit `true` keeps a lane running once the key is
+ * present: any other value — `false`, the STRING "false", 0, null, a typo —
+ * reads as PAUSED. The asymmetry is deliberate. The expensive failure here is
+ * a lane that keeps publishing to live accounts because someone fat-fingered
+ * the value they meant to stop it with; a lane that rests when it should not
+ * is noticed by a human within a day and costs nothing.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * DO NOT CALL THIS FROM THE CLAIM PATH. profileClaimedBy, claimingBrandKey,
+ * excludeClaimedProfiles and findBrandProfiles must all behave IDENTICALLY for
+ * a paused brand as for a running one. Realty is `discovery: "unclaimed"` — it
+ * posts to every profile no other brand claims. The moment a paused brand
+ * stops claiming its profiles, the LDT Instagram, TikTok and Facebook Page
+ * become "unclaimed" and the REALTY lane starts publishing realty reels to the
+ * LDT accounts within the hour, autoPublish:true. Pausing a lane must never be
+ * the thing that hands its accounts to another brand.
+ * tests/ldt-pause.test.mjs pins exactly this.
+ * ────────────────────────────────────────────────────────────────────────────
+ */
+export function brandPostingEnabled(brand) {
+  if (!brand || typeof brand !== "object") return false;
+  if (!("enabled" in brand)) return true;
+  return brand.enabled === true;
+}
+
+/** Convenience inverse, for the reading that makes the call site clearest. */
+export function brandIsPaused(brand) {
+  return !brandPostingEnabled(brand);
 }
 
 /** Test seam: clear the cache so tests can exercise the loader. */
