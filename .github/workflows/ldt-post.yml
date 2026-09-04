@@ -23,11 +23,39 @@ name: LDT Brand Post
 #
 # No backup crons on purpose: the lane's cadence + min-gap guards make any
 # re-run safe, and a missed slot alerts via daily-notify rather than retrying.
+# ══════════════════════════════════════════════════════════════════════════
+# LANE PAUSED — 2026-09-04, by operator request.
+#
+# No automated posting to @lifestyledesigntechnologies (Instagram),
+# @lifestyledesigntech (TikTok), or the Lifestyle Design Technologies
+# Facebook Page, on any slot.
+#
+# TWO independent switches hold this, either one sufficient:
+#   1. auto-poster/brands.json  →  brands.ldt.enabled = false
+#      The runner exits green at its pause gate before generating,
+#      rendering, voicing, uploading or scheduling anything.
+#   2. the schedule block below, commented out
+#      No slot fires at all, so the runner is never even invoked.
+#
+# The crons are COMMENTED, NOT DELETED, so restoring the lane is an
+# uncomment rather than a rewrite — and tests/ldt-workflow-env.test.mjs
+# holds the commented schedule to the same contract as a live one (count
+# against the configured cadence, spacing against the min-gap), so the
+# state it restores to stays provably correct while it rests.
+#
+# TO RESUME (both steps, either order):
+#   1. brands.json: "enabled": false  →  true
+#   2. uncomment the three cron lines and the `schedule:` key below
+#
+# workflow_dispatch stays live throughout: the lane is still manually
+# runnable, and a dispatch with dry_run=true runs the full pipeline
+# without publishing (see the pause gate in src/ldt-main.js).
+# ══════════════════════════════════════════════════════════════════════════
 on:
-  schedule:
-    - cron: '0 15 * * *'
-    - cron: '0 19 * * *'
-    - cron: '0 23 * * *'
+  # schedule:
+  #   - cron: '0 15 * * *'
+  #   - cron: '0 19 * * *'
+  #   - cron: '0 23 * * *'
   workflow_dispatch:
     inputs:
       mode:

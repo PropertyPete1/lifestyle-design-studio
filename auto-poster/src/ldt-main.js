@@ -66,6 +66,7 @@ import {
 } from "./metricool.js";
 import {
   loadBrandRegistry, findBrandProfiles, resolveCadence, cadenceAllows, minGapOk, chicagoDayOf,
+  brandIsPaused,
 } from "./brands.js";
 import { pickIntakeCandidates, hasBrandTypeToday } from "./ldt-intake.js";
 import { applyLdtVoiceover } from "./ldt-voiceover.js";
@@ -441,6 +442,42 @@ async function main() {
   const registry = loadBrandRegistry();
   const brand = registry.brands?.[BRAND_KEY];
   if (!brand) throw new Error("brands.json has no 'ldt' brand");
+
+  // ─── PAUSE GATE ───────────────────────────────────────────────────────────
+  // Deliberately the FIRST thing after the brand resolves, and above every
+  // line that costs anything: no claims load, no cadence resolve, no
+  // posted-log read, no Metricool profile listing, no Drive listing or clip
+  // download, no ffmpeg, no Anthropic vision QC, no ElevenLabs voiceover, no
+  // Anthropic caption, no deck/card/reel render, no upload, no schedulePost,
+  // no posted-log write. A paused lane's entire footprint is these log lines.
+  //
+  // GREEN, not red: a lane that is resting on purpose is not a failure, and a
+  // red run here would page Peter three times a day for a state he chose.
+  // The cron is disabled too (.github/workflows/ldt-post.yml), so on a paused
+  // lane this gate is belt-and-braces — it is what makes a stray dispatch, a
+  // re-run of an old job, or a restored schedule safe rather than a surprise.
+  //
+  // DRY RUN IS THE ONE WAY THROUGH, on purpose: the operator asked to keep
+  // testing the lane while it rests, and a dry run cannot publish — the three
+  // publish points (createSingleBrandPost for clips and text reels,
+  // schedulePost for carousels and cards) are all dry-run inert, and
+  // uploadToBrand is skipped outright. It DOES still render and still spends
+  // Anthropic vision/caption credit, so it is reachable only by a human
+  // choosing dry_run on a manual dispatch — never by a schedule, where the
+  // inputs are empty and DRY_RUN resolves to the string "false".
+  if (brandIsPaused(brand)) {
+    if (!DRY_RUN) {
+      console.log(`[LDT] ${brand.label} brand is paused — no posting.`);
+      console.log("[LDT] Paused in auto-poster/brands.json (brands.ldt.enabled = false). " +
+        "Nothing was generated, rendered, voiced, uploaded or scheduled. " +
+        "To resume: set enabled back to true and uncomment the schedule block in .github/workflows/ldt-post.yml.");
+      process.exit(0);
+    }
+    console.log(`[LDT] ${brand.label} brand is paused — no posting. ` +
+      "Continuing anyway because this is an explicit DRY RUN dispatch: it will generate and render, but publishes nothing.");
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   const claims = loadLdtClaims();
 
   // Cadence config is validated FIRST — an over-cap config is refused before
