@@ -58,19 +58,16 @@ const REQUIRED_ENV = [
 /**
  * The schedule, split by whether each cron line is LIVE or COMMENTED OUT.
  *
- * A paused lane has no live crons — that is how "no slot fires at all" is
- * enforced at the Actions level. But the crons are commented rather than
- * deleted, so the schedule the lane will RESTORE to is still right here in
- * the file, and still worth checking: the count-vs-cadence and the spacing
- * -vs-min-gap contracts below run against whichever set is in force. That
- * way a cadence change made while the lane rests cannot quietly desync the
- * schedule it comes back on.
+ * `/^\s*- cron:/` cannot match a commented line — `#` is not whitespace — so
+ * the two sets are disjoint and a commented example can never stand in for a
+ * live schedule.
  */
 function scheduleCrons() {
   const lines = ldtYml.split("\n");
-  const live = lines.filter(l => /^\s*- cron:/.test(l));
-  const commented = lines.filter(l => /^\s*#\s*- cron:/.test(l));
-  return { live, commented, effective: live.length ? live : commented };
+  return {
+    live: lines.filter(l => /^\s*- cron:/.test(l)),
+    commented: lines.filter(l => /^\s*#\s*- cron:/.test(l)),
+  };
 }
 
 function cronMinutes(lines) {
@@ -104,34 +101,40 @@ describe("ldt-post.yml", () => {
     });
   }
 
-  test("a PAUSED lane has no live cron at all", () => {
-    // The Actions half of the pause. brands.json stops the runner; this stops
-    // the runner from ever being invoked. Both are asserted because either
-    // one alone is a lane that is only half stopped — and the failure mode of
-    // the config-only version (a stray dispatch, a re-run of an old job) is
-    // exactly the one a cron makes routine.
-    if (!brandIsPaused(loadBrandRegistry().brands.ldt)) return;
-    const { live } = scheduleCrons();
-    assert.equal(live.length, 0,
-      `the ldt brand is paused in brands.json but ldt-post.yml still has ${live.length} live cron(s) — the lane would still fire`);
-  });
+  test("THE TWO SWITCHES AGREE — the lane is all the way on, or all the way off", () => {
+    // Both halves of the pause, asserted together, in both directions —
+    // because a half-applied change is the failure neither half catches
+    // alone:
+    //
+    //   paused but a cron still live  → the lane still fires, and only the
+    //                                   runner's gate stands between it and a
+    //                                   post. The schedule was the point.
+    //   enabled but crons still       → THE RESUME HOLE. The lane reads as
+    //   commented                       "on", fires never, and CI is green
+    //                                   the whole time. This is the one that
+    //                                   costs a week of "why has LDT not
+    //                                   posted?"
+    //
+    // One contract rather than two conditional tests, so neither direction
+    // can be satisfied vacuously.
+    const { live, commented } = scheduleCrons();
+    const perDay = Math.max(...Object.values(loadBrandRegistry().brands.ldt.cadence));
 
-  test("one schedule cron per post of the configured cadence", () => {
-    // Count uncommented cron lines while the lane runs, and the commented
-    // ones while it rests — a paused lane keeps its schedule in the file so
-    // restoring it is an uncomment, and that stored schedule is held to the
-    // same contract it will be judged by the moment it comes back. The count
-    // is derived from brands.json rather than hardcoded: raising the cadence
-    // without adding a slot leaves the extra post unreachable (the lane can
-    // only post once per firing), and adding slots without raising the
-    // cadence burns Actions runs on green no-ops. Either drift fails here.
-    const { effective, live, commented } = scheduleCrons();
-    assert.ok(effective.length > 0,
-      "ldt-post.yml has no cron lines at all, live or commented — the schedule to restore has been lost, not paused");
-    const cadence = loadBrandRegistry().brands.ldt.cadence;
-    const perDay = Math.max(...Object.values(cadence));
-    assert.equal(effective.length, perDay,
-      `cadence and cron count must change together (${live.length} live, ${commented.length} commented, cadence ${perDay}/day)`);
+    if (brandIsPaused(loadBrandRegistry().brands.ldt)) {
+      assert.equal(live.length, 0,
+        `the ldt brand is paused in brands.json but ldt-post.yml still has ${live.length} live cron(s) — the lane would still fire`);
+      assert.equal(commented.length, perDay,
+        `a paused lane keeps its whole schedule commented out so the restore is an uncomment — expected ${perDay} commented cron(s), found ${commented.length}`);
+      return;
+    }
+
+    assert.equal(live.length, perDay,
+      `the ldt brand is ENABLED in brands.json but ldt-post.yml has ${live.length} live cron(s) against a cadence of ${perDay}/day` +
+      (commented.length
+        ? ` — ${commented.length} cron(s) are still COMMENTED OUT. The lane was turned back on without restoring its schedule: it will never fire.`
+        : " — cadence and cron count must change together"));
+    assert.equal(commented.length, 0,
+      `the lane is enabled but ${commented.length} cron line(s) are still commented out — finish the restore or delete them`);
   });
 
   test("the slots are SPREAD across the day, never bunched under the min-gap", () => {
@@ -144,7 +147,10 @@ describe("ldt-post.yml", () => {
     // Live crons while running, the commented ones while paused: the spacing
     // of the schedule this lane RESTORES to has to be right too, or the pause
     // becomes a place for a bad schedule to hide until the day it is needed.
-    const minutes = cronMinutes(scheduleCrons().effective);
+    const { live, commented } = scheduleCrons();
+    const minutes = cronMinutes(live.length ? live : commented);
+    assert.ok(minutes.length > 0,
+      "ldt-post.yml has no cron lines at all, live or commented — the schedule to restore has been lost, not paused");
 
     // Gaps around the 24h clock, so the last slot vs the next day's first is
     // checked too — a late-night slot that crowds the next morning counts.

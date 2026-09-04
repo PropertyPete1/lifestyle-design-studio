@@ -52,6 +52,25 @@ const registry = loadBrandRegistry();
 const ldt = registry.brands.ldt;
 const realty = registry.brands.realty;
 
+/**
+ * Is the lane paused RIGHT NOW?
+ *
+ * This file outlives the pause. The assertions that describe the current
+ * state (the flag is false, no cron is live, the runner refuses) are gated on
+ * this, so resuming the lane is the two edits the operator was promised —
+ * flip the flag, uncomment the schedule — and not "…and also delete a test
+ * file". The invariants that must hold in EITHER state are left ungated:
+ * the helper's truth table, the claim path never reading the flag, realty's
+ * discovery, the gate sitting above the work, and the dry-run short-circuits.
+ * Those are the ones worth keeping alive for the next pause.
+ *
+ * The symmetric "both switches agree" contract — which catches a resume that
+ * flips the flag but leaves the crons commented — lives in
+ * ldt-workflow-env.test.mjs, where it runs in both states.
+ */
+const PAUSED = brandIsPaused(ldt);
+const whenPaused = (name, fn) => test(name, { skip: PAUSED ? false : "the ldt lane is not paused" }, fn);
+
 // The Metricool profile shape: ONE row per Metricool brand, carrying every
 // connected network as a field. That is why pausing the lane stops Facebook
 // too — the Page is a field on the same row the IG handle identifies.
@@ -112,7 +131,7 @@ const WORK_MARKERS = [
 ];
 
 describe("LDT pause switch — config", () => {
-  test("the ldt brand is paused in brands.json", () => {
+  whenPaused("the ldt brand is paused in brands.json", () => {
     assert.equal(ldt.enabled, false, 'brands.ldt.enabled must be exactly false');
     assert.equal(brandIsPaused(ldt), true);
     assert.equal(brandPostingEnabled(ldt), false);
@@ -150,7 +169,7 @@ describe("LDT pause switch — config", () => {
     assert.equal(brandPostingEnabled(null), false);
   });
 
-  test("the built-in fallback registry carries the pause too", () => {
+  whenPaused("the built-in fallback registry carries the pause too", () => {
     // brands.json going missing or unparseable is not consent to resume: the
     // fallback is what the loader uses then, and it must be paused as well.
     const src = readFileSync(join(SRC, "brands.js"), "utf-8");
@@ -235,33 +254,37 @@ describe("LDT pause switch — realty is untouched", () => {
 });
 
 describe("LDT pause switch — the runner refuses, end to end", () => {
-  test("a scheduled-shape run exits GREEN and says why", () => {
-    const { stdout, status } = runLane();
+  whenPaused("a scheduled-shape run exits GREEN, says why, and touches NOTHING", () => {
+    // One spawn, every claim about it. (Three separate runs of an identical
+    // subprocess was ~1.5s of pure duplication in a suite that already runs
+    // its files in parallel — and a slow test file is how unrelated,
+    // timing-sensitive tests elsewhere start failing.)
+    const { stdout, status, network } = runLane();
+
+    // Exits green: a lane resting on purpose is not a failure.
     assert.equal(status, 0, `paused lane must exit 0, got ${status}. Output:\n${stdout}`);
-    assert.match(stdout, /brand is paused — no posting/,
+
+    // Says why, in the operator's own words, and says how to undo it.
+    assert.match(stdout, /LDT brand is paused — no posting/,
       "the operator asked for this exact line");
     assert.match(stdout, /enabled/, "the log must name the switch that stopped it");
     assert.match(stdout, /uncomment the schedule/i, "the log must say how to bring it back");
-  });
 
-  test("a paused run makes ZERO network calls", () => {
-    // The strongest form of "posts nothing": it never reaches the wire at
-    // all — no Metricool profile listing, no Drive, no Anthropic, no
-    // ElevenLabs. Nothing to publish with and nothing spent.
-    const { network, stdout } = runLane();
+    // Touches nothing: the strongest form of "posts nothing" is never
+    // reaching the wire — no Metricool listing, no Drive, no Anthropic
+    // vision or caption, no ElevenLabs. Nothing published, nothing spent.
     assert.deepEqual(network, [],
       `a paused lane must not touch the network, attempted: ${network.join(", ")}\n${stdout}`);
-  });
 
-  test("a paused run reaches none of the working stages", () => {
-    const { stdout } = runLane();
+    // And it got nowhere near the work: every marker below belongs to a
+    // stage that only runs once the lane has committed to posting.
     for (const marker of WORK_MARKERS) {
       assert.equal(stdout.includes(marker), false,
         `paused run printed "${marker}" — the gate is below work it should be above`);
     }
   });
 
-  test("it stays paused on every slot, mode and pin", () => {
+  whenPaused("it stays paused on every slot, mode and pin", () => {
     // "No posts on any slot": the gate is above MODE, above the intake
     // folder, above the FORCE pin — there is no dispatch shape that posts.
     for (const env of [
@@ -281,7 +304,7 @@ describe("LDT pause switch — the runner refuses, end to end", () => {
     }
   });
 
-  test("the FORCE pin cannot punch through the pause", () => {
+  whenPaused("the FORCE pin cannot punch through the pause", () => {
     // A pin normally exits RED when it cannot post, on purpose. While the
     // lane is paused it must exit GREEN instead: the lane is off, which is
     // not the pin failing, and a red run here would page the operator for a
@@ -310,7 +333,7 @@ describe("LDT pause switch — the runner refuses, end to end", () => {
 });
 
 describe("LDT pause switch — manual dry run still works", () => {
-  test("an explicit DRY_RUN dispatch is let through the gate", () => {
+  whenPaused("an explicit DRY_RUN dispatch is let through the gate", () => {
     const { stdout } = runLane({ DRY_RUN: "true" });
     assert.match(stdout, /brand is paused/, "it still announces the pause");
     assert.match(stdout, /Continuing anyway because this is an explicit DRY RUN/,
@@ -344,19 +367,19 @@ describe("LDT pause switch — manual dry run still works", () => {
 describe("LDT pause switch — the workflow fires no slot", () => {
   const yml = readFileSync(join(WORKFLOWS, "ldt-post.yml"), "utf-8");
 
-  test("no live cron remains", () => {
+  whenPaused("no live cron remains", () => {
     const live = yml.split("\n").filter(l => /^\s*- cron:/.test(l));
     assert.deepEqual(live, [], "a paused lane must have no live schedule");
   });
 
-  test("the schedule key itself is commented, not merely emptied", () => {
+  whenPaused("the schedule key itself is commented, not merely emptied", () => {
     // `schedule:` with no entries is not valid workflow syntax — it has to go
     // too, or the file stops parsing and every dispatch fails with it.
     assert.equal(/^\s*schedule:\s*$/m.test(yml), false, "the live schedule: key must be gone");
     assert.match(yml, /^\s*#\s*schedule:\s*$/m, "the commented schedule: key must remain for the restore");
   });
 
-  test("the crons are preserved as comments so restoring is an uncomment", () => {
+  whenPaused("the crons are preserved as comments so restoring is an uncomment", () => {
     const commented = yml.split("\n").filter(l => /^\s*#\s*- cron:/.test(l));
     const perDay = Math.max(...Object.values(ldt.cadence));
     assert.equal(commented.length, perDay,
@@ -369,7 +392,7 @@ describe("LDT pause switch — the workflow fires no slot", () => {
     assert.match(yml, /node src\/ldt-main\.js/, "and it still runs the real entrypoint");
   });
 
-  test("the file says how to turn the lane back on", () => {
+  whenPaused("the file says how to turn the lane back on", () => {
     assert.match(yml, /TO RESUME/i, "the restore steps belong next to the switch they undo");
   });
 });

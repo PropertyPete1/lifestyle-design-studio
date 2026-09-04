@@ -467,13 +467,13 @@ async function main() {
   // inputs are empty and DRY_RUN resolves to the string "false".
   if (brandIsPaused(brand)) {
     if (!DRY_RUN) {
-      console.log(`[LDT] ${brand.label} brand is paused — no posting.`);
-      console.log("[LDT] Paused in auto-poster/brands.json (brands.ldt.enabled = false). " +
+      console.log("[LDT] LDT brand is paused — no posting.");
+      console.log(`[LDT] ${brand.label} is paused in auto-poster/brands.json (brands.ldt.enabled = false). ` +
         "Nothing was generated, rendered, voiced, uploaded or scheduled. " +
         "To resume: set enabled back to true and uncomment the schedule block in .github/workflows/ldt-post.yml.");
       process.exit(0);
     }
-    console.log(`[LDT] ${brand.label} brand is paused — no posting. ` +
+    console.log("[LDT] LDT brand is paused — no posting. " +
       "Continuing anyway because this is an explicit DRY RUN dispatch: it will generate and render, but publishes nothing.");
   }
   // ──────────────────────────────────────────────────────────────────────────
