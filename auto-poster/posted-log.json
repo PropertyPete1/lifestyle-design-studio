@@ -9058,6 +9058,58 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1Ec1X7ss6UlR9vR7pL7xsdhFXs9vgjhMG",
+      "fileName": "8A78F7D7-A8BE-482A-BCE3-40940A8E6C6F.mp4",
+      "city": "san_antonio",
+      "caption": "the kitchen in this one made me stop mid-tour 😮‍💨\n\nnew construction like this doesn't sit long in San Antonio\n\n✨ everyday living hits\n• brand new build with modern finishes and a smart open layout\n•",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-04T19:08:40.230Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (48 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "I don't know how you would feel today I have some of this feeling that I'm dying of If you're dancing, it's gonna shit through the day now I don't like, I just like like a mom's family I just like like a mom's family that I'm dying",
+      "content_hash": "ffffff0000001fff:03819592780b031f:98881f1acb1ebcc4:1f1f3b876fc0800e:fc90e7ffe7830000",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "pov",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": false,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1BagfM_6QIh_GOsPEbvXnP7_MArVAI9dv/view"
     }
   ],
   "lastTemplateIndex": -1
