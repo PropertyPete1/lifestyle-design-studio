@@ -8685,6 +8685,130 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "selfmade:2026-09-03:text_reel:honest_numbers",
+      "fileName": "text_reel-honest_numbers-2026-09-03",
+      "city": "ldt",
+      "caption": "I watched the pipeline while he slept. He approved every send. New leads got contacted before his first meeting. Cold database got worked automatically, weekends included. The moment someone replied, ",
+      "voiceover": false,
+      "platforms": [
+        "instagram",
+        "tiktok",
+        "facebook"
+      ],
+      "timestamp": "2026-09-04T00:37:10.408Z",
+      "success": true,
+      "type": "ldt_text_reel",
+      "brand": "ldt",
+      "slot": "pm",
+      "caption_source": "generated",
+      "hook_style": "bold_claim",
+      "angle": "honest_numbers",
+      "voice": "primary",
+      "meta_closer": "PRIMARY made this post. It also runs the follow-up.",
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "bold_claim",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "question",
+        "voice": "primary",
+        "voice_source": "rotated",
+        "excluded_voice": "operator",
+        "caption_source": "generated",
+        "caption_length_bucket": null,
+        "caption_length_source": "brand_fixed",
+        "brief_generated_at": "2026-08-31T20:55:41.746Z"
+      },
+      "blogId": 6804409,
+      "postIds": [
+        {
+          "networks": [
+            "instagram",
+            "tiktok",
+            "facebook"
+          ],
+          "postId": 370809776
+        }
+      ],
+      "distribution": [
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 370809776,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-04T00:44:10.960Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Dc2Hdp5lK-K/"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 370809776,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-04T00:44:10.960Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesigntech/video/7681472997839883534"
+        },
+        {
+          "label": "Lifestyle design technologies",
+          "blogId": 6804409,
+          "postId": 370809776,
+          "network": "facebook",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-09-04T00:44:10.960Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://facebook.com/reel/1112605951117853"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-09-04T00:44:10.960Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 3,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "Lifestyle design technologies",
+            "postId": 370809776,
+            "blogId": 6804409,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "facebook",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://facebook.com/reel/1112605951117853"
+              },
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Dc2Hdp5lK-K/"
+              },
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesigntech/video/7681472997839883534"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
