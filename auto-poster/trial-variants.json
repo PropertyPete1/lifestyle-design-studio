@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-09-03",
+      "window": "pm",
+      "sourceVideoId": "1OlCn4c4gt-4SxjNRRbw52jM06_4X13W9",
+      "sourceFileName": "82C46E1E-55DE-4361-9F07-0D63866B302C.mp4",
+      "city": "san_antonio",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "caption": "Starting at $499,990 for brand new construction in San Antonio and the builder incentives are live right now.\n\nNew construction like this doesn't sit long. Here's what you're looking at.\n\n✨ Open floor",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1tpQLiG1dppV0g9SEVE64BPPrr2IK8Gom/view",
+      "generatedAt": "2026-09-04T01:25:49.828Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-09-01",
       "window": "pm",
       "sourceVideoId": "1WSvgFb0iesSOvpogePvPZ_-a_GhZUeCA",
