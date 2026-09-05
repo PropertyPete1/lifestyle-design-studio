@@ -9323,6 +9323,13 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1OZBh_Y_MBxhpQqsbMKHaZCfoGH8bR3FE/view"
+    },
+    {
+      "type": "linkedin",
+      "status": "claimed",
+      "timestamp": "2026-09-05T19:10:49.630Z",
+      "runId": "33985978280",
+      "success": false
     }
   ],
   "lastTemplateIndex": -1
