@@ -9271,6 +9271,58 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1bt2oufNohqnhTrtD6j50T1qeEtpUJ8-j",
+      "fileName": "8C7A00AA-399A-45DE-8637-9516355FA21B.mp4",
+      "city": "san_antonio",
+      "caption": "POV: you just walked into your first brand new home in San Antonio and everything feels like it was built just for you.\n\nNew construction like this doesn't sit long. Homes starting at $290,990 are fil",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-05T16:12:02.161Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (16 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "I just hit legs at the gym this morning so I'm gonna show you this house.",
+      "content_hash": "7fffff43e00e0000:bfffff21700e0000:4080f03f0fe2f6ff:0f0fffe766eec680:0e1f1f3f181e181f",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 7,
+        "novel_texts": 7
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1OZBh_Y_MBxhpQqsbMKHaZCfoGH8bR3FE/view"
     }
   ],
   "lastTemplateIndex": -1
