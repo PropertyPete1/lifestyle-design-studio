@@ -26,10 +26,12 @@ It is not one system. It is four pipelines sharing an engine, and they tenant-iz
 |---|---|---|---|
 | **Reels** (per city, 5 slots/day) | `src/main.js` | Drive footage w/ price overlays | **Front half does not** — see §5.3 |
 | **Trial variants** (2/day) | `src/trial-variant-main.js` | Re-cuts of reel sources | Follows reels |
-| **Daily carousel** (1/day) | `src/carousel-main.js` | Pure text generation, no footage | **Cleanly** — best proof target |
+| **Carousel** (retired 2026-09-04; manual only) | `src/carousel-main.js` | Pure text generation, no footage | **Cleanly** — best proof target |
 | **LinkedIn recruiting** (1/day, 3 personas) | `src/linkedin.js` | Pure text generation | **Does not port at all** — see §5.2 |
 
-The carousel is the one to prove Phase 3 on. It has no footage dependency, no vision step, no KB, and its writer/critic loop is genuinely generic. The reels pipeline is where the real-estate assumptions are load-bearing.
+The carousel is still the one to prove Phase 3 on — being off the clock does not
+change that, and a dispatch runs the whole lane on demand. It has no footage
+dependency, no vision step, no KB, and its writer/critic loop is genuinely generic. The reels pipeline is where the real-estate assumptions are load-bearing.
 
 ---
 

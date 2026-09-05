@@ -14,7 +14,7 @@ manual edit queue in particular **never** publish.
 | Pipeline | Entry point | Workflow | Schedule (UTC / CT) |
 | --- | --- | --- | --- |
 | **Daily reels** | `auto-poster/src/main.js` | `post.yml` | 5 slots + a `:30` backup each — SA 16:00/11am, ATX 17:00/12pm, SA 19:00/2pm, ATX 20:00/3pm, DFW 21:00/4pm |
-| **Daily carousel** | `auto-poster/src/carousel-main.js` | `post.yml` | 14:00 / 9:00 AM |
+| **Carousel** (retired) | `auto-poster/src/carousel-main.js` | `post.yml` | **No cron — manual dispatch only** (was 14:00 / 9:00 AM until 2026-09-04) |
 | **Weekly YouTube** | `auto-poster/src/yt-brief-main.js`, `yt-pipeline-main.js` | `youtube-longform.yml` | Brief Mon 14:00 (+`:30` backup); pipeline polls 15:00 and 21:00 daily |
 | **Trial variant** | `auto-poster/src/trial-variant-main.js` | `post.yml` | 13:15 / 8:15 AM and 23:45 / 6:45 PM |
 | **Manual edit queue** | `auto-poster/src/edit-queue-scan.js`, `edit-queue-advance.js` | `manual-edit-queue.yml` | Scan 13:00/17:00/21:00/01:00; advance polls every 2h |
@@ -37,12 +37,25 @@ exists in the code.)
 The same job also posts text-only LinkedIn recruiting content, fanned out to three
 Metricool brands. That path is decoupled — it runs whether or not the video posted.
 
-### Daily carousel
+### Carousel — retired from the schedule (2026-09-04)
 
-Writes a slide deck for the day's content pillar, runs it past a critic gate and
-regenerates anything scoring under 8/10, renders 1080×1350 slides, assembles a PDF
-for LinkedIn, and fans out to the paths that were proven to work: Instagram
-satellite accounts, TikTok, Facebook, and LinkedIn as a document.
+**This no longer runs on a cron.** It underperformed — 27 of the last 28 runs
+shipped `belowBar`, meaning the critic gate almost never passed and the lane paid
+for three writer attempts to ship the best of a bad set anyway — so the `0 14 * * *`
+cron came out of `post.yml`. The job is still there and still works: dispatch
+`post.yml` with `city=carousel` for a one-off. `tests/carousel-schedule.test.mjs`
+is what keeps it off the clock.
+
+Two lanes lost a destination with it, which is the cost of the decision rather
+than a bug: the **realty Facebook Page** had no other automated source, and
+**LinkedIn** drops from two posts a day to one (the daily recruiting post from
+`src/main.js` is unaffected — it never depended on the carousel).
+
+What it does when you run it: writes a slide deck for the day's content pillar,
+runs it past a critic gate and regenerates anything scoring under 8/10, renders
+1080×1350 slides, assembles a PDF for LinkedIn, and fans out to the paths that
+were proven to work: Instagram satellite accounts, TikTok, Facebook, and LinkedIn
+as a document.
 
 **Main Instagram is never auto-published.** The deck is delivered to Peter and he
 posts it himself. That is deliberate, not a limitation.
@@ -137,11 +150,11 @@ knowledge base).
 
 | Workflow | Trigger | Permissions | Does |
 | --- | --- | --- | --- |
-| `post.yml` | 13 crons + manual | `contents: write` | Reels, carousel, trial variant. **The live posting path.** |
+| `post.yml` | 12 crons + manual | `contents: write` | Reels and trial variant on the crons; carousel by manual dispatch only. **The live posting path.** |
 | `youtube-longform.yml` | 4 crons + manual | `contents: write` (dry-run job: `read`) | Weekly brief and pipeline poll |
 | `manual-edit-queue.yml` | 5 crons + manual | `contents: write` | Manual edit queue: folder scan (cannot edit) and decision poll (only edits on a card action) |
 | `test.yml` | push to main, all PRs | `contents: read` | The test suite |
-| `carousel-review.yml` | push to `fix/**`, `feat/**` | `contents: read` | Re-scores past decks, generates samples |
+| `carousel-review.yml` | push to `fix/**`, `feat/**` | `contents: read` | Re-scores past decks, generates samples. **Spends Anthropic tokens** — the carousel engine is retired but this still calls it on a matching push |
 | `verify-dashboard.yml` | push to `fix/**`, `feat/**` | `contents: read` | Replays the carousel delivery webhook |
 | `longform-probe.yml` | manual | `contents: read` | Phase 0 capability probes |
 

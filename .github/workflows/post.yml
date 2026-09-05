@@ -24,8 +24,22 @@ on:
     # TRIAL VARIANT: 8:15 AM CT = 13:15 UTC, 6:45 PM CT = 23:45 UTC
     - cron: '15 13 * * *'
     - cron: '45 23 * * *'
-    # DAILY CAROUSEL: 9:00 AM CT = 14:00 UTC
-    - cron: '0 14 * * *'
+    # DAILY CAROUSEL — RETIRED 2026-09-04. No slot fires.
+    #
+    # It underperformed: 27 of the last 28 runs shipped `belowBar`, so the lane
+    # paid claude-opus-5 for three writer attempts a day and shipped the best of
+    # a bad set anyway. The 2026-09-04 run died on an exhausted Anthropic
+    # balance after paying for four calls.
+    #
+    # The cron is COMMENTED, NOT DELETED, so restoring the lane is an uncomment
+    # rather than a rewrite — the same shape ldt-post.yml's pause uses, for the
+    # same reason: a deleted schedule is a schedule nobody can restore
+    # correctly. tests/carousel-schedule.test.mjs holds this state.
+    #
+    # TO RESUME: uncomment the cron below. Nothing else is switched off —
+    # post-carousel is a normal job and `city: carousel` is still on the
+    # dispatch form, so a one-off carousel needs no edit at all.
+    #   - cron: '0 14 * * *'
   workflow_dispatch:
     inputs:
       city:
@@ -380,9 +394,11 @@ jobs:
   #
   # Own concurrency group so a carousel run never queues behind a city post.
   post-carousel:
+    # MANUAL ONLY — no `github.event.schedule` clause on purpose. Retired from
+    # the daily schedule on 2026-09-04; run it from the Actions tab with
+    # city=carousel when Peter asks for a one-off.
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'carousel')
-      || github.event.schedule == '0 14 * * *'
+      github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'carousel'
     runs-on: ubuntu-latest
     concurrency:
       group: autopost-carousel

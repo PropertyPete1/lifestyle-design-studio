@@ -35,7 +35,9 @@ calling the GitHub API, and that is no longer how any of it fires.
 All three post **daily**. Each slot has a `:30` backup cron; the slot-aware
 idempotency guard makes a double fire safe.
 
-Carousel runs at 9:00 AM CT. Trial variants at 8:15 AM and 6:45 PM CT.
+Trial variants run at 8:15 AM and 6:45 PM CT. The carousel no longer runs on a
+schedule — it was retired 2026-09-04 and is manual dispatch only (`city=carousel`);
+its 9:00 AM CT cron is kept commented in `post.yml` for whoever restores it.
 
 ## Manual trigger
 
