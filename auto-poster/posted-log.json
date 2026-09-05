@@ -9344,6 +9344,58 @@
       "timestamp": "2026-09-05T19:10:49.630Z",
       "runId": "33985978280",
       "success": true
+    },
+    {
+      "driveFileId": "1AZlWKS0lbFDgwS2mgT9PTEf_QQdCN-vi",
+      "fileName": "96B50F47-54CA-4937-B3FC-636F645F06F3.mp4",
+      "city": "san_antonio",
+      "caption": "$474,990 for brand new construction in West San Antonio. These move fast.\n\n✨ Open floor plans with natural light, modern finishes, and kitchen islands built for real living. Everything feels clean and",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-05T19:10:49.187Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "West San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (17 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "We've got you. Of course we're talking about your bossling. These rates are par starting at 4.9.9.9.",
+      "content_hash": "ffffc30020e0e0ff:efff3fff0d1d03c0:f3fb7f7f234f4040:ffffffe390f0f000:7ff1f1fffffc7020",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "stat",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "pov",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1K9jr_I9dLK4KPX1wOlgnth2tfxebrqDz/view"
     }
   ],
   "lastTemplateIndex": -1
