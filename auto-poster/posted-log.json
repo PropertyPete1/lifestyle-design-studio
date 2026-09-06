@@ -9553,6 +9553,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1hxZE9fjwnx5e0k-yVJJJWoHZ27gWaR_9/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-09-06T19:15:10.030Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1hxZE9fjwnx5e0k-yVJJJWoHZ27gWaR_9",
+      "captionSnippet": "this is what new construction is supposed to feel like. mature trees. move in ready. pricing from the mid $340s to the $",
+      "mainIgPostedAt": "2026-09-06T19:15:10.030Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
