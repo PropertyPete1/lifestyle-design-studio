@@ -1,76 +1,76 @@
 {
   "weights": {
-    "question": 0.62,
-    "bold_claim": 1.14,
-    "wait_tease": 1.07,
-    "reaction": 0.97,
-    "vibe": 0.72
+    "question": 0.8,
+    "bold_claim": 1.04,
+    "wait_tease": 0.85,
+    "reaction": 1.6,
+    "vibe": 0.98
   },
-  "lastUpdated": "2026-08-30T19:43:10.699Z",
-  "reelsAnalyzed": 15,
-  "classifiedCount": 12,
+  "lastUpdated": "2026-09-06T20:05:53.923Z",
+  "reelsAnalyzed": 18,
+  "classifiedCount": 14,
   "styleBreakdown": {
     "question": {
-      "count": 5,
-      "avgScore": 1015,
-      "weight": 0.62
+      "count": 1,
+      "avgScore": 823,
+      "weight": 0.8
     },
     "bold_claim": {
       "count": 2,
-      "avgScore": 2048,
-      "weight": 1.14
+      "avgScore": 941,
+      "weight": 1.04
     },
     "wait_tease": {
-      "count": 2,
-      "avgScore": 2323,
-      "weight": 1.07
+      "count": 6,
+      "avgScore": 711,
+      "weight": 0.85
     },
     "reaction": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 0.97
+      "count": 1,
+      "avgScore": 1760,
+      "weight": 1.6
     },
     "vibe": {
-      "count": 3,
-      "avgScore": 1334,
-      "weight": 0.72
+      "count": 4,
+      "avgScore": 1027,
+      "weight": 0.98
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/Dcjj9iBsMfe/",
-      "hookStyle": "bold_claim",
-      "score": 2657,
-      "views": 1767,
-      "firstLine": "I’ve never seen finishes like this at this price point in San Antonio right now."
-    },
-    {
-      "url": "https://www.instagram.com/reel/Dcgznz_sxfU/",
-      "hookStyle": "wait_tease",
-      "score": 2479,
-      "views": 1939,
-      "firstLine": "Wait until you see this kitchen 😮‍💨"
-    },
-    {
-      "url": "https://www.instagram.com/reel/Dcbygy2sVyK/",
-      "hookStyle": "wait_tease",
-      "score": 2167,
-      "views": 1696,
-      "firstLine": "Wait until you see what starts at $339,990 in South Austin."
-    },
-    {
-      "url": "https://www.instagram.com/reel/DcoWih1s1iJ/",
-      "hookStyle": "question",
-      "score": 1811,
-      "views": 1309,
-      "firstLine": "Would you believe this is brand new construction in San Antonio starting at $379"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DceGeWOMrBy/",
+      "url": "https://www.instagram.com/reel/Dcte2O4MK2_/",
       "hookStyle": "vibe",
-      "score": 1773,
-      "views": 1211,
-      "firstLine": "this is what new construction is supposed to feel like"
+      "score": 2009,
+      "views": 1517,
+      "firstLine": "POV: you just walked into your first brand new home and everything feels like it"
+    },
+    {
+      "url": "https://www.instagram.com/reel/Dc4IKJHTYr9/",
+      "hookStyle": "reaction",
+      "score": 1760,
+      "views": 1071,
+      "firstLine": "the kitchen in this one made me stop mid-tour 😮‍💨"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DcwZmrvMgro/",
+      "hookStyle": "wait_tease",
+      "score": 1091,
+      "views": 652,
+      "firstLine": "Stop scrolling. This is what $314,990 looks like in San Antonio."
+    },
+    {
+      "url": "https://www.instagram.com/reel/DcrnG2Vspft/",
+      "hookStyle": "bold_claim",
+      "score": 1057,
+      "views": 825,
+      "firstLine": "I’ve never seen finishes like this at a $470k price point in North Austin."
+    },
+    {
+      "url": "https://www.instagram.com/reel/Dcyyuhps89J/",
+      "hookStyle": "wait_tease",
+      "score": 1042,
+      "views": 751,
+      "firstLine": "Stop scrolling. Hill Country views and protected canyons don’t look like this ev"
     }
   ],
   "history": [
@@ -150,6 +150,17 @@
         "vibe": 0.72
       },
       "reelsAnalyzed": 15
+    },
+    {
+      "date": "2026-09-06",
+      "weights": {
+        "question": 0.8,
+        "bold_claim": 1.04,
+        "wait_tease": 0.85,
+        "reaction": 1.6,
+        "vibe": 0.98
+      },
+      "reelsAnalyzed": 18
     }
   ]
 }
