@@ -9501,6 +9501,58 @@
       "timestamp": "2026-09-06T19:14:45.270Z",
       "runId": "34053599388",
       "success": true
+    },
+    {
+      "driveFileId": "1cFxQYXfBA_slqzVp6jHlxlUEhsoNdItz",
+      "fileName": "7BB919B7-7D0F-4FB1-BC47-AE11EED5FEC0.mp4",
+      "city": "san_antonio",
+      "caption": "this is what new construction is supposed to feel like. mature trees. move in ready. pricing from the mid $340s to the $580s.\n\na handful of homes ready to go right now with builder incentives on selec",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-06T19:14:44.897Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (53 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Quick payment math price is $349,000. And down payment is zero for an example. Loan is $348,000. Raid is $58.99% fixed just kidding. It's $3.99 fixed on a 30 loan. Taxes are $4,200,000. It's $1,200 a year. PMI is 0.5% estimated payment is $2,259. A comment home and let's get your next home.",
+      "content_hash": "ffffff01000f0000:07bfbfad881cbe0c:fffcf0e767fce000:fcfcc8c0c0fe627f:ff7f7ff7f7820100",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "restructured",
+        "caption_length_bucket": null,
+        "caption_length_source": "restructured",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1hxZE9fjwnx5e0k-yVJJJWoHZ27gWaR_9/view"
     }
   ],
   "lastTemplateIndex": -1
