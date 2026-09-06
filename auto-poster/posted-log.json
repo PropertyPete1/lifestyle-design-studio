@@ -9407,6 +9407,64 @@
       "captionSnippet": "$474,990 for brand new construction in West San Antonio. These move fast.\n\n✨ Open floor plans with natural light, modern",
       "mainIgPostedAt": "2026-09-05T19:31:28.089Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "12XN5FmIllJKh84q-KWs2nbh20GdxCVkF",
+      "fileName": "9E09C847-4541-4E58-92E9-F9C0CEA97C6A.mp4",
+      "city": "san_antonio",
+      "caption": "this is the kind of new construction that hits different the moment you step inside\n\nStarting at $399,990 in San Antonio. New builds like this move fast.\n\n✨ open floor plan with natural light flooding",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-06T16:07:39.331Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "rapid_fire_hype",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 1,
+        "violations": [],
+        "fallback_used": false
+      },
+      "content_hash": "3078ff80003c7dff:1c3e7f7f43490c00:dfffff80860078fe:6179717e52427e72:ff3ffffffb010100",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "stat",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/18IRXcXJ1jL3XVaMioSwHaOxMf_ACiQQT/view"
     }
   ],
   "lastTemplateIndex": -1
