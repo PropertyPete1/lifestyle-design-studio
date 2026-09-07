@@ -9579,6 +9579,58 @@
       "variantNumber": 2,
       "window": "pm",
       "deliveryDriveLink": "https://drive.google.com/file/d/1qCJg4upimCVN_hUwNVUD4xFgVe7ixReC/view"
+    },
+    {
+      "driveFileId": "1JCQ8_zYwEGCGCYGKQMYbi2n9AAi6n4La",
+      "fileName": "A2CAD240-D58A-44C3-ACCF-A7F2D5838568.mp4",
+      "city": "san_antonio",
+      "caption": "I've never seen finishes like this at this price point in San Antonio. Starting at $439,372 for brand new construction.\n\nNew builds move fast, especially with builder incentives on the table right now",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-07T16:07:27.307Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (45 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Quick payment math, these homeless starting at $439,000, we're using 3% down, that's $13,100, so the loan is $426,000, the rate is $4.9, not 30 year, thick. Taxes are $7,000, and sure this is 1,000 year. PMI is 0.5%. Assimated payment is $3,129 a month.",
+      "content_hash": "0fdff700003f3fff:ff77e700181c7cfc:ffffff8301200000:fefffff08190c000:00e0f8fdf8f8c004",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "bold_claim",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "pov",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1OPg-y-O4t4fjGo4RlzfvFa8jGJbFG6it/view"
     }
   ],
   "lastTemplateIndex": -1
