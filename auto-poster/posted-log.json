@@ -9747,6 +9747,58 @@
       "captionSnippet": "This is the kind of new construction that makes you wonder why you waited so long to upgrade.\n\nNew homes starting at $67",
       "mainIgPostedAt": "2026-09-07T19:10:15.259Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "1UdPT7zffkaTEK_4geMGSCbUwYSVN5WDr",
+      "fileName": "45A7E871-87DA-41D6-9924-2FDF9F25367E.mp4",
+      "city": "austin",
+      "caption": "I've never seen finishes like this at $329,990 in San Marcos.\n\nNew construction inventory moves fast. These builder incentives won't last forever.\n\n✨ everyday living hits\nOpen floor plan flooded with ",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-07T20:11:21.502Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Marcos",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (7 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Send this to somebody that's dirt cheap.",
+      "content_hash": "60f0e100003f77fb:ffffffffff130000:ff7f078747038303:3f3f3f3f3f3f3000:3f7fffff001c0f00",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "bold_claim",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-09-07T19:19:07.038Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/14liVYk6k94Ph6DfOHmJmkLoabHT96rpa/view"
     }
   ],
   "lastTemplateIndex": -1
