@@ -9631,6 +9631,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1OPg-y-O4t4fjGo4RlzfvFa8jGJbFG6it/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-09-07T16:29:43.056Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1OPg-y-O4t4fjGo4RlzfvFa8jGJbFG6it",
+      "captionSnippet": "I've never seen finishes like this at this price point in San Antonio. Starting at $439,372 for brand new construction.\n",
+      "mainIgPostedAt": "2026-09-07T16:29:43.056Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
