@@ -9799,6 +9799,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/14liVYk6k94Ph6DfOHmJmkLoabHT96rpa/view"
+    },
+    {
+      "city": "austin",
+      "timestamp": "2026-09-07T20:26:53.358Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "14liVYk6k94Ph6DfOHmJmkLoabHT96rpa",
+      "captionSnippet": "I've never seen finishes like this at $329,990 in San Marcos.\n\nNew construction inventory moves fast. These builder ince",
+      "mainIgPostedAt": "2026-09-07T20:26:53.358Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
