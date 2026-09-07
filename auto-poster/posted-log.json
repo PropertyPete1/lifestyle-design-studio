@@ -9736,6 +9736,17 @@
       },
       "mainIgDelivery": "delivered",
       "deliveryDriveLink": "https://drive.google.com/file/d/1x1yKYSKKPjniltYElO2W0w3QT0qtofKw/view"
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-09-07T19:10:15.259Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1x1yKYSKKPjniltYElO2W0w3QT0qtofKw",
+      "captionSnippet": "This is the kind of new construction that makes you wonder why you waited so long to upgrade.\n\nNew homes starting at $67",
+      "mainIgPostedAt": "2026-09-07T19:10:15.259Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
