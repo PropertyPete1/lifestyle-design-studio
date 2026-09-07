@@ -9678,6 +9678,64 @@
       "timestamp": "2026-09-07T19:08:40.865Z",
       "runId": "34154039151",
       "success": true
+    },
+    {
+      "driveFileId": "16ZISfnNwqrt-YggrTuYl4wOdooBIHHVz",
+      "fileName": "ABACCC1C-03C7-4B55-B2E3-52CA26786FA7.mp4",
+      "city": "san_antonio",
+      "caption": "This is the kind of new construction that makes you wonder why you waited so long to upgrade.\n\nNew homes starting at $674,223 in San Antonio. The kind of build quality that actually holds up.\n\n✨ open ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-07T19:08:40.486Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "checklist_sprint",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 1,
+        "violations": [],
+        "fallback_used": false
+      },
+      "content_hash": "010f830070ffffff:aaffffff98100000:efffffffe3010000:fffffffffb000000:ff7870f8f8f90111",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 6,
+        "novel_texts": 6
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "bold_claim",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-08-31T20:55:41.582Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1x1yKYSKKPjniltYElO2W0w3QT0qtofKw/view"
     }
   ],
   "lastTemplateIndex": -1
