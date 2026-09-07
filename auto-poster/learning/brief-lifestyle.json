@@ -1,107 +1,113 @@
 {
   "brand": "lifestyle",
   "engine": "learn-v1",
-  "generated_at": "2026-08-31T20:55:41.582Z",
+  "generated_at": "2026-09-07T19:19:07.038Z",
   "window_days": 28,
   "sample": {
-    "posts_scored": 82,
-    "posts_scored_all_media": 82,
+    "posts_scored": 87,
+    "posts_scored_all_media": 87,
     "posts_unjoined": 2,
-    "analytics_rows_joined": 425,
-    "analytics_rows_unattributed": 325,
+    "analytics_rows_joined": 482,
+    "analytics_rows_unattributed": 268,
     "provenance": {
-      "tagged": 4,
-      "inferred": 78
+      "tagged": 20,
+      "inferred": 67
     }
   },
   "hook_styles": {
-    "pattern_interrupt": {
-      "n": 21,
-      "score": 138,
-      "median": 128,
-      "verdict": "mid"
-    },
-    "question": {
-      "n": 18,
-      "score": 135,
-      "median": 132,
-      "verdict": "mid"
-    },
     "pov": {
-      "n": 12,
-      "score": 141,
-      "median": 135,
-      "verdict": "mid"
+      "n": 17,
+      "score": 188,
+      "median": 161,
+      "verdict": "winner"
     },
     "bold_claim": {
       "n": 16,
-      "score": 144,
-      "median": 138,
-      "verdict": "winner"
+      "score": 153,
+      "median": 155,
+      "verdict": "mid"
     },
     "story_open": {
-      "n": 10,
-      "score": 126,
-      "median": 124,
+      "n": 13,
+      "score": 139,
+      "median": 129,
       "verdict": "mid"
+    },
+    "pattern_interrupt": {
+      "n": 20,
+      "score": 152,
+      "median": 140,
+      "verdict": "mid"
+    },
+    "question": {
+      "n": 14,
+      "score": 141,
+      "median": 137,
+      "verdict": "mid"
+    },
+    "stat": {
+      "n": 2,
+      "score": 236,
+      "median": 236,
+      "verdict": "insufficient_sample"
     }
   },
   "caption_lengths": {
     "medium": {
-      "n": 2,
-      "score": 166,
-      "median": 166,
-      "verdict": "insufficient_sample"
+      "n": 6,
+      "score": 212,
+      "median": 218,
+      "verdict": "mid"
     },
     "long": {
-      "n": 1,
-      "score": 71,
-      "median": 71,
-      "verdict": "insufficient_sample"
+      "n": 6,
+      "score": 231,
+      "median": 165,
+      "verdict": "winner"
     },
     "short": {
-      "n": 1,
-      "score": 129,
-      "median": 129,
-      "verdict": "insufficient_sample"
+      "n": 5,
+      "score": 191,
+      "median": 183,
+      "verdict": "mid"
     }
   },
   "posting_slots": {
     "analyzed_only": true,
     "table": {
-      "am": {
-        "n": 36,
-        "score": 134,
-        "median": 128,
-        "verdict": "mid"
-      },
       "pm": {
-        "n": 46,
-        "score": 142,
-        "median": 132,
+        "n": 49,
+        "score": 159,
+        "median": 149,
         "verdict": "winner"
+      },
+      "am": {
+        "n": 38,
+        "score": 157,
+        "median": 137,
+        "verdict": "mid"
       }
     }
   },
   "cities": {
     "analyzed_only": true,
     "table": {
-      "san_antonio": {
-        "n": 47,
-        "score": 141,
-        "median": 135,
-        "verdict": "winner"
-      },
       "austin": {
-        "n": 27,
-        "score": 137,
-        "median": 126,
+        "n": 25,
+        "score": 144,
+        "median": 128,
         "verdict": "mid"
       },
+      "san_antonio": {
+        "n": 53,
+        "score": 168,
+        "median": 152,
+        "verdict": "winner"
+      },
       "dallas": {
-        "n": 8,
-        "score": 133,
-        "median": 127,
+        "n": 9,
+        "score": 140,
+        "median": 132,
         "verdict": "mid"
       }
     }
@@ -110,23 +116,53 @@
     "analyzed_only": true,
     "table": {
       "no_plate": {
-        "n": 3,
-        "score": 122,
-        "median": 129,
+        "n": 19,
+        "score": 206,
+        "median": 184,
         "verdict": "winner"
       }
     }
   },
   "top_hooks": [
     {
+      "hook": "POV: you just walked into your first brand new home and everything feels like it was built just for you.",
+      "hook_style": "pov",
+      "provenance": "tagged",
+      "score": 669,
+      "score_basis": "instagram_median",
+      "ig_views_median": 633,
+      "city": "san_antonio",
+      "posted": "2026-08-31T16:08:13.219Z"
+    },
+    {
+      "hook": "$474,990 for brand new construction in West San Antonio. These move fast.",
+      "hook_style": "stat",
+      "provenance": "tagged",
+      "score": 298,
+      "score_basis": "instagram_median",
+      "ig_views_median": 288,
+      "city": "san_antonio",
+      "posted": "2026-09-05T19:10:49.187Z"
+    },
+    {
       "hook": "Wait until you see the kitchen in this one 😮‍💨",
       "hook_style": "pattern_interrupt",
       "provenance": "inferred",
-      "score": 281,
+      "score": 282,
       "score_basis": "instagram_median",
-      "ig_views_median": 296,
+      "ig_views_median": 313,
       "city": "austin",
       "posted": "2026-08-18T23:12:23.588Z"
+    },
+    {
+      "hook": "POV: you just walked into your first brand new home and everything still smells like possibility.",
+      "hook_style": "pov",
+      "provenance": "tagged",
+      "score": 256,
+      "score_basis": "instagram_median",
+      "ig_views_median": 178,
+      "city": "san_antonio",
+      "posted": "2026-09-04T16:12:52.855Z"
     },
     {
       "hook": "the floor plan in this one stopped me mid-tour",
@@ -134,39 +170,9 @@
       "provenance": "inferred",
       "score": 240,
       "score_basis": "instagram_median",
-      "ig_views_median": 192,
+      "ig_views_median": 193,
       "city": "san_antonio",
       "posted": "2026-08-18T22:09:18.271Z"
-    },
-    {
-      "hook": "Wait until you see this kitchen 😮‍💨",
-      "hook_style": "pattern_interrupt",
-      "provenance": "inferred",
-      "score": 237,
-      "score_basis": "instagram_median",
-      "ig_views_median": 193,
-      "city": "austin",
-      "posted": "2026-08-26T17:56:52.247Z"
-    },
-    {
-      "hook": "this might be the best new construction I've toured this month",
-      "hook_style": "bold_claim",
-      "provenance": "inferred",
-      "score": 208,
-      "score_basis": "instagram_median",
-      "ig_views_median": 201,
-      "city": "austin",
-      "posted": "2026-08-17T17:14:31.854Z"
-    },
-    {
-      "hook": "I've never seen finishes like this at this price point in San Antonio right now.",
-      "hook_style": "bold_claim",
-      "provenance": "inferred",
-      "score": 207,
-      "score_basis": "instagram_median",
-      "ig_views_median": 169,
-      "city": "san_antonio",
-      "posted": "2026-08-27T19:15:03.762Z"
     }
   ],
   "kill_list": [],
@@ -207,8 +213,8 @@
     }
   ],
   "caveats": [
-    "82 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
-    "78 of 82 posts predate decision tagging — their hook style was inferred from the published caption (legacy styles mapped: vibe→pov, wait_tease→pattern_interrupt, reaction→story_open). Treat those groupings as approximate.",
+    "87 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
+    "67 of 87 posts predate decision tagging — their hook style was inferred from the published caption (legacy styles mapped: vibe→pov, wait_tease→pattern_interrupt, reaction→story_open). Treat those groupings as approximate.",
     "2 posted reels had no matching analytics rows (usually: posted within the last day, before metrics exist). They are excluded, not zeroed.",
     "Posting slots are set by the cron, not chosen per post — the slot table is analysis, not a controlled experiment.",
     "Scores are not comparable across platforms; the headline score is the median across the brand's Instagram accounts."

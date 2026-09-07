@@ -1,24 +1,48 @@
 {
   "brand": "ldt",
   "engine": "learn-v1",
-  "generated_at": "2026-08-31T20:55:41.746Z",
+  "generated_at": "2026-09-07T19:19:07.212Z",
   "window_days": 28,
   "sample": {
-    "posts_scored": 1,
-    "posts_scored_all_media": 4,
-    "posts_unjoined": 1,
-    "analytics_rows_joined": 2,
-    "analytics_rows_unattributed": 748,
+    "posts_scored": 6,
+    "posts_scored_all_media": 17,
+    "posts_unjoined": 0,
+    "analytics_rows_joined": 12,
+    "analytics_rows_unattributed": 738,
     "provenance": {
-      "tagged": 1,
+      "tagged": 6,
       "inferred": 0
     }
   },
   "hook_styles": {
     "pattern_interrupt": {
       "n": 1,
-      "score": 31,
-      "median": 31,
+      "score": 42,
+      "median": 42,
+      "verdict": "insufficient_sample"
+    },
+    "question": {
+      "n": 1,
+      "score": 158,
+      "median": 158,
+      "verdict": "insufficient_sample"
+    },
+    "pov": {
+      "n": 1,
+      "score": 16,
+      "median": 16,
+      "verdict": "insufficient_sample"
+    },
+    "bold_claim": {
+      "n": 2,
+      "score": 26,
+      "median": 26,
+      "verdict": "insufficient_sample"
+    },
+    "stat": {
+      "n": 1,
+      "score": 42,
+      "median": 42,
       "verdict": "insufficient_sample"
     }
   },
@@ -27,16 +51,16 @@
     "analyzed_only": true,
     "table": {
       "pm": {
-        "n": 3,
-        "score": 123,
-        "median": 86,
-        "verdict": "winner"
+        "n": 11,
+        "score": 63,
+        "median": 35,
+        "verdict": "mid"
       },
       "midday": {
-        "n": 1,
-        "score": 34,
+        "n": 6,
+        "score": 68,
         "median": 34,
-        "verdict": "insufficient_sample"
+        "verdict": "winner"
       }
     }
   },
@@ -44,10 +68,10 @@
     "analyzed_only": true,
     "table": {
       "ldt": {
-        "n": 1,
-        "score": 31,
-        "median": 31,
-        "verdict": "insufficient_sample"
+        "n": 6,
+        "score": 52,
+        "median": 37,
+        "verdict": "winner"
       }
     }
   },
@@ -57,14 +81,54 @@
   },
   "top_hooks": [
     {
+      "hook": "What did PRIMARY do while he was in the 9-to-5? I watched the pipeline. I drafted the follow-ups from his cold database. I had new leads con",
+      "hook_style": "question",
+      "provenance": "tagged",
+      "score": 158,
+      "score_basis": "instagram_median",
+      "ig_views_median": 123,
+      "city": "ldt",
+      "posted": "2026-08-31T20:42:35.197Z"
+    },
+    {
       "hook": "Watch what happens when a lead replies. PRIMARY drafts the call notes from your speaker call, posts them to your CRM, and logs everything. a",
       "hook_style": "pattern_interrupt",
       "provenance": "tagged",
-      "score": 31,
+      "score": 42,
       "score_basis": "instagram_median",
-      "ig_views_median": 16,
+      "ig_views_median": 31,
       "city": "ldt",
       "posted": "2026-08-31T01:01:36.437Z"
+    },
+    {
+      "hook": "4,400+ contacts live on the floor today. Cold calls running at 2 AM. Pipeline briefed at 7:05 AM. PRIMARY watches it all while you sleep, th",
+      "hook_style": "stat",
+      "provenance": "tagged",
+      "score": 42,
+      "score_basis": "instagram_median",
+      "ig_views_median": 20,
+      "city": "ldt",
+      "posted": "2026-09-03T00:53:37.778Z"
+    },
+    {
+      "hook": "I watched the pipeline while he slept. He approved every send. New leads got contacted before his first meeting. Cold database got worked au",
+      "hook_style": "bold_claim",
+      "provenance": "tagged",
+      "score": 32,
+      "score_basis": "instagram_median",
+      "ig_views_median": 22,
+      "city": "ldt",
+      "posted": "2026-09-04T00:37:10.408Z"
+    },
+    {
+      "hook": "I watch the pipeline while he sleeps. I drafted the follow-ups. I contacted new leads in under five minutes, around the clock. He approved e",
+      "hook_style": "bold_claim",
+      "provenance": "tagged",
+      "score": 19,
+      "score_basis": "instagram_median",
+      "ig_views_median": 14,
+      "city": "ldt",
+      "posted": "2026-09-01T18:15:43.559Z"
     }
   ],
   "kill_list": [],
@@ -105,8 +169,7 @@
     }
   ],
   "caveats": [
-    "1 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
-    "1 posted reels had no matching analytics rows (usually: posted within the last day, before metrics exist). They are excluded, not zeroed.",
+    "6 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
     "Posting slots are set by the cron, not chosen per post — the slot table is analysis, not a controlled experiment.",
     "Scores are not comparable across platforms; the headline score is the median across the brand's Instagram accounts."
   ]
