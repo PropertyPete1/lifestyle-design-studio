@@ -309,6 +309,11 @@
       "filename": "A785242B-EFCA-477C-9BCE-B5CDAE6C68BD.mp4",
       "reason": "content duplicate of 96B50F47-54CA-4937-B3FC-636F645F06F3.mp4 posted 2026-09-05T19:10:49.187Z (distance 0.00)",
       "blockedAt": "2026-09-07T19:05:12.246Z"
+    },
+    "1GjwOHv5DhYILAMvgIIuPS4dQsTlMwb1i": {
+      "filename": "750A9B01-18B3-4566-AF09-163C403FF152.mp4",
+      "reason": "AI vision: These are two still images (one exterior house photo, one interior room photo), not a video. Vertical orientation is present in the second image, but no video content exists to evaluate for Reels suitability.",
+      "blockedAt": "2026-09-08T19:07:36.678Z"
     }
   }
 }

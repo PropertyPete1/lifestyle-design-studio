@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We're sitting on more buyer and lease leads than our team can nurture properly right now. New construction in San Antonio and Austin. Out-of-state relocations. These leads have real intent but they're not ready to close today. They're in the research phase. The planning phase. They need someone who won't ghost them for three months and then wonder why they picked another agent.\n\nThe catch is they need vetting and consistent follow-up. No shortcuts. No hoping they'll call you back. But here's what matters. You're not starting cold. You're stepping into warm pipeline that's already pre-qualified. You build your own book. We focus on what we do best.\n\nIf this sounds like something you'd take on, send me a DM.",
-      "format": "story",
-      "ending": "dm_cta",
-      "date": "2026-09-01"
-    },
-    {
       "topic": "income_potential",
       "body": "The gap between agents making 100k and agents making 500k isn't luck or market timing. It's three things.\n\n1. They know their numbers. Not just revenue. Conversion rates. Cost per lead. Close ratios by source. They track it weekly. Most agents guess.\n\n2. They protect their time like it's inventory. They don't take every call. They don't attend every meeting. They say no to things that don't move deals forward. The rest of us feel busy and call it productive.\n\n3. They stay in their lane. They pick one lead source and own it completely before they add another. They get good at one thing instead of staying mediocre at ten things.\n\nThe agents at Lifestyle Design Realty who are hitting those numbers all three of these things in common. The broker's job is to make that possible. Not get in the way of it.",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "dm_cta",
       "date": "2026-08-30"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We've got more buyer and lease leads than we can work right now. New construction in San Antonio and Austin. Out-of-state relocations. They're qualified but not ready to move today. They need consistent follow-up and vetting. Warm pipeline. Your book to build. If this sounds like something you'd take on, send me a DM.",
+      "format": "short_punchy",
+      "ending": "dm_cta",
+      "date": "2026-09-08"
     }
   ]
 }
