@@ -85,6 +85,27 @@ export async function listProfiles() {
 }
 
 /**
+ * Do these two blog ids refer to the same Metricool profile?
+ *
+ * Metricool ids arrive as numbers from the API and as STRINGS from
+ * process.env, and `===` between the two is silently false. That mismatch used
+ * to decide whether the main brand's Instagram was withheld, so a single
+ * non-2xx from /admin/simpleProfiles published a duplicate reel to the flagship
+ * account. Comparing numerically here means no caller can reintroduce it by
+ * constructing a brand list by hand.
+ *
+ * Anything that is not a positive finite number matches nothing. An unknown id
+ * must never compare equal to the main brand — the failure mode this guards
+ * against is exactly "we were not sure, so we published".
+ */
+export function sameBlogId(a, b) {
+  const x = Number(a);
+  const y = Number(b);
+  if (!Number.isFinite(x) || !Number.isFinite(y) || x <= 0 || y <= 0) return false;
+  return x === y;
+}
+
+/**
  * Discover the REALTY brands on the Metricool account that have Instagram
  * connected. Each brand = a different IG account. We post to every one —
  * except profiles claimed by another configured brand in brands.json (the
@@ -97,7 +118,7 @@ export async function getAllBrands() {
   const profiles = await listProfiles();
   if (!profiles) {
     console.warn(`[Metricool] getAllBrands could not list profiles — falling back to default brand`);
-    return [{ blogId: process.env.METRICOOL_BLOG_ID, label: "default", networks: ["INSTAGRAM", "TIKTOK", "YOUTUBE"] }];
+    return [{ blogId: Number(process.env.METRICOOL_BLOG_ID), label: "default", networks: ["INSTAGRAM", "TIKTOK", "YOUTUBE"] }];
   }
   // The claimed-profile exclusion runs through the SAME helper the isolation
   // tests exercise (brands.js excludeClaimedProfiles) — one seam, tested.
@@ -116,7 +137,7 @@ export async function getAllBrands() {
     brands.push({ blogId, label: String(p.label || p.id || blogId), networks });
   }
   console.log(`[Metricool] Discovered ${brands.length} IG brands: ${brands.map(b => b.label).join(", ")}`);
-  return brands.length > 0 ? brands : [{ blogId: process.env.METRICOOL_BLOG_ID, label: "default", networks: ["INSTAGRAM", "TIKTOK", "YOUTUBE"] }];
+  return brands.length > 0 ? brands : [{ blogId: Number(process.env.METRICOOL_BLOG_ID), label: "default", networks: ["INSTAGRAM", "TIKTOK", "YOUTUBE"] }];
 }
 
 /**
@@ -276,7 +297,7 @@ export async function createPost(mediaUrl, caption, options = {}) {
     try {
       // Upload to this brand's media library (skip default brand — already uploaded)
       let brandMediaUrl;
-      if (brand.blogId === defaultBlogId && mediaUrl) {
+      if (sameBlogId(brand.blogId, defaultBlogId) && mediaUrl) {
         // Reuse the URL from the initial upload — saves ~90MB of duplicate transfer
         brandMediaUrl = mediaUrl;
         console.log(`[Metricool] Reusing initial upload for brand: ${brand.label} (${brand.blogId})`);
@@ -292,7 +313,7 @@ export async function createPost(mediaUrl, caption, options = {}) {
       // Filter to video-friendly networks only (no LinkedIn)
       let allowed = ["INSTAGRAM", "FACEBOOK", "TIKTOK", "YOUTUBE"];
       // Manual-assist mode: skip Instagram for the MAIN brand (owner posts natively)
-      if (mainBrandSkipIG && brand.blogId === defaultBlogId) {
+      if (mainBrandSkipIG && sameBlogId(brand.blogId, defaultBlogId)) {
         allowed = allowed.filter(n => n !== "INSTAGRAM");
         console.log(`[Metricool] Manual-assist: skipping Instagram for main brand ${brand.label} (owner will post natively)`);
       }
