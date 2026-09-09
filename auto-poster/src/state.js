@@ -254,6 +254,40 @@ export function getRecentlyPostedFileNamesAllCities(log, days = 30) {
 }
 
 /**
+ * Every Drive file ID the REALTY lane has ever posted, across all cities.
+ *
+ * The rotation helpers above all carry a 30-day cutoff because their job is the
+ * no-repeat rule. This one has the opposite job: identifying footage that has
+ * never aired at all, which is a question about the whole retained log
+ * (POSTED_LOG_RETENTION_DAYS = 365) rather than a rolling month.
+ *
+ * Brand scoping matches getRecentlyPostedIdsAllCities: realty entries carry no
+ * `brand` field, so legacy data reads correctly and another brand's post on its
+ * own accounts never counts as a realty airing.
+ */
+export function getEverPostedIds(log) {
+  return new Set(
+    validPosts(log)
+      .filter(p => (!p.brand || p.brand === "realty") && p.driveFileId)
+      .map(p => p.driveFileId)
+  );
+}
+
+/**
+ * Every fileName the realty lane has ever posted — the re-upload axis.
+ *
+ * A file re-uploaded to Drive gets a new driveFileId but keeps its phone
+ * filename, so id-only membership would call it a debut. It is not one.
+ */
+export function getEverPostedFileNames(log) {
+  return new Set(
+    validPosts(log)
+      .filter(p => (!p.brand || p.brand === "realty") && p.fileName)
+      .map(p => p.fileName)
+  );
+}
+
+/**
  * Every Drive file ID a brand has EVER posted (within log retention).
  *
  * The brand lanes (LDT) post each intake clip exactly once — there is no

@@ -133,6 +133,12 @@ jobs:
         env:
           CITY: san_antonio
           SLOT: ${{ steps.slot.outputs.value }}
+          # The debut lane's kill switch. This workflow has no top-level `env:`,
+          # so a variable not named in a job's own env block never reaches the
+          # process. Set the repo variable PROMOTE_AHEAD to "false" to stand the
+          # lane down without a deploy; unset means ON.
+          PROMOTE_AHEAD: ${{ vars.PROMOTE_AHEAD }}
+          PROMOTE_AHEAD_SLOTS: ${{ vars.PROMOTE_AHEAD_SLOTS }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
@@ -211,6 +217,12 @@ jobs:
         env:
           CITY: austin
           SLOT: ${{ steps.slot.outputs.value }}
+          # The debut lane's kill switch. This workflow has no top-level `env:`,
+          # so a variable not named in a job's own env block never reaches the
+          # process. Set the repo variable PROMOTE_AHEAD to "false" to stand the
+          # lane down without a deploy; unset means ON.
+          PROMOTE_AHEAD: ${{ vars.PROMOTE_AHEAD }}
+          PROMOTE_AHEAD_SLOTS: ${{ vars.PROMOTE_AHEAD_SLOTS }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
@@ -277,6 +289,12 @@ jobs:
         env:
           CITY: dallas
           SLOT: pm
+          # The debut lane's kill switch. This workflow has no top-level `env:`,
+          # so a variable not named in a job's own env block never reaches the
+          # process. Set the repo variable PROMOTE_AHEAD to "false" to stand the
+          # lane down without a deploy; unset means ON.
+          PROMOTE_AHEAD: ${{ vars.PROMOTE_AHEAD }}
+          PROMOTE_AHEAD_SLOTS: ${{ vars.PROMOTE_AHEAD_SLOTS }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
