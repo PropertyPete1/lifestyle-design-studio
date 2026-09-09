@@ -10077,6 +10077,65 @@
       "captionSnippet": "stop scrolling. this is what $300,990 gets you in San Antonio right now.\n\nnew construction like this doesn't sit long. b",
       "mainIgPostedAt": "2026-09-09T16:18:13.514Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "10whBnOGjMOhsi0LydOVtngTAllEu7joZ",
+      "fileName": "3F5F725C-2517-4518-9C08-BA4035994102.mp4",
+      "city": "austin",
+      "caption": "6 weeks free rent plus 50% off your deposit. these brand new rental homes near Leander are the move if you want to settle in before buying\n\nThis deal won't last. Lock it in while you can.\n\n✨ everyday ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-09T17:11:34.541Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "Leander",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_transcript": "Thank you very much,",
+      "voiceover_persona": "insider_secret",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 1,
+        "violations": [],
+        "fallback_used": false
+      },
+      "content_hash": "00c0ff77f0df0ffc:0f01010b1b3fffe1:ffff7c1f1f161008:ffffffffef000000:3f8fffffc9000000",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "pattern_interrupt",
+        "hook_plate_burned": false,
+        "caption_source": "restructured",
+        "caption_length_bucket": null,
+        "caption_length_source": "restructured",
+        "brief_generated_at": "2026-09-07T19:19:07.038Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/10b6gSF4BFELkiVY92_Qw9nrUn8njLNVe/view"
     }
   ],
   "lastTemplateIndex": -1
