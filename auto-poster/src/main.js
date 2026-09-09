@@ -38,6 +38,7 @@ import { burnHookPlate, plateTextFromCaption } from "./reel-hook-burn.js";
 import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds, getEverPostedIds, getEverPostedFileNames } from "./state.js";
 import { recordPublish, recordPublishVerification } from "./publish-manifest.js";
 import { applyPromoteAhead } from "./promote-ahead.js";
+import { loadDecision, applyDecision } from "./drive-decision.js";
 import { postToLinkedin } from "./linkedin.js";
 import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
 import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
@@ -233,6 +234,22 @@ async function main() {
       process.exit(0);
     }
   }
+
+  // Step 0: Read the performance decision file.
+  //
+  // BEFORE Drive is listed and before IG is read, because it is pure advice
+  // with no side effects and reading it first means the run log opens by saying
+  // which decision — if any — the rest of the run is operating under. It cannot
+  // fail the run: every failure path inside loadDecision returns
+  // { usable: false } with a reason, and the selector treats that exactly as it
+  // treats no file at all.
+  console.log("\n[Step 0] Reading performance decision file...");
+  const decision = await loadDecision();
+  console.log(
+    decision.usable
+      ? `[Step 0] Decision file OK — ${decision.plan.ranked.length} ranked, ${decision.plan.exclude.size} excluded, ${decision.plan.skipped.length} unactionable`
+      : `[Step 0] No usable decision — running as today. Reason: ${decision.reason}`
+  );
 
   // Step 1: Check Instagram for recent posts (via Metricool) — get 30 days with full data
   console.log("\n[Step 1] Checking Instagram for recent posts (30 days)...");
@@ -462,12 +479,44 @@ async function main() {
 
   // Use ALL eligible candidates (not just top 3) — iterate until one passes
   //
+  // THE DECISION FILE. Advice from the twice-weekly performance run: it orders
+  // the pool by post[] rank and drops anything in dont_post[]. It reorders and
+  // removes; it never inserts, so nothing Step 3 excluded can come back. When
+  // the file is absent — which is its state today — this is a no-op and the
+  // rotation order above stands untouched.
+  const { candidates: decided, stats: decisionStats } = applyDecision(sorted, decision.plan);
+  console.log(
+    decisionStats.applied
+      ? `[Step 4] Decision file: ${decisionStats.reason}`
+      : `[Step 4] Decision file not applied (${decision.usable ? decisionStats.reason : decision.reason})`
+  );
+  if (decision.plan?.skipped?.length) {
+    // Never guessed at — a null drive_file_id is named and dropped.
+    for (const s of decision.plan.skipped) {
+      console.log(`[Step 4] Decision row rank ${s.rank ?? "?"} skipped: ${s.why} (${s.source_file ?? "no source_file"})`);
+    }
+  }
+  if (decision.plan?.postsPerDay != null) {
+    // READ, NOT ENFORCED — cadence is cron-set in post.yml and the realty lane
+    // has no per-day counter to enforce a cap against. Wiring that is its own
+    // change; half-enforcing it here would be worse than not enforcing it.
+    console.log(
+      `[Step 4] Decision file advises ${decision.plan.postsPerDay} post(s)/day ` +
+      `(NOT enforced by this run — cadence is set by cron): ${decision.plan.postsPerDayRationale ?? "no rationale"}`
+    );
+  }
+
   // THE DEBUT LANE. The comparator above sorts never-matched footage to the
   // very back, permanently — see promote-ahead.js for the measurement. This
   // stably partitions the already-filtered list so debuts lead. It is a
   // permutation: it cannot add a candidate the 30-day rule excluded, because it
   // only reorders what `eligible` already contains.
-  const { candidates, stats: debutStats } = applyPromoteAhead(sorted, {
+  //
+  // It runs AFTER the decision re-rank deliberately: the decision file orders
+  // the pool, and the debut lane — am slot only, and only while a backlog
+  // exists — takes precedence for its slot. On every other slot the decision
+  // ordering stands alone.
+  const { candidates, stats: debutStats } = applyPromoteAhead(decided, {
     enabled: PROMOTE_AHEAD,
     slot: SLOT,
     allowedSlots: PROMOTE_AHEAD_SLOTS,
