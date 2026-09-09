@@ -39,6 +39,8 @@ import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, get
 import { recordPublish, recordPublishVerification } from "./publish-manifest.js";
 import { applyPromoteAhead } from "./promote-ahead.js";
 import { loadDecision, applyDecision } from "./drive-decision.js";
+import { loadCadence, saveCadence, cadenceGate, proposeCadence, recordCadenceChange, recordCadenceHold, dailyPublishSeries } from "./cadence.js";
+import { announceCadenceChange } from "./cadence-announce.js";
 import { postToLinkedin } from "./linkedin.js";
 import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
 import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
@@ -250,6 +252,77 @@ async function main() {
       ? `[Step 0] Decision file OK — ${decision.plan.ranked.length} ranked, ${decision.plan.exclude.size} excluded, ${decision.plan.skipped.length} unactionable`
       : `[Step 0] No usable decision — running as today. Reason: ${decision.reason}`
   );
+
+  // ═══════════════════════════════════════════════════════════════
+  // Step 0b: CADENCE — move the target if the evidence earns it, then enforce
+  // ═══════════════════════════════════════════════════════════════
+  //
+  // The loop runs BEFORE the gate so a change decided this run takes effect
+  // this run, and the gate runs before Drive is listed and before IG is read —
+  // a capped day should cost nothing, not a download.
+  //
+  // This gate does NOT reduce the number of times the workflow fires. Actions
+  // reads crons from the DEFAULT branch, so the five city slots keep starting
+  // whatever this branch says; each one now exits early once the day's target
+  // is met. That is the only mechanism available short of editing post.yml on
+  // main, and it is the better one anyway: the cap is data, changeable by the
+  // loop, where a cron is code requiring a deploy.
+  let cadenceState = loadCadence();
+  {
+    const proposal = proposeCadence({
+      state: cadenceState,
+      proposed: decision.plan?.postsPerDay ?? null,
+      rationale: decision.plan?.postsPerDayRationale ?? null,
+      log,
+    });
+    if (proposal.change) {
+      cadenceState = recordCadenceChange(cadenceState, {
+        from: proposal.from,
+        to: proposal.to,
+        proposed: decision.plan?.postsPerDay ?? null,
+        evidence: {
+          source: "ig_posting_decision_latest.json",
+          rationale: decision.plan?.postsPerDayRationale ?? null,
+          decision_file_reason: decision.reason,
+          observed_publishes_last_14d: dailyPublishSeries(log, new Date(), 14),
+        },
+        runId: process.env.GITHUB_RUN_ID || null,
+      });
+      saveCadence(cadenceState);
+      console.log(`[Step 0b] CADENCE CHANGED ${proposal.from} -> ${proposal.to}/day — ${proposal.reason}`);
+      await announceCadenceChange({
+        from: proposal.from,
+        to: proposal.to,
+        proposed: decision.plan?.postsPerDay ?? null,
+        rationale: decision.plan?.postsPerDayRationale ?? null,
+        state: cadenceState,
+      });
+    } else {
+      // A refusal is as auditable as an action: "did nothing" and "was never
+      // asked" must not look the same six weeks from now.
+      cadenceState = recordCadenceHold(cadenceState, {
+        proposed: decision.plan?.postsPerDay ?? null,
+        reason: proposal.reason,
+        runId: process.env.GITHUB_RUN_ID || null,
+      });
+      saveCadence(cadenceState);
+      console.log(`[Step 0b] Cadence HOLD at ${proposal.from}/day — ${proposal.reason}`);
+    }
+  }
+
+  const gate = cadenceGate(log, { state: cadenceState });
+  console.log(`[Step 0b] Cadence gate: ${gate.reason}`);
+  if (!gate.allowed) {
+    await notifyDailyFailure({
+      pipeline: "Reels",
+      label: `${CITY} ${SLOT}`,
+      outcome: OUTCOME.NOTHING_TO_POST,
+      reason: `Daily cadence cap reached: ${gate.used}/${gate.target} realty publishes already made on ${gate.day} (CT). This slot is standing down by design, not failing.`,
+      remedy: remedyFor("cadence cap reached"),
+    });
+    console.log(`[AutoPoster] ${CITY}: cadence cap reached (${gate.used}/${gate.target}). Exiting.`);
+    process.exit(0);
+  }
 
   // Step 1: Check Instagram for recent posts (via Metricool) — get 30 days with full data
   console.log("\n[Step 1] Checking Instagram for recent posts (30 days)...");

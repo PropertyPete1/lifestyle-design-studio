@@ -827,8 +827,54 @@ export function mergePublishManifest(local, remote, log = console.log) {
   return { ...remote, ...local, schema_version: 1, publishes: kept };
 }
 
+/**
+ * cadence.json: the target is a scalar the loop moves, so newest-decision wins;
+ * history and holds are union-appended and never dropped.
+ *
+ * The scalar and the log have opposite merge needs and that is the whole reason
+ * this is not a generic object merge. Two city runs on the same day both read a
+ * target of 3; if one of them moves it to 2, taking "whichever side we happen to
+ * be" would let the sibling's stale 3 win and silently undo a change that was
+ * already announced. So `target` follows `changed_at` — the side that decided
+ * more recently. History rows are keyed by their `at` stamp and unioned, so a
+ * concurrent run cannot erase the other's audit trail.
+ */
+export function mergeCadence(local, remote, log = console.log) {
+  const l = local || {};
+  const r = remote || {};
+  const lAt = Date.parse(l.changed_at || "") || 0;
+  const rAt = Date.parse(r.changed_at || "") || 0;
+  const newer = lAt >= rAt ? l : r;
+
+  const unionBy = (a, b, key) => {
+    const m = new Map();
+    for (const row of [...(b || []), ...(a || [])]) if (row && row[key]) m.set(row[key], row);
+    return [...m.values()].sort((x, y) => String(x[key]).localeCompare(String(y[key])));
+  };
+
+  const history = unionBy(l.history, r.history, "at").slice(-200);
+  const holds = unionBy(l.holds, r.holds, "at").slice(-50);
+
+  log(
+    `[Merge] cadence: target ${newer.target ?? "?"}/day (from ${lAt >= rAt ? "local" : "remote"}), ` +
+      `${history.length} change(s), ${holds.length} hold(s)`
+  );
+  return {
+    ...r,
+    ...l,
+    schema_version: 1,
+    target: newer.target,
+    floor: newer.floor,
+    ceiling: newer.ceiling,
+    changed_at: newer.changed_at ?? null,
+    history,
+    holds,
+  };
+}
+
 /** Dispatch table used by merge-log-push.mjs. */
 export const MERGE_STRATEGIES = {
+  "cadence.json": (l, r, log) => mergeCadence(l, r || { history: [], holds: [] }, log),
   "posted-log.json": (l, r, log) => mergePostedLog(l, r || { posts: [] }, log),
   "publish-manifest.json": (l, r, log) => mergePublishManifest(l, r || { publishes: [] }, log),
   "video-matches.json": mergeVideoMatches,
