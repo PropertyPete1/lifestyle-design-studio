@@ -36,6 +36,7 @@ import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { planVariation } from "./variation.js";
 import { burnHookPlate, plateTextFromCaption } from "./reel-hook-burn.js";
 import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds } from "./state.js";
+import { recordPublish, recordPublishVerification } from "./publish-manifest.js";
 import { postToLinkedin } from "./linkedin.js";
 import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
 import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
@@ -489,6 +490,10 @@ async function main() {
     }
   }
   let posted = false;
+  // The candidate that actually published. `candidate` is block-scoped to the
+  // loop below, and the manifest's permalink attachment runs after it — it
+  // needs to know which Drive file the permalinks belong to.
+  let postedVideo = null;
   let lastError = null;
   let postedBrands = [];
   for (const candidate of candidates) {
@@ -519,6 +524,7 @@ async function main() {
       }
 
       posted = true;
+      postedVideo = candidate;
       // Store post result for verification
       if (postResult && postResult.brands) {
         postedBrands = postResult.brands.filter(b => b.ok && b.postId && b.postId !== "unknown");
@@ -660,6 +666,15 @@ async function main() {
     if (idx !== -1 && verified.verification) {
       log.posts[idx] = applyReelVerification(log.posts[idx], verified);
       saveLog(log);
+
+      // Carry the resolved permalinks onto the manifest row. The shortcode in
+      // an Instagram permalink is what joins to status/social_analytics.json's
+      // `url`, and that row carries the IG media id every views figure is keyed
+      // by — so this is the step that makes a published reel's performance
+      // attributable to a Drive file at all.
+      if (postedVideo) {
+        recordPublishVerification(postedVideo.id, log.posts[idx].distribution);
+      }
     }
 
     const { verification } = verified;
@@ -1323,6 +1338,24 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
         deliveryDriveLink: deliveryResult?.driveLink || null,
         brands: brandSummary,
         success: true,
+      });
+
+      // THE PUBLISH MANIFEST. posted-log is the duplicate-guard's record and
+      // its shape is owned by that job; this is a separate, narrow trace whose
+      // only purpose is letting a later analysis walk from a reel back to the
+      // Drive file that produced it. Written here, beside recordPost, so the
+      // two cannot disagree about whether a publish happened.
+      recordPublish({
+        driveFileId: video.id,
+        fileName: video.name,
+        market: CITY,
+        // OCR'd off the source frames; absent far more often than present, and
+        // null when absent rather than defaulted to the city.
+        community: videoOverlays?.community || null,
+        caption,
+        slot: SLOT,
+        runId: process.env.GITHUB_RUN_ID || null,
+        brands: result.brands || [],
       });
     } else if (TEST_DELIVERY_ONLY) {
       console.log("[Post] TEST_DELIVERY_ONLY — skipping posted-log entry (this is a test, not a real post)");

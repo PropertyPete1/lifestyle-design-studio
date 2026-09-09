@@ -776,9 +776,61 @@ function mergePresenterRecord(x, y) {
   return out;
 }
 
+/**
+ * publish-manifest.json: append local rows whose (posted_at, drive_file_id) pair
+ * is not already present remotely, then trim to the posted-log retention window.
+ *
+ * UNION-APPEND, LIKE posted-log — DELIBERATELY NOT LIKE video-matches. The
+ * video-matches strategy above is local-wins on key collision, and the cost of
+ * that is measurable: 10 Instagram ids have been destroyed across 7 commits,
+ * four of them by YouTube runs that never touch the file and whose local copy
+ * was simply older. A manifest exists to be the durable trace of what shipped;
+ * a merge that can drop a row it has already seen is not one.
+ *
+ * Rows may be UPDATED in place by recordPublishVerification(), which attaches
+ * permalinks after reel-verify runs. So on a key match the side carrying more
+ * reel_urls wins, rather than the local side unconditionally — otherwise a
+ * concurrent city's run would revert a sibling's verification.
+ */
+export function mergePublishManifest(local, remote, log = console.log) {
+  const key = (r) => `${r?.posted_at}|${r?.drive_file_id}`;
+  const merged = new Map();
+  for (const row of remote?.publishes || []) merged.set(key(row), row);
+
+  let added = 0;
+  let enriched = 0;
+  for (const row of local?.publishes || []) {
+    const k = key(row);
+    const seen = merged.get(k);
+    if (!seen) {
+      merged.set(k, row);
+      added++;
+      continue;
+    }
+    if ((row.reel_urls?.length || 0) > (seen.reel_urls?.length || 0)) {
+      merged.set(k, row);
+      enriched++;
+    }
+  }
+
+  const cutoff = Date.now() - POSTED_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  const kept = [...merged.values()].filter((r) => {
+    const t = Date.parse(r?.posted_at);
+    return Number.isNaN(t) || t > cutoff;
+  });
+  const expired = merged.size - kept.length;
+
+  log(
+    `[Merge] publish-manifest: ${added} new row(s), ${enriched} enriched with permalinks, ` +
+      `${expired} expired past ${POSTED_LOG_RETENTION_DAYS}d (total: ${kept.length})`
+  );
+  return { ...remote, ...local, schema_version: 1, publishes: kept };
+}
+
 /** Dispatch table used by merge-log-push.mjs. */
 export const MERGE_STRATEGIES = {
   "posted-log.json": (l, r, log) => mergePostedLog(l, r || { posts: [] }, log),
+  "publish-manifest.json": (l, r, log) => mergePublishManifest(l, r || { publishes: [] }, log),
   "video-matches.json": mergeVideoMatches,
   "performance-weights.json": mergePerformanceWeights,
   "qc-blocklist.json": mergeBlocklist,
