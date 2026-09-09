@@ -353,7 +353,15 @@ export async function createPost(mediaUrl, caption, options = {}) {
         console.warn(`[Metricool] ✗ Brand ${brand.label} failed: ${errMsg}`);
         results.push({ label: brand.label, ok: false, networks: brand.networks, error: errMsg });
       } else {
-        const postId = raw?.id || raw?.postId || "unknown";
+        // Metricool wraps the scheduler response in `data`. The single-brand
+        // path below (:452) and carousel-distribute.js:143 both read that
+        // wrapper; this one did not, so EVERY multi-brand publish — the entire
+        // realty lane — recorded postId "unknown". main.js then filters
+        // `b.postId !== "unknown"` before verification (main.js:524), so
+        // postedBrands was always empty and verifyTargets never ran: no
+        // distribution rows, no permalinks, and nothing tying a published reel
+        // back to its Drive file. Reading `data.id` first restores the chain.
+        const postId = raw?.data?.id || raw?.id || raw?.postId || "unknown";
         console.log(`[Metricool] ✓ Brand ${brand.label} posted (ID: ${postId}) — ${providers.map(p => NICE_NAMES[p.network] || p.network).join(", ")}`);
         // `providers` is what was actually SUBMITTED — `networks` is the brand's
         // full connected set and over-reports whenever a network was withheld
