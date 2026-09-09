@@ -35,8 +35,9 @@ import { deliverToOwner } from "./delivery.js";
 import { runWeeklyAnalytics, loadWeights } from "./analytics.js";
 import { planVariation } from "./variation.js";
 import { burnHookPlate, plateTextFromCaption } from "./reel-hook-burn.js";
-import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds } from "./state.js";
+import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds, getEverPostedIds, getEverPostedFileNames } from "./state.js";
 import { recordPublish, recordPublishVerification } from "./publish-manifest.js";
+import { applyPromoteAhead } from "./promote-ahead.js";
 import { postToLinkedin } from "./linkedin.js";
 import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
 import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
@@ -85,6 +86,13 @@ const FORCE = process.env.FORCE === "true"; // Manual override to bypass the con
 const TEST_DELIVERY_ONLY = process.env.TEST_DELIVERY_ONLY === "true"; // Test delivery pipeline only — no social posts, no log entry
 const FORCE_VIDEO_ID = process.env.FORCE_VIDEO_ID || ""; // Pin a specific Drive file ID for testing
 const SLOT = process.env.SLOT || "pm"; // "am" or "pm" — passed from crons/workflow_dispatch. Dallas is always "pm".
+// Debut lane (promote-ahead). ON by default; set PROMOTE_AHEAD=false to stand
+// it down without a deploy. post.yml passes this through on every city job —
+// the workflow has no top-level `env:`, so a variable that is not named in each
+// job's own env block never reaches this process at all.
+const PROMOTE_AHEAD = process.env.PROMOTE_AHEAD !== "false";
+const PROMOTE_AHEAD_SLOTS = (process.env.PROMOTE_AHEAD_SLOTS || "am")
+  .split(",").map(s => s.trim()).filter(Boolean);
 
 // Match thresholds (asymmetric):
 // BLOCKING: distance < 10 = definite same video, block immediately
@@ -453,7 +461,30 @@ async function main() {
   });
 
   // Use ALL eligible candidates (not just top 3) — iterate until one passes
-  const candidates = sorted;
+  //
+  // THE DEBUT LANE. The comparator above sorts never-matched footage to the
+  // very back, permanently — see promote-ahead.js for the measurement. This
+  // stably partitions the already-filtered list so debuts lead. It is a
+  // permutation: it cannot add a candidate the 30-day rule excluded, because it
+  // only reorders what `eligible` already contains.
+  const { candidates, stats: debutStats } = applyPromoteAhead(sorted, {
+    enabled: PROMOTE_AHEAD,
+    slot: SLOT,
+    allowedSlots: PROMOTE_AHEAD_SLOTS,
+    everPostedIds: getEverPostedIds(log),
+    everPostedNames: getEverPostedFileNames(log),
+    matchCache,
+    // Positive evidence that the live duplicate check can actually see IG. On a
+    // Metricool outage igPosts is [] and unmatchable is [] too, so the ceiling
+    // alone would read an outage as maximum safety.
+    igPostsCount: igPosts.length,
+    unmatchableCount: unmatchable.length,
+  });
+  console.log(
+    debutStats.active
+      ? `[Step 4] Debut lane ACTIVE: ${debutStats.debut} never-aired ahead of ${debutStats.repost} reposts`
+      : `[Step 4] Debut lane inactive (${debutStats.reason})`
+  );
   console.log(`\n[Step 4] ${candidates.length} candidates (sorted by rotation priority):`);
   // Show top 5 for logging
   candidates.slice(0, 5).forEach((c, i) => {
