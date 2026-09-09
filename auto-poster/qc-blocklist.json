@@ -314,6 +314,11 @@
       "filename": "750A9B01-18B3-4566-AF09-163C403FF152.mp4",
       "reason": "AI vision: These are two still images (one exterior house photo, one interior room photo), not a video. Vertical orientation is present in the second image, but no video content exists to evaluate for Reels suitability.",
       "blockedAt": "2026-09-08T19:07:36.678Z"
+    },
+    "11OS83lpOPriayoHZhlhZY6hjSYW5OvfS": {
+      "filename": "412C9531-D8A2-41BC-9667-0085609C4539.mp4",
+      "reason": "AI vision: Images are static photographs, not a video. Cannot assess video suitability without actual video content.",
+      "blockedAt": "2026-09-09T20:06:16.085Z"
     }
   }
 }
