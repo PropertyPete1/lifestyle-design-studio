@@ -10183,6 +10183,58 @@
       "timestamp": "2026-09-09T19:10:40.431Z",
       "runId": "34392897134",
       "success": true
+    },
+    {
+      "driveFileId": "1L5ecuBAq8lX2yV879CUjOTuCMFLgux8t",
+      "fileName": "3D5F0A76-9651-4D71-9524-076313F3EE71.mp4",
+      "city": "san_antonio",
+      "caption": "I've never seen finishes like this at this price point in San Antonio.\n\nNew construction at $339,990 doesn't sit long. These homes move fast.\n\n✨ everyday living hits\nOpen floor plans flooded with natu",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-09-09T19:10:40.056Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "pm",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (17 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "I said, oh come on baby turn the lights up I got a stop raking my car",
+      "content_hash": "00000636bfffffff:00001b222fff7fff:ffffff87071e1c00:ffffffffff010100:0fbfffef0f083878",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "bold_claim",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "brief_exploit",
+        "brief_generated_at": "2026-09-07T19:19:07.038Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1DnbXc-s2JQJ_zmia3BNbUl30PS2_ItGb/view"
     }
   ],
   "lastTemplateIndex": -1
