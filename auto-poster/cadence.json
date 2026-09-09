@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "target": 4,
+  "floor": 1,
+  "ceiling": 5,
+  "changed_at": null,
+  "history": [],
+  "holds": [
+    {
+      "at": "2026-09-09T21:02:46.330Z",
+      "day": "2026-09-09",
+      "target": 4,
+      "proposed": null,
+      "reason": "no posts_per_day in the decision file",
+      "run_id": "34404455301"
+    }
+  ]
+}
