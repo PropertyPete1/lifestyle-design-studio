@@ -1,10 +1,59 @@
 {
   "schema_version": 1,
-  "target": 4,
+  "target": 2,
   "floor": 1,
-  "ceiling": 5,
-  "changed_at": null,
-  "history": [],
+  "ceiling": 3,
+  "changed_at": "2026-09-10T21:00:00.000Z",
+  "history": [
+    {
+      "at": "2026-09-10T21:00:00.000Z",
+      "day": "2026-09-10",
+      "from": 4,
+      "to": 2,
+      "proposed": 2,
+      "actor": "operator",
+      "evidence": {
+        "source": "ig_posting_decision_latest.json (2026-09-10 run)",
+        "window": "2026-04-29 to 2026-09-09, 213 posts, flagship account",
+        "rationale": "Median views per post 1,555 at 1/day, 1,470 at 2/day, 852 at 3/day. Going 1->2 costs 5% of median and nearly doubles daily reach; going to 3 costs 42%.",
+        "frequency_data": [
+          {
+            "posts_per_day": 1,
+            "median_views": 1555,
+            "sample_size": 47
+          },
+          {
+            "posts_per_day": 2,
+            "median_views": 1470,
+            "sample_size": 54
+          },
+          {
+            "posts_per_day": 3,
+            "median_views": 852,
+            "sample_size": 27
+          },
+          {
+            "posts_per_day": 4,
+            "median_views": 961,
+            "sample_size": 12
+          },
+          {
+            "posts_per_day": 5,
+            "median_views": 1462,
+            "sample_size": 5
+          },
+          {
+            "posts_per_day": 6,
+            "median_views": 894,
+            "sample_size": 24
+          }
+        ],
+        "note": "Set directly by the operator, not by the loop. The one-step rule governs the LOOP; it is not a limit on a deliberate operator decision, which is why this moves 4 -> 2 in one entry. The decision file that supplied the number carries safe_to_act: false, which as of this change suppresses post[]/dont_post[] only — how_many is a separate analysis and is unaffected by the missing publish manifest.",
+        "scope_caveat": "Measured on the flagship account @lifestyledesignrealtytexas, which this pipeline does NOT post to (mainBrandSkipIG withholds it for native posting). This cap governs the 3 satellite Instagram accounts, the main TikTok and the main YouTube Short, and the supply of Drive deliveries. It does not put the flagship at 2/day."
+      },
+      "run_id": null
+    }
+  ],
   "holds": [
     {
       "at": "2026-09-09T21:02:46.330Z",

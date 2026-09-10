@@ -36,17 +36,52 @@ const fresh = (over = {}) => JSON.stringify({
 const modified = new Date(NOW - 2 * 86400000).toISOString();
 
 describe("refusing to act — every path ends in 'run as today'", () => {
-  test("safe_to_act false is refused, and the writer's own reason is carried", () => {
-    const r = parseDecision(fresh({ safe_to_act: false, safe_to_act_reason: "only 4 days of data" }), { now: NOW, modifiedTime: modified });
-    assert.equal(r.usable, false);
-    assert.match(r.reason, /only 4 days of data/);
-    assert.equal(r.decision, null, "a false run's post[] is never handed on");
+  test("safe_to_act false suppresses the QUEUE and carries the writer's own reason", () => {
+    // Widened 2026-09-10. The 2026-09-10 run is false for a narrow reason — no
+    // publish manifest, so every post[] row has drive_file_id null — while its
+    // how_many analysis over 213 posts is untouched by that. Refusing the whole
+    // file would discard the only real frequency evidence this system has.
+    const r = parseDecision(fresh({
+      safe_to_act: false,
+      safe_to_act_reason: "no publish manifest maps posts to source videos",
+      post: [{ rank: 1, drive_file_id: "a" }],
+      dont_post: [{ drive_file_id: "b" }],
+      how_many: { posts_per_day: 2, rationale: "median holds at 2/day and daily reach nearly doubles" },
+    }), { now: NOW, modifiedTime: modified });
+
+    assert.equal(r.usable, true, "the file is readable — it is the QUEUE that is barred");
+    assert.equal(r.safeToAct, false);
+    assert.match(r.reason, /no publish manifest/);
+
+    const plan = planFromDecision(r.decision, { safeToAct: r.safeToAct });
+    assert.equal(plan.queueSuppressed, true);
+    assert.equal(plan.ranked.length, 0, "post[] is barred even though this row HAS a drive_file_id");
+    assert.equal(plan.exclude.size, 0, "dont_post[] is barred too");
+    assert.equal(plan.postsPerDay, 2, "how_many survives — it does not depend on the manifest");
   });
 
-  test("safe_to_act missing or non-true is refused, not coerced", () => {
+  test("the suppression cannot be bypassed by building the plan directly", () => {
+    // It lives in planFromDecision, not at the call site, so a caller cannot
+    // reach past parseDecision and get a ranked queue out of an unsafe file.
+    const decision = JSON.parse(fresh({ post: [{ rank: 1, drive_file_id: "a" }] }));
+    assert.equal(planFromDecision(decision, { safeToAct: false }).ranked.length, 0);
+    assert.equal(planFromDecision(decision, { safeToAct: true }).ranked.length, 1);
+  });
+
+  test("safe_to_act missing or non-true suppresses the queue, and is never coerced", () => {
     for (const v of [undefined, null, "true", 1, 0]) {
-      assert.equal(parseDecision(fresh({ safe_to_act: v }), { now: NOW, modifiedTime: modified }).usable, false);
+      const r = parseDecision(fresh({ safe_to_act: v, post: [{ rank: 1, drive_file_id: "a" }] }), { now: NOW, modifiedTime: modified });
+      assert.equal(r.safeToAct, false, `safe_to_act ${JSON.stringify(v)} must not read as true`);
+      assert.equal(planFromDecision(r.decision, { safeToAct: r.safeToAct }).ranked.length, 0);
     }
+  });
+
+  test("a safe run still gets its queue", () => {
+    const r = parseDecision(fresh({ safe_to_act: true, post: [{ rank: 1, drive_file_id: "a" }] }), { now: NOW, modifiedTime: modified });
+    assert.equal(r.safeToAct, true);
+    const plan = planFromDecision(r.decision, { safeToAct: r.safeToAct });
+    assert.equal(plan.queueSuppressed, false);
+    assert.equal(plan.ranked.length, 1);
   });
 
   test("an unrecognised schema_version is refused rather than guessed at", () => {

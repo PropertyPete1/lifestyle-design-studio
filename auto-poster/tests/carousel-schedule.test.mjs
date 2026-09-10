@@ -155,15 +155,32 @@ describe("nothing else about the daily schedule moved", () => {
    * the middle of this block, which is exactly the shape of edit that takes a
    * neighbour with it — a dropped `30` backup would go unnoticed for weeks.
    */
-  test("the reel and trial crons are untouched", () => {
+  test("the reel and trial crons are exactly the three surviving slots", () => {
+    // UPDATED 2026-09-10 with the cadence cap. SA pm and ATX pm were retired
+    // because the cap is 2 publishes/day and five slots against it meant three
+    // runs a day would start, list Drive, read Instagram and exit. Three slots
+    // remain, one per city, so no city goes dark. The pin moved deliberately —
+    // if it moved and you did not mean it, that is the bug this test exists for.
     assert.deepEqual(crons(DAILY), [
       "0 16 * * *", "30 16 * * *",   // SA am + backup
       "0 17 * * *", "30 17 * * *",   // ATX am + backup
-      "0 19 * * *", "30 19 * * *",   // SA pm + backup
-      "0 20 * * *", "30 20 * * *",   // ATX pm + backup
       "0 21 * * *", "30 21 * * *",   // DFW pm + backup
       "15 13 * * *", "45 23 * * *",  // trial variant am/pm
     ]);
+  });
+
+  test("the retired pm crons are commented, not deleted", () => {
+    // Deliberately reads the RAW file, not code(). Every other check in this
+    // file strips comments on purpose — a comment saying the words is not the
+    // workflow doing them. This one is the exception that proves it: the
+    // property being pinned IS the comment, because restoring a slot has to
+    // stay an uncomment rather than a rewrite, the shape the carousel and LDT
+    // pauses use.
+    const raw = readFileSync(DAILY, "utf-8");
+    for (const c of ["0 19 * * *", "30 19 * * *", "0 20 * * *", "30 20 * * *"]) {
+      assert.ok(raw.includes(`#   - cron: '${c}'`), `${c} should be commented out, not removed`);
+      assert.ok(!crons(DAILY).includes(c), `${c} must not be a live cron`);
+    }
   });
 
   test("post.yml still holds all five jobs", () => {
@@ -176,8 +193,11 @@ describe("nothing else about the daily schedule moved", () => {
 
   test("each city job still answers to exactly its own two crons", () => {
     const expected = {
-      "post-san-antonio": ["0 16 * * *", "30 16 * * *", "0 19 * * *", "30 19 * * *"],
-      "post-austin": ["0 17 * * *", "30 17 * * *", "0 20 * * *", "30 20 * * *"],
+      // The pm entries remain in each job's `if:` condition on purpose: a
+      // schedule that never fires cannot match one, and leaving them makes
+      // restoring a slot a single uncomment in the cron block.
+      "post-san-antonio": ["0 16 * * *", "30 16 * * *"],
+      "post-austin": ["0 17 * * *", "30 17 * * *"],
       "post-dallas": ["0 21 * * *", "30 21 * * *"],
       "trial-variant": ["15 13 * * *", "45 23 * * *"],
     };

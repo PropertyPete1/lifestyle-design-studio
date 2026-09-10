@@ -247,11 +247,15 @@ async function main() {
   // treats no file at all.
   console.log("\n[Step 0] Reading performance decision file...");
   const decision = await loadDecision();
-  console.log(
-    decision.usable
-      ? `[Step 0] Decision file OK — ${decision.plan.ranked.length} ranked, ${decision.plan.exclude.size} excluded, ${decision.plan.skipped.length} unactionable`
-      : `[Step 0] No usable decision — running as today. Reason: ${decision.reason}`
-  );
+  if (!decision.usable) {
+    console.log(`[Step 0] No usable decision — running as today. Reason: ${decision.reason}`);
+  } else if (decision.plan.queueSuppressed) {
+    // safe_to_act false: the queue is barred, the cadence analysis is not.
+    console.log(`[Step 0] Decision file QUEUE SUPPRESSED — ${decision.reason}`);
+    console.log("[Step 0] post[] and dont_post[] ignored; how_many is still read (it does not depend on the manifest)");
+  } else {
+    console.log(`[Step 0] Decision file OK — ${decision.plan.ranked.length} ranked, ${decision.plan.exclude.size} excluded, ${decision.plan.skipped.length} unactionable`);
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // Step 0b: CADENCE — move the target if the evidence earns it, then enforce
@@ -310,7 +314,7 @@ async function main() {
     }
   }
 
-  const gate = cadenceGate(log, { state: cadenceState });
+  const gate = cadenceGate(log, { state: cadenceState, city: CITY, slot: SLOT });
   console.log(`[Step 0b] Cadence gate: ${gate.reason}`);
   if (!gate.allowed) {
     await notifyDailyFailure({
@@ -570,12 +574,13 @@ async function main() {
     }
   }
   if (decision.plan?.postsPerDay != null) {
-    // READ, NOT ENFORCED — cadence is cron-set in post.yml and the realty lane
-    // has no per-day counter to enforce a cap against. Wiring that is its own
-    // change; half-enforcing it here would be worse than not enforcing it.
+    // ENFORCED as of 2026-09-10. The loop at Step 0b moves the target one step
+    // toward this number when the dwell and direction rules allow, and the gate
+    // above enforces whatever target that leaves. The number is advice; the
+    // one-step rule, the floor and the ceiling are what make acting on it safe.
     console.log(
       `[Step 4] Decision file advises ${decision.plan.postsPerDay} post(s)/day ` +
-      `(NOT enforced by this run — cadence is set by cron): ${decision.plan.postsPerDayRationale ?? "no rationale"}`
+      `(target now ${gate.target}/day): ${decision.plan.postsPerDayRationale ?? "no rationale"}`
     );
   }
 
