@@ -266,6 +266,17 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
     // missing manifest touches it. Bounded by sanitizeHooks because this is the
     // only externally-authored text that reaches an LLM prompt.
     hooks: sanitizeHooks(decision?.hooks_that_work),
+    // RAW vs SURVIVING, kept separate on purpose. "The writer stopped emitting
+    // hooks" and "our own bounds refused every one" are different faults with
+    // different owners, and a single count cannot tell them apart. The first
+    // live read (2026-09-10) reported zero hooks, and without this pair there
+    // was no way to know whether the file was empty or whether sanitizeHooks
+    // was eating a shape it did not expect — e.g. rows emitted as objects
+    // rather than strings, which is how post[] is shaped in the same file.
+    hooksRaw: Array.isArray(decision?.hooks_that_work) ? decision.hooks_that_work.length : 0,
+    hooksShape: Array.isArray(decision?.hooks_that_work)
+      ? [...new Set(decision.hooks_that_work.map((h) => (h === null ? "null" : Array.isArray(h) ? "array" : typeof h)))].sort().join("|") || "empty"
+      : decision?.hooks_that_work === undefined ? "absent" : typeof decision.hooks_that_work,
     dataGaps: Array.isArray(decision?.data_gaps) ? decision.data_gaps : [],
     // The Drive modifiedTime the staleness gate already read, carried through
     // so the posted-log entry can record WHICH decision file shaped a caption.

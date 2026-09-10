@@ -277,7 +277,13 @@ async function main() {
     console.log(`[Step 0] Hook guidance: ${hookCount} preference(s) will reach the fresh-caption prompt`);
     for (const h of decision.plan.hooks) console.log(`[Step 0]   - ${h}`);
   } else {
-    console.log(`[Step 0] Hook guidance: none — ${decision.usable ? "hooks_that_work[] is empty or was fully refused by the bounds" : "no usable decision file"}`);
+    const raw = decision.plan?.hooksRaw ?? 0;
+    const shape = decision.plan?.hooksShape ?? "absent";
+    console.log(
+      raw > 0
+        ? `[Step 0] Hook guidance: NONE SURVIVED — the file carried ${raw} entr(ies) of type "${shape}" and the bounds refused every one. This is OUR fault, not the writer's.`
+        : `[Step 0] Hook guidance: none — hooks_that_work[] is ${shape} in the decision file (nothing to refuse). The writer is not populating it.`
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════
