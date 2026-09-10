@@ -130,7 +130,15 @@ export function parseDecision(text, { now = Date.now(), modifiedTime = null } = 
  * Caps on `hooks_that_work[]`. See sanitizeHooks for why they exist.
  */
 export const MAX_HOOK_ENTRIES = 3;
-export const MAX_HOOK_CHARS = 120;
+export const MAX_HOOK_CHARS = 220;
+//
+// 220, not 120, and the number was set by a live read rather than taste. At
+// 120 the real file's pattern/description pairs did not fit, so every entry
+// fell back to its pattern ALONE — and the patterns are terse editorial labels
+// like "Rate bait-and-switch". A bare label of that kind is the worst thing to
+// hand a caption model: suggestive, and stripped of the description that says
+// what it actually means. 220 lets the measured pairs travel whole; three
+// entries is still a bounded, predictable prompt suffix.
 
 /**
  * The hook-style ids that are ENGINE VOCABULARY rather than ordinary English.
