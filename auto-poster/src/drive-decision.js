@@ -127,6 +127,89 @@ export function parseDecision(text, { now = Date.now(), modifiedTime = null } = 
 }
 
 /**
+ * Caps on `hooks_that_work[]`. See sanitizeHooks for why they exist.
+ */
+export const MAX_HOOK_ENTRIES = 3;
+export const MAX_HOOK_CHARS = 120;
+
+/**
+ * The hook-style ids that are ENGINE VOCABULARY rather than ordinary English.
+ *
+ * NOT all of HOOK_STYLE_IDS, and the omission is the point. `question` and
+ * `stat` are words a legitimate finding uses about itself — the 2026-09-10 run
+ * named "a binary choice question" as a winning shape, and banning the word
+ * would have thrown away one of the three findings this wiring exists to carry.
+ * The three snake_case ids and `pov` are jargon tokens that appear in prose
+ * only when something is addressing the engine, so those are refused.
+ *
+ * The residual risk — a guidance line reading "ask a question" while the
+ * variation engine picked `stat` — is handled in the prompt, not here: the
+ * advisory block states that the style instruction above wins any conflict.
+ */
+export const ENGINE_STYLE_TOKENS = ["bold_claim", "story_open", "pattern_interrupt", "pov"];
+
+/**
+ * Bound `hooks_that_work[]` before anything downstream can read it.
+ *
+ * THIS IS THE ONLY EXTERNALLY-AUTHORED TEXT THAT REACHES THE CAPTION PROMPT.
+ * Everything else interpolated at caption.js's fresh-caption prompt is either a
+ * repo constant or the Claude-Vision read of the video's own overlays. This
+ * field is written by a scheduled task OUTSIDE this repository (see the module
+ * header), so it is bounded HERE — at the reader, where the schema contract
+ * already lives — rather than at the prompt, where a second caller could skip
+ * it.
+ *
+ * The rules, and the failure each one prevents:
+ *
+ *   - non-strings dropped, entries trimmed        a number or object would
+ *                                                 render as "[object Object]"
+ *   - newlines/controls collapsed to a space      a multi-line entry could
+ *                                                 forge a new prompt section
+ *   - backticks and braces stripped               they close the template
+ *                                                 literal the block sits in
+ *   - entries naming ENGINE VOCABULARY dropped     a guidance line that says
+ *     entirely                                    "use a POV hook" would
+ *                                                 silently compete with the
+ *                                                 variation engine's tagged
+ *                                                 pick and corrupt learn.js's
+ *                                                 provenance
+ *   - entries carrying the caption's own          "comment", "DM" and the
+ *     control vocabulary dropped entirely         signature line are counted
+ *                                                 by caption-validator.js; an
+ *                                                 external string containing
+ *                                                 one can fail every attempt
+ *   - MAX_HOOK_CHARS per entry, MAX_HOOK_ENTRIES  a bounded, predictable
+ *     entries                                     prompt suffix
+ *
+ * A dropped entry is dropped silently on purpose: this is advice, and advice
+ * that fails the bounds is simply not taken. The COUNT that survives is tagged
+ * onto the posted-log entry, so a systematically-empty list is visible there.
+ */
+export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS } = {}) {
+  if (!Array.isArray(raw)) return [];
+  const banned = [...styleIds, "comment", "dm", "lifestyle design realty"];
+  const out = [];
+  for (const entry of raw) {
+    if (typeof entry !== "string") continue;
+    const flat = entry
+      // Control characters and newlines become a single space. \p{C} covers
+      // the format/unassigned classes too, so a zero-width joiner cannot hide
+      // a banned word from the check below.
+      .replace(/[\p{C}\s]+/gu, " ")
+      .replace(/[`{}]/g, "")
+      .trim();
+    if (!flat) continue;
+    const haystack = flat.toLowerCase();
+    // Word-boundary match, so "recommend" does not trip on "comment" and a
+    // hook mentioning "statistics" does not trip on the `stat` style id.
+    if (banned.some((word) => new RegExp(`\\b${word}\\b`, "i").test(haystack))) continue;
+    out.push(flat.length > MAX_HOOK_CHARS ? flat.slice(0, MAX_HOOK_CHARS).trimEnd() : flat);
+    if (out.length >= MAX_HOOK_ENTRIES) break;
+  }
+  return out;
+}
+
+/**
  * Turn a validated decision into a plan the selector can apply.
  *
  * A post[] row with a null drive_file_id is NOT actionable. It is dropped and
@@ -134,7 +217,7 @@ export function parseDecision(text, { now = Date.now(), modifiedTime = null } = 
  * library's filenames are 124 iPhone UUIDs out of 142 and a guess would land
  * on the wrong video silently.
  */
-export function planFromDecision(decision, { safeToAct = true } = {}) {
+export function planFromDecision(decision, { safeToAct = true, modifiedTime = null } = {}) {
   // The suppression lives HERE, not at the call site, so no caller can obtain a
   // ranked queue from an unsafe file by constructing the plan itself.
   const post = safeToAct && Array.isArray(decision?.post) ? decision.post : [];
@@ -176,8 +259,19 @@ export function planFromDecision(decision, { safeToAct = true } = {}) {
     // Read and surfaced; enforcement is a separate change. See the header.
     postsPerDay: Number.isFinite(decision?.how_many?.posts_per_day) ? decision.how_many.posts_per_day : null,
     postsPerDayRationale: decision?.how_many?.rationale ?? null,
-    hooks: Array.isArray(decision?.hooks_that_work) ? decision.hooks_that_work : [],
+    // NOT gated on safeToAct, and that is deliberate — the same reasoning the
+    // header gives for how_many. The 2026-09-10 file's false flag is about a
+    // missing publish manifest breaking post-to-source matching; the hook
+    // analysis is over the caption text of 213 posts and nothing about the
+    // missing manifest touches it. Bounded by sanitizeHooks because this is the
+    // only externally-authored text that reaches an LLM prompt.
+    hooks: sanitizeHooks(decision?.hooks_that_work),
     dataGaps: Array.isArray(decision?.data_gaps) ? decision.data_gaps : [],
+    // The Drive modifiedTime the staleness gate already read, carried through
+    // so the posted-log entry can record WHICH decision file shaped a caption.
+    // Nothing in this repo currently proves the Drive read succeeds on a
+    // runner; this is what buys that evidence.
+    decisionFileAt: modifiedTime || null,
   };
 }
 
@@ -236,7 +330,12 @@ export async function loadDecision({ now = Date.now(), deps = {} } = {}) {
     }
     const buf = await download(file.id);
     const result = parseDecision(buf.toString("utf-8"), { now, modifiedTime: file.modifiedTime });
-    return { ...result, plan: result.usable ? planFromDecision(result.decision, { safeToAct: result.safeToAct }) : null };
+    return {
+      ...result,
+      plan: result.usable
+        ? planFromDecision(result.decision, { safeToAct: result.safeToAct, modifiedTime: file.modifiedTime })
+        : null,
+    };
   } catch (err) {
     return { usable: false, reason: `read failed: ${err.message?.slice(0, 120)}`, decision: null, plan: null };
   }

@@ -84,6 +84,13 @@ process.on("uncaughtException", async (err) => {
 });
 
 const DRY_RUN = process.env.DRY_RUN === "true";
+// The hook-guidance kill switch. post.yml has no top-level `env:`, so a
+// variable not named in a job's own env block never reaches the process —
+// which means this must be added to each reels job's env to be settable at
+// all. Set the repo variable HOOK_GUIDANCE to "false" to stop the decision
+// file's hook preferences reaching the caption prompt without a revert;
+// unset means ON. The channel is hot on the first run after merge.
+const HOOK_GUIDANCE = process.env.HOOK_GUIDANCE !== "false";
 const CITY = process.env.CITY || "san_antonio";
 const FORCE = process.env.FORCE === "true"; // Manual override to bypass the content-duplicate guard
 const TEST_DELIVERY_ONLY = process.env.TEST_DELIVERY_ONLY === "true"; // Test delivery pipeline only — no social posts, no log entry
@@ -668,7 +675,8 @@ async function main() {
       }
 
       // Pass the already-downloaded video path to avoid double download
-      const postResult = await postVideo(candidate, log, igWithHashes, matchCache, liveResult.videoPath);
+      const postResult = await postVideo(candidate, log, igWithHashes, matchCache, liveResult.videoPath,
+        HOOK_GUIDANCE ? (decision.plan?.hooks ?? []) : [], decision.plan?.decisionFileAt ?? null);
 
       // Content dedupe rejected this candidate before anything was published —
       // move on to the next one rather than ending the slot with no post.
@@ -1041,7 +1049,7 @@ async function liveIgMatchCheck(video, igWithHashes, matchCache) {
  * Accepts an optional pre-downloaded videoPath from liveIgMatchCheck to avoid
  * downloading the same file twice.
  */
-async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath = null) {
+async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath = null, decisionHooks = [], decisionFileAt = null) {
   let tempVideoPath;
   let finalVideoPath = null;
 
@@ -1246,6 +1254,12 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     const captionOptions = {
       hookStyle: variation.hook_style,
       captionLength: variation.caption_length_bucket,
+      // FRESH CAPTIONS ONLY. The restructure lane's job is to preserve the
+      // facts of an already-published caption; pushing external preference
+      // text into it would widen the untrusted-text surface onto the lane that
+      // handles reruns, for no benefit — a restructured caption's hook is
+      // constrained by the original, not by what is landing this week.
+      decisionHooks,
     };
     let captionSource = "fresh";
 
@@ -1486,6 +1500,12 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
           caption_length_bucket: captionSource === "fresh" ? variation.caption_length_bucket : null,
           caption_length_source: captionSource === "fresh" ? variation.caption_length_source : "restructured",
           brief_generated_at: variation.brief_generated_at,
+          // WHICH decision file shaped this caption, and how much of it landed.
+          // 0 on every path where the file is missing, stale, unreadable, the
+          // wrong schema, empty after sanitizing, switched off, or the caption
+          // was restructured rather than written fresh.
+          decision_hooks: captionSource === "fresh" ? decisionHooks.length : 0,
+          decision_file_at: decisionFileAt,
           topic: {
             price_overlay: !!videoOverlays?.price,
             community_kb: !!videoOverlays?.community,

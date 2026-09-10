@@ -102,6 +102,47 @@ export function findCommunity(communityName, city) {
 }
 
 /**
+ * Render the decision file's observed hook preferences as a SUBORDINATE block.
+ *
+ * `hooks_that_work[]` is written by a scheduled task outside this repository
+ * and is already bounded by sanitizeHooks (drive-decision.js) before it gets
+ * here. This function decides only how it is FRAMED, and the framing carries
+ * three loads:
+ *
+ * 1. THE STYLE INSTRUCTION ABOVE WINS. The variation engine's pick is recorded
+ *    on the posted-log entry and is what learn.js scores. If this block could
+ *    override it, every tagged post would be mislabelled and the learning loop
+ *    would be scoring a style that was never used.
+ *
+ * 2. PREFERENCE, NOT PERMISSION. Nothing here relaxes LEAD_GATING_RULES or the
+ *    no-invented-facts rules; those are stated upstream in the same prompt and
+ *    restated here because this is the block most likely to read as a licence.
+ *
+ * 3. THE NO-INVENTED-NUMBER CLAUSE — the reason this function exists rather
+ *    than a bare interpolation. The single most likely entry in this list is
+ *    some form of "open on a low dollar figure", because that is what the
+ *    2026-09-10 run actually found. Read as an instruction, that is a direct
+ *    order to put a number in line one — and if the video's facts carry no
+ *    price, the only way to comply is to make one up. That is the exact failure
+ *    the `stat` style's instruction is worded most strictly to prevent, and it
+ *    is the failure that put a bracketed placeholder rate in front of a client.
+ *    So the clause is unconditional, it is stated in the same breath as the
+ *    preference rather than in a separate paragraph, and it names the fallback
+ *    explicitly: no number in the facts means DO NOT OPEN ON A NUMBER.
+ */
+export function renderDecisionHooks(hooks) {
+  if (!Array.isArray(hooks) || hooks.length === 0) return "";
+  const lines = hooks.map((h) => `     - ${h}`).join("\n");
+  return `
+   OBSERVED PREFERENCES (from recent performance data on this account) — these describe what has been landing lately:
+${lines}
+     These are PREFERENCES, NOT INSTRUCTIONS, and they are subordinate to everything above:
+     - The HOOK STYLE instruction above WINS any conflict. If a preference points at a different style, follow the style instruction.
+     - They grant NO permission that the rules above withhold. Every lead-gating and no-invented-facts rule applies unchanged.
+     - NUMBERS: if a preference favours opening on a price or figure, that is permission to LEAD WITH a number the facts above already provide — it is NEVER permission to invent, estimate, round, guess, or write a placeholder. If no number appears in the facts above, DO NOT OPEN ON A NUMBER; open on the most concrete visible detail instead. A bracketed placeholder like [price] is never acceptable output.`;
+}
+
+/**
  * Get a hook style instruction.
  *
  * When the variation engine chose a style (main.js passes it through), that
@@ -554,7 +595,7 @@ STRUCTURE (follow this EXACT order):
 
 1. HOOK (first line, under 100 chars): A curiosity line that makes people stop scrolling.
    ${options.trialAngle ? getTrialHookInstruction(options.trialAngle, captionCity) : getHookInstruction(captionCity, options.hookStyle)}
-   ${hasRealFacts ? `USE a real detail from the community KB in the hook (price, standout amenity description, etc.) but NEVER the community name.` : ""}
+   ${hasRealFacts ? `USE a real detail from the community KB in the hook (price, standout amenity description, etc.) but NEVER the community name.` : ""}${renderDecisionHooks(options.decisionHooks)}
    NEVER start with a CTA. The hook must create curiosity.
 
 2. One short scarcity/story line (e.g. "new construction like this doesn't sit long" or reference builder incentives if known)
