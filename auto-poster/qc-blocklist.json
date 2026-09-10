@@ -319,6 +319,11 @@
       "filename": "412C9531-D8A2-41BC-9667-0085609C4539.mp4",
       "reason": "AI vision: Images are static photographs, not a video. Cannot assess video suitability without actual video content.",
       "blockedAt": "2026-09-09T20:06:16.085Z"
+    },
+    "1GT6-3vuEE_PHyt3_UK3M-qhTu6fthFpZ": {
+      "filename": "4D50F343-D14D-47EB-A1BA-8DFD87AE3FDD.mp4",
+      "reason": "AI vision: These are static images, not a video. Cannot assess video suitability for Reels without video format.",
+      "blockedAt": "2026-09-10T17:05:53.883Z"
     }
   }
 }

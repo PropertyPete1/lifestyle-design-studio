@@ -53,6 +53,14 @@
       "proposed": null,
       "reason": "no posts_per_day in the decision file",
       "run_id": "34499482974"
+    },
+    {
+      "at": "2026-09-10T17:04:14.430Z",
+      "day": "2026-09-10",
+      "target": 4,
+      "proposed": null,
+      "reason": "no posts_per_day in the decision file",
+      "run_id": "34505750983"
     }
   ]
 }
