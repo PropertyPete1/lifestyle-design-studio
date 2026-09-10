@@ -24,7 +24,8 @@ import {
   MAX_AGE_DAYS,
   sanitizeHooks,
   hookText,
-  refusedTechnique,
+  refusedForImitation,
+  UNREAL_FIGURE_MARKERS,
   MAX_HOOK_CHARS,
   MAX_HOOK_ENTRIES,
 } from "../src/drive-decision.js";
@@ -477,31 +478,57 @@ describe("the strongest-evidenced hooks reach the prompt, not the first-listed",
   });
 });
 
-// ─── deceptive techniques ───────────────────────────────────────────────────
+// ─── patterns that cannot be imitated ──────────────────────────────────────
 //
-// The 2026-09-10 file's SECOND-STRONGEST entry by engagement recommended
-// stating a false mortgage rate ("I said 78.99% fixed... just kidding"). It
-// was measured on a live run, not imagined. These tests are the reason that
-// entry cannot reach a caption prompt, and they must not be relaxed to let a
-// high-performing deception through: the technique works, and it is still not
-// something this account publishes.
+// The 2026-09-10 file's SECOND-STRONGEST entry by engagement was a rate
+// bait-and-switch: "I said 78.99% fixed... just kidding, it's 3.99%".
+//
+// THE SOURCE REEL IS FINE — it is a real post and the correction lands in the
+// same breath. These tests are not about that post. They are about what happens
+// when the shape is handed to a model to reproduce on unscripted footage: the
+// instruction is to open on a rate, there is no rate in the facts, and the only
+// way to comply is to produce one.
+//
+// The rule is narrow and about NUMBERS, not tone. A marker alone does not
+// refuse — the entry must actually concern a figure.
 
-describe("guidance advocating a falsehood is refused deterministically", () => {
+describe("patterns needing an unsupported figure are refused deterministically", () => {
   const RATE_GAG = {
     pattern: "Rate bait-and-switch",
     description: "Absurd fake rate then the correction - I said 78.99% fixed... just kidding, it is 3.99%",
     median_views: 1400,
   };
 
-  test("the real rate bait-and-switch entry never reaches the prompt", () => {
+  test("the rate bait-and-switch never reaches the prompt", () => {
     assert.deepEqual(sanitizeHooks([RATE_GAG]), []);
   });
 
   test("it is refused even when it is the STRONGEST entry", () => {
-    // Engagement ranking must not be able to promote a deception.
+    // Engagement ranking must not be able to promote an unimitable pattern.
     const strong = { ...RATE_GAG, median_views: 999999 };
     const legit = { pattern: "Low price shock", description: "a real figure from the facts", median_views: 1 };
     assert.deepEqual(sanitizeHooks([strong, legit]), ["Low price shock — a real figure from the facts"]);
+  });
+
+  test("a marker with NO figure in the entry is ordinary advice and survives", () => {
+    // "avoid fake urgency" names no number, so imitating it needs none. An
+    // earlier cut refused this, which was the rule being about the wrong thing.
+    const fine = "Avoid fake urgency in the opening line";
+    assert.equal(refusedForImitation(fine), null);
+    assert.deepEqual(sanitizeHooks([fine]), [fine]);
+  });
+
+  test("a figure with NO unreal-device marker survives", () => {
+    // The winning finding is itself figure-shaped. Refusing every entry that
+    // mentions a price would throw away the thing this wiring exists to carry.
+    const winner = "Low price shock — a specific, surprisingly low dollar figure, $254,990 to $369,990";
+    assert.equal(refusedForImitation(winner), null);
+    assert.deepEqual(sanitizeHooks([winner]), [winner]);
+  });
+
+  test("the device is caught when described rather than quoted", () => {
+    // No digits at all — "wrong price" is the figure signal.
+    assert.equal(refusedForImitation("Fake-out opener - say the wrong price, then correct it"), "fake");
   });
 
   test("the refusal is reported, not silent", () => {
@@ -519,24 +546,25 @@ describe("guidance advocating a falsehood is refused deterministically", () => {
     assert.equal(plan.hookRefusals[0].phrase, "bait-and-switch");
   });
 
-  test("every refused phrase is caught", () => {
-    for (const phrase of ["bait-and-switch", "bait and switch", "fake", "just kidding", "made up", "made-up", "clickbait", "misleading", "not real", "untrue"]) {
-      assert.equal(refusedTechnique(`open with a ${phrase} angle`), phrase, `missed "${phrase}"`);
-      assert.deepEqual(sanitizeHooks([`open with a ${phrase} angle`]), [], `let "${phrase}" through`);
+  test("every marker is caught when paired with a figure", () => {
+    for (const phrase of UNREAL_FIGURE_MARKERS) {
+      const entry = `open on a ${phrase} price`;
+      assert.equal(refusedForImitation(entry), phrase, `missed "${phrase}"`);
+      assert.deepEqual(sanitizeHooks([entry]), [], `let "${phrase}" through`);
     }
   });
 
   test("matching is case-insensitive", () => {
-    assert.ok(refusedTechnique("An ABSURD FAKE rate, Just Kidding"));
+    assert.ok(refusedForImitation("An ABSURD FAKE rate, Just Kidding"));
   });
 
-  test("ordinary guidance is untouched", () => {
+  test("the real surviving guidance is untouched", () => {
     const clean = [
       "Low price shock — a specific, surprisingly low dollar figure in the first two lines",
       "Binary choice question — this or that",
       "First-person stop reaction — agent reaction rather than listing copy",
     ];
     assert.deepEqual(sanitizeHooks(clean), clean);
-    for (const c of clean) assert.equal(refusedTechnique(c), null);
+    for (const c of clean) assert.equal(refusedForImitation(c), null);
   });
 });

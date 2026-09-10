@@ -157,86 +157,69 @@ export const MAX_HOOK_CHARS = 220;
 export const ENGINE_STYLE_TOKENS = ["bold_claim", "story_open", "pattern_interrupt", "pov"];
 
 /**
- * Guidance that advocates saying something FALSE, refused outright.
+ * Patterns whose IMITATION would require stating a number the footage does not
+ * supply. Refused before the text can reach a caption model.
  *
- * NOT hypothetical. The 2026-09-10 file's second-strongest entry, measured on
- * a live run, was:
+ * The case that produced this rule, measured on a live run — the 2026-09-10
+ * file's second-strongest entry by engagement:
  *
  *   "Rate bait-and-switch — Absurd fake rate then the correction - 'I said
  *    78.99% fixed... just kidding, it's 3.99%' - buys a second of confusion
  *    before the payment pitch."
  *
- * That is an instruction to state a false mortgage rate in a real-estate
- * advertisement. It reached the top three on engagement, which is exactly why
- * a purely performance-ranked channel cannot be the only filter: the technique
- * works, and it is still not something this account will publish.
+ * THE SOURCE REEL IS FINE. It is a real post, the correction lands in the same
+ * breath, and it reads as the joke it is. Nothing here is a judgment about it.
  *
- * The prompt's no-invented-number clause argues against it, but a clause and a
- * worked example pulling in opposite directions is a coin toss, not a control.
- * The refusal is deterministic and it happens here, before the text can reach
- * a model at all.
+ * The problem is what happens when the pattern is handed to a model as a shape
+ * to reproduce, on footage nobody scripted. The reel worked because a person
+ * wrote both halves of the gag and knew the real rate. An imitation has neither
+ * — it has an instruction to open on a rate, and no rate in the facts. The only
+ * way to comply is to produce one, and the "just kidding" that made the
+ * original honest is not guaranteed to survive the copy.
  *
- * DELIBERATELY OVER-INCLUSIVE. A false positive costs one line of advisory
- * text; a false negative puts a fabricated rate in front of a client. Losing a
- * legitimate entry that happens to say "avoid fake urgency" is a price worth
- * paying, and the refusal is logged loudly rather than silently.
+ * So the rule is narrow and is about numbers, not about taste or tone: a
+ * pattern is refused when its device is a figure that is NOT the true one AND
+ * the entry is actually about a figure. Comedy is not the test — an unscripted
+ * imitation needing an unsupported number is. A gag built on something the
+ * video genuinely shows passes; so does "avoid fake urgency", which names no
+ * figure at all.
+ *
+ * Over-inclusive on the marker side by choice: a false positive costs one line
+ * of advisory text, a false negative puts an unsupported figure in a caption.
+ * Refusals are reported, never silent — see planFromDecision.
  */
-export const REFUSED_TECHNIQUES = [
+export const UNREAL_FIGURE_MARKERS = [
   "bait-and-switch",
   "bait and switch",
   "fake",
   "just kidding",
   "made up",
   "made-up",
-  "clickbait",
-  "misleading",
   "not real",
   "untrue",
+  "wrong price",
+  "wrong rate",
+  "wrong number",
 ];
 
-/** Entries advocating a falsehood, named so the caller can log the refusal. */
-export function refusedTechnique(text) {
-  const t = String(text).toLowerCase();
-  return REFUSED_TECHNIQUES.find((phrase) => t.includes(phrase)) || null;
-}
+/**
+ * Does the entry concern a stated figure at all? A marker alone is not enough —
+ * "avoid fake urgency" involves no number and is ordinary, usable advice.
+ * Digits catch the quoted example; the words catch a pattern that describes the
+ * device without quoting one ("say the wrong price, then correct").
+ */
+const FIGURE_WORDS = /\b(price|rate|figure|payment|percent|apr|cost|number|\$|%)\b|\d/i;
 
 /**
- * Bound `hooks_that_work[]` before anything downstream can read it.
- *
- * THIS IS THE ONLY EXTERNALLY-AUTHORED TEXT THAT REACHES THE CAPTION PROMPT.
- * Everything else interpolated at caption.js's fresh-caption prompt is either a
- * repo constant or the Claude-Vision read of the video's own overlays. This
- * field is written by a scheduled task OUTSIDE this repository (see the module
- * header), so it is bounded HERE — at the reader, where the schema contract
- * already lives — rather than at the prompt, where a second caller could skip
- * it.
- *
- * The rules, and the failure each one prevents:
- *
- *   - text pulled via hookText, non-text dropped  a raw object would render
- *                                                 as "[object Object]"
- *   - newlines/controls collapsed to a space      a multi-line entry could
- *                                                 forge a new prompt section
- *   - backticks and braces stripped               they close the template
- *                                                 literal the block sits in
- *   - entries naming ENGINE VOCABULARY dropped     a guidance line that says
- *     entirely                                    "use a POV hook" would
- *                                                 silently compete with the
- *                                                 variation engine's tagged
- *                                                 pick and corrupt learn.js's
- *                                                 provenance
- *   - entries carrying the caption's own          "comment", "DM" and the
- *     control vocabulary dropped entirely         signature line are counted
- *                                                 by caption-validator.js; an
- *                                                 external string containing
- *                                                 one can fail every attempt
- *   - MAX_HOOK_CHARS per entry, MAX_HOOK_ENTRIES  a bounded, predictable
- *     entries                                     prompt suffix
- *
- * A dropped entry is dropped silently on purpose: this is advice, and advice
- * that fails the bounds is simply not taken. The COUNT that survives is tagged
- * onto the posted-log entry, so a systematically-empty list is visible there.
+ * The marker that refused this entry, or null. Named so the caller can report
+ * WHICH device tripped it rather than a bare rejection.
  */
+export function refusedForImitation(text) {
+  const t = String(text).toLowerCase();
+  if (!FIGURE_WORDS.test(t)) return null;
+  return UNREAL_FIGURE_MARKERS.find((phrase) => t.includes(phrase)) || null;
+}
+
 /**
  * Pull the guidance text out of one `hooks_that_work[]` entry.
  *
@@ -291,9 +274,9 @@ export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal =
       .replace(/[`{}]/g, "")
       .trim();
     if (!flat) continue;
-    // A technique that works and still must not ship. Refused before the ban
-    // list, so the reason reported is the honest one.
-    const refused = refusedTechnique(flat);
+    // A pattern that works and still cannot be safely imitated. Checked before
+    // the ban list, so the reason reported is the one that actually applied.
+    const refused = refusedForImitation(flat);
     if (refused) {
       onRefusal({ text: flat, phrase: refused });
       continue;
@@ -366,9 +349,10 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
     // missing manifest touches it. Bounded by sanitizeHooks because this is the
     // only externally-authored text that reaches an LLM prompt.
     hooks: sanitizeHooks(decision?.hooks_that_work, { onRefusal: (r) => hookRefusals.push(r) }),
-    // Named, not merely counted: a refusal here means the decision writer
-    // recommended a deceptive technique, which is a fault UPSTREAM of this repo
-    // and needs a human to see it, not a silent drop.
+    // Named, not merely counted. A refusal is not a complaint about the source
+    // post — it means this pattern cannot be reproduced on unscripted footage
+    // without inventing a figure, and the operator should see which one and
+    // decide whether the writer should keep offering it.
     hookRefusals,
     // RAW vs SURVIVING, kept separate on purpose. "The writer stopped emitting
     // hooks" and "our own bounds refused every one" are different faults with
