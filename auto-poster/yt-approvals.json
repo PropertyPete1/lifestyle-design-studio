@@ -1020,7 +1020,9 @@
       "actedResult": {
         "videoId": "vid-2026-08-07-d5cddf9d",
         "notes": "baseline rebuild (PR #86): the take audio comes back — output-side seek silenced every piece after the first, and an AAC encode per piece walked the audio ~2s behind the picture. Music, micro-punches, whooshes, impacts and the floating head are all OFF. The render is now gated on its own artifact checks."
-      }
+      },
+      "decision": "approve",
+      "decidedAt": "2026-09-10T00:15:56.071Z"
     },
     {
       "requestId": "video_review-2026-08-16-87b36f20",
