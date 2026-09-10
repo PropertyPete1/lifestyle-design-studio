@@ -264,6 +264,22 @@ async function main() {
     console.log(`[Step 0] Decision file OK — ${decision.plan.ranked.length} ranked, ${decision.plan.exclude.size} excluded, ${decision.plan.skipped.length} unactionable`);
   }
 
+  // HOOK GUIDANCE, reported on every run — before the cadence gate, so a slot
+  // that stands down still says what the decision file offered the caption
+  // lane. The count is post-sanitizing: a file carrying hooks that all fail
+  // the bounds reports 0 here, which is the difference between "the writer
+  // stopped producing them" and "we are refusing them" — indistinguishable
+  // from the posted-log tag alone, since a stood-down slot writes no entry.
+  const hookCount = decision.plan?.hooks?.length ?? 0;
+  if (!HOOK_GUIDANCE) {
+    console.log("[Step 0] Hook guidance OFF (HOOK_GUIDANCE=false) — captions run as before");
+  } else if (hookCount > 0) {
+    console.log(`[Step 0] Hook guidance: ${hookCount} preference(s) will reach the fresh-caption prompt`);
+    for (const h of decision.plan.hooks) console.log(`[Step 0]   - ${h}`);
+  } else {
+    console.log(`[Step 0] Hook guidance: none — ${decision.usable ? "hooks_that_work[] is empty or was fully refused by the bounds" : "no usable decision file"}`);
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // Step 0b: CADENCE — move the target if the evidence earns it, then enforce
   // ═══════════════════════════════════════════════════════════════
