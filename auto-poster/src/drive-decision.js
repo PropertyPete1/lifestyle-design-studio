@@ -5,26 +5,21 @@
  * Sundays and Thursdays, overwriting a stable filename. This module reads it
  * before a posting run and turns it into advice the selector can act on.
  *
- * THE FILE DOES NOT EXIST YET. Searched on 2026-09-09 across the Drive account
- * the bot authenticates as (peter@lifestyledesignrealty.com, the same
- * GOOGLE_REFRESH_TOKEN post.yml passes) by title, by
- * `mimeType = application/json`, by full text for "safe_to_act", and across
- * sharedWithMe: the account holds zero JSON files. So every path through this
- * module currently ends at "no decision file", and that is the path most
- * carefully tested. Merging this changes nothing about what gets posted until
- * a file appears.
+ * THE FILE EXISTS AS OF 2026-09-10. The first real run landed
+ * ig_posting_decision_latest.json (schema 1.1, 213 posts analysed,
+ * 2026-04-29 to 2026-09-09) with safe_to_act: false and
+ * how_many.posts_per_day: 2. The no-file path is still fully tested, because a
+ * missed writer run puts us back on it.
  *
  * ADVICE, NOT LAW. The 30-day no-repeat rule and every other Step 3 filter run
  * before this module sees a candidate, and nothing here can put back something
  * they excluded — `applyDecision` reorders and removes, never inserts. A
  * decision file cannot cause a repost inside 30 days no matter what it says.
  *
- * CADENCE IS READ BUT NOT ENFORCED. `how_many.posts_per_day` is parsed, logged
- * and exposed on the plan, and deliberately not acted on here. Cadence is set
- * by cron in post.yml — five city slots a day, each fanned out to every
- * connected Instagram profile — and there is no per-day counter in the realty
- * lane to enforce a cap against. Wiring that is a separate change; quietly
- * half-enforcing it here would be worse than not enforcing it at all.
+ * CADENCE IS READ HERE AND ENFORCED IN cadence.js. `how_many.posts_per_day` is
+ * parsed and exposed on the plan; the daily cap, the one-step rule and the
+ * floor/ceiling live in cadence.js, which consumes it. This module still does
+ * not act on it — it only reports it faithfully.
  */
 
 import { getAccessToken, downloadFileById } from "./drive.js";
@@ -99,17 +94,36 @@ export function parseDecision(text, { now = Date.now(), modifiedTime = null } = 
     }
   }
 
-  if (parsed.safe_to_act !== true) {
-    // A false run's post[] is explicitly not actionable. Carry the writer's own
-    // sentence through so the run log says why, in its words.
-    return {
-      usable: false,
-      reason: `safe_to_act is ${JSON.stringify(parsed.safe_to_act)} — ${parsed.safe_to_act_reason || "no reason given"}`,
-      decision: null,
-    };
-  }
+  // safe_to_act SCOPES TO THE QUEUE, NOT THE WHOLE FILE.
+  //
+  // This was widened deliberately on 2026-09-10, and the 2026-09-10 run is why.
+  // That file carries safe_to_act: false for a specific, narrow reason — no
+  // publish manifest maps Instagram posts to source videos, so every post[] row
+  // has drive_file_id: null and confidence "low". Its own summary says it: "The
+  // thinking below is still good; the file matching is not."
+  //
+  // The queue is genuinely unusable there. But how_many is a separate analysis
+  // over 213 posts across the full window Metricool exposes, and nothing about
+  // the missing manifest touches it. Refusing the whole file would have thrown
+  // away the only real frequency evidence this system has ever had, and left
+  // cadence changeable only by editing code — which is the thing the decision
+  // file exists to avoid.
+  //
+  // So: safe_to_act false suppresses post[] and dont_post[], and nothing else.
+  // The original contract said "never act on a false run's post[] list", and
+  // post[] is what stays barred. The suppression is applied in
+  // planFromDecision(), so a caller cannot get a ranked queue out of an unsafe
+  // file by reaching past this function.
+  const safeToAct = parsed.safe_to_act === true;
 
-  return { usable: true, reason: "ok", decision: parsed };
+  return {
+    usable: true,
+    safeToAct,
+    reason: safeToAct
+      ? "ok"
+      : `safe_to_act is ${JSON.stringify(parsed.safe_to_act)} — queue suppressed, cadence still read. ${parsed.safe_to_act_reason || "no reason given"}`,
+    decision: parsed,
+  };
 }
 
 /**
@@ -120,9 +134,11 @@ export function parseDecision(text, { now = Date.now(), modifiedTime = null } = 
  * library's filenames are 124 iPhone UUIDs out of 142 and a guess would land
  * on the wrong video silently.
  */
-export function planFromDecision(decision) {
-  const post = Array.isArray(decision?.post) ? decision.post : [];
-  const dontPost = Array.isArray(decision?.dont_post) ? decision.dont_post : [];
+export function planFromDecision(decision, { safeToAct = true } = {}) {
+  // The suppression lives HERE, not at the call site, so no caller can obtain a
+  // ranked queue from an unsafe file by constructing the plan itself.
+  const post = safeToAct && Array.isArray(decision?.post) ? decision.post : [];
+  const dontPost = safeToAct && Array.isArray(decision?.dont_post) ? decision.dont_post : [];
 
   const ranked = [];
   const skipped = [];
@@ -150,6 +166,9 @@ export function planFromDecision(decision) {
   );
 
   return {
+    // True when safe_to_act was false: the queue halves are empty BY DESIGN,
+    // not because the file had nothing in them.
+    queueSuppressed: !safeToAct,
     ranked,
     rankIndex: new Map(ranked.map((r, i) => [r.driveFileId, i])),
     exclude,
@@ -217,7 +236,7 @@ export async function loadDecision({ now = Date.now(), deps = {} } = {}) {
     }
     const buf = await download(file.id);
     const result = parseDecision(buf.toString("utf-8"), { now, modifiedTime: file.modifiedTime });
-    return { ...result, plan: result.usable ? planFromDecision(result.decision) : null };
+    return { ...result, plan: result.usable ? planFromDecision(result.decision, { safeToAct: result.safeToAct }) : null };
   } catch (err) {
     return { usable: false, reason: `read failed: ${err.message?.slice(0, 120)}`, decision: null, plan: null };
   }

@@ -63,20 +63,52 @@ export const CADENCE_SCHEMA_VERSION = 1;
 export const CADENCE_HARD_CEILING = 6;
 
 /**
- * Defaults when cadence.json has never been written.
+ * Operating range and target.
  *
- * DEFAULT_TARGET IS DELIBERATELY ABOVE THE OBSERVED MAXIMUM. Measured over the
- * 14 Chicago days to 2026-09-09 the realty lane published 2.36/day, min 2,
- * max 3. A default of 4 therefore binds on no day in that window: merging this
- * changes nothing about what posts, exactly like the decision reader did.
+ * SET FROM REAL EVIDENCE ON 2026-09-10, replacing the deliberately-inert
+ * defaults (target 4 against a measured max of 3) that shipped when the only
+ * frequency evidence available was an artifact.
  *
- * That is on purpose. Choosing a cap that bites is Peter's call and a
- * deliberate act, not a side effect of a merge — and the number to choose it
- * with is in the history this file starts recording on day one.
+ * The 2026-09-10 decision run analysed 213 posts on the flagship account over
+ * 2026-04-29 to 2026-09-09 — the full window Metricool exposes, not a sample:
+ *
+ *     posts/day   median views/post   sample
+ *         1            1,555            47
+ *         2            1,470            54
+ *         3              852            27
+ *         4              961            12
+ *         5            1,462             5
+ *         6              894            24
+ *
+ * TARGET 2. Going 1 -> 2 costs 5% of median views per post and nearly doubles
+ * daily reach. Going to 3 costs 42%. Median day total is 1,555 at 1/day, 3,015
+ * at 2/day, 3,934 at 3/day — half again the content for a third more reach.
+ * Two is the last point where per-post quality holds.
+ *
+ * FLOOR 1, because 1/day is the best per-post row in the data and the loop
+ * should be able to reach it if the evidence ever supports that. Zero is not a
+ * cadence.
+ *
+ * CEILING 3, because above 2 the evidence collapses AND thins at the same time:
+ * the 4, 5 and 6 rows rest on 12, 5 and 24 posts across three or four clustered
+ * days, and the decision file says of its own 5/day row that it "is one day and
+ * should be ignored". A ceiling of 3 lets the loop step back up one notch if 2
+ * proves too quiet, without climbing into the range its own evidence distrusts.
+ * CADENCE_HARD_CEILING stays the backstop that config cannot raise.
+ *
+ * WHAT THIS CAP DOES NOT DO. The recommendation was measured on the flagship
+ * account, @lifestyledesignrealtytexas — which this pipeline never posts to,
+ * because mainBrandSkipIG withholds it so Peter posts natively. Capping here
+ * cuts the three satellite Instagram accounts, the main TikTok and the main
+ * YouTube Short, and reduces the supply of Drive deliveries from ~3.1 to 2 a
+ * day. The flagship runs ~3.1 posts/day of which only ~1.2 arrive through the
+ * pipeline; closing the rest is a manual-posting change. Nobody should read
+ * this cap as having implemented the 2/day finding on the account it was
+ * measured on.
  */
 export const DEFAULT_FLOOR = 1;
-export const DEFAULT_CEILING = 5;
-export const DEFAULT_TARGET = 4;
+export const DEFAULT_CEILING = 3;
+export const DEFAULT_TARGET = 2;
 
 /**
  * Evidence thresholds. Deliberately conservative, because the frequency
@@ -211,20 +243,100 @@ export function dailyPublishSeries(log, now = new Date(), days = 30) {
 }
 
 /**
+ * The posting slots the rotation arbitrates between, in the order they fire.
+ *
+ * Kept in sync with the live crons in .github/workflows/post.yml. Order is
+ * chronological because that is what makes the unfairness this fixes visible:
+ * a plain first-come cap always feeds the earliest slot and always starves the
+ * latest one.
+ */
+export const ROTATION_SLOTS = [
+  { city: "san_antonio", slot: "am" },
+  { city: "austin", slot: "am" },
+  { city: "dallas", slot: "pm" },
+];
+
+/**
+ * Which slots stand down today so the others can use the cap.
+ *
+ * WHY THIS EXISTS. Three slots against a target of two means one must yield
+ * every day. Left to a plain first-come cap, the loser is always whoever fires
+ * last — measured over the 30 days to 2026-09-10, a cap of 2 would have let
+ * san_antonio am publish on 29 of 29 days while dallas pm published on 1 of 9.
+ * Dallas would have gone dark by accident of clock order rather than on merit.
+ *
+ * So the yielder rotates by Chicago date. With three slots and a target of two,
+ * each slot yields one day in three and publishes the other two. The rotation
+ * is derived from the date alone — no stored cursor, nothing to drift, and two
+ * runs on the same day always agree about who is yielding.
+ *
+ * It generalises: n = slots - target slots yield, taken consecutively from a
+ * date-derived offset. At target 3 nobody yields; at target 1 two of the three
+ * do.
+ *
+ * A slot not in the rotation (a manual workflow_dispatch, or a retired cron
+ * someone re-enables) never yields — the plain cap governs it. Refusing to run
+ * a slot we do not model would be a worse failure than letting the count decide.
+ */
+export function yieldingSlotsFor(day, { slots = ROTATION_SLOTS, target = DEFAULT_TARGET } = {}) {
+  const n = slots.length - target;
+  if (!Number.isFinite(n) || n <= 0) return [];
+  if (n >= slots.length) return [...slots];
+  // Days since the epoch, from the Chicago calendar date — stable for the whole
+  // Chicago day regardless of when in it a slot fires.
+  const [y, m, d] = String(day).split("-").map(Number);
+  if (!y || !m || !d) return [];
+  const dayNumber = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+  const offset = ((dayNumber % slots.length) + slots.length) % slots.length;
+  const out = [];
+  for (let i = 0; i < n; i++) out.push(slots[(offset + i) % slots.length]);
+  return out;
+}
+
+/** Is this city+slot standing down today? */
+export function isYieldingToday(city, slot, day, opts = {}) {
+  const inRotation = (opts.slots || ROTATION_SLOTS).some((s) => s.city === city && s.slot === slot);
+  if (!inRotation) return false;
+  return yieldingSlotsFor(day, opts).some((s) => s.city === city && s.slot === slot);
+}
+
+/**
  * THE GATE. Called at the top of a run, before Drive is listed.
  *
  * Returns { allowed, used, target, reason }. `allowed: false` means the run
  * should exit cleanly having posted nothing — not fail.
  */
-export function cadenceGate(log, { now = new Date(), state = null, path = CADENCE_PATH } = {}) {
+export function cadenceGate(log, { now = new Date(), state = null, path = CADENCE_PATH, city = null, slot = null } = {}) {
   const s = state || loadCadence(path);
   const target = clampTarget(s.target, s);
   const used = countPublishesToday(log, now);
+  const day = chicagoDay(now);
+
+  // The rotation is checked BEFORE the count. A yielding slot stands down even
+  // when the budget is untouched — that is the whole point: it is holding the
+  // budget open for a slot that fires later in the day and would otherwise
+  // never reach it.
+  if (city && slot && isYieldingToday(city, slot, day, { target })) {
+    const takers = ROTATION_SLOTS
+      .filter((r) => !isYieldingToday(r.city, r.slot, day, { target }))
+      .map((r) => `${r.city} ${r.slot}`)
+      .join(", ");
+    return {
+      allowed: false,
+      used,
+      target,
+      day,
+      yielded: true,
+      reason: `yielding today so ${takers} can use the ${target}/day cap (rotates by date; this slot posts 2 days in 3)`,
+    };
+  }
+
   return {
     allowed: used < target,
     used,
     target,
-    day: chicagoDay(now),
+    day,
+    yielded: false,
     reason: used < target
       ? `${used}/${target} publishes used today`
       : `daily cap reached — ${used}/${target} publishes already made today (CT)`,

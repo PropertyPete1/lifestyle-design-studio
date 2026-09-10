@@ -12,12 +12,29 @@ on:
     # ATX AM: 12:00 PM CT = 17:00 UTC (primary), 12:30 PM CT = 17:30 UTC (backup)
     - cron: '0 17 * * *'
     - cron: '30 17 * * *'
-    # SA PM: 2:00 PM CT = 19:00 UTC (primary), 2:30 PM CT = 19:30 UTC (backup)
-    - cron: '0 19 * * *'
-    - cron: '30 19 * * *'
-    # ATX PM: 3:00 PM CT = 20:00 UTC (primary), 3:30 PM CT = 20:30 UTC (backup)
-    - cron: '0 20 * * *'
-    - cron: '30 20 * * *'
+    # SA PM and ATX PM — RETIRED 2026-09-10. No slot fires.
+    #
+    # The daily cap is 2 publishes (cadence.js), set from the 2026-09-10
+    # decision run: median views per post 1,555 at 1/day, 1,470 at 2/day, 852
+    # at 3/day over 213 posts. Five slots against a cap of 2 meant three runs a
+    # day would start, list Drive, read Instagram and exit — and the cap would
+    # be spent by the two morning slots before DFW PM ever fired, so Dallas
+    # would have gone dark by accident of clock order.
+    #
+    # Three slots remain — SA AM, ATX AM, DFW PM — one per city, so each city
+    # keeps a voice. One of the three yields each day on a date-derived
+    # rotation (cadence.js yieldingSlotsFor), so the slot that loses the cap
+    # loses it on rotation rather than on being last.
+    #
+    # The crons are COMMENTED, NOT DELETED, so restoring a slot is an uncomment
+    # rather than a rewrite — the same shape the carousel and LDT pauses use.
+    # The post-san-antonio and post-austin jobs still LIST these schedules in
+    # their `if:` conditions, which is harmless (a schedule that never fires
+    # cannot match) and is what makes restoring a one-line change.
+    #   - cron: '0 19 * * *'
+    #   - cron: '30 19 * * *'
+    #   - cron: '0 20 * * *'
+    #   - cron: '30 20 * * *'
     # DFW PM: 4:00 PM CT = 21:00 UTC (primary), 4:30 PM CT = 21:30 UTC (backup)
     - cron: '0 21 * * *'
     - cron: '30 21 * * *'

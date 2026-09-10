@@ -32,6 +32,9 @@ import {
   chicagoDay,
   CADENCE_HARD_CEILING,
   MIN_DAYS_BETWEEN_CHANGES,
+  yieldingSlotsFor,
+  isYieldingToday,
+  ROTATION_SLOTS,
 } from "../src/cadence.js";
 import { announcementText, loadCadenceRecord, recordForPrimary } from "../src/cadence-announce.js";
 import { MERGE_STRATEGIES, MERGE_FILES, mergeCadence } from "../merge-strategies.mjs";
@@ -352,22 +355,134 @@ describe("what PRIMARY is told", () => {
   });
 });
 
-describe("merging this changes nothing until Peter picks a number", () => {
-  test("the default target is above the observed maximum, so the gate is inert on merge", async () => {
-    // Measured over the 14 Chicago days to 2026-09-09: 2.36 publishes/day,
-    // min 2, max 3. A default that bit on those days would be a behaviour
-    // change smuggled in by a merge.
-    const { DEFAULT_TARGET } = await import("../src/cadence.js");
-    const OBSERVED_MAX = 3;
-    assert.ok(DEFAULT_TARGET > OBSERVED_MAX, `default ${DEFAULT_TARGET} must exceed the observed max ${OBSERVED_MAX}`);
+describe("the cap now BINDS — that is the point of this change", () => {
+  test("the default target is BELOW the observed maximum, so the gate bites", async () => {
+    // The inverse of what shipped on 2026-09-09. That default (4 against a
+    // measured max of 3) was deliberately inert because the only frequency
+    // evidence was an artifact. The 2026-09-10 run replaced it with 213 posts
+    // over the full Metricool window, so the cap is meant to bind now.
+    const { DEFAULT_TARGET, DEFAULT_FLOOR, DEFAULT_CEILING } = await import("../src/cadence.js");
+    assert.equal(DEFAULT_TARGET, 2);
+    assert.equal(DEFAULT_FLOOR, 1);
+    assert.equal(DEFAULT_CEILING, 3, "above 2 the evidence collapses on 12, 5 and 24 posts");
+    assert.ok(DEFAULT_TARGET < 3, "the observed max was 3 — a target of 2 must bite");
   });
 
-  test("against the real committed log, the default target blocks no day in the window", async () => {
+  test("against the real committed log, the default target blocks days it should", async () => {
     const { readFileSync } = await import("node:fs");
     const { dailyPublishSeries, DEFAULT_TARGET } = await import("../src/cadence.js");
     const log = JSON.parse(readFileSync(new URL("../posted-log.json", import.meta.url), "utf-8"));
-    const series = dailyPublishSeries(log, new Date("2026-09-09T20:00:00Z"), 14);
+    const series = dailyPublishSeries(log, new Date("2026-09-10T20:00:00Z"), 30);
     const over = series.filter((d) => d.posts > DEFAULT_TARGET);
-    assert.equal(over.length, 0, `days exceeding the default: ${JSON.stringify(over)}`);
+    assert.ok(over.length > 0, "a cap that blocks nothing on 30 days of real data is not a cap");
+  });
+});
+
+describe("slot rotation — three slots against a cap of two", () => {
+  test("exactly one slot yields per day at target 2", () => {
+    for (const day of ["2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13"]) {
+      assert.equal(yieldingSlotsFor(day, { target: 2 }).length, 1, `on ${day}`);
+    }
+  });
+
+  test("the yielder ROTATES, so no slot is always the loser", () => {
+    // This is the whole reason the rotation exists. Measured over the 30 days to
+    // 2026-09-10, a plain first-come cap of 2 would have let san_antonio am
+    // publish on 29 of 29 days and dallas pm on 1 of 9 — Dallas dark by accident
+    // of clock order rather than on merit.
+    const seen = new Set();
+    for (let i = 0; i < 6; i++) {
+      const day = new Date(Date.UTC(2026, 8, 10 + i)).toISOString().slice(0, 10);
+      yieldingSlotsFor(day, { target: 2 }).forEach((sl) => seen.add(`${sl.city} ${sl.slot}`));
+    }
+    assert.equal(seen.size, 3, "every slot takes a turn yielding across six days");
+  });
+
+  test("each slot yields exactly one day in three over a long run", () => {
+    const counts = {};
+    for (let i = 0; i < 90; i++) {
+      const day = new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10);
+      yieldingSlotsFor(day, { target: 2 }).forEach((sl) => {
+        const k = `${sl.city} ${sl.slot}`;
+        counts[k] = (counts[k] || 0) + 1;
+      });
+    }
+    assert.deepEqual(Object.values(counts).sort(), [30, 30, 30]);
+  });
+
+  test("the rotation is stable within a Chicago day", () => {
+    // Two slots firing hours apart must agree about who is yielding, or both
+    // could stand down and the day would publish nothing.
+    const a = yieldingSlotsFor("2026-09-11", { target: 2 });
+    const b = yieldingSlotsFor("2026-09-11", { target: 2 });
+    assert.deepEqual(a, b);
+  });
+
+  test("nobody yields when there is room for everyone", () => {
+    assert.deepEqual(yieldingSlotsFor("2026-09-10", { target: 3 }), []);
+    assert.deepEqual(yieldingSlotsFor("2026-09-10", { target: 9 }), []);
+  });
+
+  test("two yield when the target is 1", () => {
+    assert.equal(yieldingSlotsFor("2026-09-10", { target: 1 }).length, 2);
+  });
+
+  test("a slot outside the rotation never yields — manual dispatch is not blocked", () => {
+    // A workflow_dispatch for a retired slot, or a cron someone re-enables,
+    // must fall through to the plain cap rather than be refused by a rotation
+    // that does not model it.
+    assert.equal(isYieldingToday("san_antonio", "pm", "2026-09-10", { target: 2 }), false);
+    assert.equal(isYieldingToday("houston", "am", "2026-09-10", { target: 2 }), false);
+  });
+
+  test("a malformed day yields nobody rather than blocking everything", () => {
+    assert.deepEqual(yieldingSlotsFor("not-a-date", { target: 2 }), []);
+    assert.deepEqual(yieldingSlotsFor(null, { target: 2 }), []);
+  });
+});
+
+describe("the gate honours the rotation before the count", () => {
+  const emptyLog = { posts: [] };
+  const st = { target: 2, floor: 1, ceiling: 3, changed_at: null, history: [], holds: [] };
+
+  test("a yielding slot stands down even with the budget untouched", () => {
+    // It is holding the budget open for a slot that fires later in the day.
+    const day = "2026-09-11";
+    const yielder = yieldingSlotsFor(day, { target: 2 })[0];
+    const g = cadenceGate(emptyLog, {
+      now: new Date(`${day}T18:00:00Z`), state: st, city: yielder.city, slot: yielder.slot,
+    });
+    assert.equal(g.allowed, false);
+    assert.equal(g.yielded, true);
+    assert.equal(g.used, 0, "the budget really was untouched");
+    assert.match(g.reason, /yielding today/);
+  });
+
+  test("a non-yielding slot is allowed on the same day", () => {
+    const day = "2026-09-11";
+    const yielder = yieldingSlotsFor(day, { target: 2 })[0];
+    const taker = ROTATION_SLOTS.find((r) => !(r.city === yielder.city && r.slot === yielder.slot));
+    const g = cadenceGate(emptyLog, {
+      now: new Date(`${day}T18:00:00Z`), state: st, city: taker.city, slot: taker.slot,
+    });
+    assert.equal(g.allowed, true);
+    assert.equal(g.yielded, false);
+  });
+
+  test("with no city/slot supplied the plain cap governs — nothing yields by accident", () => {
+    const g = cadenceGate(emptyLog, { now: new Date("2026-09-11T18:00:00Z"), state: st });
+    assert.equal(g.allowed, true);
+    assert.equal(g.yielded, false);
+  });
+
+  test("the cap still binds a non-yielding slot once the day is spent", () => {
+    const day = "2026-09-11";
+    const yielder = yieldingSlotsFor(day, { target: 2 })[0];
+    const taker = ROTATION_SLOTS.find((r) => !(r.city === yielder.city && r.slot === yielder.slot));
+    const log = { posts: [publish(day, "san_antonio", 14), publish(day, "austin", 15)] };
+    const g = cadenceGate(log, { now: new Date(`${day}T18:00:00Z`), state: st, city: taker.city, slot: taker.slot });
+    assert.equal(g.allowed, false);
+    assert.equal(g.yielded, false, "blocked by the cap, not by the rotation — the reason matters in the log");
+    assert.match(g.reason, /cap reached/);
   });
 });
