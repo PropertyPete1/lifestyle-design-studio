@@ -166,6 +166,14 @@
       "proposed": 2,
       "reason": "decision file agrees with the current target (2/day)",
       "run_id": "34538492511"
+    },
+    {
+      "at": "2026-09-10T22:44:19.106Z",
+      "day": "2026-09-10",
+      "target": 2,
+      "proposed": 2,
+      "reason": "decision file agrees with the current target (2/day)",
+      "run_id": "34538749501"
     }
   ]
 }
