@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-09-10",
+      "window": "am",
+      "sourceVideoId": "1wcgtx8INxWkY6W6NOiILTzSE_Qc58KTj",
+      "sourceFileName": "ADEDEAE2-219E-4AC8-82A6-D52DA61BF43D.mp4",
+      "city": "san_antonio",
+      "hookAngle": "price_hook",
+      "variantNumber": 1,
+      "caption": "Brand new construction starting at $399,990 in San Antonio and you're not ready for what this price gets you.\n\nNew construction like this doesn't sit long. Builder incentives are real right now.\n\n✨ Op",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1spBOC9fcttIcvDFG_Df5m7qfe7fhNsm1/view",
+      "generatedAt": "2026-09-10T17:02:02.738Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-09-09",
       "window": "pm",
       "sourceVideoId": "14OGRhsBnRJzIxM2PvwKBLzNFe-IfaKhh",
