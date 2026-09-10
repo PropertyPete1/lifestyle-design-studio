@@ -24,6 +24,7 @@ import {
   MAX_AGE_DAYS,
   sanitizeHooks,
   hookText,
+  refusedTechnique,
   MAX_HOOK_CHARS,
   MAX_HOOK_ENTRIES,
 } from "../src/drive-decision.js";
@@ -473,5 +474,69 @@ describe("the strongest-evidenced hooks reach the prompt, not the first-listed",
     const input = [H("a", 1), H("b", 2)];
     sanitizeHooks(input);
     assert.deepEqual(input.map((h) => h.pattern), ["a", "b"]);
+  });
+});
+
+// ─── deceptive techniques ───────────────────────────────────────────────────
+//
+// The 2026-09-10 file's SECOND-STRONGEST entry by engagement recommended
+// stating a false mortgage rate ("I said 78.99% fixed... just kidding"). It
+// was measured on a live run, not imagined. These tests are the reason that
+// entry cannot reach a caption prompt, and they must not be relaxed to let a
+// high-performing deception through: the technique works, and it is still not
+// something this account publishes.
+
+describe("guidance advocating a falsehood is refused deterministically", () => {
+  const RATE_GAG = {
+    pattern: "Rate bait-and-switch",
+    description: "Absurd fake rate then the correction - I said 78.99% fixed... just kidding, it is 3.99%",
+    median_views: 1400,
+  };
+
+  test("the real rate bait-and-switch entry never reaches the prompt", () => {
+    assert.deepEqual(sanitizeHooks([RATE_GAG]), []);
+  });
+
+  test("it is refused even when it is the STRONGEST entry", () => {
+    // Engagement ranking must not be able to promote a deception.
+    const strong = { ...RATE_GAG, median_views: 999999 };
+    const legit = { pattern: "Low price shock", description: "a real figure from the facts", median_views: 1 };
+    assert.deepEqual(sanitizeHooks([strong, legit]), ["Low price shock — a real figure from the facts"]);
+  });
+
+  test("the refusal is reported, not silent", () => {
+    const seen = [];
+    sanitizeHooks([RATE_GAG], { onRefusal: (r) => seen.push(r) });
+    assert.equal(seen.length, 1);
+    assert.equal(seen[0].phrase, "bait-and-switch");
+    assert.match(seen[0].text, /78\.99/);
+  });
+
+  test("planFromDecision surfaces refusals on the plan", () => {
+    const plan = planFromDecision({ hooks_that_work: [RATE_GAG] });
+    assert.deepEqual(plan.hooks, []);
+    assert.equal(plan.hookRefusals.length, 1);
+    assert.equal(plan.hookRefusals[0].phrase, "bait-and-switch");
+  });
+
+  test("every refused phrase is caught", () => {
+    for (const phrase of ["bait-and-switch", "bait and switch", "fake", "just kidding", "made up", "made-up", "clickbait", "misleading", "not real", "untrue"]) {
+      assert.equal(refusedTechnique(`open with a ${phrase} angle`), phrase, `missed "${phrase}"`);
+      assert.deepEqual(sanitizeHooks([`open with a ${phrase} angle`]), [], `let "${phrase}" through`);
+    }
+  });
+
+  test("matching is case-insensitive", () => {
+    assert.ok(refusedTechnique("An ABSURD FAKE rate, Just Kidding"));
+  });
+
+  test("ordinary guidance is untouched", () => {
+    const clean = [
+      "Low price shock — a specific, surprisingly low dollar figure in the first two lines",
+      "Binary choice question — this or that",
+      "First-person stop reaction — agent reaction rather than listing copy",
+    ];
+    assert.deepEqual(sanitizeHooks(clean), clean);
+    for (const c of clean) assert.equal(refusedTechnique(c), null);
   });
 });

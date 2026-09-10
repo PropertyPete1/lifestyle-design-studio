@@ -157,6 +157,50 @@ export const MAX_HOOK_CHARS = 220;
 export const ENGINE_STYLE_TOKENS = ["bold_claim", "story_open", "pattern_interrupt", "pov"];
 
 /**
+ * Guidance that advocates saying something FALSE, refused outright.
+ *
+ * NOT hypothetical. The 2026-09-10 file's second-strongest entry, measured on
+ * a live run, was:
+ *
+ *   "Rate bait-and-switch — Absurd fake rate then the correction - 'I said
+ *    78.99% fixed... just kidding, it's 3.99%' - buys a second of confusion
+ *    before the payment pitch."
+ *
+ * That is an instruction to state a false mortgage rate in a real-estate
+ * advertisement. It reached the top three on engagement, which is exactly why
+ * a purely performance-ranked channel cannot be the only filter: the technique
+ * works, and it is still not something this account will publish.
+ *
+ * The prompt's no-invented-number clause argues against it, but a clause and a
+ * worked example pulling in opposite directions is a coin toss, not a control.
+ * The refusal is deterministic and it happens here, before the text can reach
+ * a model at all.
+ *
+ * DELIBERATELY OVER-INCLUSIVE. A false positive costs one line of advisory
+ * text; a false negative puts a fabricated rate in front of a client. Losing a
+ * legitimate entry that happens to say "avoid fake urgency" is a price worth
+ * paying, and the refusal is logged loudly rather than silently.
+ */
+export const REFUSED_TECHNIQUES = [
+  "bait-and-switch",
+  "bait and switch",
+  "fake",
+  "just kidding",
+  "made up",
+  "made-up",
+  "clickbait",
+  "misleading",
+  "not real",
+  "untrue",
+];
+
+/** Entries advocating a falsehood, named so the caller can log the refusal. */
+export function refusedTechnique(text) {
+  const t = String(text).toLowerCase();
+  return REFUSED_TECHNIQUES.find((phrase) => t.includes(phrase)) || null;
+}
+
+/**
  * Bound `hooks_that_work[]` before anything downstream can read it.
  *
  * THIS IS THE ONLY EXTERNALLY-AUTHORED TEXT THAT REACHES THE CAPTION PROMPT.
@@ -229,7 +273,7 @@ function hookStrength(entry) {
   return Number.isFinite(v) ? v : -1;
 }
 
-export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS } = {}) {
+export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal = () => {} } = {}) {
   if (!Array.isArray(raw)) return [];
   const banned = [...styleIds, "comment", "dm", "lifestyle design realty"];
   const out = [];
@@ -247,6 +291,13 @@ export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS } = {}) {
       .replace(/[`{}]/g, "")
       .trim();
     if (!flat) continue;
+    // A technique that works and still must not ship. Refused before the ban
+    // list, so the reason reported is the honest one.
+    const refused = refusedTechnique(flat);
+    if (refused) {
+      onRefusal({ text: flat, phrase: refused });
+      continue;
+    }
     const haystack = flat.toLowerCase();
     // Word-boundary match, so "recommend" does not trip on "comment" and a
     // hook mentioning "statistics" does not trip on the `stat` style id.
@@ -271,6 +322,7 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
   const post = safeToAct && Array.isArray(decision?.post) ? decision.post : [];
   const dontPost = safeToAct && Array.isArray(decision?.dont_post) ? decision.dont_post : [];
 
+  const hookRefusals = [];
   const ranked = [];
   const skipped = [];
   for (const row of post) {
@@ -313,7 +365,11 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
     // analysis is over the caption text of 213 posts and nothing about the
     // missing manifest touches it. Bounded by sanitizeHooks because this is the
     // only externally-authored text that reaches an LLM prompt.
-    hooks: sanitizeHooks(decision?.hooks_that_work),
+    hooks: sanitizeHooks(decision?.hooks_that_work, { onRefusal: (r) => hookRefusals.push(r) }),
+    // Named, not merely counted: a refusal here means the decision writer
+    // recommended a deceptive technique, which is a fault UPSTREAM of this repo
+    // and needs a human to see it, not a silent drop.
+    hookRefusals,
     // RAW vs SURVIVING, kept separate on purpose. "The writer stopped emitting
     // hooks" and "our own bounds refused every one" are different faults with
     // different owners, and a single count cannot tell them apart. The first

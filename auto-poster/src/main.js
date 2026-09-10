@@ -271,6 +271,13 @@ async function main() {
   // stopped producing them" and "we are refusing them" — indistinguishable
   // from the posted-log tag alone, since a stood-down slot writes no entry.
   const hookCount = decision.plan?.hooks?.length ?? 0;
+  // Loud, and above the normal reporting. A refusal means the decision writer
+  // recommended a deceptive technique — a fault upstream of this repo that a
+  // silent drop would hide. The 2026-09-10 file recommended stating a false
+  // mortgage rate, and it was the second-strongest entry by engagement.
+  for (const r of decision.plan?.hookRefusals ?? []) {
+    console.warn(`[Step 0] ⚠️ HOOK GUIDANCE REFUSED (matched "${r.phrase}") — the decision writer recommended a deceptive technique: ${r.text}`);
+  }
   if (!HOOK_GUIDANCE) {
     console.log("[Step 0] Hook guidance OFF (HOOK_GUIDANCE=false) — captions run as before");
   } else if (hookCount > 0) {
