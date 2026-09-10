@@ -161,8 +161,8 @@ export const ENGINE_STYLE_TOKENS = ["bold_claim", "story_open", "pattern_interru
  *
  * The rules, and the failure each one prevents:
  *
- *   - non-strings dropped, entries trimmed        a number or object would
- *                                                 render as "[object Object]"
+ *   - text pulled via hookText, non-text dropped  a raw object would render
+ *                                                 as "[object Object]"
  *   - newlines/controls collapsed to a space      a multi-line entry could
  *                                                 forge a new prompt section
  *   - backticks and braces stripped               they close the template
@@ -185,13 +185,53 @@ export const ENGINE_STYLE_TOKENS = ["bold_claim", "story_open", "pattern_interru
  * that fails the bounds is simply not taken. The COUNT that survives is tagged
  * onto the posted-log entry, so a systematically-empty list is visible there.
  */
+/**
+ * Pull the guidance text out of one `hooks_that_work[]` entry.
+ *
+ * THE REAL SHAPE, measured rather than assumed. The 2026-09-10 file carries
+ * OBJECTS, not strings: { pattern, description, median_views, example_post_ids }.
+ * The first cut of this module accepted strings only and silently refused all
+ * five entries while logging "none" — a wiring that reads the file, discards
+ * the whole payload and looks like a clean no-op. Strings are still accepted,
+ * because the writer is outside this repo and its schema is not ours to pin.
+ *
+ * `pattern` is the headline and leads. `description` is appended only when the
+ * pair fits inside MAX_HOOK_CHARS whole — never truncated mid-thought, because
+ * a half-sentence of guidance is worse than none.
+ */
+export function hookText(entry) {
+  if (typeof entry === "string") return entry;
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+  const pattern = typeof entry.pattern === "string" ? entry.pattern.trim() : "";
+  const description = typeof entry.description === "string" ? entry.description.trim() : "";
+  if (!pattern) return description || null;
+  if (!description) return pattern;
+  const joined = `${pattern} — ${description}`;
+  return joined.length <= MAX_HOOK_CHARS ? joined : pattern;
+}
+
+/**
+ * Evidence strength for ordering. MAX_HOOK_ENTRIES caps the list at 3, so
+ * WHICH three reach the prompt matters: the best-evidenced three, not whichever
+ * three the writer happened to list first. Entries with no median_views sort
+ * last but are not dropped — a missing number is not a weak result.
+ */
+function hookStrength(entry) {
+  const v = entry && typeof entry === "object" ? entry.median_views : null;
+  return Number.isFinite(v) ? v : -1;
+}
+
 export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS } = {}) {
   if (!Array.isArray(raw)) return [];
   const banned = [...styleIds, "comment", "dm", "lifestyle design realty"];
   const out = [];
-  for (const entry of raw) {
-    if (typeof entry !== "string") continue;
-    const flat = entry
+  // Stable strongest-first. Array.prototype.sort is stable in V8, so entries
+  // with equal (or absent) evidence keep the writer's own order.
+  const ordered = [...raw].sort((a, b) => hookStrength(b) - hookStrength(a));
+  for (const entry of ordered) {
+    const text = hookText(entry);
+    if (typeof text !== "string") continue;
+    const flat = text
       // Control characters and newlines become a single space. \p{C} covers
       // the format/unassigned classes too, so a zero-width joiner cannot hide
       // a banned word from the check below.

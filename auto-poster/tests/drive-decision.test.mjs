@@ -23,6 +23,7 @@ import {
   SUPPORTED_SCHEMA_VERSIONS,
   MAX_AGE_DAYS,
   sanitizeHooks,
+  hookText,
   MAX_HOOK_CHARS,
   MAX_HOOK_ENTRIES,
 } from "../src/drive-decision.js";
@@ -398,5 +399,79 @@ describe("hooks survive safe_to_act:false — the field is not queue content", (
       },
     });
     assert.equal(r.plan.decisionFileAt, modified);
+  });
+});
+
+// ─── the REAL entry shape ───────────────────────────────────────────────────
+//
+// Measured off a live run, not assumed. The 2026-09-10 file carries OBJECTS —
+// { pattern, description, median_views, example_post_ids } — and the first cut
+// of sanitizeHooks accepted strings only, refusing all five while logging
+// "none". These tests exist so that regression cannot recur silently.
+
+describe("hookText handles the real hooks_that_work[] entry shape", () => {
+  const entry = (o) => ({ example_post_ids: ["x"], ...o });
+
+  test("pattern and description are joined when the pair fits", () => {
+    assert.equal(
+      hookText(entry({ pattern: "Low dollar figure in line one", description: "$254k-$369k", median_views: 1470 })),
+      "Low dollar figure in line one — $254k-$369k"
+    );
+  });
+
+  test("an over-long pair falls back to the pattern ALONE, never a truncation", () => {
+    // A half-sentence of guidance is worse than none.
+    const long = entry({ pattern: "First-person reaction framing", description: "d".repeat(MAX_HOOK_CHARS) });
+    assert.equal(hookText(long), "First-person reaction framing");
+  });
+
+  test("either field alone is enough", () => {
+    assert.equal(hookText(entry({ pattern: "Binary choice question" })), "Binary choice question");
+    assert.equal(hookText(entry({ description: "only a description" })), "only a description");
+  });
+
+  test("plain strings still work — the writer's schema is not ours to pin", () => {
+    assert.equal(hookText("a plain string finding"), "a plain string finding");
+  });
+
+  test("entries with no usable text are dropped, not rendered as [object Object]", () => {
+    for (const bad of [{}, { median_views: 9 }, { pattern: 42 }, null, undefined, [], 7]) {
+      assert.equal(hookText(bad), null, `should reject ${JSON.stringify(bad)}`);
+    }
+    assert.deepEqual(sanitizeHooks([{}, { median_views: 9 }]), []);
+  });
+});
+
+describe("the strongest-evidenced hooks reach the prompt, not the first-listed", () => {
+  const H = (pattern, median_views) => ({ pattern, median_views, example_post_ids: [] });
+
+  test("entries are ordered by median_views, strongest first", () => {
+    assert.deepEqual(
+      sanitizeHooks([H("weak", 100), H("strongest", 1760), H("middle", 1470)]),
+      ["strongest", "middle", "weak"]
+    );
+  });
+
+  test("with more than MAX_HOOK_ENTRIES, the WEAKEST are the ones dropped", () => {
+    // The cap is 3, so which 3 matters. A loser listed first must not displace
+    // a winner listed last.
+    const picked = sanitizeHooks([H("loser", 302), H("a", 1760), H("b", 1555), H("c", 1470)]);
+    assert.deepEqual(picked, ["a", "b", "c"]);
+    assert.ok(!picked.includes("loser"), "the weakest entry must not survive the cap");
+  });
+
+  test("a missing median_views sorts last but is NOT dropped", () => {
+    // An absent number is not a weak result.
+    assert.deepEqual(sanitizeHooks([H("no evidence", undefined), H("measured", 500)]), ["measured", "no evidence"]);
+  });
+
+  test("equal evidence keeps the writer's own order (stable sort)", () => {
+    assert.deepEqual(sanitizeHooks([H("first", 500), H("second", 500)]), ["first", "second"]);
+  });
+
+  test("the caller's array is not mutated by the ordering", () => {
+    const input = [H("a", 1), H("b", 2)];
+    sanitizeHooks(input);
+    assert.deepEqual(input.map((h) => h.pattern), ["a", "b"]);
   });
 });
