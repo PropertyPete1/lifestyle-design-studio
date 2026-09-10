@@ -274,6 +274,12 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
     // was eating a shape it did not expect — e.g. rows emitted as objects
     // rather than strings, which is how post[] is shaped in the same file.
     hooksRaw: Array.isArray(decision?.hooks_that_work) ? decision.hooks_that_work.length : 0,
+    // Key names only, never values — enough to write an extractor against a
+    // shape this repo does not control, without printing the file's content
+    // into a public Actions log.
+    hooksKeys: Array.isArray(decision?.hooks_that_work)
+      ? [...new Set(decision.hooks_that_work.flatMap((h) => (h && typeof h === "object" && !Array.isArray(h) ? Object.keys(h) : [])))].sort()
+      : [],
     hooksShape: Array.isArray(decision?.hooks_that_work)
       ? [...new Set(decision.hooks_that_work.map((h) => (h === null ? "null" : Array.isArray(h) ? "array" : typeof h)))].sort().join("|") || "empty"
       : decision?.hooks_that_work === undefined ? "absent" : typeof decision.hooks_that_work,

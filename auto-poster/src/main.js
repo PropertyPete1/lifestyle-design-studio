@@ -281,7 +281,8 @@ async function main() {
     const shape = decision.plan?.hooksShape ?? "absent";
     console.log(
       raw > 0
-        ? `[Step 0] Hook guidance: NONE SURVIVED — the file carried ${raw} entr(ies) of type "${shape}" and the bounds refused every one. This is OUR fault, not the writer's.`
+        ? `[Step 0] Hook guidance: NONE SURVIVED — the file carried ${raw} entr(ies) of type "${shape}" and the bounds refused every one. This is OUR fault, not the writer's.` +
+          (decision.plan?.hooksKeys?.length ? ` Entry keys: ${decision.plan.hooksKeys.join(", ")}` : "")
         : `[Step 0] Hook guidance: none — hooks_that_work[] is ${shape} in the decision file (nothing to refuse). The writer is not populating it.`
     );
   }
