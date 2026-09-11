@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-09-10",
+      "window": "pm",
+      "sourceVideoId": "1wcgtx8INxWkY6W6NOiILTzSE_Qc58KTj",
+      "sourceFileName": "ADEDEAE2-219E-4AC8-82A6-D52DA61BF43D.mp4",
+      "city": "san_antonio",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "the monthly payment on this one is lower than most people guess\n\nNew construction in San Antonio starting at $399,990. Quality like this doesn't sit around long, especially with builder incentives ava",
+      "deliveryDriveLink": "https://drive.google.com/file/d/12zyHjoObsDxRcFn2crlR7ZPVZlHFVY1e/view",
+      "generatedAt": "2026-09-11T01:31:46.908Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-09-10",
       "window": "am",
       "sourceVideoId": "1wcgtx8INxWkY6W6NOiILTzSE_Qc58KTj",
       "sourceFileName": "ADEDEAE2-219E-4AC8-82A6-D52DA61BF43D.mp4",
