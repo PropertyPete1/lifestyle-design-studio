@@ -273,6 +273,97 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-09-11T19:14:41.674Z",
+      "drive_file_id": "1n_DaBpZ1jUwD7WsV0zS4NEFWIWezVxIf",
+      "file_name": "009980FF-8910-458D-BFD5-0A077A9C7E96.mp4",
+      "market": "san_antonio",
+      "community": "Highland",
+      "caption": "60-foot homesites and real space to breathe in Hill Country\n\n432 acres of master-planned living with resort-style amenities and serious growth on the horizon\n\n✨ everyday living hits\n🏡 4 to 5 bedrooms\n🛁 3 to 4 bathrooms\n🚗 2 to 3 car garages\n📐 2,776 to 3,803 sq ft floor plans\n🏷 from $440,000 on 60 ft homesites\n\n🌳 amenity energy you will actually use\n🏊 resort-style pool\n🐶 dog park for your crew\n🚶 miles of hike and bike trails throughout\n🌱 community garden spaces\n🛍 $300,000+ sq ft planned",
+      "slot": "pm",
+      "run_id": "34637073102",
+      "targets": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blog_id": 4807109,
+          "post_id": 374629720,
+          "networks": [
+            "tiktok",
+            "youtube"
+          ]
+        },
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 374629773,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 374629848,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blog_id": 6493212,
+          "post_id": 374629887,
+          "networks": [
+            "instagram",
+            "facebook"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "tiktok",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7684358154297101581",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "youtube",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.youtube.com/shorts/1WCdSY_Yrcc",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DdKI1P4CiLl/",
+          "shortcode": "DdKI1P4CiLl",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DdKI2euAFzX/",
+          "shortcode": "DdKI2euAFzX",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealty",
+          "url": "https://www.instagram.com/reel/DdKI9S3DtPI/",
+          "shortcode": "DdKI9S3DtPI",
+          "verified": true
+        },
+        {
+          "network": "facebook",
+          "label": "lifestyledesignrealty",
+          "url": "https://facebook.com/reel/3369160606628282",
+          "shortcode": null,
+          "verified": true
+        }
+      ]
     }
   ]
 }

@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "time_to_level_up",
-      "body": "You're closing deals but you're doing it in a vacuum. Nobody's backing you up on the hard ones. Nobody's helping you think through the contract issues or the inspection negotiations. Your broker's unreachable. You hit your numbers last quarter and felt empty instead of excited.\n\nThat's the moment most agents miss.\n\nThat's when you know you've outgrown where you are.\n\nIt's not about the money split or the office location. It's about whether the people around you actually want you to win. Whether there's infrastructure built to catch you when something breaks. Whether you can pick up the phone and talk to someone who knows your deals and cares about your career.\n\nThe agents staying at Lifestyle Design Realty aren't staying for the lowest split in Texas. They're staying because they stopped feeling alone while they work.\n\nYou know the difference. You've felt both sides of it by now.",
-      "format": "story",
-      "ending": "strong_close",
-      "date": "2026-09-09"
-    },
-    {
       "topic": "wish_i_knew",
       "body": "When I started, I thought the only thing that mattered was closing deals fast. I burned through leads, burned through energy, and burned out relationships. What I wish I knew then.\n\n1. You can't scale solo. The agents who actually build something work with other people. Period.\n\n2. Your reputation compounds over time. One bad transaction in 2015 still shows up in how people talk about you in 2026. Slow down and do it right.\n\n3. Your splits mean nothing if you have no support system. I paid agents 80.20 and watched them leave. Now I pay lower splits and they stay because they're not alone.\n\nThe business isn't about working harder. It's about working smarter with people around you who actually care if you win.\n\nWhat's keeping you from making a move to a place that actually supports you?",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "question",
       "date": "2026-08-26"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We've got more buyer and lease leads than we can work right now.\n\nNew construction in San Antonio and Austin. Out-of-state relocations coming in regularly. These are warm leads but they need vetting and consistent follow-up. Most aren't ready to move today. They need someone to stay in front of them until they are. We can hand them off to the right agent and let you build your own pipeline instead of chasing cold calls. The catch is you have to be patient with the nurture cycle. Not everyone closes in thirty days.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "bold_statement",
+      "ending": "dm_cta",
+      "date": "2026-09-11"
     }
   ]
 }
