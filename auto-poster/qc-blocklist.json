@@ -329,6 +329,11 @@
       "filename": "75CC63F8-487B-4238-81CA-23C6B14DB697.mp4",
       "reason": "AI vision: These are static images, not a video. Cannot be used for Instagram Reels which require video content.",
       "blockedAt": "2026-09-10T17:38:34.290Z"
+    },
+    "1eKgLHGTS7uLu2GBUEA1fzvFjxYKdf735": {
+      "filename": "B2E14F47-FD91-4670-9779-1BA1432A0C8F.mp4",
+      "reason": "content duplicate of 4BE41EEA-8348-476D-8D8A-D4A68600779B.mp4 posted 2026-08-20T19:14:37.533Z (distance 0.00)",
+      "blockedAt": "2026-09-11T16:05:03.848Z"
     }
   }
 }
