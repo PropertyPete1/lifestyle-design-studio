@@ -334,6 +334,11 @@
       "filename": "B2E14F47-FD91-4670-9779-1BA1432A0C8F.mp4",
       "reason": "content duplicate of 4BE41EEA-8348-476D-8D8A-D4A68600779B.mp4 posted 2026-08-20T19:14:37.533Z (distance 0.00)",
       "blockedAt": "2026-09-11T16:05:03.848Z"
+    },
+    "1VehfE7WS0zE28K27F04Li19xY0Ke9lL2": {
+      "filename": "D65D9A53-1D3F-4C55-90DC-07B8E06558EE.mp4",
+      "reason": "AI vision: These are static images, not a video. Cannot assess video suitability for Reels without video content.",
+      "blockedAt": "2026-09-12T17:07:56.263Z"
     }
   }
 }
