@@ -127,6 +127,171 @@ export function parseDecision(text, { now = Date.now(), modifiedTime = null } = 
 }
 
 /**
+ * Caps on `hooks_that_work[]`. See sanitizeHooks for why they exist.
+ */
+export const MAX_HOOK_ENTRIES = 3;
+export const MAX_HOOK_CHARS = 220;
+//
+// 220, not 120, and the number was set by a live read rather than taste. At
+// 120 the real file's pattern/description pairs did not fit, so every entry
+// fell back to its pattern ALONE — and the patterns are terse editorial labels
+// like "Rate bait-and-switch". A bare label of that kind is the worst thing to
+// hand a caption model: suggestive, and stripped of the description that says
+// what it actually means. 220 lets the measured pairs travel whole; three
+// entries is still a bounded, predictable prompt suffix.
+
+/**
+ * The hook-style ids that are ENGINE VOCABULARY rather than ordinary English.
+ *
+ * NOT all of HOOK_STYLE_IDS, and the omission is the point. `question` and
+ * `stat` are words a legitimate finding uses about itself — the 2026-09-10 run
+ * named "a binary choice question" as a winning shape, and banning the word
+ * would have thrown away one of the three findings this wiring exists to carry.
+ * The three snake_case ids and `pov` are jargon tokens that appear in prose
+ * only when something is addressing the engine, so those are refused.
+ *
+ * The residual risk — a guidance line reading "ask a question" while the
+ * variation engine picked `stat` — is handled in the prompt, not here: the
+ * advisory block states that the style instruction above wins any conflict.
+ */
+export const ENGINE_STYLE_TOKENS = ["bold_claim", "story_open", "pattern_interrupt", "pov"];
+
+/**
+ * Patterns whose IMITATION would require stating a number the footage does not
+ * supply. Refused before the text can reach a caption model.
+ *
+ * The case that produced this rule, measured on a live run — the 2026-09-10
+ * file's second-strongest entry by engagement:
+ *
+ *   "Rate bait-and-switch — Absurd fake rate then the correction - 'I said
+ *    78.99% fixed... just kidding, it's 3.99%' - buys a second of confusion
+ *    before the payment pitch."
+ *
+ * THE SOURCE REEL IS FINE. It is a real post, the correction lands in the same
+ * breath, and it reads as the joke it is. Nothing here is a judgment about it.
+ *
+ * The problem is what happens when the pattern is handed to a model as a shape
+ * to reproduce, on footage nobody scripted. The reel worked because a person
+ * wrote both halves of the gag and knew the real rate. An imitation has neither
+ * — it has an instruction to open on a rate, and no rate in the facts. The only
+ * way to comply is to produce one, and the "just kidding" that made the
+ * original honest is not guaranteed to survive the copy.
+ *
+ * So the rule is narrow and is about numbers, not about taste or tone: a
+ * pattern is refused when its device is a figure that is NOT the true one AND
+ * the entry is actually about a figure. Comedy is not the test — an unscripted
+ * imitation needing an unsupported number is. A gag built on something the
+ * video genuinely shows passes; so does "avoid fake urgency", which names no
+ * figure at all.
+ *
+ * Over-inclusive on the marker side by choice: a false positive costs one line
+ * of advisory text, a false negative puts an unsupported figure in a caption.
+ * Refusals are reported, never silent — see planFromDecision.
+ */
+export const UNREAL_FIGURE_MARKERS = [
+  "bait-and-switch",
+  "bait and switch",
+  "fake",
+  "just kidding",
+  "made up",
+  "made-up",
+  "not real",
+  "untrue",
+  "wrong price",
+  "wrong rate",
+  "wrong number",
+];
+
+/**
+ * Does the entry concern a stated figure at all? A marker alone is not enough —
+ * "avoid fake urgency" involves no number and is ordinary, usable advice.
+ * Digits catch the quoted example; the words catch a pattern that describes the
+ * device without quoting one ("say the wrong price, then correct").
+ */
+const FIGURE_WORDS = /\b(price|rate|figure|payment|percent|apr|cost|number|\$|%)\b|\d/i;
+
+/**
+ * The marker that refused this entry, or null. Named so the caller can report
+ * WHICH device tripped it rather than a bare rejection.
+ */
+export function refusedForImitation(text) {
+  const t = String(text).toLowerCase();
+  if (!FIGURE_WORDS.test(t)) return null;
+  return UNREAL_FIGURE_MARKERS.find((phrase) => t.includes(phrase)) || null;
+}
+
+/**
+ * Pull the guidance text out of one `hooks_that_work[]` entry.
+ *
+ * THE REAL SHAPE, measured rather than assumed. The 2026-09-10 file carries
+ * OBJECTS, not strings: { pattern, description, median_views, example_post_ids }.
+ * The first cut of this module accepted strings only and silently refused all
+ * five entries while logging "none" — a wiring that reads the file, discards
+ * the whole payload and looks like a clean no-op. Strings are still accepted,
+ * because the writer is outside this repo and its schema is not ours to pin.
+ *
+ * `pattern` is the headline and leads. `description` is appended only when the
+ * pair fits inside MAX_HOOK_CHARS whole — never truncated mid-thought, because
+ * a half-sentence of guidance is worse than none.
+ */
+export function hookText(entry) {
+  if (typeof entry === "string") return entry;
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+  const pattern = typeof entry.pattern === "string" ? entry.pattern.trim() : "";
+  const description = typeof entry.description === "string" ? entry.description.trim() : "";
+  if (!pattern) return description || null;
+  if (!description) return pattern;
+  const joined = `${pattern} — ${description}`;
+  return joined.length <= MAX_HOOK_CHARS ? joined : pattern;
+}
+
+/**
+ * Evidence strength for ordering. MAX_HOOK_ENTRIES caps the list at 3, so
+ * WHICH three reach the prompt matters: the best-evidenced three, not whichever
+ * three the writer happened to list first. Entries with no median_views sort
+ * last but are not dropped — a missing number is not a weak result.
+ */
+function hookStrength(entry) {
+  const v = entry && typeof entry === "object" ? entry.median_views : null;
+  return Number.isFinite(v) ? v : -1;
+}
+
+export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal = () => {} } = {}) {
+  if (!Array.isArray(raw)) return [];
+  const banned = [...styleIds, "comment", "dm", "lifestyle design realty"];
+  const out = [];
+  // Stable strongest-first. Array.prototype.sort is stable in V8, so entries
+  // with equal (or absent) evidence keep the writer's own order.
+  const ordered = [...raw].sort((a, b) => hookStrength(b) - hookStrength(a));
+  for (const entry of ordered) {
+    const text = hookText(entry);
+    if (typeof text !== "string") continue;
+    const flat = text
+      // Control characters and newlines become a single space. \p{C} covers
+      // the format/unassigned classes too, so a zero-width joiner cannot hide
+      // a banned word from the check below.
+      .replace(/[\p{C}\s]+/gu, " ")
+      .replace(/[`{}]/g, "")
+      .trim();
+    if (!flat) continue;
+    // A pattern that works and still cannot be safely imitated. Checked before
+    // the ban list, so the reason reported is the one that actually applied.
+    const refused = refusedForImitation(flat);
+    if (refused) {
+      onRefusal({ text: flat, phrase: refused });
+      continue;
+    }
+    const haystack = flat.toLowerCase();
+    // Word-boundary match, so "recommend" does not trip on "comment" and a
+    // hook mentioning "statistics" does not trip on the `stat` style id.
+    if (banned.some((word) => new RegExp(`\\b${word}\\b`, "i").test(haystack))) continue;
+    out.push(flat.length > MAX_HOOK_CHARS ? flat.slice(0, MAX_HOOK_CHARS).trimEnd() : flat);
+    if (out.length >= MAX_HOOK_ENTRIES) break;
+  }
+  return out;
+}
+
+/**
  * Turn a validated decision into a plan the selector can apply.
  *
  * A post[] row with a null drive_file_id is NOT actionable. It is dropped and
@@ -134,12 +299,13 @@ export function parseDecision(text, { now = Date.now(), modifiedTime = null } = 
  * library's filenames are 124 iPhone UUIDs out of 142 and a guess would land
  * on the wrong video silently.
  */
-export function planFromDecision(decision, { safeToAct = true } = {}) {
+export function planFromDecision(decision, { safeToAct = true, modifiedTime = null } = {}) {
   // The suppression lives HERE, not at the call site, so no caller can obtain a
   // ranked queue from an unsafe file by constructing the plan itself.
   const post = safeToAct && Array.isArray(decision?.post) ? decision.post : [];
   const dontPost = safeToAct && Array.isArray(decision?.dont_post) ? decision.dont_post : [];
 
+  const hookRefusals = [];
   const ranked = [];
   const skipped = [];
   for (const row of post) {
@@ -176,8 +342,41 @@ export function planFromDecision(decision, { safeToAct = true } = {}) {
     // Read and surfaced; enforcement is a separate change. See the header.
     postsPerDay: Number.isFinite(decision?.how_many?.posts_per_day) ? decision.how_many.posts_per_day : null,
     postsPerDayRationale: decision?.how_many?.rationale ?? null,
-    hooks: Array.isArray(decision?.hooks_that_work) ? decision.hooks_that_work : [],
+    // NOT gated on safeToAct, and that is deliberate — the same reasoning the
+    // header gives for how_many. The 2026-09-10 file's false flag is about a
+    // missing publish manifest breaking post-to-source matching; the hook
+    // analysis is over the caption text of 213 posts and nothing about the
+    // missing manifest touches it. Bounded by sanitizeHooks because this is the
+    // only externally-authored text that reaches an LLM prompt.
+    hooks: sanitizeHooks(decision?.hooks_that_work, { onRefusal: (r) => hookRefusals.push(r) }),
+    // Named, not merely counted. A refusal is not a complaint about the source
+    // post — it means this pattern cannot be reproduced on unscripted footage
+    // without inventing a figure, and the operator should see which one and
+    // decide whether the writer should keep offering it.
+    hookRefusals,
+    // RAW vs SURVIVING, kept separate on purpose. "The writer stopped emitting
+    // hooks" and "our own bounds refused every one" are different faults with
+    // different owners, and a single count cannot tell them apart. The first
+    // live read (2026-09-10) reported zero hooks, and without this pair there
+    // was no way to know whether the file was empty or whether sanitizeHooks
+    // was eating a shape it did not expect — e.g. rows emitted as objects
+    // rather than strings, which is how post[] is shaped in the same file.
+    hooksRaw: Array.isArray(decision?.hooks_that_work) ? decision.hooks_that_work.length : 0,
+    // Key names only, never values — enough to write an extractor against a
+    // shape this repo does not control, without printing the file's content
+    // into a public Actions log.
+    hooksKeys: Array.isArray(decision?.hooks_that_work)
+      ? [...new Set(decision.hooks_that_work.flatMap((h) => (h && typeof h === "object" && !Array.isArray(h) ? Object.keys(h) : [])))].sort()
+      : [],
+    hooksShape: Array.isArray(decision?.hooks_that_work)
+      ? [...new Set(decision.hooks_that_work.map((h) => (h === null ? "null" : Array.isArray(h) ? "array" : typeof h)))].sort().join("|") || "empty"
+      : decision?.hooks_that_work === undefined ? "absent" : typeof decision.hooks_that_work,
     dataGaps: Array.isArray(decision?.data_gaps) ? decision.data_gaps : [],
+    // The Drive modifiedTime the staleness gate already read, carried through
+    // so the posted-log entry can record WHICH decision file shaped a caption.
+    // Nothing in this repo currently proves the Drive read succeeds on a
+    // runner; this is what buys that evidence.
+    decisionFileAt: modifiedTime || null,
   };
 }
 
@@ -236,7 +435,12 @@ export async function loadDecision({ now = Date.now(), deps = {} } = {}) {
     }
     const buf = await download(file.id);
     const result = parseDecision(buf.toString("utf-8"), { now, modifiedTime: file.modifiedTime });
-    return { ...result, plan: result.usable ? planFromDecision(result.decision, { safeToAct: result.safeToAct }) : null };
+    return {
+      ...result,
+      plan: result.usable
+        ? planFromDecision(result.decision, { safeToAct: result.safeToAct, modifiedTime: file.modifiedTime })
+        : null,
+    };
   } catch (err) {
     return { usable: false, reason: `read failed: ${err.message?.slice(0, 120)}`, decision: null, plan: null };
   }
