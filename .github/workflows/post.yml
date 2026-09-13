@@ -156,6 +156,12 @@ jobs:
           # lane down without a deploy; unset means ON.
           PROMOTE_AHEAD: ${{ vars.PROMOTE_AHEAD }}
           PROMOTE_AHEAD_SLOTS: ${{ vars.PROMOTE_AHEAD_SLOTS }}
+          # The hook-guidance kill switch. The decision file's
+          # hooks_that_work[] reaches the fresh-caption prompt as subordinate
+          # advice; set the repo variable HOOK_GUIDANCE to "false" to stand
+          # that down without a deploy. Unset means ON. Same reason as
+          # PROMOTE_AHEAD above: no top-level env, so it must be named here.
+          HOOK_GUIDANCE: ${{ vars.HOOK_GUIDANCE }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
@@ -240,6 +246,12 @@ jobs:
           # lane down without a deploy; unset means ON.
           PROMOTE_AHEAD: ${{ vars.PROMOTE_AHEAD }}
           PROMOTE_AHEAD_SLOTS: ${{ vars.PROMOTE_AHEAD_SLOTS }}
+          # The hook-guidance kill switch. The decision file's
+          # hooks_that_work[] reaches the fresh-caption prompt as subordinate
+          # advice; set the repo variable HOOK_GUIDANCE to "false" to stand
+          # that down without a deploy. Unset means ON. Same reason as
+          # PROMOTE_AHEAD above: no top-level env, so it must be named here.
+          HOOK_GUIDANCE: ${{ vars.HOOK_GUIDANCE }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
@@ -312,6 +324,12 @@ jobs:
           # lane down without a deploy; unset means ON.
           PROMOTE_AHEAD: ${{ vars.PROMOTE_AHEAD }}
           PROMOTE_AHEAD_SLOTS: ${{ vars.PROMOTE_AHEAD_SLOTS }}
+          # The hook-guidance kill switch. The decision file's
+          # hooks_that_work[] reaches the fresh-caption prompt as subordinate
+          # advice; set the repo variable HOOK_GUIDANCE to "false" to stand
+          # that down without a deploy. Unset means ON. Same reason as
+          # PROMOTE_AHEAD above: no top-level env, so it must be named here.
+          HOOK_GUIDANCE: ${{ vars.HOOK_GUIDANCE }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
