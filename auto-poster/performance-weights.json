@@ -1,76 +1,76 @@
 {
   "weights": {
-    "question": 0.8,
-    "bold_claim": 1.04,
-    "wait_tease": 0.85,
-    "reaction": 1.6,
-    "vibe": 0.98
+    "question": 0.76,
+    "bold_claim": 0.9,
+    "wait_tease": 1.05,
+    "reaction": 1.18,
+    "vibe": 1.02
   },
-  "lastUpdated": "2026-09-06T20:05:53.923Z",
+  "lastUpdated": "2026-09-13T20:07:13.915Z",
   "reelsAnalyzed": 18,
-  "classifiedCount": 14,
+  "classifiedCount": 15,
   "styleBreakdown": {
     "question": {
-      "count": 1,
-      "avgScore": 823,
-      "weight": 0.8
+      "count": 2,
+      "avgScore": 521,
+      "weight": 0.76
     },
     "bold_claim": {
       "count": 2,
-      "avgScore": 941,
-      "weight": 1.04
+      "avgScore": 582,
+      "weight": 0.9
     },
     "wait_tease": {
-      "count": 6,
-      "avgScore": 711,
-      "weight": 0.85
+      "count": 5,
+      "avgScore": 787,
+      "weight": 1.05
     },
     "reaction": {
       "count": 1,
-      "avgScore": 1760,
-      "weight": 1.6
+      "avgScore": 695,
+      "weight": 1.18
     },
     "vibe": {
-      "count": 4,
-      "avgScore": 1027,
-      "weight": 0.98
+      "count": 5,
+      "avgScore": 723,
+      "weight": 1.02
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/Dcte2O4MK2_/",
+      "url": "https://www.instagram.com/reel/Dc9qbaKMs1H/",
+      "hookStyle": "unknown",
+      "score": 3608,
+      "views": 2181,
+      "firstLine": "WE HAVE OFFICIALLY LOST THE PLOT."
+    },
+    {
+      "url": "https://www.instagram.com/reel/Dc9Q_juMkmX/",
       "hookStyle": "vibe",
-      "score": 2009,
-      "views": 1517,
-      "firstLine": "POV: you just walked into your first brand new home and everything feels like it"
+      "score": 1565,
+      "views": 1051,
+      "firstLine": "this is what new construction is supposed to feel like. mature trees. move in re"
     },
     {
-      "url": "https://www.instagram.com/reel/Dc4IKJHTYr9/",
-      "hookStyle": "reaction",
-      "score": 1760,
-      "views": 1071,
-      "firstLine": "the kitchen in this one made me stop mid-tour 😮‍💨"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DcwZmrvMgro/",
+      "url": "https://www.instagram.com/reel/Dc_1XpAMLLG/",
       "hookStyle": "wait_tease",
-      "score": 1091,
-      "views": 652,
-      "firstLine": "Stop scrolling. This is what $314,990 looks like in San Antonio."
-    },
-    {
-      "url": "https://www.instagram.com/reel/DcrnG2Vspft/",
-      "hookStyle": "bold_claim",
-      "score": 1057,
+      "score": 1087,
       "views": 825,
-      "firstLine": "I’ve never seen finishes like this at a $470k price point in North Austin."
+      "firstLine": "This is the kind of new construction that makes you wonder why you waited so lon"
     },
     {
-      "url": "https://www.instagram.com/reel/Dcyyuhps89J/",
+      "url": "https://www.instagram.com/reel/DdMe992sen0/",
       "hookStyle": "wait_tease",
-      "score": 1042,
-      "views": 751,
-      "firstLine": "Stop scrolling. Hill Country views and protected canyons don’t look like this ev"
+      "score": 1017,
+      "views": 671,
+      "firstLine": "stop scrolling. this is what new construction in San Antonio looks like right no"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DdHe5GFMRBX/",
+      "hookStyle": "wait_tease",
+      "score": 974,
+      "views": 639,
+      "firstLine": "the kind of new construction that makes you wonder why you waited this long"
     }
   ],
   "history": [
@@ -159,6 +159,17 @@
         "wait_tease": 0.85,
         "reaction": 1.6,
         "vibe": 0.98
+      },
+      "reelsAnalyzed": 18
+    },
+    {
+      "date": "2026-09-13",
+      "weights": {
+        "question": 0.76,
+        "bold_claim": 0.9,
+        "wait_tease": 1.05,
+        "reaction": 1.18,
+        "vibe": 1.02
       },
       "reelsAnalyzed": 18
     }
