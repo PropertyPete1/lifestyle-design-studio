@@ -1,7 +1,7 @@
 {
   "brand": "ldt",
   "engine": "learn-v1",
-  "generated_at": "2026-09-07T19:19:07.212Z",
+  "generated_at": "2026-09-14T19:53:58.749Z",
   "window_days": 28,
   "sample": {
     "posts_scored": 6,
@@ -53,13 +53,13 @@
       "pm": {
         "n": 11,
         "score": 63,
-        "median": 35,
+        "median": 36,
         "verdict": "mid"
       },
       "midday": {
         "n": 6,
-        "score": 68,
-        "median": 34,
+        "score": 69,
+        "median": 36,
         "verdict": "winner"
       }
     }
@@ -106,7 +106,7 @@
       "provenance": "tagged",
       "score": 42,
       "score_basis": "instagram_median",
-      "ig_views_median": 20,
+      "ig_views_median": 21,
       "city": "ldt",
       "posted": "2026-09-03T00:53:37.778Z"
     },
@@ -116,7 +116,7 @@
       "provenance": "tagged",
       "score": 32,
       "score_basis": "instagram_median",
-      "ig_views_median": 22,
+      "ig_views_median": 23,
       "city": "ldt",
       "posted": "2026-09-04T00:37:10.408Z"
     },
