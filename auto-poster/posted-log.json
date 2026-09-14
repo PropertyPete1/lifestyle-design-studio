@@ -12365,6 +12365,17 @@
       "timestamp": "2026-09-14T19:12:38.119Z",
       "runId": "34884726758",
       "success": true
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-09-14T19:19:42.792Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1jgPlePN6UiwqCpym6-YapLEKJfp3pssd",
+      "captionSnippet": "Starting at $369,990 in San Antonio. The kind of new construction that makes you walk through twice.\n\nNew builds at this",
+      "mainIgPostedAt": "2026-09-14T19:19:42.792Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
