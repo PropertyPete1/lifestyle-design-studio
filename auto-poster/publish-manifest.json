@@ -819,6 +819,97 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-09-14T19:12:37.777Z",
+      "drive_file_id": "1AuihVLx-I7cVOgxdEUVAQe3vjlbLVGQ8",
+      "file_name": "4A52F0FB-D2D5-4776-8930-7CCF9F6F83F6.mp4",
+      "market": "san_antonio",
+      "community": null,
+      "caption": "Starting at $369,990 in San Antonio. The kind of new construction that makes you walk through twice.\n\nNew builds at this price point move fast, especially when builder incentives are on the table.\n\n✨ Open floor plans with natural light flooding through, modern finishes, kitchen islands that anchor the whole living space. Everything feels intentional and brand new.\n\n🌳 Full amenity and community rundown available. It's worth asking about.\n\n🎓 School ratings, HOA and taxes vary by address. Exact n",
+      "slot": "pm",
+      "run_id": "34884726758",
+      "targets": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blog_id": 4807109,
+          "post_id": 375888197,
+          "networks": [
+            "tiktok",
+            "youtube"
+          ]
+        },
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 375888213,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 375888251,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blog_id": 6493212,
+          "post_id": 375888275,
+          "networks": [
+            "instagram",
+            "facebook"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "tiktok",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7685470900564610317",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "youtube",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.youtube.com/shorts/VQ8T5gkZlnA",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DdR2-3wjhpT/",
+          "shortcode": "DdR2-3wjhpT",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DdR2_EMEX6j/",
+          "shortcode": "DdR2_EMEX6j",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealty",
+          "url": "https://www.instagram.com/reel/DdR3EMBjkk6/",
+          "shortcode": "DdR3EMBjkk6",
+          "verified": true
+        },
+        {
+          "network": "facebook",
+          "label": "lifestyledesignrealty",
+          "url": "https://facebook.com/reel/1841475316816516",
+          "shortcode": null,
+          "verified": true
+        }
+      ]
     }
   ]
 }
