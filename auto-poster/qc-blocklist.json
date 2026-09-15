@@ -344,6 +344,11 @@
       "filename": "73EB1D82-3412-4477-A5F3-A7E3682D0ED1.mp4",
       "reason": "AI vision: These are still photographs, not a video. Instagram Reels requires video content, not static images.",
       "blockedAt": "2026-09-14T19:09:00.753Z"
+    },
+    "12_2-diLa4bpxFFTlnly_ENhGuPRhUbAk": {
+      "filename": "6DDF8F9E-2ABD-49E3-A0E6-EF9638F882F6.mp4",
+      "reason": "AI vision: These are static images, not a video. Cannot assess video suitability for Instagram Reels.",
+      "blockedAt": "2026-09-15T17:07:20.279Z"
     }
   }
 }
