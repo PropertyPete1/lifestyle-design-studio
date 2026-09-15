@@ -12802,6 +12802,17 @@
           }
         ]
       }
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-09-15T16:35:44.718Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1ExTdhLtmOngrryvc20UtTFyq3NEDuIAp",
+      "captionSnippet": "# OUTPUT\n\nwould you believe this is brand new construction in San Antonio?\n\nnew construction like this doesn't stay on t",
+      "mainIgPostedAt": "2026-09-15T16:35:44.718Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
