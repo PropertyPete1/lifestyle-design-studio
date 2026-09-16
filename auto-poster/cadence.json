@@ -56,14 +56,6 @@
   ],
   "holds": [
     {
-      "at": "2026-09-11T22:54:47.872Z",
-      "day": "2026-09-11",
-      "target": 2,
-      "proposed": 2,
-      "reason": "decision file agrees with the current target (2/day)",
-      "run_id": "34655868146"
-    },
-    {
       "at": "2026-09-11T23:28:05.099Z",
       "day": "2026-09-11",
       "target": 2,
@@ -454,6 +446,14 @@
       "proposed": 2,
       "reason": "decision file agrees with the current target (2/day)",
       "run_id": "35162046637"
+    },
+    {
+      "at": "2026-09-16T23:44:16.926Z",
+      "day": "2026-09-16",
+      "target": 2,
+      "proposed": 2,
+      "reason": "decision file agrees with the current target (2/day)",
+      "run_id": "35163474746"
     }
   ]
 }
