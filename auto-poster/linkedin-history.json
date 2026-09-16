@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We've got more buyer and lease leads than we can work right now. New construction in San Antonio and Austin. Out-of-state relocations. They're qualified but not ready to move today. They need consistent follow-up and vetting. Warm pipeline. Your book to build. If this sounds like something you'd take on, send me a DM.",
-      "format": "short_punchy",
-      "ending": "dm_cta",
-      "date": "2026-09-08"
-    },
-    {
       "topic": "time_to_level_up",
       "body": "You're outgrowing your brokerage if you're solving problems alone that should be solved with a team.\n\nI see it all the time. An agent is closing deals, hitting their numbers, but they're doing it in isolation. Nobody's helping them think through the hard transactions. Nobody's backing them up when something breaks. They call their broker and get a voicemail. They're winning but they feel like they're losing because there's no one in the trenches with them. That's not sustainable. That's not a career. That's a grind that has an expiration date. The best agents don't leave because they're unhappy with money. They leave because they're tired of being alone while they're building something.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
       "format": "bold_statement",
@@ -48,6 +41,13 @@
       "format": "short_punchy",
       "ending": "question",
       "date": "2026-09-16"
+    },
+    {
+      "topic": "unpopular_opinion",
+      "body": "I spent two years telling agents that higher splits would make them happy. Paid out 80.20 splits. Watched them leave anyway. Then I stopped and asked the ones staying what actually kept them around.\n\nIt wasn't the commission. They said it was the same thing every time. I picked up when they called. We solved problems together. They didn't feel like they were running a solo business out of a brokerage office.\n\nThat's when it clicked. Most brokers have it backwards. They think agents leave for better splits. The real reason agents leave is because nobody's there.\n\nI've talked to agents at big national brokers. They have lower splits than us. They have better technology. They still feel invisible.\n\nThe split doesn't matter if you're alone when a deal falls apart at 9pm.\n\nAre you still convinced the commission structure at your current brokerage is actually what's keeping you there?",
+      "format": "story",
+      "ending": "question",
+      "date": "2026-09-13"
     }
   ]
 }
