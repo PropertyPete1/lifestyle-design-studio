@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-09-16",
+      "window": "pm",
+      "sourceVideoId": "1J1g0U7-Ady3ysHoRP7SbRxfxRnl0AkLn",
+      "sourceFileName": "D8D6D747-CCCB-4674-A5D9-CC0CE103C0C7.mp4",
+      "city": "san_antonio",
+      "hookAngle": "question_hook",
+      "variantNumber": 4,
+      "caption": "Would you believe this is brand new construction in San Antonio right now?\n\nNew construction like this doesn't sit long. Builder incentives are actively available, so timing matters.\n\n✨ everyday livin",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1SyJjdxkXWJJUMPlmQQf6JwkJw6iQo3F0/view",
+      "generatedAt": "2026-09-17T01:45:45.906Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-09-16",
       "window": "am",
       "sourceVideoId": "1J1g0U7-Ady3ysHoRP7SbRxfxRnl0AkLn",
       "sourceFileName": "D8D6D747-CCCB-4674-A5D9-CC0CE103C0C7.mp4",
