@@ -359,6 +359,11 @@
       "filename": "DFAEBCC4-CEF2-4FE0-9481-3900E8CB473B.mp4",
       "reason": "content duplicate of 4504EC2B-67BD-4C8D-8FF2-949BBD8AAEF8.mp4 posted 2026-08-19T19:14:11.771Z (distance 0.00)",
       "blockedAt": "2026-09-17T16:07:16.669Z"
+    },
+    "1MQqDQmNNdmF54BbuiAQ0ndbpcCe18eiE": {
+      "filename": "514A7443-1385-4EF7-8A94-1A0A921AFB61.mp4",
+      "reason": "AI vision: These are static images, not a video. They appear to be still photographs of a kitchen/home interior rather than video content suitable for Instagram Reels.",
+      "blockedAt": "2026-09-17T19:05:53.641Z"
     }
   }
 }
