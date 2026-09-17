@@ -349,6 +349,16 @@
       "filename": "6DDF8F9E-2ABD-49E3-A0E6-EF9638F882F6.mp4",
       "reason": "AI vision: These are static images, not a video. Cannot assess video suitability for Instagram Reels.",
       "blockedAt": "2026-09-15T17:07:20.279Z"
+    },
+    "1hQhUcjcXwIPI2YEegG2VcdMdMreyNKtq": {
+      "filename": "DD0BAC74-23CF-43F9-BFF3-971543A9F0BF.mp4",
+      "reason": "content duplicate of 5DBC5AF3-E59A-4186-9FAE-A9EFBD509E42.mp4 posted 2026-08-28T19:20:17.816Z (distance 0.00)",
+      "blockedAt": "2026-09-17T16:06:55.953Z"
+    },
+    "12KwszrHC9eJrjpouaExn-_JhfR3S1KzK": {
+      "filename": "DFAEBCC4-CEF2-4FE0-9481-3900E8CB473B.mp4",
+      "reason": "content duplicate of 4504EC2B-67BD-4C8D-8FF2-949BBD8AAEF8.mp4 posted 2026-08-19T19:14:11.771Z (distance 0.00)",
+      "blockedAt": "2026-09-17T16:07:16.669Z"
     }
   }
 }
