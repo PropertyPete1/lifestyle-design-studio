@@ -14004,6 +14004,17 @@
           }
         ]
       }
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-09-17T19:45:24.246Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1nQR6ZgByBwHSUqazrwuUMI9mrTX8sz8t",
+      "captionSnippet": "Starting at $499,999 in San Antonio and this might be the first time I've seen finishes this clean at this price point.\n",
+      "mainIgPostedAt": "2026-09-17T19:45:24.246Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
