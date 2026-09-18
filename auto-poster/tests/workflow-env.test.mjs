@@ -324,3 +324,47 @@ describe("the decision reader's folder scope reaches the posting jobs", () => {
     assert.ok(DEFAULT_DECISION_FOLDER_ID && DEFAULT_DECISION_FOLDER_ID.length > 20, "the constant must be a real folder id");
   });
 });
+
+/**
+ * The mirror workflow: the one way to write the manifest to Drive on demand.
+ *
+ * A workflow_dispatch workflow can only be dispatched when it exists on the
+ * DEFAULT branch, so this file has to be on main before the button exists at
+ * all — worth pinning, because a mirror that can only run after a publish
+ * cannot be used to seed the file before a decision run.
+ */
+describe("the manifest mirror can be run on demand, with what it needs", () => {
+  const MIRROR = join(WF_DIR, "manifest-mirror.yml");
+  const text = () => readFileSync(MIRROR, "utf-8");
+
+  test("it is dispatchable by hand and defaults to a DRY RUN", () => {
+    const t = text();
+    assert.match(t, /workflow_dispatch:/);
+    assert.match(t, /dry_run:/);
+    assert.match(t, /default: true/, "the default must not write to Drive");
+  });
+
+  test("it carries the Drive credentials that do the writing", () => {
+    const t = text();
+    for (const key of ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN"]) {
+      assert.match(t, new RegExp(`${key}: \\$\\{\\{ secrets\\.${key} \\}\\}`), `missing ${key}`);
+    }
+  });
+
+  test("…and the Metricool credentials, without which every flagship id is null", () => {
+    const t = text();
+    for (const key of ["METRICOOL_API_TOKEN", "METRICOOL_BLOG_ID", "METRICOOL_USER_ID"]) {
+      assert.match(t, new RegExp(`${key}: \\$\\{\\{ secrets\\.${key} \\}\\}`), `missing ${key}`);
+    }
+  });
+
+  test("it cannot write to the repository — it writes to Drive and commits nothing", () => {
+    assert.match(text(), /permissions:\s*\n\s*contents: read/);
+  });
+
+  test("it runs the mirror script, and nothing that can publish", () => {
+    const t = text();
+    assert.match(t, /node scripts\/mirror-publish-manifest\.mjs/);
+    assert.doesNotMatch(t, /src\/main\.js/, "this workflow must never be able to post");
+  });
+});
