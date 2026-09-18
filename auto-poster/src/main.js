@@ -38,6 +38,7 @@ import { planVariation } from "./variation.js";
 import { burnHookPlate, plateTextFromCaption } from "./reel-hook-burn.js";
 import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds, getEverPostedIds, getEverPostedFileNames } from "./state.js";
 import { recordPublish, recordPublishVerification } from "./publish-manifest.js";
+import { mirrorToDrive } from "./manifest-mirror.js";
 import { applyPromoteAhead } from "./promote-ahead.js";
 import { loadDecision, applyDecision, decisionFileLog } from "./drive-decision.js";
 import { loadCadence, saveCadence, cadenceGate, proposeCadence, recordCadenceChange, recordCadenceHold, dailyPublishSeries } from "./cadence.js";
@@ -891,6 +892,21 @@ async function main() {
       if (postedVideo) {
         recordPublishVerification(postedVideo.id, log.posts[idx].distribution);
       }
+    }
+
+    // THE MANIFEST REACHES THE ANALYSER HERE. Everything above writes to files
+    // in this repository, which the scheduled task that writes the posting
+    // decision cannot see — it has a Drive connector and a Metricool connector
+    // and nothing else. That is why it has reported "no publish manifest" for
+    // three runs while the manifest sat complete on main. This mirrors it into
+    // the Drive folder it already reads the decision file from.
+    //
+    // Every run rebuilds the whole file, not just this publish's row, because
+    // the flagship leg of a publish is confirmed by hand HOURS later: today's
+    // post is resolvable tomorrow, and a mirror that only ever appended would
+    // never go back for it.
+    if (postedVideo) {
+      await mirrorToDrive({ posts: log.posts, igPosts, dryRun: DRY_RUN });
     }
 
     const { verification } = verified;
