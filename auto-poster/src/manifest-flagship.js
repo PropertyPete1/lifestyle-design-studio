@@ -148,9 +148,16 @@ export function receiptsWithPublish(posts) {
  * `igPosts` are the flagship account's own posts as analytics reports them:
  * { post_id | reelId, slug | caption, published | publishedAt }.
  *
+ * TWO PASSES, and the second is the reason. Pass one asks each receipt which
+ * post it matches; pass two settles the posts that more than one receipt
+ * matched. A single streaming pass cannot do that, because the right answer to
+ * a contest depends on a claim that may not have arrived yet.
+ *
  * Returns a Map of driveFileId -> {
- *   ig_post_id, method, confidence, url, published_at, confirmed_at
- * } for the resolved, plus `unresolved` explaining each one that failed.
+ *   ig_post_id, method, confidence, url, published_at, confirmed_at, contest?
+ * } for the resolved, plus `unresolved` explaining each one that failed. Every
+ * unresolved entry carries the `receipt_at` of the receipt that produced it, so
+ * a caller with several receipts for one video can tell them apart.
  */
 export function resolveFlagshipPosts({ posts = [], igPosts = [] } = {}) {
   const candidates = (igPosts || [])
@@ -162,80 +169,163 @@ export function resolveFlagshipPosts({ posts = [], igPosts = [] } = {}) {
     }))
     .filter((p) => p.id && p.key);
 
-  const resolved = new Map();
   const unresolved = [];
-  // ig_post_id -> the driveFileId that claimed it. A post belongs to one video.
-  const claimedBy = new Map();
+  const claims = [];
 
+  // ── pass 1: what does each receipt match? ─────────────────────────────────
   for (const r of receiptsWithPublish(posts)) {
-    const name = r.driveFileId || `receipt@${r.receipt.timestamp}`;
+    const receiptAt = r.receipt.mainIgPostedAt || r.receipt.timestamp || null;
     if (!r.publish) {
-      unresolved.push({ drive_file_id: null, receipt_at: r.receipt.timestamp, code: "no_publish_for_receipt", why: "receipt's delivered-copy id matches no publish in the log" });
+      unresolved.push({ drive_file_id: null, receipt_at: receiptAt, code: "no_publish_for_receipt", why: "receipt's delivered-copy id matches no publish in the log" });
       continue;
     }
     if (!r.captionKey) {
-      unresolved.push({ drive_file_id: r.driveFileId, receipt_at: r.receipt.timestamp, code: "no_caption", why: "no caption text to match on" });
+      unresolved.push({ drive_file_id: r.driveFileId, receipt_at: receiptAt, code: "no_caption", why: "no caption text to match on" });
       continue;
     }
 
     const textHits = candidates.filter((c) => keysAgree(c.key, r.captionKey));
+    if (textHits.length === 0) {
+      unresolved.push({ drive_file_id: r.driveFileId, receipt_at: receiptAt, code: "no_caption_match", why: "no flagship post in the analytics window opens with this caption" });
+      continue;
+    }
+
     let hit = null;
     let method = null;
     if (textHits.length === 1) {
       hit = textHits[0];
       method = "caption";
-    } else if (textHits.length > 1) {
-      const near = Number.isNaN(r.postedAtMs)
-        ? []
-        : textHits.filter((c) => !Number.isNaN(c.at) && Math.abs(c.at - r.postedAtMs) <= MATCH_WINDOW_HOURS * 3600000);
+    } else {
+      const near = textHits.filter((c) => withinWindow(c.at, r.postedAtMs));
       if (near.length === 1) {
         hit = near[0];
         method = "caption+time";
       } else {
         unresolved.push({
           drive_file_id: r.driveFileId,
-          receipt_at: r.receipt.timestamp,
+          receipt_at: receiptAt,
           code: "ambiguous",
           why: `${textHits.length} flagship posts share this caption opening and ${near.length} are within ${MATCH_WINDOW_HOURS}h — ambiguous`,
         });
         continue;
       }
-    } else {
-      unresolved.push({ drive_file_id: r.driveFileId, receipt_at: r.receipt.timestamp, code: "no_caption_match", why: "no flagship post in the analytics window opens with this caption" });
-      continue;
     }
 
-    // ONE POST, ONE VIDEO. Two publishes claiming one flagship post means at
-    // least one is wrong, and nothing here can tell which — so BOTH lose it.
-    // Keeping the first would silently credit one video with another's numbers.
-    const priorOwner = claimedBy.get(hit.id);
-    if (priorOwner && priorOwner !== r.driveFileId) {
-      resolved.delete(priorOwner);
-      unresolved.push({ drive_file_id: priorOwner, code: "contested", why: `flagship post ${hit.id} was also matched by ${name} — both refused` });
-      unresolved.push({ drive_file_id: r.driveFileId, receipt_at: r.receipt.timestamp, code: "contested", why: `flagship post ${hit.id} was also matched by ${priorOwner} — both refused` });
-      claimedBy.set(hit.id, "__contested__");
-      continue;
-    }
-    if (priorOwner === "__contested__") {
-      unresolved.push({ drive_file_id: r.driveFileId, receipt_at: r.receipt.timestamp, code: "contested", why: `flagship post ${hit.id} is contested by more than one video` });
-      continue;
-    }
-
-    claimedBy.set(hit.id, r.driveFileId);
-    resolved.set(r.driveFileId, {
-      ig_post_id: hit.id,
-      url: hit.url,
-      published_at: Number.isNaN(hit.at) ? null : new Date(hit.at).toISOString(),
-      confirmed_at: r.receipt.mainIgPostedAt || r.receipt.timestamp || null,
-      // "caption" means one post in the window opens with this caption and no
-      // other does. "caption+time" means several did and exactly one was inside
-      // the window — a tie broken by the clock, which is weaker.
+    claims.push({
+      driveFileId: r.driveFileId,
+      receiptAt,
+      postedAtMs: r.postedAtMs,
+      hit,
       method,
-      confidence: method === "caption" ? "high" : "medium",
+      // How far the hand-post confirmation sits from the post itself. This is
+      // what settles a contest.
+      gapMs: Number.isNaN(r.postedAtMs) || Number.isNaN(hit.at) ? NaN : Math.abs(hit.at - r.postedAtMs),
     });
   }
 
+  // ── pass 2: one post belongs to one video ────────────────────────────────
+  //
+  // Two receipts matching one flagship post means at least one is wrong. The
+  // ORIGINAL rule refused both, which is safe and, on real data, needlessly
+  // lossy: on 2026-09-16 a video's flagship post went up TWO MINUTES after its
+  // receipt, and it lost that post to a video published two days later whose
+  // caption opened with the same words — the boilerplate template again.
+  //
+  // So a contest is settled by proximity, but ONLY when proximity actually
+  // says something: exactly one claimant inside MATCH_WINDOW_HOURS of the post
+  // wins it. Two claimants inside the window, or none, is a genuine tie and
+  // every claimant is refused — a wrong id credits a video with another
+  // video's numbers, and that is worse than a null.
+  const byPost = new Map();
+  for (const c of claims) {
+    if (!byPost.has(c.hit.id)) byPost.set(c.hit.id, []);
+    byPost.get(c.hit.id).push(c);
+  }
+
+  const resolved = new Map();
+  for (const [postId, group] of byPost) {
+    if (group.length === 1) {
+      resolved.set(group[0].driveFileId, buildHit(group[0]));
+      continue;
+    }
+
+    const inWindow = group.filter((c) => withinWindow(c.hit.at, c.postedAtMs));
+    if (inWindow.length === 1) {
+      const winner = inWindow[0];
+      const losers = group.filter((c) => c !== winner);
+      resolved.set(winner.driveFileId, buildHit(winner, {
+        contest: {
+          resolved_by: "proximity",
+          hours_from_post: round1(winner.gapMs / 3600000),
+          also_matched_by: losers.map((c) => ({
+            drive_file_id: c.driveFileId,
+            hours_from_post: Number.isNaN(c.gapMs) ? null : round1(c.gapMs / 3600000),
+          })),
+        },
+      }));
+      for (const c of losers) {
+        unresolved.push({
+          drive_file_id: c.driveFileId,
+          receipt_at: c.receiptAt,
+          code: "contested",
+          why:
+            `flagship post ${postId} was confirmed ${describeGap(winner.gapMs)} by ${winner.driveFileId} and ` +
+            `${describeGap(c.gapMs)} by this one — the nearer confirmation keeps it`,
+        });
+      }
+      continue;
+    }
+
+    // A real tie: nobody is close, or more than one is. Nothing here can tell
+    // which, so none of them gets it.
+    for (const c of group) {
+      unresolved.push({
+        drive_file_id: c.driveFileId,
+        receipt_at: c.receiptAt,
+        code: "contested",
+        why:
+          `flagship post ${postId} was matched by ${group.length} videos and ` +
+          `${inWindow.length === 0 ? "none is" : `${inWindow.length} are`} within ${MATCH_WINDOW_HOURS}h of it — all refused`,
+      });
+    }
+  }
+
   return { resolved, unresolved };
+}
+
+/** Is `at` within the match window of `ref`? Unknown stamps are never "within". */
+function withinWindow(at, ref) {
+  if (Number.isNaN(at) || Number.isNaN(ref) || at == null || ref == null) return false;
+  return Math.abs(at - ref) <= MATCH_WINDOW_HOURS * 3600000;
+}
+
+function round1(n) {
+  return Number.isFinite(n) ? Math.round(n * 10) / 10 : null;
+}
+
+/** "2 minutes after it", "46.0 hours from it", "at an unknown distance". */
+function describeGap(gapMs) {
+  if (!Number.isFinite(gapMs)) return "at an unknown distance from it";
+  const minutes = gapMs / 60000;
+  if (minutes < 90) return `${Math.round(minutes)} minute(s) from it`;
+  return `${round1(gapMs / 3600000)} hours from it`;
+}
+
+function buildHit(claim, extra = {}) {
+  return {
+    ig_post_id: claim.hit.id,
+    url: claim.hit.url,
+    published_at: Number.isNaN(claim.hit.at) ? null : new Date(claim.hit.at).toISOString(),
+    confirmed_at: claim.receiptAt,
+    // "caption" means one post in the window opens with this caption and no
+    // other does. "caption+time" means several did and exactly one was inside
+    // the window — a tie broken by the clock, which is weaker.
+    method: claim.method,
+    // A post that had to be won from another claimant is weaker evidence than
+    // one nobody else matched, whatever method found it.
+    confidence: extra.contest ? "medium" : claim.method === "caption" ? "high" : "medium",
+    ...extra,
+  };
 }
 
 /**
@@ -245,10 +335,21 @@ export function resolveFlagshipPosts({ posts = [], igPosts = [] } = {}) {
  * A row always carries a `flagship` key. Unresolved is `{ ig_post_id: null,
  * reason }`, because "we could not tie this one" and "we never looked" must not
  * read the same to whoever consumes this file.
+ *
+ * THE REASON MUST BELONG TO THIS PUBLISH. One Drive file can be published more
+ * than once — the 30-day no-repeat rule permits a re-run, and several do — so a
+ * video can have several receipts and several different failures. Taking the
+ * first reason found put a JULY receipt's "ambiguous" against a SEPTEMBER
+ * publish on the live data. The reason chosen is the one whose receipt is
+ * nearest the row's own posted_at.
  */
 export function attachFlagship(publishes, { resolved, unresolved } = { resolved: new Map(), unresolved: [] }) {
-  const reasons = new Map();
-  for (const u of unresolved || []) if (u.drive_file_id && !reasons.has(u.drive_file_id)) reasons.set(u.drive_file_id, u.why);
+  const byFile = new Map();
+  for (const u of unresolved || []) {
+    if (!u.drive_file_id) continue;
+    if (!byFile.has(u.drive_file_id)) byFile.set(u.drive_file_id, []);
+    byFile.get(u.drive_file_id).push(u);
+  }
   return (publishes || []).map((row) => {
     const hit = resolved?.get?.(row.drive_file_id);
     if (hit) return { ...row, flagship: hit };
@@ -256,8 +357,30 @@ export function attachFlagship(publishes, { resolved, unresolved } = { resolved:
       ...row,
       flagship: {
         ig_post_id: null,
-        reason: reasons.get(row.drive_file_id) || "no flagship hand-post has been confirmed for this video yet",
+        reason: reasonForRow(byFile.get(row.drive_file_id), row.posted_at),
       },
     };
   });
+}
+
+/**
+ * The reason that belongs to THIS publish: the one whose receipt sits nearest
+ * the row's own posted_at. Entries with no receipt stamp sort last — they are
+ * still better than nothing, but anything dated beats them.
+ */
+function reasonForRow(entries, postedAt) {
+  if (!entries || entries.length === 0) return "no flagship hand-post has been confirmed for this video yet";
+  if (entries.length === 1) return entries[0].why;
+  const rowAt = parseStamp(postedAt);
+  let best = entries[0];
+  let bestGap = Infinity;
+  for (const e of entries) {
+    const at = parseStamp(e.receipt_at);
+    const gap = Number.isNaN(at) || Number.isNaN(rowAt) ? Infinity : Math.abs(at - rowAt);
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = e;
+    }
+  }
+  return best.why;
 }
