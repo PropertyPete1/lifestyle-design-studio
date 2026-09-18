@@ -156,3 +156,58 @@ describe("monthly payment figure guard", () => {
     assert.equal(r.valid, true, `unexpected failures: ${JSON.stringify(r.failures)}`);
   });
 });
+
+describe("markdown headers — the 2026-09-15 '# OUTPUT' caption", () => {
+  // The caption as it was published, first lines verbatim: three Instagram
+  // accounts and TikTok opened on "# OUTPUT", and it became the YouTube Short's
+  // title. Everything AFTER the first line was a perfectly valid caption —
+  // which is why the old /^##\s/ rule, which only knew second-level headers,
+  // passed the whole thing.
+  const body = [
+    "would you believe this is brand new construction in San Antonio?",
+    "",
+    "new construction like this doesn't stay on the market long.",
+    "",
+    "✨ open floor plan with tons of natural light, modern finishes throughout, and a kitchen built for real living.",
+    "",
+    "💸 VA, FHA, USDA, and conventional financing all welcome here",
+    "",
+    "📲 comment TOUR and I'll DM you today's available homes. pick your favorite and I'll send the full monthly payment breakdown on it",
+    "Lifestyle Design Realty",
+    "#texas #sanantonio #realestate #military #veteran #newconstruction",
+  ].join("\n");
+
+  const headerFailure = (r) => (r.failures || []).some((f) => /markdown header/.test(f));
+
+  test("the published caption is REFUSED, and the reason names the header", () => {
+    const r = validateCaption(`# OUTPUT\n\n${body}`);
+    assert.equal(r.valid, false);
+    assert.ok(headerFailure(r), `expected a markdown-header failure, got: ${JSON.stringify(r.failures)}`);
+  });
+
+  test("the same caption WITHOUT that line is valid — the header is the only fault", () => {
+    const r = validateCaption(body);
+    assert.equal(r.valid, true, `unexpected failures: ${JSON.stringify(r.failures)}`);
+  });
+
+  test("every header level is refused, wherever in the caption it sits", () => {
+    for (const header of ["# Caption", "## Caption", "### Instagram caption", "###### deep", "  # indented", "#\tTabbed"]) {
+      assert.ok(headerFailure(validateCaption(`${header}\n\n${body}`)), `leading ${JSON.stringify(header)}`);
+      assert.ok(headerFailure(validateCaption(body.replace("\n\n✨", `\n\n${header}\n\n✨`))), `mid-caption ${JSON.stringify(header)}`);
+    }
+  });
+
+  test("HASHTAGS ARE NOT HEADERS — the locked hashtag line and '#1' must pass", () => {
+    // The whitespace after the hashes is the whole distinction. Every caption
+    // this pipeline publishes ends in a line that starts with '#'.
+    for (const line of [
+      "#texas #austin #realestate #military #veteran #newconstruction",
+      "#1 reason people tour this one twice",
+      "#newconstruction",
+      "this one is # 1 on my list", // a '#' that does not open the line
+    ]) {
+      const r = validateCaption(`${body}\n${line}`);
+      assert.equal(headerFailure(r), false, `${JSON.stringify(line)} was mistaken for a header`);
+    }
+  });
+});

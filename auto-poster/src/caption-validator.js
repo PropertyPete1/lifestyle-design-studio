@@ -12,7 +12,7 @@
  *   - "DM" must appear at most 2 times (primary CTA "I'll DM you" + secondary "DM LIST")
  * 
  * FORBIDDEN markers: reject if output contains any of these:
- *   - Markdown: "**" (bold), "##" (headers), "```"
+ *   - Markdown: "**" (bold), a header line at ANY level ("# ", "## ", …), "```"
  *   - Assistant-speak phrases (case-insensitive)
  * 
  * On failure: returns { valid: false, reason } so caller can retry or use fallback.
@@ -28,7 +28,17 @@ const REQUIRED_MARKERS = [
 const FORBIDDEN_FULL_TEXT = [
   // Markdown formatting
   { pattern: /\*\*/, label: "markdown bold (**)" },
-  { pattern: /^##\s/m, label: "markdown header (##)" },
+  // A header at ANY level, not just "##". The 2026-09-15 San Antonio caption
+  // opened with the literal line "# OUTPUT" — model scaffolding — and the old
+  // /^##\s/ rule let it through: it went out as the first line on three
+  // Instagram accounts and TikTok, and as the TITLE of the YouTube Short. It
+  // was kept off the video itself only because that source already carried
+  // burned-in text; reel-hook-burn.js plates the caption's first line and its
+  // two-word floor would have accepted it.
+  //
+  // The whitespace after the hashes is what separates a header from a hashtag:
+  // "#texas #austin" and "#1 reason to tour this" have none and must pass.
+  { pattern: /^[ \t]{0,3}#{1,6}[ \t]+\S/m, label: "markdown header (#)" },
   { pattern: /```/, label: "markdown code block" },
   // Hard refusal phrases — these NEVER appear in legitimate captions
   { pattern: /I'd love to/i, label: 'assistant-speak: "I\'d love to"' },

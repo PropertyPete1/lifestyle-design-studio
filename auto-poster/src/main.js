@@ -24,7 +24,8 @@
 import { listCityVideos, downloadVideo, getAccessToken } from "./drive.js";
 import { getRecentIgPosts, uploadVideoToMetricool, createPost } from "./metricool.js";
 import { verifyReelPublication, applyReelVerification, findReelEntryIndex } from "./reel-verify.js";
-import { generateCaption, generateCaptionFromOriginal, findCommunity } from "./caption.js";
+import { generateCaption, generateCaptionFromOriginal, findCommunity, matchCommunityForVideo } from "./caption.js";
+import { botCaptionFingerprints } from "./caption-provenance.js";
 import { processVoiceover, cleanup } from "./voiceover.js";
 import { runPriceConsistencyCheck, readVideoOverlays, extractPriceCheckFrames } from "./price-check.js";
 import { processBurnedCaptions } from "./burned-captions.js";
@@ -277,6 +278,19 @@ async function main() {
   // scripted, where the only way to open on the figure is to invent it.
   for (const r of decision.plan?.hookRefusals ?? []) {
     console.warn(`[Step 0] ⚠️ HOOK GUIDANCE NOT IMITABLE (device: "${r.phrase}") — reproducing this would need a figure the footage may not supply: ${r.text}`);
+  }
+  // Every other entry that did not reach the prompt whole. The summary line
+  // below counts survivors only, and a count cannot show what is missing: on
+  // 2026-09-18 it read "3 preference(s)" while the file's most repeatable hook
+  // had been dropped for a word in its description.
+  for (const d of decision.plan?.hookDrops ?? []) {
+    if (d.kind === "description_withheld") {
+      console.log(`[Step 0] Hook guidance: "${d.text}" goes on WITHOUT its description — the description uses "${d.word}", which the caption's CTA rules count`);
+    } else if (d.kind === "banned_word") {
+      console.warn(`[Step 0] ⚠️ HOOK GUIDANCE DROPPED — it uses "${d.word}", which the caption's CTA rules count: ${d.text}`);
+    } else if (d.kind === "over_cap") {
+      console.log(`[Step 0] Hook guidance: not used, weaker than the ones sent: ${d.text.slice(0, 80)}`);
+    }
   }
   if (!HOOK_GUIDANCE) {
     console.log("[Step 0] Hook guidance OFF (HOOK_GUIDANCE=false) — captions run as before");
@@ -1296,7 +1310,26 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
     let caption;
     const cachedMatch = matchCache[video.id];
 
-    if (cachedMatch && cachedMatch.length > 0 && cachedMatch[0].caption) {
+    // IS THE CACHED "ORIGINAL" ONE WE WROTE? The flagship is hand-posted from
+    // this pipeline's own delivery, so the Instagram caption the matcher finds
+    // for a re-run file is usually the template generated for it last time —
+    // 48 of the 90 cached originals on 2026-09-18, 39 of them close enough to
+    // be reused (13 with no check at all). Restructuring that returns
+    // the same hook and the same second line (the rerun-decay pattern) and pads
+    // the empty amenity section. Checked BEFORE the distance branches, because
+    // a distance of 3 says the VIDEO is the same; it says nothing about who
+    // wrote the words. See caption-provenance.js.
+    //
+    // The match still does its other job — the duplicate guard upstream read it
+    // long before this point. Only the caption-reuse reading of it is refused.
+    const ownFingerprints = cachedMatch?.[0]?.caption ? botCaptionFingerprints(cachedMatch[0].caption) : [];
+    let originalRefused = null;
+
+    if (ownFingerprints.length > 0) {
+      originalRefused = "bot_authored";
+      console.log(`[Post] Matched caption is this pipeline's OWN earlier output (${ownFingerprints.join(", ")}) — not an original. Generating fresh caption.`);
+      caption = await generateCaption(CITY, videoOverlays, captionOptions);
+    } else if (cachedMatch && cachedMatch.length > 0 && cachedMatch[0].caption) {
       const matchDist = cachedMatch[0].hashDistance ?? Math.round((1 - (cachedMatch[0].confidence || 0)) * 64);
       const matchCaption = cachedMatch[0].caption;
       const cityMismatch = captionCityMismatch(matchCaption, CITY);
@@ -1536,9 +1569,20 @@ async function postVideo(video, log, igWithHashes, matchCache, existingVideoPath
           // was restructured rather than written fresh.
           decision_hooks: captionSource === "fresh" ? decisionHooks.length : 0,
           decision_file_at: decisionFileAt,
+          // Present only when a cached original was REFUSED as a caption source
+          // — so "fresh because nothing matched" and "fresh because the match
+          // was our own template" stay distinguishable in the log.
+          original_refused: originalRefused || undefined,
           topic: {
             price_overlay: !!videoOverlays?.price,
-            community_kb: !!videoOverlays?.community,
+            // TRUE ONLY ON A REAL KNOWLEDGE-BASE MATCH — the same lookup the
+            // caption lane made, so the two cannot disagree. Until 2026-09-18
+            // this was `!!videoOverlays?.community`: "the OCR read a string".
+            // That reading is kept, under its honest name, on the next line.
+            // Rows WITHOUT `overlay_community` predate the fix and their
+            // community_kb must not be read as a KB match.
+            community_kb: !!matchCommunityForVideo(CITY, videoOverlays),
+            overlay_community: !!videoOverlays?.community,
           },
         },
         platforms: ["tiktok", "youtube", "satellite_ig"],
