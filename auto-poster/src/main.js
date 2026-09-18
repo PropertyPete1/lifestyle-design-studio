@@ -39,7 +39,7 @@ import { burnHookPlate, plateTextFromCaption } from "./reel-hook-burn.js";
 import { loadLog, saveLog, hasRecentPost, hasRecentLinkedinPost, recordPost, getRecentlyPostedIds, getRecentlyPostedFileNames, getRecentlyPostedIdsAllCities, getRecentlyPostedFileNamesAllCities, loadBlocklist, blocklistVideo, isBlocklisted, loadSkipList, getSkippedDriveIds, getEverPostedIds, getEverPostedFileNames } from "./state.js";
 import { recordPublish, recordPublishVerification } from "./publish-manifest.js";
 import { applyPromoteAhead } from "./promote-ahead.js";
-import { loadDecision, applyDecision } from "./drive-decision.js";
+import { loadDecision, applyDecision, decisionFileLog } from "./drive-decision.js";
 import { loadCadence, saveCadence, cadenceGate, proposeCadence, recordCadenceChange, recordCadenceHold, dailyPublishSeries } from "./cadence.js";
 import { announceCadenceChange } from "./cadence-announce.js";
 import { postToLinkedin } from "./linkedin.js";
@@ -255,6 +255,12 @@ async function main() {
   // treats no file at all.
   console.log("\n[Step 0] Reading performance decision file...");
   const decision = await loadDecision();
+  // WHICH FILE, ON EVERY RUN. The writer cannot overwrite in place — the Drive
+  // connector it uses can only replace — so this id is different on every
+  // decision run, and a run log that named no file left "did we read the new
+  // one?" answerable only by comparing the prose of safe_to_act_reason between
+  // two runs. That is how this was actually settled on 2026-09-18.
+  for (const line of decisionFileLog(decision.file)) console[line.level](line.text);
   if (!decision.usable) {
     console.log(`[Step 0] No usable decision — running as today. Reason: ${decision.reason}`);
   } else if (decision.plan.queueSuppressed) {

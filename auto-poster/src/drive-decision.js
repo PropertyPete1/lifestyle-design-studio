@@ -26,6 +26,25 @@ import { getAccessToken, downloadFileById } from "./drive.js";
 
 export const DECISION_FILENAME = "ig_posting_decision_latest.json";
 
+/**
+ * The Drive folder the decision file lives in: "Ready to Post".
+ *
+ * WHY A CONSTANT AND NOT ONLY AN ENV VAR. `DECISION_FOLDER_ID` has existed
+ * since this module landed and is set in no workflow, so every live run has
+ * searched ALL of Drive for the name. That worked because exactly one file
+ * carries it — but the whole point of the lookup is that the writer REPLACES
+ * this file on every run (the Drive connector cannot overwrite contents, so it
+ * deletes and re-creates, and the id changes). A name-only search across a
+ * Drive that anyone can drop a file into is one stray copy away from feeding
+ * the pipeline someone else's rankings. The id below is the folder the
+ * 2026-09-10, 09-14 and 09-18 files were all written to, confirmed by reading
+ * their parent. The env var still overrides it, for when that folder moves.
+ *
+ * The three city video folders are elsewhere (see drive.js CITY_FOLDER_IDS);
+ * this one holds the decision files and the publish manifest.
+ */
+export const DEFAULT_DECISION_FOLDER_ID = "15qKuFpn-Kn8h7BfgvFWbTuzM3nDyDw3G";
+
 /** Schema versions this reader understands. Anything else is refused. */
 export const SUPPORTED_SCHEMA_VERSIONS = ["1.1"];
 
@@ -38,24 +57,82 @@ export const SUPPORTED_SCHEMA_VERSIONS = ["1.1"];
  */
 export const MAX_AGE_DAYS = 7;
 
-/** Locate the decision file by name. Returns { id, modifiedTime } or null. */
-export async function findDecisionFile({ folderId = process.env.DECISION_FOLDER_ID || null, fetchImpl = fetch } = {}) {
-  const token = await getAccessToken();
+/**
+ * How many same-named candidates to fetch. More than one is not an error — the
+ * writer's replace is a delete plus a create, so a failed delete leaves two —
+ * but it IS worth seeing, so the extras are fetched and counted rather than cut
+ * off by the page size.
+ */
+const CANDIDATE_PAGE_SIZE = 10;
+
+/**
+ * Locate the decision file BY NAME, inside the content folder, newest wins.
+ * Returns { id, modifiedTime, candidates } or null.
+ *
+ * NEWEST IS COMPUTED HERE, not trusted from the server. `orderBy` is still
+ * sent — it makes the one-file case cheap and keeps the ordering right if the
+ * page ever fills — but the winner is chosen by comparing modifiedTime
+ * ourselves, because "the reader read the stale one" is the exact failure this
+ * function exists to prevent, and a silent ordering surprise would reproduce it
+ * with no way to tell. A file whose modifiedTime is missing or unparseable
+ * sorts last; it never wins over a file that has one.
+ */
+export async function findDecisionFile({
+  folderId = process.env.DECISION_FOLDER_ID || DEFAULT_DECISION_FOLDER_ID,
+  fetchImpl = fetch,
+  tokenImpl = getAccessToken,
+} = {}) {
+  const token = await tokenImpl();
   const clauses = [`name = '${DECISION_FILENAME}'`, "trashed = false"];
   if (folderId) clauses.push(`'${folderId}' in parents`);
   const params = new URLSearchParams({
     q: clauses.join(" and "),
     fields: "files(id,name,modifiedTime)",
     orderBy: "modifiedTime desc",
-    pageSize: "1",
+    pageSize: String(CANDIDATE_PAGE_SIZE),
   });
   const res = await fetchImpl(`https://www.googleapis.com/drive/v3/files?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error(`Drive search failed (${res.status})`);
   const data = await res.json();
-  const file = data.files?.[0];
-  return file ? { id: file.id, modifiedTime: file.modifiedTime } : null;
+  const files = Array.isArray(data.files) ? data.files.filter((f) => f && f.id) : [];
+  if (files.length === 0) return null;
+
+  const stamp = (f) => {
+    const t = Date.parse(f.modifiedTime ?? "");
+    return Number.isNaN(t) ? -Infinity : t;
+  };
+  let newest = files[0];
+  for (const f of files) if (stamp(f) > stamp(newest)) newest = f;
+  return { id: newest.id, modifiedTime: newest.modifiedTime ?? null, candidates: files.length };
+}
+
+/**
+ * What the run log should say about the file that was read. PURE.
+ *
+ * Lives here, not inline in main.js, because main.js is a script with top-level
+ * side effects that no test can import — so anything written inline there can
+ * only ever be pinned by reading its source text, and a source-text pin cannot
+ * tell live code from code inside `if (false)`. The words and the conditions
+ * are the part worth protecting, so they sit in a function that can be called.
+ *
+ * Returns [{ level, text }]; an empty array when there was no file to read
+ * (loadDecision has already said why in its own reason).
+ */
+export function decisionFileLog(file) {
+  if (!file || !file.id) return [];
+  const lines = [{ level: "log", text: `[Step 0] Decision file: id=${file.id} modified=${file.modifiedTime || "unknown"}` }];
+  // More than one file of this name is not an error — the writer replaces by
+  // deleting and creating, so a failed delete leaves the old one behind — but
+  // the folder then needs a sweep, and nothing else would ever say so.
+  if (Number(file.candidates) > 1) {
+    lines.push({
+      level: "warn",
+      text: `[Step 0] ⚠️ ${file.candidates} files named ${DECISION_FILENAME} in the folder — read the newest; the rest are leftovers and should be removed`,
+    });
+  }
+  return lines;
 }
 
 /**
@@ -358,7 +435,7 @@ export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal =
  * library's filenames are 124 iPhone UUIDs out of 142 and a guess would land
  * on the wrong video silently.
  */
-export function planFromDecision(decision, { safeToAct = true, modifiedTime = null } = {}) {
+export function planFromDecision(decision, { safeToAct = true, modifiedTime = null, fileId = null } = {}) {
   // The suppression lives HERE, not at the call site, so no caller can obtain a
   // ranked queue from an unsafe file by constructing the plan itself.
   const post = safeToAct && Array.isArray(decision?.post) ? decision.post : [];
@@ -443,6 +520,10 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
     // Nothing in this repo currently proves the Drive read succeeds on a
     // runner; this is what buys that evidence.
     decisionFileAt: modifiedTime || null,
+    // The Drive file id this plan came from. It CHANGES on every writer run —
+    // the connector replaces the file rather than updating it — which is why
+    // nothing may ever cache it. It is carried for the log line only.
+    decisionFileId: fileId || null,
   };
 }
 
@@ -497,17 +578,27 @@ export async function loadDecision({ now = Date.now(), deps = {} } = {}) {
   try {
     const file = await find();
     if (!file) {
-      return { usable: false, reason: `no ${DECISION_FILENAME} in Drive`, decision: null, plan: null };
+      return { usable: false, reason: `no ${DECISION_FILENAME} in Drive`, decision: null, plan: null, file: null };
     }
     const buf = await download(file.id);
     const result = parseDecision(buf.toString("utf-8"), { now, modifiedTime: file.modifiedTime });
     return {
       ...result,
+      // WHICH file this run read. Reported even when the payload is unusable —
+      // a stale or malformed file is exactly when you want its id. Step 0 logs
+      // it, and until now no run log named the file at all: the only way to
+      // tell two decision files apart in the logs was the prose of their own
+      // safe_to_act_reason.
+      file: { id: file.id, modifiedTime: file.modifiedTime ?? null, candidates: file.candidates ?? 1 },
       plan: result.usable
-        ? planFromDecision(result.decision, { safeToAct: result.safeToAct, modifiedTime: file.modifiedTime })
+        ? planFromDecision(result.decision, {
+            safeToAct: result.safeToAct,
+            modifiedTime: file.modifiedTime,
+            fileId: file.id,
+          })
         : null,
     };
   } catch (err) {
-    return { usable: false, reason: `read failed: ${err.message?.slice(0, 120)}`, decision: null, plan: null };
+    return { usable: false, reason: `read failed: ${err.message?.slice(0, 120)}`, decision: null, plan: null, file: null };
   }
 }
