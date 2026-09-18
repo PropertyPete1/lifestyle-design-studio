@@ -14,6 +14,7 @@
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   parseDecision,
   planFromDecision,
@@ -28,6 +29,9 @@ import {
   UNREAL_FIGURE_MARKERS,
   MAX_HOOK_CHARS,
   MAX_HOOK_ENTRIES,
+  findDecisionFile,
+  DEFAULT_DECISION_FOLDER_ID,
+  decisionFileLog,
 } from "../src/drive-decision.js";
 
 const NOW = Date.parse("2026-09-09T18:00:00Z");
@@ -721,5 +725,201 @@ describe("Step 0 SAYS what was dropped — a plan field nobody prints is still s
       assert.match(body, new RegExp(`d\\.kind === "${kind}"`), `no Step 0 line for ${kind}`);
     }
     assert.match(body, /\$\{d\.word\}/, "the line must name the word that did it");
+  });
+});
+
+
+describe("finding the file: BY NAME, in the content folder, newest wins", () => {
+  // The writer cannot overwrite in place — the Drive connector it runs under can
+  // only update metadata — so every decision run DELETES the file and CREATES a
+  // new one, and the id changes. 2026-09-10, 09-14 and 09-18 each produced a
+  // different id. Anything that remembers an id reads a stale file forever.
+
+  /** A fake Drive that records the query it was asked and answers with `files`. */
+  function fakeDrive(files, { ok = true, status = 200 } = {}) {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      const q = new URL(url).searchParams;
+      calls.push({ url, q: q.get("q"), orderBy: q.get("orderBy"), pageSize: q.get("pageSize") });
+      return { ok, status, json: async () => ({ files }) };
+    };
+    return { calls, fetchImpl, tokenImpl: async () => "test-token" };
+  }
+  const find = (drive, opts = {}) => findDecisionFile({ fetchImpl: drive.fetchImpl, tokenImpl: drive.tokenImpl, ...opts });
+
+  test("the query is scoped to the content folder by DEFAULT — no env var needed", async () => {
+    const drive = fakeDrive([{ id: "a", modifiedTime: "2026-09-18T19:16:59.200Z" }]);
+    await find(drive);
+    assert.match(drive.calls[0].q, new RegExp(`'${DEFAULT_DECISION_FOLDER_ID}' in parents`));
+    assert.match(drive.calls[0].q, new RegExp(`name = '${DECISION_FILENAME}'`));
+    assert.match(drive.calls[0].q, /trashed = false/);
+  });
+
+  test("THE 2026-09-18 FOLDER: the constant is the folder those files were written to", () => {
+    // Read off the live files' parent on 2026-09-18 ("Ready to Post"). If the
+    // analyser's task is ever pointed somewhere else, this constant and the
+    // DECISION_FOLDER_ID repo variable are the two places that decide.
+    assert.equal(DEFAULT_DECISION_FOLDER_ID, "15qKuFpn-Kn8h7BfgvFWbTuzM3nDyDw3G");
+  });
+
+  test("an explicit folderId overrides the default", async () => {
+    const drive = fakeDrive([{ id: "a", modifiedTime: "2026-09-18T00:00:00Z" }]);
+    await find(drive, { folderId: "OTHER" });
+    assert.match(drive.calls[0].q, /'OTHER' in parents/);
+    assert.doesNotMatch(drive.calls[0].q, new RegExp(DEFAULT_DECISION_FOLDER_ID));
+  });
+
+  test("A FILE OUTSIDE THE FOLDER CANNOT WIN — the scope is in the query, not a local filter", async () => {
+    // Drive answers only with what the query allows, so the proof is that the
+    // parent clause is always sent. A local filter would be defeated by the
+    // page size: one stray newer copy elsewhere could fill the page.
+    const drive = fakeDrive([]);
+    await find(drive);
+    assert.ok(drive.calls[0].q.includes("in parents"), "every search must carry a parent clause");
+  });
+
+  test("newest modifiedTime wins even when Drive returns them out of order", async () => {
+    const drive = fakeDrive([
+      { id: "stale-0910", modifiedTime: "2026-09-10T19:36:59.428Z" },
+      { id: "newest-0918", modifiedTime: "2026-09-18T19:16:59.200Z" },
+      { id: "stale-0914", modifiedTime: "2026-09-14T12:38:44.169Z" },
+    ]);
+    const r = await find(drive);
+    assert.equal(r.id, "newest-0918");
+    assert.equal(r.candidates, 3);
+  });
+
+  test("the page is big enough to SEE duplicates, and asks the server to sort too", async () => {
+    const drive = fakeDrive([{ id: "a", modifiedTime: "2026-09-18T00:00:00Z" }]);
+    await find(drive);
+    assert.equal(drive.calls[0].orderBy, "modifiedTime desc");
+    assert.ok(Number(drive.calls[0].pageSize) > 1, "pageSize 1 cannot distinguish one file from five");
+  });
+
+  test("a file with no usable modifiedTime never beats one that has it", async () => {
+    const drive = fakeDrive([
+      { id: "undated" },
+      { id: "dated", modifiedTime: "2026-09-14T12:38:44.169Z" },
+      { id: "garbage", modifiedTime: "not a date" },
+    ]);
+    assert.equal((await find(drive)).id, "dated");
+  });
+
+  test("…and when NOTHING has a date, the server's own order is kept, not a crash", async () => {
+    const drive = fakeDrive([{ id: "first" }, { id: "second" }]);
+    const r = await find(drive);
+    assert.equal(r.id, "first");
+    assert.equal(r.modifiedTime, null);
+  });
+
+  test("an empty folder is null, not an error", async () => {
+    assert.equal(await find(fakeDrive([])), null);
+    assert.equal(await find(fakeDrive(undefined)), null);
+  });
+
+  test("rows without an id are ignored rather than returned as a file", async () => {
+    const drive = fakeDrive([{ modifiedTime: "2026-09-19T00:00:00Z" }, { id: "real", modifiedTime: "2026-09-18T00:00:00Z" }]);
+    assert.equal((await find(drive)).id, "real");
+  });
+
+  test("a Drive error throws — loadDecision is what turns it into a normal run", async () => {
+    await assert.rejects(() => find(fakeDrive([], { ok: false, status: 403 })), /Drive search failed \(403\)/);
+  });
+
+  test("THE ID CHANGE IS FOLLOWED: two runs, two ids, no memory between them", async () => {
+    const first = fakeDrive([{ id: "1dZDmdNCsrE6RO3c6oKfifgSJg7rY6R7p", modifiedTime: "2026-09-14T12:38:44.169Z" }]);
+    assert.equal((await find(first)).id, "1dZDmdNCsrE6RO3c6oKfifgSJg7rY6R7p");
+    // The writer replaces the file. Same name, new id, later stamp.
+    const second = fakeDrive([{ id: "1ViahMqQlpDs-AWw0eAJolhF_aQ8x2s55", modifiedTime: "2026-09-18T19:16:59.200Z" }]);
+    assert.equal((await find(second)).id, "1ViahMqQlpDs-AWw0eAJolhF_aQ8x2s55");
+  });
+
+  test("nothing in the module caches a file id", async () => {
+    const src = readFileSync(new URL("../src/drive-decision.js", import.meta.url), "utf-8");
+    assert.doesNotMatch(src, /DECISION_FILE_ID|cachedFileId|lastFileId/, "a remembered id is the stale-read bug");
+  });
+});
+
+describe("the run says WHICH file it read", () => {
+  const modifiedAt = new Date(NOW - 86400000).toISOString();
+  const good = { findDecisionFile: async () => ({ id: "file-abc", modifiedTime: modifiedAt, candidates: 1 }), downloadFileById: async () => Buffer.from(fresh({})) };
+
+  test("loadDecision reports the file id and stamp on a good read", async () => {
+    const r = await loadDecision({ now: NOW, deps: good });
+    assert.deepEqual(r.file, { id: "file-abc", modifiedTime: modifiedAt, candidates: 1 });
+    assert.equal(r.plan.decisionFileId, "file-abc");
+    assert.equal(r.plan.decisionFileAt, modifiedAt);
+  });
+
+  test("…and ALSO when the payload is refused — a stale file is when you most want its id", async () => {
+    const stale = new Date(NOW - 30 * 86400000).toISOString();
+    const r = await loadDecision({
+      now: NOW,
+      deps: { findDecisionFile: async () => ({ id: "file-stale", modifiedTime: stale, candidates: 2 }), downloadFileById: async () => Buffer.from(fresh({})) },
+    });
+    assert.equal(r.usable, false);
+    assert.match(r.reason, /stale/);
+    assert.equal(r.file.id, "file-stale");
+    assert.equal(r.file.candidates, 2);
+    assert.equal(r.plan, null);
+  });
+
+  test("no file at all, and a read failure, both report file: null rather than throwing", async () => {
+    const none = await loadDecision({ now: NOW, deps: { findDecisionFile: async () => null } });
+    assert.equal(none.file, null);
+    const broke = await loadDecision({ now: NOW, deps: { findDecisionFile: async () => { throw new Error("boom"); } } });
+    assert.equal(broke.file, null);
+  });
+
+  test("the log line names the id and the stamp", () => {
+    const lines = decisionFileLog({ id: "1ViahMqQlpDs-AWw0eAJolhF_aQ8x2s55", modifiedTime: "2026-09-18T19:16:59.200Z", candidates: 1 });
+    assert.equal(lines.length, 1);
+    assert.equal(lines[0].level, "log");
+    assert.match(lines[0].text, /id=1ViahMqQlpDs-AWw0eAJolhF_aQ8x2s55/);
+    assert.match(lines[0].text, /modified=2026-09-18T19:16:59\.200Z/);
+  });
+
+  test("a missing stamp says 'unknown' rather than 'undefined'", () => {
+    assert.match(decisionFileLog({ id: "x" })[0].text, /modified=unknown/);
+  });
+
+  test("duplicates in the folder raise a WARNING naming the count and the filename", () => {
+    const lines = decisionFileLog({ id: "x", modifiedTime: "2026-09-18T00:00:00Z", candidates: 3 });
+    assert.equal(lines.length, 2);
+    assert.equal(lines[1].level, "warn");
+    assert.match(lines[1].text, /3 files named ig_posting_decision_latest\.json/);
+    assert.match(lines[1].text, /leftovers/);
+  });
+
+  test("one file is the quiet case — no warning", () => {
+    for (const candidates of [1, undefined, 0]) {
+      assert.equal(decisionFileLog({ id: "x", candidates }).length, 1, `candidates=${candidates}`);
+    }
+  });
+
+  test("no file, or a file with no id, says nothing at all", () => {
+    for (const f of [null, undefined, {}, { modifiedTime: "2026-09-18T00:00:00Z" }]) {
+      assert.deepEqual(decisionFileLog(f), []);
+    }
+  });
+
+  test("every line is printable through console[level]", () => {
+    for (const line of decisionFileLog({ id: "x", candidates: 2 })) {
+      assert.ok(typeof console[line.level] === "function", `console.${line.level} is not a function`);
+      assert.equal(typeof line.text, "string");
+    }
+  });
+
+  test("Step 0 CALLS it, unconditionally — the words are tested above, this is that they reach the log", () => {
+    // Anchored to the whole line on purpose. main.js is a script with top-level
+    // side effects and cannot be imported, so this is a source-text pin, and a
+    // source-text pin cannot tell live code from dead code. Anchoring buys back
+    // the realistic failures: the call deleted, the call commented out, or the
+    // call given a same-line guard. A deliberate multi-line `if (false) { … }`
+    // around it would still pass here — that is why the LOGIC lives in
+    // decisionFileLog(), where the tests above execute it for real.
+    const main = readFileSync(new URL("../src/main.js", import.meta.url), "utf-8");
+    const step0 = main.slice(main.indexOf("[Step 0] Reading performance decision file"), main.indexOf("[Step 0b]"));
+    assert.match(step0, /^\s*for \(const line of decisionFileLog\(decision\.file\)\) console\[line\.level\]\(line\.text\);\s*$/m);
   });
 });

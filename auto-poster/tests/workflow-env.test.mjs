@@ -288,3 +288,39 @@ describe("no workflow env block repeats a key", () => {
     assert.deepEqual(problems, [], problems.join("; "));
   });
 });
+
+/**
+ * DECISION_FOLDER_ID reaches the jobs that read the decision file.
+ *
+ * The variable was read by src/drive-decision.js from the day the reader
+ * landed and named in no workflow, so every live run searched the WHOLE Drive
+ * for "ig_posting_decision_latest.json". Setting the repo variable did nothing.
+ * post.yml sets no top-level env, so an unlisted variable is invisible.
+ */
+describe("the decision reader's folder scope reaches the posting jobs", () => {
+  const daily = jobs(DAILY_WORKFLOW);
+  const MAIN_JS_JOBS = ["post-san-antonio", "post-austin", "post-dallas"];
+
+  test("every job that runs src/main.js passes DECISION_FOLDER_ID", () => {
+    const missing = MAIN_JS_JOBS.filter((j) => !/DECISION_FOLDER_ID:\s*\$\{\{\s*vars\.DECISION_FOLDER_ID\s*\}\}/.test(daily[j] || ""));
+    assert.deepEqual(missing, [], `jobs reading the decision file without the folder scope: ${missing.join(", ")}`);
+  });
+
+  test("the jobs that pass it are exactly the jobs that run main.js", () => {
+    for (const [name, text] of Object.entries(daily)) {
+      const runsMain = /node src\/main\.js/.test(text);
+      const hasVar = /DECISION_FOLDER_ID:/.test(text);
+      assert.equal(hasVar, runsMain, `${name}: runs main.js=${runsMain} but DECISION_FOLDER_ID=${hasVar}`);
+    }
+  });
+
+  test("UNSET IS SAFE: the code falls back to the folder constant, not to a Drive-wide search", async () => {
+    // `${{ vars.X }}` renders as an empty string when the variable does not
+    // exist, so the fallback must treat "" as absent — otherwise wiring the
+    // variable would REPLACE a scoped search with an unscoped one.
+    const { DEFAULT_DECISION_FOLDER_ID } = await import("../src/drive-decision.js");
+    const src = readFileSync(join(WF_DIR, "..", "..", "auto-poster", "src", "drive-decision.js"), "utf-8");
+    assert.match(src, /process\.env\.DECISION_FOLDER_ID \|\| DEFAULT_DECISION_FOLDER_ID/);
+    assert.ok(DEFAULT_DECISION_FOLDER_ID && DEFAULT_DECISION_FOLDER_ID.length > 20, "the constant must be a real folder id");
+  });
+});
