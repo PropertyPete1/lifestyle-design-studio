@@ -54,6 +54,18 @@ Every post's generation decisions are chosen up front and written onto its
   (the cron owns the slots; slot is recorded and analyzed), topic signals
   (price overlay present, community-KB match — observed, not synthesized),
   voice persona (already rotated by `voiceover.js`, already on the entry).
+  - `generation.topic.community_kb` is a **real knowledge-base match** — the
+    caption lane's own lookup (`matchCommunityForVideo`). Until 2026-09-18 it
+    was `!!videoOverlays?.community`, "the OCR read some string": across the 18
+    publishes of 09-10..09-18 it read true ten times against zero KB matches.
+    That reading survives as `generation.topic.overlay_community`. **A row
+    without `overlay_community` predates the fix; do not read its
+    `community_kb` as a KB match.** Nothing scores this axis yet — whatever
+    does must apply that rule.
+  - `generation.original_refused: "bot_authored"` marks a post whose Drive
+    file HAD a cached Instagram original that was refused as a caption source
+    because this pipeline wrote it (`src/caption-provenance.js`). Such a post
+    is `caption_source: "fresh"`. Absent on every other post.
 
 ## 2. The learn step (`src/learn.js`, weekly `learning-loop.yml`)
 

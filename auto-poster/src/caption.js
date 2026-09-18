@@ -19,6 +19,7 @@ import { targetWordsForDuration, resolveTempo, buildAvoidBlock } from "./voiceov
 import { pickHookStyle, loadWeights } from "./analytics.js";
 import { styleInstruction } from "./hook-styles.js";
 import { CAPTION_LENGTH_BUCKETS } from "./variation.js";
+import { botCaptionFingerprints, findUnsupportedClaims, stripUnsupportedClaims } from "./caption-provenance.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -99,6 +100,23 @@ export function findCommunity(communityName, city) {
     }
   }
   return null;
+}
+
+/**
+ * The knowledge-base entry the caption lanes use for this video, or null.
+ *
+ * ONE definition, called by generateCaption AND by main.js when it writes the
+ * posted-log's `generation.topic.community_kb` tag — so the tag and the caption
+ * cannot disagree about whether a match happened. They used to: the tag was
+ * `!!videoOverlays?.community`, i.e. "the frame OCR produced some string",
+ * which is true for "North Austin", "Far West" and "Perry Homes" and says
+ * nothing about the six communities the KB actually holds. Across the 18
+ * publishes of 2026-09-10 to 2026-09-18 the tag read true ten times and the KB
+ * matched zero times.
+ */
+export function matchCommunityForVideo(city, videoOverlays) {
+  if (!videoOverlays?.community) return null;
+  return findCommunity(videoOverlays.community, CITY_NAMES[city] || city);
 }
 
 /**
@@ -538,6 +556,56 @@ function lockHashtags(caption, city) {
   return result;
 }
 
+// ─── CLAIM SUPPORT: "never invent facts", in code ───────────────────────────
+//
+// Both prompts say NEVER invent facts, and the no-KB branch spells it out: "no
+// pools, trails, playgrounds, fitness centers unless the video overlay
+// explicitly states them". That was prompt text and nothing else — the same
+// position the monthly-payment rule was in before caption-validator.js grew a
+// deterministic guard, for the same reason: a model that ignores an instruction
+// publishes with nothing in the way. On 2026-09-18 one did — "resort-style pool
+// and gathering spaces" and "top-rated school district serving the area", on a
+// video whose every source says nothing about amenities or schools. See
+// caption-provenance.js for the whole loop, and for what counts as a claim.
+//
+// ONE RETRY, THEN A KNIFE. Attempt 1 with an unsupported claim is sent back
+// with the claim named, the way the voiceover's number-honesty gate names the
+// figure. Attempt 2 is not given a third try: the offending lines are deleted,
+// and the result goes back through validateCaption like any other caption.
+
+/** The retry suffix, naming what was unsupported so the model can fix THAT. */
+export function claimRetryInstruction(unsupported) {
+  const named = [...new Set(unsupported.map((u) => `"${u.match}"`))].join(", ");
+  return `
+
+YOUR PREVIOUS CAPTION WAS REJECTED for stating things that appear NOWHERE in the facts you were given: ${named}.
+An amenity or a rating may be stated ONLY if the facts above state it. Do not describe pools, trails, parks, playgrounds, fitness centers, clubhouses, courts or any other community amenity from general knowledge of new-construction communities. Do not call a school, a district, a builder or a community "top-rated", "highly rated", "A-rated", "award-winning" or anything like it unless the facts above say so in those terms.
+If the facts above contain no amenity or school details, write NONE — omit that section's bullets entirely rather than filling them. Everything else about the required structure is unchanged.`;
+}
+
+/**
+ * Decide what happens to a validated caption that may make unsupported
+ * claims. PURE — the generators own the loop, this owns the verdict.
+ *
+ *   { caption }                    nothing unsupported; ship as-is
+ *   { retry: "<prompt suffix>" }   attempt 1: regenerate with the claim named
+ *   { caption, removed: [...] }    attempt 2: the lines were deleted; the
+ *                                  caller MUST re-validate `caption`
+ */
+export function enforceClaimSupport(caption, sourceTexts, { attempt, lane = "caption" } = {}) {
+  const unsupported = findUnsupportedClaims(caption, sourceTexts);
+  if (unsupported.length === 0) return { caption };
+
+  const named = unsupported.map((u) => `"${u.match}"`).join(", ");
+  if (attempt === 1) {
+    console.error(`::warning::[Caption] ❌ CLAIM SUPPORT (${lane}): caption states ${named} — no source for this video contains it. Retrying.`);
+    return { retry: claimRetryInstruction(unsupported) };
+  }
+  const stripped = stripUnsupportedClaims(caption, sourceTexts);
+  console.error(`::warning::[Caption] ⛔ CLAIM SUPPORT (${lane}): second attempt still states ${named}. Deleted ${stripped.removed.length} line(s): ${stripped.removed.map((l) => JSON.stringify(l.trim())).join(" | ")}`);
+  return stripped;
+}
+
 /**
  * Generate a fresh real-estate caption for a video.
  * Uses community KB if a match is found from video overlays.
@@ -552,10 +620,7 @@ export async function generateCaption(city, videoOverlays = null, options = {}) 
   const overlayCity = cleanOverlayCity(videoOverlays?.city);
   const captionCity = overlayCity || runCityName;
 
-  let community = null;
-  if (videoOverlays?.community) {
-    community = findCommunity(videoOverlays.community, runCityName);
-  }
+  const community = matchCommunityForVideo(city, videoOverlays);
 
   const communityBlock = buildCommunityFactsBlock(community);
   const hasRealFacts = !!community;
@@ -631,11 +696,18 @@ CTA DISCIPLINE (NON-NEGOTIABLE):
 ${noKBInstructions}
 ${buildCaptionRules(options.captionLength)}`;
 
+  // Everything this caption was allowed to draw an amenity or rating from: the KB facts
+  // block (empty without a match) and what is written on the video. NOT the
+  // prompt — LEAD_GATING_RULES carries "a 9-acre clubhouse with resort pool" as
+  // an example of phrasing, and an example is not a fact about this home.
+  const claimSources = [communityBlock, videoOverlays?.raw_text, videoOverlays?.beds_baths, captionCity, runCityName];
+  let retrySuffix = null;
+
   // Attempt generation with validation gate (retry once on failure)
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const currentPrompt = attempt === 1 ? prompt : prompt + RETRY_INSTRUCTION;
+    const currentPrompt = attempt === 1 ? prompt : prompt + (retrySuffix || RETRY_INSTRUCTION);
     try {
-      const response = await getClient().messages.create({
+      const response = await (options.client || getClient()).messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1500,
         messages: [{ role: "user", content: currentPrompt }],
@@ -661,11 +733,25 @@ ${buildCaptionRules(options.captionLength)}`;
             continue; // retry with RETRY_INSTRUCTION appended
           }
           // Second attempt also failed — fall through to fallback
-          console.error(`[Caption] ❌ BOTH attempts failed validation. Using hardcoded fallback.`);
+          console.error(`[Caption] ❌ BOTH attempts were refused. Using hardcoded fallback.`);
           return getFallbackCaption(city, captionCity);
         }
-        console.log(`[Caption] Generated fresh caption (${final.length} chars, community=${community?.name || "none"}, leaks_stripped=${leaksFound})`);
-        return sanitizeCaption(final);
+        // CLAIM SUPPORT — after validation, so a retry here is never spent
+        // on a caption that was going to be refused anyway.
+        const supported = enforceClaimSupport(final, claimSources, { attempt, lane: "fresh" });
+        if (supported.retry) {
+          retrySuffix = supported.retry;
+          continue;
+        }
+        if (supported.removed?.length) {
+          const recheck = validateCaption(supported.caption);
+          if (!recheck.valid) {
+            console.error(`[Caption] ❌ Caption no longer valid once its unsupported lines were deleted (${recheck.reason}). Using hardcoded fallback.`);
+            return getFallbackCaption(city, captionCity);
+          }
+        }
+        console.log(`[Caption] Generated fresh caption (${supported.caption.length} chars, community=${community?.name || "none"}, leaks_stripped=${leaksFound})`);
+        return sanitizeCaption(supported.caption);
       }
     } catch (err) {
       console.error(`[Caption] Anthropic API failed (attempt ${attempt}):`, err.message);
@@ -900,6 +986,19 @@ Example of the ENERGY to hit (do not copy the wording): "Three hundred twenty si
 export async function generateCaptionFromOriginal(originalCaption, city, videoOverlays = null, options = {}) {
   const cityName = CITY_NAMES[city] || city;
 
+  // AN "ORIGINAL" THIS PIPELINE WROTE IS NOT AN ORIGINAL. main.js refuses these
+  // before it ever picks this lane — and tags the post `fresh` when it does — so
+  // reaching this line from main.js means that router was bypassed and the
+  // posted-log will say "restructured" about a caption that was not. Hence the
+  // warning rather than a quiet log. It stays because this function is exported
+  // and callable directly, and restructuring our own template is never right:
+  // "keep EVERY fact" of a caption with no facts returns the caption.
+  const ownFingerprints = botCaptionFingerprints(originalCaption);
+  if (ownFingerprints.length > 0) {
+    console.error(`::warning::[Caption] Refusing to restructure this pipeline's own caption as an "original" (${ownFingerprints.join(", ")}) — writing fresh instead.`);
+    return generateCaption(city, videoOverlays, options);
+  }
+
   // Check if we can find a community match for KB override
   let community = null;
   if (videoOverlays?.community) {
@@ -955,6 +1054,8 @@ NEW STRUCTURE (follow this EXACT order):
 
 ${THEMED_SECTIONS_FORMAT}
 
+NO PADDING (this is restructuring, not writing): every line under a section header must restate a fact the ORIGINAL CAPTION${community ? " or the KB OVERRIDE values" : ""} actually states. If the original says nothing about amenities, OMIT the 🌳 section — header and all. The same goes for 🎓 and 💸. Never fill a section with generic new-construction amenities (pools, trails, parks, playgrounds, fitness centers, clubhouses) that the original does not name, and never describe schools or a district as "top-rated", "highly rated" or similar unless the original does. A shorter caption is correct; an invented amenity or rating is a false statement about a home.
+
 AFTER THE BODY:
 - One line on who it's perfect for (growing families, military/veteran buyers, first-time buyers)
 - PRIMARY CTA: "📲 comment TOUR and I'll DM you today's available homes. pick your favorite and I'll send the full monthly payment breakdown on it"
@@ -982,11 +1083,16 @@ PRESERVATION CHECKLIST — verify ALL of these from the original appear in your 
 If any FACT (not name) from the original is missing in your output, you have failed the task.
 ${buildCaptionRules(null)}`;
 
+  // A restructure may name an amenity or a rating only if the original (or the
+  // KB override it was told to prefer) does. See enforceClaimSupport.
+  const claimSources = [originalCaption, kbOverrideBlock, cityName];
+  let retrySuffix = null;
+
   // Attempt generation with validation gate (retry once on failure)
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const currentPrompt = attempt === 1 ? prompt : prompt + RETRY_INSTRUCTION;
+    const currentPrompt = attempt === 1 ? prompt : prompt + (retrySuffix || RETRY_INSTRUCTION);
     try {
-      const response = await getClient().messages.create({
+      const response = await (options.client || getClient()).messages.create({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 2000,
         messages: [{ role: "user", content: currentPrompt }],
@@ -1011,11 +1117,23 @@ ${buildCaptionRules(null)}`;
             console.log(`[Caption] Retrying restructure with correction instruction...`);
             continue;
           }
-          console.error(`[Caption] ❌ BOTH restructure attempts failed validation. Using fallback.`);
+          console.error(`[Caption] ❌ BOTH restructure attempts were refused. Using fallback.`);
           break; // fall through to fallback below
         }
-        console.log(`[Caption] Restructured from original (${final.length} chars, original was ${originalCaption.length} chars, KB_override=${!!community}, leaks_stripped=${leaksFound})`);
-        return sanitizeCaption(final);
+        const supported = enforceClaimSupport(final, claimSources, { attempt, lane: "restructure" });
+        if (supported.retry) {
+          retrySuffix = supported.retry;
+          continue;
+        }
+        if (supported.removed?.length) {
+          const recheck = validateCaption(supported.caption);
+          if (!recheck.valid) {
+            console.error(`[Caption] ❌ Restructure no longer valid once its unsupported lines were deleted (${recheck.reason}). Using fallback.`);
+            break; // the leak-scanned original, below — its claims are its own
+          }
+        }
+        console.log(`[Caption] Restructured from original (${supported.caption.length} chars, original was ${originalCaption.length} chars, KB_override=${!!community}, leaks_stripped=${leaksFound})`);
+        return sanitizeCaption(supported.caption);
       }
     } catch (err) {
       console.error(`[Caption] Anthropic API failed for restructure (attempt ${attempt}):`, err.message);
@@ -1029,7 +1147,7 @@ ${buildCaptionRules(null)}`;
   return sanitizeCaption(final);
 }
 
-function getFallbackCaption(city, overrideCityName = null) {
+export function getFallbackCaption(city, overrideCityName = null) {
   const cityName = overrideCityName || CITY_NAMES[city] || city;
   const hashtags = LOCKED_HASHTAGS[city] || LOCKED_HASHTAGS.austin;
   return `the kitchen in this one made me stop mid-tour 😮‍💨

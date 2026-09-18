@@ -568,3 +568,158 @@ describe("patterns needing an unsupported figure are refused deterministically",
     for (const c of clean) assert.equal(refusedForImitation(c), null);
   });
 });
+
+describe("a banned word in the DESCRIPTION does not cost the pattern — and no drop is silent", () => {
+  // The 2026-09-18 file, entries verbatim. Before this, Step 0 reported
+  // "3 preference(s) will reach the fresh-caption prompt" and the account's
+  // most repeatable hook was not one of them, with no line saying so.
+  const BINARY = {
+    pattern: "Binary choice question",
+    description: "'kitchen island or sunset patio which one are you claiming first' forces a comment decision in line one. Four runs, all 3498-4210 views.",
+    median_views: 4098,
+  };
+  const BESPOKE = {
+    pattern: "Bespoke comment word",
+    description: "Winners use a specific CTA word tied to the content (SA, HILL, RANCH, HILL COUNTRY, YASSSS, INFO) and name real schools, real acreage, real HOA figures.",
+    median_views: 4013,
+  };
+  const LOW_PRICE = {
+    pattern: "Low price shock, exact odd number",
+    description: "A specific surprising figure in the first two lines - $279,995, $254,990, $369,990, $379,990.",
+    median_views: 4796,
+  };
+  const REACTION = { pattern: "First-person stop reaction", description: "agent reaction instead of listing copy", median_views: 4427 };
+  const STORY = { pattern: "Story and education off-format", description: "buyer-wishlist comedy and the founder sketch", median_views: 1952 };
+  const RATE = {
+    pattern: "Rate bait-and-switch",
+    description: "An absurd fake rate stated flat, then corrected - buys a second of confusion before the payment pitch.",
+    median_views: 6740,
+  };
+
+  const run = (raw) => {
+    const drops = [];
+    const refusals = [];
+    const hooks = sanitizeHooks(raw, { onDrop: (d) => drops.push(d), onRefusal: (r) => refusals.push(r) });
+    return { hooks, drops, refusals };
+  };
+
+  test("THE BINARY-CHOICE FINDING REACHES THE PROMPT — as its pattern, with the description withheld", () => {
+    const { hooks, drops } = run([BINARY]);
+    assert.deepEqual(hooks, ["Binary choice question"]);
+    assert.deepEqual(drops, [{ kind: "description_withheld", text: "Binary choice question", word: "comment" }]);
+  });
+
+  test("what is SENT never carries the banned word", () => {
+    const { hooks } = run([BINARY, BESPOKE, LOW_PRICE]);
+    for (const h of hooks) assert.doesNotMatch(h, /\bcomment\b/i);
+  });
+
+  test("a banned word in the PATTERN still drops the entry — and says so", () => {
+    const { hooks, drops } = run([BESPOKE]);
+    assert.deepEqual(hooks, []);
+    assert.equal(drops.length, 1);
+    assert.equal(drops[0].kind, "banned_word");
+    assert.equal(drops[0].word, "comment");
+  });
+
+  test("a bare STRING has no pattern to fall back to: dropped, reported", () => {
+    const { hooks, drops } = run(["comment HILL works better than TOUR", "fine"]);
+    assert.deepEqual(hooks, ["fine"]);
+    assert.deepEqual(drops.map((d) => d.kind), ["banned_word"]);
+  });
+
+  test("engine vocabulary in a description falls back the same way", () => {
+    const { hooks, drops } = run([{ pattern: "Walk-in reveal", description: "works like a pov hook", median_views: 10 }]);
+    assert.deepEqual(hooks, ["Walk-in reveal"]);
+    assert.equal(drops[0].kind, "description_withheld");
+    assert.equal(drops[0].word, "pov");
+  });
+
+  test("THE WHOLE 2026-09-18 FILE: binary choice is in, and every absent entry has a reason on record", () => {
+    const { hooks, drops, refusals } = run([BINARY, LOW_PRICE, RATE, REACTION, STORY, BESPOKE]);
+    assert.deepEqual(hooks, [
+      "Low price shock, exact odd number — A specific surprising figure in the first two lines - $279,995, $254,990, $369,990, $379,990.",
+      "First-person stop reaction — agent reaction instead of listing copy",
+      "Binary choice question",
+    ]);
+    assert.deepEqual(refusals.map((r) => r.phrase), ["bait-and-switch"]);
+    assert.deepEqual(
+      drops.map((d) => `${d.kind}:${d.text.slice(0, 22)}`),
+      ["description_withheld:Binary choice question", "banned_word:Bespoke comment word —", "over_cap:Story and education of"]
+    );
+    // Six in; three sent, one refused, and the other two each accounted for
+    // (the third drop record is the withheld description of an entry that WAS sent).
+    assert.equal(hooks.length + refusals.length + drops.filter((d) => d.kind !== "description_withheld").length, 6);
+  });
+
+  test("entries past the cap are reported, never silently cut — and still cannot get in", () => {
+    const many = Array.from({ length: MAX_HOOK_ENTRIES + 3 }, (_, i) => ({ pattern: `entry ${i}`, median_views: 100 - i }));
+    const { hooks, drops } = run(many);
+    assert.equal(hooks.length, MAX_HOOK_ENTRIES);
+    assert.deepEqual(drops.map((d) => d.kind), ["over_cap", "over_cap", "over_cap"]);
+  });
+
+  test("planFromDecision carries the drops onto the plan", () => {
+    const plan = planFromDecision({ hooks_that_work: [BINARY, BESPOKE] }, { safeToAct: false });
+    assert.deepEqual(plan.hooks, ["Binary choice question"]);
+    assert.deepEqual(plan.hookDrops.map((d) => d.kind), ["description_withheld", "banned_word"]);
+  });
+
+  test("a clean file reports no drops at all", () => {
+    assert.deepEqual(planFromDecision({ hooks_that_work: [REACTION] }, { safeToAct: true }).hookDrops, []);
+    assert.deepEqual(planFromDecision({}, { safeToAct: true }).hookDrops, []);
+  });
+});
+
+describe("imitability is judged on the WHOLE entry, not on the part that fits", () => {
+  // The fallback above sends a pattern without its description. That is only
+  // safe if a device hidden IN a description cannot ride through the same way
+  // — and before this, it could: a pair longer than MAX_HOOK_CHARS was cut to
+  // its pattern BEFORE the imitation check ever read the description.
+  const filler = "and the correction lands in the same breath so it reads as the joke it is, which is exactly why it works on a scripted reel and nowhere else, ".repeat(2);
+  const HIDDEN = {
+    pattern: "Rate reveal",
+    description: `State a fake rate flat then correct it. ${filler}`,
+    median_views: 9000,
+  };
+
+  test("the fixture really is over-long — hookText() would send the bare pattern", () => {
+    assert.equal(hookText(HIDDEN), "Rate reveal");
+    assert.ok(`${HIDDEN.pattern} — ${HIDDEN.description}`.length > MAX_HOOK_CHARS);
+  });
+
+  test("it is REFUSED, and reported, though the device is only in the part that would be cut", () => {
+    const refusals = [];
+    assert.deepEqual(sanitizeHooks([HIDDEN], { onRefusal: (r) => refusals.push(r) }), []);
+    assert.equal(refusals.length, 1);
+    assert.equal(refusals[0].phrase, "fake");
+  });
+
+  test("a device in a description ALSO carrying a banned word is refused, not sent as its pattern", () => {
+    const both = { pattern: "Rate reveal", description: "say a fake rate then tell them to comment for the real one", median_views: 1 };
+    const drops = [];
+    const refusals = [];
+    assert.deepEqual(sanitizeHooks([both], { onDrop: (d) => drops.push(d), onRefusal: (r) => refusals.push(r) }), []);
+    assert.equal(refusals.length, 1, "the refusal wins; the pattern-alone fallback must not rescue it");
+    assert.deepEqual(drops, []);
+  });
+
+  test("an over-long HONEST pair still goes through as its pattern, as before", () => {
+    const honest = { pattern: "First-person stop reaction", description: "x".repeat(MAX_HOOK_CHARS), median_views: 1 };
+    assert.deepEqual(sanitizeHooks([honest]), ["First-person stop reaction"]);
+  });
+});
+
+describe("Step 0 SAYS what was dropped — a plan field nobody prints is still silence", () => {
+  test("main.js logs every drop kind the sanitizer can produce", async () => {
+    const { readFileSync } = await import("node:fs");
+    const main = readFileSync(new URL("../src/main.js", import.meta.url), "utf-8");
+    const loop = main.slice(main.indexOf("for (const d of decision.plan?.hookDrops ?? [])"));
+    assert.ok(loop.length > 0 && loop.length < main.length, "main.js must iterate plan.hookDrops");
+    const body = loop.slice(0, loop.indexOf("if (!HOOK_GUIDANCE)"));
+    for (const kind of ["description_withheld", "banned_word", "over_cap"]) {
+      assert.match(body, new RegExp(`d\\.kind === "${kind}"`), `no Step 0 line for ${kind}`);
+    }
+    assert.match(body, /\$\{d\.word\}/, "the line must name the word that did it");
+  });
+});

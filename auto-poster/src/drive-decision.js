@@ -256,9 +256,61 @@ function hookStrength(entry) {
   return Number.isFinite(v) ? v : -1;
 }
 
-export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal = () => {} } = {}) {
+/**
+ * Control characters and newlines become a single space. \p{C} covers the
+ * format/unassigned classes too, so a zero-width joiner cannot hide a banned
+ * word from the checks in sanitizeHooks.
+ */
+function flattenHook(text) {
+  return String(text ?? "").replace(/[\p{C}\s]+/gu, " ").replace(/[`{}]/g, "").trim();
+}
+
+/**
+ * Everything an entry says — pattern AND description, whatever their length.
+ *
+ * hookText() answers "what would we SEND", and drops the description when the
+ * pair runs past MAX_HOOK_CHARS. That is the wrong text to judge imitability
+ * on: a device described only in a long description ("state a fake rate, then
+ * correct it") would be cut before the check saw it, and its bare pattern would
+ * reach the prompt as a label. The whole entry is judged; only part is sent.
+ */
+function hookWholeText(entry) {
+  if (typeof entry === "string") return entry;
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return "";
+  return [entry.pattern, entry.description].filter((t) => typeof t === "string" && t.trim()).join(" — ");
+}
+
+/**
+ * DROPS ARE REPORTED, LIKE REFUSALS. `onDrop` receives { kind, text, word? }:
+ *
+ *   description_withheld  the description used a banned word, the pattern did
+ *                         not — the pattern goes on ALONE. `text` is what was
+ *                         sent.
+ *   banned_word           the pattern itself carries a banned word (or the
+ *                         entry is a bare string that does); nothing is sent.
+ *   over_cap              a usable entry beyond the MAX_HOOK_ENTRIES strongest.
+ *
+ * WHY description_withheld EXISTS. The ban on "comment" is there for a real
+ * reason — caption-validator.js counts the word, so advice like "comment HILL
+ * works" can fail every attempt and land the run in the fallback caption. But
+ * the ban used to drop the WHOLE entry, silently, and the 2026-09-18 file's
+ * most repeatable finding was:
+ *
+ *   pattern      "Binary choice question"                       (4 runs,
+ *   description  "…forces a comment decision in line one…"       3,498-4,210)
+ *
+ * A description that mentions commenting, about a pattern that has nothing to
+ * do with the CTA. It never reached the prompt, no log line said so, and the
+ * Step 0 summary ("3 preference(s) will reach the fresh-caption prompt") read
+ * as a clean run. The pattern is the writer's own headline and is clean; it is
+ * sent. The description is withheld, and the run log says which word did it.
+ */
+export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal = () => {}, onDrop = () => {} } = {}) {
   if (!Array.isArray(raw)) return [];
   const banned = [...styleIds, "comment", "dm", "lifestyle design realty"];
+  // Word-boundary match, so "recommend" does not trip on "comment" and a
+  // hook mentioning "statistics" does not trip on the `stat` style id.
+  const bannedWordIn = (text) => banned.find((word) => new RegExp(`\\b${word}\\b`, "i").test(text)) || null;
   const out = [];
   // Stable strongest-first. Array.prototype.sort is stable in V8, so entries
   // with equal (or absent) evidence keep the writer's own order.
@@ -266,27 +318,34 @@ export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal =
   for (const entry of ordered) {
     const text = hookText(entry);
     if (typeof text !== "string") continue;
-    const flat = text
-      // Control characters and newlines become a single space. \p{C} covers
-      // the format/unassigned classes too, so a zero-width joiner cannot hide
-      // a banned word from the check below.
-      .replace(/[\p{C}\s]+/gu, " ")
-      .replace(/[`{}]/g, "")
-      .trim();
+    let flat = flattenHook(text);
     if (!flat) continue;
-    // A pattern that works and still cannot be safely imitated. Checked before
-    // the ban list, so the reason reported is the one that actually applied.
-    const refused = refusedForImitation(flat);
+    // A pattern that works and still cannot be safely imitated. Judged on the
+    // WHOLE entry (see hookWholeText), and before the ban list, so the reason
+    // reported is the one that actually applied.
+    const refused = refusedForImitation(flattenHook(hookWholeText(entry)) || flat);
     if (refused) {
       onRefusal({ text: flat, phrase: refused });
       continue;
     }
-    const haystack = flat.toLowerCase();
-    // Word-boundary match, so "recommend" does not trip on "comment" and a
-    // hook mentioning "statistics" does not trip on the `stat` style id.
-    if (banned.some((word) => new RegExp(`\\b${word}\\b`, "i").test(haystack))) continue;
+    const word = bannedWordIn(flat);
+    if (word) {
+      const pattern = entry && typeof entry === "object" && !Array.isArray(entry) ? flattenHook(entry.pattern) : "";
+      if (!pattern || pattern === flat || bannedWordIn(pattern)) {
+        onDrop({ kind: "banned_word", text: flat, word });
+        continue;
+      }
+      flat = pattern;
+      onDrop({ kind: "description_withheld", text: flat, word });
+    }
+    // No `break` at the cap: the entries past it are reported, not skipped
+    // unseen. Still bounded — the writer sends a handful, and nothing past the
+    // cap can reach `out`.
+    if (out.length >= MAX_HOOK_ENTRIES) {
+      onDrop({ kind: "over_cap", text: flat });
+      continue;
+    }
     out.push(flat.length > MAX_HOOK_CHARS ? flat.slice(0, MAX_HOOK_CHARS).trimEnd() : flat);
-    if (out.length >= MAX_HOOK_ENTRIES) break;
   }
   return out;
 }
@@ -306,6 +365,7 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
   const dontPost = safeToAct && Array.isArray(decision?.dont_post) ? decision.dont_post : [];
 
   const hookRefusals = [];
+  const hookDrops = [];
   const ranked = [];
   const skipped = [];
   for (const row of post) {
@@ -348,12 +408,18 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
     // analysis is over the caption text of 213 posts and nothing about the
     // missing manifest touches it. Bounded by sanitizeHooks because this is the
     // only externally-authored text that reaches an LLM prompt.
-    hooks: sanitizeHooks(decision?.hooks_that_work, { onRefusal: (r) => hookRefusals.push(r) }),
+    hooks: sanitizeHooks(decision?.hooks_that_work, {
+      onRefusal: (r) => hookRefusals.push(r),
+      onDrop: (d) => hookDrops.push(d),
+    }),
     // Named, not merely counted. A refusal is not a complaint about the source
     // post — it means this pattern cannot be reproduced on unscripted footage
     // without inventing a figure, and the operator should see which one and
     // decide whether the writer should keep offering it.
     hookRefusals,
+    // Every entry that did not reach the prompt whole, and why — see
+    // sanitizeHooks. Until 2026-09-18 these vanished without a line.
+    hookDrops,
     // RAW vs SURVIVING, kept separate on purpose. "The writer stopped emitting
     // hooks" and "our own bounds refused every one" are different faults with
     // different owners, and a single count cannot tell them apart. The first
