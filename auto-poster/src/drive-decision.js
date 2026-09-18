@@ -22,12 +22,13 @@
  * not act on it — it only reports it faithfully.
  */
 
-import { getAccessToken, downloadFileById } from "./drive.js";
+import { getAccessToken, downloadFileById, CONTENT_FOLDER_ID } from "./drive.js";
 
 export const DECISION_FILENAME = "ig_posting_decision_latest.json";
 
 /**
- * The Drive folder the decision file lives in: "Ready to Post".
+ * The Drive folder the decision file lives in: CONTENT_FOLDER_ID, defined once
+ * in drive.js and shared with the manifest mirror that writes to the same place.
  *
  * WHY A CONSTANT AND NOT ONLY AN ENV VAR. `DECISION_FOLDER_ID` has existed
  * since this module landed and is set in no workflow, so every live run has
@@ -36,14 +37,12 @@ export const DECISION_FILENAME = "ig_posting_decision_latest.json";
  * this file on every run (the Drive connector cannot overwrite contents, so it
  * deletes and re-creates, and the id changes). A name-only search across a
  * Drive that anyone can drop a file into is one stray copy away from feeding
- * the pipeline someone else's rankings. The id below is the folder the
- * 2026-09-10, 09-14 and 09-18 files were all written to, confirmed by reading
- * their parent. The env var still overrides it, for when that folder moves.
+ * the pipeline someone else's rankings.
  *
- * The three city video folders are elsewhere (see drive.js CITY_FOLDER_IDS);
- * this one holds the decision files and the publish manifest.
+ * Kept as a named export because that is what the env-override line and the
+ * tests read; it is an alias now, not a second copy of the id.
  */
-export const DEFAULT_DECISION_FOLDER_ID = "15qKuFpn-Kn8h7BfgvFWbTuzM3nDyDw3G";
+export const DEFAULT_DECISION_FOLDER_ID = CONTENT_FOLDER_ID;
 
 /** Schema versions this reader understands. Anything else is refused. */
 export const SUPPORTED_SCHEMA_VERSIONS = ["1.1"];

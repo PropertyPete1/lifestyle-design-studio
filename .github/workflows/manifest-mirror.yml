@@ -1,0 +1,71 @@
+name: Publish Manifest Mirror
+
+# Push auto-poster/publish-manifest.json to Drive, where the scheduled analysis
+# task can actually read it.
+#
+# WHY A WORKFLOW AND NOT ONLY THE POSTING RUN. main.js mirrors after every
+# successful publish, which covers the normal case. It does not cover the two
+# that matter around a decision run:
+#
+#   SEEDING. The analysis task runs Sundays and Thursdays. Without a way to
+#   write on demand, the first mirror waits for the next publish — and if that
+#   lands after the task has run, the file is days late to a question that has
+#   now been asked four times.
+#
+#   A DAY WITH NO PUBLISH. The cadence gate stands slots down once the daily
+#   target is met, and a stood-down slot exits long before the mirror. Flagship
+#   hand-posts are still confirmed on those days, so the resolution keeps
+#   improving while nothing is being written.
+#
+# It is also the safe way to run this by hand: it writes ONE file to Drive and
+# cannot publish anything to a social account.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — build the file and report it, write nothing to Drive'
+        required: false
+        default: true
+        type: boolean
+
+# Least privilege, and a real difference from the posting workflow: this job
+# writes to Drive, never to the repository. The mirror is derived from files
+# already committed, so it has nothing to commit back.
+permissions:
+  contents: read
+
+concurrency:
+  group: manifest-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        working-directory: auto-poster
+        run: npm install
+      - name: Mirror the publish manifest to Drive
+        working-directory: auto-poster
+        run: node scripts/mirror-publish-manifest.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          # Drive: the write itself.
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          # Metricool: the FLAGSHIP account's own posts. Without these the run
+          # still writes, but every flagship ig_post_id resolves to null — which
+          # reads like "nothing has been hand-posted" rather than "we could not
+          # look". The script says so out loud when they are missing.
+          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
+          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
+          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
+          # Where the file goes. Unset falls back to CONTENT_FOLDER_ID in
+          # src/drive.js ("Ready to Post"), the folder the decision file is
+          # read from.
+          MANIFEST_FOLDER_ID: ${{ vars.MANIFEST_FOLDER_ID }}

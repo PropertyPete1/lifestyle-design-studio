@@ -11,7 +11,7 @@
  */
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import {
   MATCH_WINDOW_HOURS,
   captionKey,
@@ -307,6 +307,26 @@ describe("the mirror separates fact from inference", () => {
     // The same folder the decision files live in ("Ready to Post"), read off
     // their parent on 2026-09-18.
     assert.equal(DEFAULT_MANIFEST_FOLDER_ID, "15qKuFpn-Kn8h7BfgvFWbTuzM3nDyDw3G");
+  });
+
+  test("ONE DEFINITION: the writer and the reader resolve to the same folder", async () => {
+    // #146 and #147 were built off main in parallel and each carried its own
+    // copy of this id. Two copies is two places for one fact to go stale, and
+    // the failure is quiet on both sides: the reader searches a folder the
+    // writer no longer writes to, finds nothing, and reports "no decision
+    // file" — exactly what it reports when the task genuinely has not run.
+    const { CONTENT_FOLDER_ID } = await import("../src/drive.js");
+    const { DEFAULT_DECISION_FOLDER_ID } = await import("../src/drive-decision.js");
+    assert.equal(DEFAULT_MANIFEST_FOLDER_ID, CONTENT_FOLDER_ID);
+    assert.equal(DEFAULT_DECISION_FOLDER_ID, CONTENT_FOLDER_ID);
+  });
+
+  test("…and the id is written down exactly once in src/", () => {
+    const srcDir = new URL("../src/", import.meta.url);
+    const hits = readdirSync(srcDir)
+      .filter((f) => f.endsWith(".js"))
+      .filter((f) => readFileSync(new URL(f, srcDir), "utf-8").includes("15qKuFpn-Kn8h7BfgvFWbTuzM3nDyDw3G"));
+    assert.deepEqual(hits, ["drive.js"], `the folder id is literal in more than one module: ${hits.join(", ")}`);
   });
 });
 

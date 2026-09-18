@@ -163,8 +163,9 @@ jobs:
           # PROMOTE_AHEAD above: no top-level env, so it must be named here.
           HOOK_GUIDANCE: ${{ vars.HOOK_GUIDANCE }}
           # The Drive folder the decision file is read from. Unset falls back to
-          # DEFAULT_DECISION_FOLDER_ID in src/drive-decision.js ("Ready to
-          # Post") — this line exists so the folder can MOVE without a deploy.
+          # CONTENT_FOLDER_ID in src/drive.js ("Ready to Post", shared with
+          # the manifest mirror) — this line exists so the folder can MOVE
+          # without a deploy.
           # It has to be named here for the same reason as the two above: this
           # workflow sets no top-level env, so an unlisted variable is invisible
           # to the step. DECISION_FOLDER_ID was read by the code since the
@@ -262,8 +263,9 @@ jobs:
           # PROMOTE_AHEAD above: no top-level env, so it must be named here.
           HOOK_GUIDANCE: ${{ vars.HOOK_GUIDANCE }}
           # The Drive folder the decision file is read from. Unset falls back to
-          # DEFAULT_DECISION_FOLDER_ID in src/drive-decision.js ("Ready to
-          # Post") — this line exists so the folder can MOVE without a deploy.
+          # CONTENT_FOLDER_ID in src/drive.js ("Ready to Post", shared with
+          # the manifest mirror) — this line exists so the folder can MOVE
+          # without a deploy.
           # It has to be named here for the same reason as the two above: this
           # workflow sets no top-level env, so an unlisted variable is invisible
           # to the step. DECISION_FOLDER_ID was read by the code since the
@@ -349,8 +351,9 @@ jobs:
           # PROMOTE_AHEAD above: no top-level env, so it must be named here.
           HOOK_GUIDANCE: ${{ vars.HOOK_GUIDANCE }}
           # The Drive folder the decision file is read from. Unset falls back to
-          # DEFAULT_DECISION_FOLDER_ID in src/drive-decision.js ("Ready to
-          # Post") — this line exists so the folder can MOVE without a deploy.
+          # CONTENT_FOLDER_ID in src/drive.js ("Ready to Post", shared with
+          # the manifest mirror) — this line exists so the folder can MOVE
+          # without a deploy.
           # It has to be named here for the same reason as the two above: this
           # workflow sets no top-level env, so an unlisted variable is invisible
           # to the step. DECISION_FOLDER_ID was read by the code since the

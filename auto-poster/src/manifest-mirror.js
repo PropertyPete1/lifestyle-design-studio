@@ -53,6 +53,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadManifest } from "./publish-manifest.js";
 import { resolveFlagshipPosts, attachFlagship } from "./manifest-flagship.js";
+import { CONTENT_FOLDER_ID } from "./drive.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -60,10 +61,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export const MIRROR_FILENAME = "publish_manifest_latest.json";
 
 /**
- * The folder the decision files live in ("Ready to Post"), so the manifest
- * lands beside them. Overridable for the same reason drive-decision.js's is.
+ * The folder the decision files live in, so the manifest lands beside them —
+ * CONTENT_FOLDER_ID, defined once in drive.js and shared with the reader on the
+ * other side of it. Overridable via MANIFEST_FOLDER_ID, independently of the
+ * reader's own override.
  */
-export const DEFAULT_MANIFEST_FOLDER_ID = "15qKuFpn-Kn8h7BfgvFWbTuzM3nDyDw3G";
+export const DEFAULT_MANIFEST_FOLDER_ID = CONTENT_FOLDER_ID;
 
 export const MIRROR_SCHEMA_VERSION = 1;
 

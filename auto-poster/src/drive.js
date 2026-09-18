@@ -8,6 +8,29 @@ const CITY_FOLDER_IDS = {
   dallas: "1nNrGjhHeMG3B25Cj3o7T2cLRAJM-9RX2",
 };
 
+/**
+ * "Ready to Post" — the folder this pipeline SHARES with the analysis task.
+ *
+ * Not a video folder. Two files pass through it in opposite directions:
+ *
+ *   ig_posting_decision_latest.json   written by the scheduled analysis task,
+ *                                     read by src/drive-decision.js
+ *   publish_manifest_latest.json      written by src/manifest-mirror.js,
+ *                                     read by that same task
+ *
+ * ONE DEFINITION. #146 and #147 were built off main in parallel and each
+ * carried its own copy of this id, which is two places for one fact to go
+ * stale — and the failure would be quiet on both sides: the reader would search
+ * a folder the writer no longer writes to, find nothing, and report "no
+ * decision file" exactly as it does when the task has genuinely not run.
+ *
+ * Confirmed by reading the parent of the live 2026-09-10, 09-14 and 09-18
+ * decision files. Each consumer keeps its own env override — DECISION_FOLDER_ID
+ * and MANIFEST_FOLDER_ID — so one side can be pointed elsewhere for a test
+ * without moving the other.
+ */
+export const CONTENT_FOLDER_ID = "15qKuFpn-Kn8h7BfgvFWbTuzM3nDyDw3G";
+
 let cachedAccessToken = null;
 
 /**
