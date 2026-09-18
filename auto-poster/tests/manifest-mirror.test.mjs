@@ -284,6 +284,11 @@ describe("the mirror separates fact from inference", () => {
     assert.match(m.about, /ONE inferred field/);
     assert.match(m.about, /inferred_matches\[\] is NOT fact/);
     assert.match(m.about, /Never treat a null as a match/);
+    // The contest rule changes what a `contest` block and a medium confidence
+    // MEAN, and the reader has no other way to learn it.
+    assert.match(m.about, /A flagship post belongs to exactly one video/);
+    assert.match(m.about, /the one whose hand-post confirmation is inside 6 hours of the post keeps it/);
+    assert.match(m.about, /every claimant is refused instead/);
     assert.match(m.flagship_account.note, /never posts Instagram to the flagship/);
   });
 
@@ -437,5 +442,140 @@ describe("the posting run mirrors after a publish", () => {
     assert.match(script, /mirrorToDrive/);
     assert.match(script, /--dry-run/);
     assert.match(script, /getRecentIgPosts/);
+  });
+});
+
+describe("a contest is settled by proximity when proximity says something", () => {
+  // THE REAL CASE, 2026-09-16. A video was published at 19:12, its hand-post
+  // was confirmed at 19:15, and the flagship post went up at 19:17 — two
+  // minutes later. Two days on, a different video went out with a caption
+  // opening on the same words (the template), its receipt matched the same
+  // post, and under the original both-lose rule the 09-16 video lost an id
+  // that was certainly its own.
+  const POST_AT = "2026-09-16T19:17:00Z";
+  const near = () => [
+    publish({ driveFileId: "NEAR_SRC", deliveryDriveLink: "https://drive.google.com/file/d/NEAR_COPY/view", timestamp: "2026-09-16T19:12:00.000Z" }),
+    receipt({ driveFileId: "NEAR_COPY", timestamp: "2026-09-16T19:15:00.000Z", mainIgPostedAt: "2026-09-16T19:15:00.000Z" }),
+  ];
+  const far = () => [
+    publish({ driveFileId: "FAR_SRC", deliveryDriveLink: "https://drive.google.com/file/d/FAR_COPY/view", timestamp: "2026-09-18T16:16:00.000Z" }),
+    receipt({ driveFileId: "FAR_COPY", timestamp: "2026-09-18T17:14:00.000Z", mainIgPostedAt: "2026-09-18T17:14:00.000Z" }),
+  ];
+  const onePost = [igPost({ post_id: "CONTESTED", published: POST_AT })];
+
+  test("THE NEARER CONFIRMATION KEEPS IT — two minutes beats forty-six hours", () => {
+    const { resolved } = resolveOne([...near(), ...far()], onePost);
+    assert.equal(resolved.get("NEAR_SRC")?.ig_post_id, "CONTESTED");
+    assert.equal(resolved.has("FAR_SRC"), false);
+  });
+
+  test("the order the receipts appear in does not decide it", () => {
+    const { resolved } = resolveOne([...far(), ...near()], onePost);
+    assert.equal(resolved.get("NEAR_SRC")?.ig_post_id, "CONTESTED");
+    assert.equal(resolved.has("FAR_SRC"), false);
+  });
+
+  test("the winner SAYS it was contested, and names who else matched", () => {
+    const hit = resolveOne([...near(), ...far()], onePost).resolved.get("NEAR_SRC");
+    assert.equal(hit.contest.resolved_by, "proximity");
+    assert.equal(hit.contest.hours_from_post, 0);
+    assert.deepEqual(hit.contest.also_matched_by.map((o) => o.drive_file_id), ["FAR_SRC"]);
+    assert.ok(hit.contest.also_matched_by[0].hours_from_post > 40);
+  });
+
+  test("a won post is MEDIUM confidence even when the caption matched uniquely", () => {
+    const hit = resolveOne([...near(), ...far()], onePost).resolved.get("NEAR_SRC");
+    assert.equal(hit.method, "caption");
+    assert.equal(hit.confidence, "medium", "a post won from another claimant is weaker than one nobody else matched");
+  });
+
+  test("the loser's reason gives both distances, not a bare refusal", () => {
+    const { unresolved } = resolveOne([...near(), ...far()], onePost);
+    const loser = unresolved.find((u) => u.drive_file_id === "FAR_SRC");
+    assert.equal(loser.code, "contested");
+    assert.match(loser.why, /minute\(s\) from it by NEAR_SRC/);
+    assert.match(loser.why, /hours from it by this one/);
+    assert.match(loser.why, /the nearer confirmation keeps it/);
+  });
+
+  test("BOTH INSIDE THE WINDOW IS STILL A TIE — nobody gets it", () => {
+    const alsoNear = [
+      publish({ driveFileId: "NEAR2_SRC", deliveryDriveLink: "https://drive.google.com/file/d/NEAR2_COPY/view" }),
+      receipt({ driveFileId: "NEAR2_COPY", timestamp: "2026-09-16T19:20:00.000Z", mainIgPostedAt: "2026-09-16T19:20:00.000Z" }),
+    ];
+    const { resolved, unresolved } = resolveOne([...near(), ...alsoNear], onePost);
+    assert.equal(resolved.size, 0);
+    assert.ok(unresolved.every((u) => u.code === "contested"));
+    assert.match(unresolved[0].why, /2 are within 6h of it — all refused/);
+  });
+
+  test("NOBODY inside the window is also a tie — proximity must actually say something", () => {
+    const farA = [
+      publish({ driveFileId: "A_SRC", deliveryDriveLink: "https://drive.google.com/file/d/A_COPY/view" }),
+      receipt({ driveFileId: "A_COPY", timestamp: "2026-09-10T00:00:00.000Z", mainIgPostedAt: "2026-09-10T00:00:00.000Z" }),
+    ];
+    const { resolved, unresolved } = resolveOne([...farA, ...far()], onePost);
+    assert.equal(resolved.size, 0);
+    assert.match(unresolved[0].why, /none is within 6h of it — all refused/);
+  });
+
+  test("an uncontested post is untouched: no contest block, confidence unchanged", () => {
+    const hit = resolveOne(near(), onePost).resolved.get("NEAR_SRC");
+    assert.equal(hit.confidence, "high");
+    assert.equal("contest" in hit, false);
+  });
+});
+
+describe("the reason under a row belongs to THAT publish", () => {
+  // A Drive file may be published more than once — the 30-day no-repeat rule
+  // permits it. On the live data a JULY receipt's "ambiguous" was being shown
+  // against a SEPTEMBER publish of the same video.
+  const SRC = "REPUBLISHED_SRC";
+  const run = (rowPostedAt) =>
+    attachFlagship([manifestRow({ drive_file_id: SRC, posted_at: rowPostedAt })], {
+      resolved: new Map(),
+      unresolved: [
+        { drive_file_id: SRC, receipt_at: "2026-07-16T19:14:00.000Z", code: "ambiguous", why: "JULY REASON" },
+        { drive_file_id: SRC, receipt_at: "2026-09-16T19:15:00.000Z", code: "contested", why: "SEPTEMBER REASON" },
+      ],
+    })[0].flagship.reason;
+
+  test("a September publish gets the September receipt's reason", () => {
+    assert.equal(run("2026-09-16T19:12:00.000Z"), "SEPTEMBER REASON");
+  });
+
+  test("…and a July publish of the same video gets July's", () => {
+    assert.equal(run("2026-07-16T19:10:00.000Z"), "JULY REASON");
+  });
+
+  test("a row with no failures at all still says nothing has been confirmed", () => {
+    const rows = attachFlagship([manifestRow()], { resolved: new Map(), unresolved: [] });
+    assert.match(rows[0].flagship.reason, /no flagship hand-post has been confirmed/);
+  });
+
+  test("an undated reason is used when it is all there is, and loses to a dated one", () => {
+    const only = attachFlagship([manifestRow({ drive_file_id: SRC })], {
+      resolved: new Map(),
+      unresolved: [{ drive_file_id: SRC, code: "contested", why: "UNDATED" }],
+    })[0].flagship.reason;
+    assert.equal(only, "UNDATED");
+    const both = attachFlagship([manifestRow({ drive_file_id: SRC, posted_at: "2026-09-16T19:12:00.000Z" })], {
+      resolved: new Map(),
+      unresolved: [
+        { drive_file_id: SRC, code: "contested", why: "UNDATED" },
+        { drive_file_id: SRC, receipt_at: "2026-09-16T19:15:00.000Z", code: "contested", why: "DATED" },
+      ],
+    })[0].flagship.reason;
+    assert.equal(both, "DATED");
+  });
+
+  test("EVERY unresolved entry carries the receipt that produced it", () => {
+    // Without this the matching above silently degrades to "first one wins".
+    const { unresolved } = resolveOne(
+      [publish(), receipt(), publish({ driveFileId: "X", deliveryDriveLink: "https://drive.google.com/file/d/XC/view" }), receipt({ driveFileId: "XC" })],
+      [igPost({ published: "2026-09-18T17:15:00Z" })]
+    );
+    assert.ok(unresolved.length > 0);
+    for (const u of unresolved) assert.ok(u.receipt_at, `no receipt_at on a ${u.code} entry`);
   });
 });
