@@ -205,6 +205,51 @@ export async function uploadToFolder(folderId, name, buffer, mimeType = "applica
   return res.json();
 }
 
+/**
+ * Replace a file's CONTENTS, keeping its id. Returns the file metadata.
+ *
+ * The Drive connector the analyser's scheduled task runs under cannot do this —
+ * it can only change a file's metadata — which is why that task deletes and
+ * re-creates ig_posting_decision_latest.json on every run and why the file's id
+ * changes each time. This pipeline holds a full Drive OAuth token and has no
+ * such limit, so anything it publishes to Drive keeps one id for its whole life.
+ */
+export async function updateFileContents(fileId, buffer, mimeType = "application/json") {
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&fields=id,name,modifiedTime`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": mimeType },
+      body: buffer,
+    }
+  );
+  if (!res.ok) {
+    const err = await res.text().then((t) => t.slice(0, 200));
+    throw new Error(`Drive update failed (${res.status}): ${err}`);
+  }
+  return res.json();
+}
+
+/**
+ * Write `text` to `name` inside `folderId`: update in place when the file is
+ * already there, create it when it is not. Returns { id, created }.
+ *
+ * Update-in-place is the point. A reader that finds this file by name and takes
+ * the newest is safe either way, but a stable id is one less thing that can go
+ * wrong, and it means a link to this file keeps working.
+ */
+export async function upsertTextInFolder(folderId, name, text, mimeType = "application/json") {
+  const existing = await findInFolder(folderId, name);
+  const body = Buffer.from(text, "utf-8");
+  if (existing) {
+    await updateFileContents(existing, body, mimeType);
+    return { id: existing, created: false };
+  }
+  const made = await uploadToFolder(folderId, name, body, mimeType);
+  return { id: made?.id || null, created: true };
+}
+
 // ─── arbitrary folders ──────────────────────────────────────────────────────
 //
 // Everything above is scoped to the three city folders and the caches. The
