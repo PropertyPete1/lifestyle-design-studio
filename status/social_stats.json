@@ -1,7 +1,11 @@
 {
   "date": "2026-09-18",
   "posts_scheduled": 0,
-  "posts_published_today": {},
+  "posts_published_today": {
+    "instagram": 3,
+    "tiktok": 1,
+    "youtube_shorts": 1
+  },
   "failures": 0,
-  "last_run_iso": "2026-09-18T14:06:09Z"
+  "last_run_iso": "2026-09-18T16:23:08Z"
 }
