@@ -1638,6 +1638,97 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-09-19T17:10:58.694Z",
+      "drive_file_id": "1SaLDVuRc0pOHKgEIn7uzAqjIDfc25jpL",
+      "file_name": "73E6BD42-E8B3-4CD8-AEE8-B52D738D9D49.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "stop scrolling. this is what $663,990 gets you in Georgetown right now.\n\nbrand new construction homes that won't last long. builder incentives are moving these fast.\n\n✨ everyday living hits\nopen floor plan with natural light flooding through, modern finishes throughout, chef-ready kitchen with island. everything feels brand new because it is.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 b",
+      "slot": "am",
+      "run_id": "35456956441",
+      "targets": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blog_id": 4807109,
+          "post_id": 378642937,
+          "networks": [
+            "tiktok",
+            "youtube"
+          ]
+        },
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 378642992,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 378643030,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blog_id": 6493212,
+          "post_id": 378643064,
+          "networks": [
+            "instagram",
+            "facebook"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "tiktok",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7687294946168098061",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "youtube",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.youtube.com/shorts/jodRliVQ4Qw",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DdehBrSjwuS/",
+          "shortcode": "DdehBrSjwuS",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DdehFn1EZPN/",
+          "shortcode": "DdehFn1EZPN",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealty",
+          "url": "https://www.instagram.com/reel/DdehLSTlDVI/",
+          "shortcode": "DdehLSTlDVI",
+          "verified": true
+        },
+        {
+          "network": "facebook",
+          "label": "lifestyledesignrealty",
+          "url": "https://facebook.com/reel/1645359647308367",
+          "shortcode": null,
+          "verified": true
+        }
+      ]
     }
   ]
 }
