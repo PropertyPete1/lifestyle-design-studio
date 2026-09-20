@@ -1,76 +1,76 @@
 {
   "weights": {
-    "question": 0.76,
-    "bold_claim": 0.9,
-    "wait_tease": 1.05,
-    "reaction": 1.18,
-    "vibe": 1.02
+    "question": 0.96,
+    "bold_claim": 0.97,
+    "wait_tease": 0.84,
+    "reaction": 1.05,
+    "vibe": 0.95
   },
-  "lastUpdated": "2026-09-13T21:28:21.752Z",
+  "lastUpdated": "2026-09-20T22:49:03.762Z",
   "reelsAnalyzed": 18,
-  "classifiedCount": 15,
+  "classifiedCount": 10,
   "styleBreakdown": {
     "question": {
       "count": 2,
-      "avgScore": 521,
-      "weight": 0.76
+      "avgScore": 689,
+      "weight": 0.96
     },
     "bold_claim": {
-      "count": 2,
-      "avgScore": 582,
-      "weight": 0.9
+      "count": 0,
+      "avgScore": 0,
+      "weight": 0.97
     },
     "wait_tease": {
-      "count": 5,
-      "avgScore": 787,
-      "weight": 1.05
+      "count": 3,
+      "avgScore": 497,
+      "weight": 0.84
     },
     "reaction": {
       "count": 1,
-      "avgScore": 695,
-      "weight": 1.18
+      "avgScore": 662,
+      "weight": 1.05
     },
     "vibe": {
-      "count": 5,
-      "avgScore": 723,
-      "weight": 1.02
+      "count": 4,
+      "avgScore": 611,
+      "weight": 0.95
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/Dc9qbaKMs1H/",
+      "url": "https://www.instagram.com/reel/DdXmdQRs7X4/",
       "hookStyle": "unknown",
-      "score": 3608,
-      "views": 2181,
-      "firstLine": "WE HAVE OFFICIALLY LOST THE PLOT."
+      "score": 2606,
+      "views": 1788,
+      "firstLine": "Nobody tells you this until you’re sitting across from a realtor with a very con"
     },
     {
-      "url": "https://www.instagram.com/reel/Dc9Q_juMkmX/",
-      "hookStyle": "vibe",
-      "score": 1565,
-      "views": 1051,
-      "firstLine": "this is what new construction is supposed to feel like. mature trees. move in re"
+      "url": "https://www.instagram.com/reel/DdSaNEVsqZz/",
+      "hookStyle": "unknown",
+      "score": 1230,
+      "views": 912,
+      "firstLine": "Nobody teaches you this in school 🏡"
     },
     {
-      "url": "https://www.instagram.com/reel/Dc_1XpAMLLG/",
-      "hookStyle": "wait_tease",
-      "score": 1087,
-      "views": 825,
-      "firstLine": "This is the kind of new construction that makes you wonder why you waited so lon"
+      "url": "https://www.instagram.com/reel/DdR31LAMWJo/",
+      "hookStyle": "unknown",
+      "score": 1071,
+      "views": 763,
+      "firstLine": "Starting at $369,990 in San Antonio. The kind of new construction that makes you"
     },
     {
-      "url": "https://www.instagram.com/reel/DdMe992sen0/",
-      "hookStyle": "wait_tease",
-      "score": 1017,
-      "views": 671,
-      "firstLine": "stop scrolling. this is what new construction in San Antonio looks like right no"
+      "url": "https://www.instagram.com/reel/DdUJuarMW76/",
+      "hookStyle": "question",
+      "score": 1004,
+      "views": 660,
+      "firstLine": "would you believe this is brand new construction in San Antonio?"
     },
     {
-      "url": "https://www.instagram.com/reel/DdHe5GFMRBX/",
-      "hookStyle": "wait_tease",
-      "score": 974,
-      "views": 639,
-      "firstLine": "the kind of new construction that makes you wonder why you waited this long"
+      "url": "https://www.instagram.com/reel/DdPSczWsfrR/",
+      "hookStyle": "unknown",
+      "score": 932,
+      "views": 675,
+      "firstLine": "This kitchen hits different when you step into it for the first time."
     }
   ],
   "history": [
@@ -170,6 +170,17 @@
         "wait_tease": 1.05,
         "reaction": 1.18,
         "vibe": 1.02
+      },
+      "reelsAnalyzed": 18
+    },
+    {
+      "date": "2026-09-20",
+      "weights": {
+        "question": 0.96,
+        "bold_claim": 0.97,
+        "wait_tease": 0.84,
+        "reaction": 1.05,
+        "vibe": 0.95
       },
       "reelsAnalyzed": 18
     }
