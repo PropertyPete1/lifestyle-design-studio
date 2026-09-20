@@ -1911,6 +1911,97 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-09-20T19:06:56.212Z",
+      "drive_file_id": "1BI68DxyeR8BtRJ8eBZqNcM3OdqeiwncD",
+      "file_name": "0A19605A-FFE2-4213-909B-21BC63F3CACA.mp4",
+      "market": "san_antonio",
+      "community": "Northeast",
+      "caption": "POV: you just stepped into a brand new home where everything actually works.\n\nNew construction in San Antonio doesn't sit long. These are moving fast.\n\n✨ everyday living hits\nOpen floor plan, natural light flooding through, modern finishes throughout. Kitchen island ready for mornings and gatherings. Everything clean, everything new, everything yours from day one.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact nu",
+      "slot": "pm",
+      "run_id": "35531069445",
+      "targets": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blog_id": 4807109,
+          "post_id": 378997572,
+          "networks": [
+            "tiktok",
+            "youtube"
+          ]
+        },
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 378997580,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 378997584,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blog_id": 6493212,
+          "post_id": 378997589,
+          "networks": [
+            "instagram",
+            "facebook"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "tiktok",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7687696081794125069",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "youtube",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.youtube.com/shorts/JLabXSgRidM",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DdhTJnGgCut/",
+          "shortcode": "DdhTJnGgCut",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DdhTJfFgeYX/",
+          "shortcode": "DdhTJfFgeYX",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealty",
+          "url": "https://www.instagram.com/reel/DdhTO1ulOre/",
+          "shortcode": "DdhTO1ulOre",
+          "verified": true
+        },
+        {
+          "network": "facebook",
+          "label": "lifestyledesignrealty",
+          "url": "https://facebook.com/reel/2287980018625474",
+          "shortcode": null,
+          "verified": true
+        }
+      ]
     }
   ]
 }
