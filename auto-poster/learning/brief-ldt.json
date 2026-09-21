@@ -1,7 +1,7 @@
 {
   "brand": "ldt",
   "engine": "learn-v1",
-  "generated_at": "2026-09-14T19:53:58.749Z",
+  "generated_at": "2026-09-21T20:04:30.770Z",
   "window_days": 28,
   "sample": {
     "posts_scored": 6,
@@ -29,8 +29,8 @@
     },
     "pov": {
       "n": 1,
-      "score": 16,
-      "median": 16,
+      "score": 17,
+      "median": 17,
       "verdict": "insufficient_sample"
     },
     "bold_claim": {
@@ -41,8 +41,8 @@
     },
     "stat": {
       "n": 1,
-      "score": 42,
-      "median": 42,
+      "score": 58,
+      "median": 58,
       "verdict": "insufficient_sample"
     }
   },
@@ -52,14 +52,14 @@
     "table": {
       "pm": {
         "n": 11,
-        "score": 63,
-        "median": 36,
+        "score": 65,
+        "median": 39,
         "verdict": "mid"
       },
       "midday": {
         "n": 6,
-        "score": 69,
-        "median": 36,
+        "score": 70,
+        "median": 40,
         "verdict": "winner"
       }
     }
@@ -69,7 +69,7 @@
     "table": {
       "ldt": {
         "n": 6,
-        "score": 52,
+        "score": 54,
         "median": 37,
         "verdict": "winner"
       }
@@ -91,6 +91,16 @@
       "posted": "2026-08-31T20:42:35.197Z"
     },
     {
+      "hook": "4,400+ contacts live on the floor today. Cold calls running at 2 AM. Pipeline briefed at 7:05 AM. PRIMARY watches it all while you sleep, th",
+      "hook_style": "stat",
+      "provenance": "tagged",
+      "score": 58,
+      "score_basis": "instagram_median",
+      "ig_views_median": 25,
+      "city": "ldt",
+      "posted": "2026-09-03T00:53:37.778Z"
+    },
+    {
       "hook": "Watch what happens when a lead replies. PRIMARY drafts the call notes from your speaker call, posts them to your CRM, and logs everything. a",
       "hook_style": "pattern_interrupt",
       "provenance": "tagged",
@@ -101,22 +111,12 @@
       "posted": "2026-08-31T01:01:36.437Z"
     },
     {
-      "hook": "4,400+ contacts live on the floor today. Cold calls running at 2 AM. Pipeline briefed at 7:05 AM. PRIMARY watches it all while you sleep, th",
-      "hook_style": "stat",
-      "provenance": "tagged",
-      "score": 42,
-      "score_basis": "instagram_median",
-      "ig_views_median": 21,
-      "city": "ldt",
-      "posted": "2026-09-03T00:53:37.778Z"
-    },
-    {
       "hook": "I watched the pipeline while he slept. He approved every send. New leads got contacted before his first meeting. Cold database got worked au",
       "hook_style": "bold_claim",
       "provenance": "tagged",
-      "score": 32,
+      "score": 33,
       "score_basis": "instagram_median",
-      "ig_views_median": 23,
+      "ig_views_median": 24,
       "city": "ldt",
       "posted": "2026-09-04T00:37:10.408Z"
     },
