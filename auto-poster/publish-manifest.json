@@ -2184,6 +2184,97 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-09-22T17:11:20.060Z",
+      "drive_file_id": "1HupS-mdhgx4b42nkilua3nWGDdJJQzBI",
+      "file_name": "BAB25A82-9EF1-496C-8901-06AB1D288C85.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "POV: you just stepped into a brand new home that actually feels like home\n\nNew construction in Kyle moves fast. homes like this one have everything buyers in this market are looking for.\n\n✨ open floor plan with natural light flooding through, modern finishes, and that fresh-built feeling you can't fake. kitchen is built for real living, not just looking at.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers o",
+      "slot": "am",
+      "run_id": "35758423493",
+      "targets": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blog_id": 4807109,
+          "post_id": 380227344,
+          "networks": [
+            "tiktok",
+            "youtube"
+          ]
+        },
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 380227396,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 380227446,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blog_id": 6493212,
+          "post_id": 380227500,
+          "networks": [
+            "instagram",
+            "facebook"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "tiktok",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7688408203138190606",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "youtube",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.youtube.com/shorts/Qn4D0HkB6Zc",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DdmPfFnEoQn/",
+          "shortcode": "DdmPfFnEoQn",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DdmPiOtAqzN/",
+          "shortcode": "DdmPiOtAqzN",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealty",
+          "url": "https://www.instagram.com/reel/DdmPgj3DeUX/",
+          "shortcode": "DdmPgj3DeUX",
+          "verified": true
+        },
+        {
+          "network": "facebook",
+          "label": "lifestyledesignrealty",
+          "url": "https://facebook.com/reel/2258049091646966",
+          "shortcode": null,
+          "verified": true
+        }
+      ]
     }
   ]
 }
