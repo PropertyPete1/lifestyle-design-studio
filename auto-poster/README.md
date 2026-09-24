@@ -24,20 +24,79 @@ calling the GitHub API, and that is no longer how any of it fires.
 8. Wait ~7 minutes and confirm `PUBLISHED`; exit non-zero if it did not
 9. Append to `posted-log.json` and push it back with `merge-log-push.mjs`
 
-## Schedule
+## Schedule — one reel a day, one market a day (since 2026-09-24)
 
-| City | Slots (CT) |
-| --- | --- |
-| San Antonio | 11:00 AM, 2:00 PM |
-| Austin | 12:00 PM, 3:00 PM |
-| Dallas / DFW | 4:00 PM |
+| What | When (CT) | Cron (UTC) |
+| --- | --- | --- |
+| The daily reel | 12:45 PM during CDT, 11:45 AM during CST (+ a 30-minute backup) | `45 17 * * *`, `15 18 * * *` |
+| Trial variant (posts nowhere) | 8:15 AM, 6:45 PM | `15 13 * * *`, `45 23 * * *` |
 
-All three post **daily**. Each slot has a `:30` backup cron; the slot-aware
-idempotency guard makes a double fire safe.
+**Which market.** San Antonio → Austin → Dallas, by Chicago calendar date, anchored
+2026-09-24 = San Antonio (`MARKET_ROTATION_ANCHOR` in `src/cadence.js`) — unless the
+day's decision file names a market in its `today` block, in which case that market
+takes the day. The calendar owns the sequence: a named Tuesday does not shift
+Wednesday. `scripts/market-today.mjs` resolves this for the workflow before
+`main.js` runs; `main.js` resolves it again and its gate refuses a mismatch.
 
-Trial variants run at 8:15 AM and 6:45 PM CT. The carousel no longer runs on a
-schedule — it was retired 2026-09-04 and is manual dispatch only (`city=carousel`);
-its 9:00 AM CT cron is kept commented in `post.yml` for whoever restores it.
+**Why 12:45 PM.** The decision task that names the market and video runs daily at
+11:00 AM CT (Central time, so it moves with DST while GitHub's UTC crons do not).
+17:45 UTC is after it in both regimes — 45 minutes clear in winter — and inside the
+11am–1pm CT band Metricool rates best for the account. A reader that fires alongside
+the writer would read yesterday's file about half the time.
+
+**The gate is the law** (`cadenceGate` in `src/cadence.js`). Whatever starts a run —
+the cron, the Actions tab, or the external dispatcher that still fires the retired
+city slots several times a day — only today's market, on the `am` slot, with the
+day's single publish unspent, gets past it. Anything else exits clean having posted
+nothing; a dispatch standing down is an annotation on the run, the *scheduled* slot
+standing down is a `[DAILY ALERT]` mail, because that means nothing posts today.
+
+The retired city crons (SA 16:00/16:30, ATX 17:00/17:30, SA 19:00/19:30, ATX
+20:00/20:30, DFW 21:00/21:30) are kept commented in `post.yml`. Restoring one also
+needs the gate's law relaxed, or the restored slot stands down every day.
+
+The carousel no longer runs on a schedule — it was retired 2026-09-04 and is manual
+dispatch only (`city=carousel`); its 9:00 AM CT cron is kept commented in
+`post.yml` for whoever restores it.
+
+## Cadence
+
+`cadence.json` holds the daily cap: **target 1, floor 1, ceiling 2** since
+2026-09-24 (an `actor: "operator"` history entry — Instagram rate-limiting — not a
+loop step; the code defaults in `src/cadence.js` match it so a corrupt file cannot
+reopen 2/day). The loop in `main.js` Step 0b may move the target one step per
+14 days toward the decision file's `how_many.posts_per_day`, within the floor and
+ceiling, and records every hold. Every change is also appended to
+`status/posting_cadence.json` for PRIMARY to read.
+
+## Decision file — today's market and video
+
+The scheduled decision task writes `ig_posting_decision_latest.json` to the
+"Ready to Post" folder daily at 11:00 AM CT. Besides `how_many` and
+`hooks_that_work`, it may carry a `today` block:
+
+```json
+"today": {
+  "date": "2026-09-25",
+  "market": "austin",
+  "drive_file_id": "1abc…",
+  "reason": "optional — carried into the run log"
+}
+```
+
+- `date` is the Chicago calendar day the block is for. It **must equal today** or
+  the block is ignored; a block with no date is scoped by the file's Drive
+  modifiedTime instead (written today = honoured). Yesterday's file never names
+  today's market or video.
+- `market` accepts `san_antonio` / `austin` / `dallas`, the plain city names, or
+  `SA` / `ATX` / `DFW`. An unrecognised name is refused and the rotation decides.
+- `drive_file_id` is the one video. It goes to the head of the ranked queue and is
+  still subject to every Step 3 filter (30-day rule, blocklist, skip list, the
+  right city's folder) — advice, not law. `safe_to_act: false` suppresses it, as
+  it suppresses `post[]`; the market is honoured regardless, as `how_many` is.
+
+The reader is `readTodayBlock` in `src/drive-decision.js`; every run's Step 0 says
+what the block did and why.
 
 ## Manual trigger
 
@@ -46,7 +105,7 @@ its 9:00 AM CT cron is kept commented in `post.yml` for whoever restores it.
 | Input | Effect |
 | --- | --- |
 | `dry_run` | Full pipeline, publishes nothing |
-| `force` | Bypasses the content-duplicate guard. (It does **not** bypass any cadence rule — there is no longer one to bypass.) |
+| `force` | Bypasses the content-duplicate guard. It does **not** bypass the cadence gate: only today's market, on the `am` slot, with the day's publish unspent, can post. |
 | `test_delivery_only` | Real Drive upload + email + dashboard, zero social posts |
 | `force_video_id` | Pin a specific Drive file, skipping rotation and filtering |
 
@@ -113,6 +172,7 @@ invalidates the token every scheduled job is currently using.
 | Verification failed (red X) | Check the GitHub notification email — the platform may have rejected the post |
 | A carousel logged success but nothing appeared | The scheduler returning 200 means *accepted*, not published. That is why step 8 verifies; TikTok hit exactly this on 2026-08-03 |
 | A script refuses to start | It touches a live system. Read what it prints, then set `I_UNDERSTAND_THIS_TOUCHES_LIVE=yes` if you mean it |
+| A run "stood down at the cadence gate" | Working as designed: not today's market, the retired `pm` slot, or the day's one publish already made. The `[Step 0b]` lines name today's market and why. If it was the *scheduled* slot, compare the `[MarketToday]` lines of the market step with `[Step 0]` — they read the same decision file and must agree |
 
 ## Data files
 

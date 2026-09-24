@@ -32,6 +32,7 @@ import {
   findDecisionFile,
   DEFAULT_DECISION_FOLDER_ID,
   decisionFileLog,
+  readTodayBlock,
 } from "../src/drive-decision.js";
 
 const NOW = Date.parse("2026-09-09T18:00:00Z");
@@ -268,6 +269,177 @@ describe("cadence is read, not enforced", () => {
     const plan = planFromDecision({ how_many: { posts_per_day: 1 } });
     const { candidates } = applyDecision([{ id: "a" }, { id: "b" }, { id: "c" }], plan);
     assert.equal(candidates.length, 3);
+  });
+});
+
+describe("the daily writer's `today` block — the market and the one video, day-scoped", () => {
+  // 12:45 CT on Friday 2026-09-25 — the daily slot, the day after the law shipped.
+  const NOON = Date.parse("2026-09-25T17:45:00Z");
+  const writtenToday = "2026-09-25T16:05:00Z";     // 11:05 CT today — the 11am writer
+  const writtenYesterday = "2026-09-24T16:05:00Z";
+
+  test("THE CONTRACT: date + market + drive_file_id for today are honoured, market normalised", () => {
+    const t = readTodayBlock({ today: { date: "2026-09-25", market: "ATX", drive_file_id: "vid-1", reason: "hot listing" } }, { now: NOON });
+    assert.equal(t.present, true);
+    assert.equal(t.honoured, true);
+    assert.equal(t.market, "austin");
+    assert.equal(t.requestedMarket, "ATX", "what the writer actually said is kept for the log");
+    assert.equal(t.driveFileId, "vid-1");
+    assert.equal(t.videoHonoured, true);
+  });
+
+  test("a block for ANOTHER day is ignored — yesterday's file names nothing today", () => {
+    // The writer runs at 11:00 CT and the reader at 12:45 CT. If the writer
+    // missed a day, the reader finds yesterday's block; honouring it would
+    // re-run yesterday's market and video.
+    const t = readTodayBlock({ today: { date: "2026-09-24", market: "austin", drive_file_id: "vid-1" } }, { now: NOON });
+    assert.equal(t.present, true);
+    assert.equal(t.honoured, false);
+    assert.equal(t.market, null, "the rotation decides");
+    assert.equal(t.videoHonoured, false);
+    assert.match(t.reason, /for 2026-09-24, today is 2026-09-25 — ignored/);
+  });
+
+  test("with no date in the block, the file's Drive modifiedTime scopes it — today's file counts", () => {
+    const t = readTodayBlock({ today: { market: "Dallas", drive_file_id: "vid-2" } }, { now: NOON, modifiedTime: writtenToday });
+    assert.equal(t.honoured, true);
+    assert.equal(t.market, "dallas");
+    assert.match(t.reason, /written today/);
+  });
+
+  test("…and yesterday's file does not", () => {
+    const t = readTodayBlock({ today: { market: "Dallas", drive_file_id: "vid-2" } }, { now: NOON, modifiedTime: writtenYesterday });
+    assert.equal(t.honoured, false);
+    assert.equal(t.market, null);
+    assert.match(t.reason, /written 2026-09-24, not today/);
+  });
+
+  test("no date and no modifiedTime: cannot tell which day it is for, so ignored", () => {
+    const t = readTodayBlock({ today: { market: "austin" } }, { now: NOON });
+    assert.equal(t.honoured, false);
+    assert.match(t.reason, /cannot tell which day/);
+  });
+
+  test("the day boundary is Chicago's: a block dated today is honoured at 23:59 CT and not at 00:01 CT tomorrow", () => {
+    const block = { today: { date: "2026-09-25", market: "austin" } };
+    assert.equal(readTodayBlock(block, { now: Date.parse("2026-09-26T04:59:00Z") }).honoured, true, "23:59 CT on the 25th");
+    assert.equal(readTodayBlock(block, { now: Date.parse("2026-09-26T05:01:00Z") }).honoured, false, "00:01 CT on the 26th");
+  });
+
+  test("a datetime in `date` is read by its Chicago day", () => {
+    assert.equal(readTodayBlock({ today: { date: "2026-09-25T11:00:00-05:00", market: "austin" } }, { now: NOON }).honoured, true);
+    assert.equal(readTodayBlock({ today: { date: "2026-09-26T01:00:00Z", market: "austin" } }, { now: NOON }).honoured, true, "01:00Z on the 26th is 20:00 CT on the 25th");
+  });
+
+  test("an unrecognised market is null — the rotation decides — and the reason says which name was refused", () => {
+    const t = readTodayBlock({ today: { date: "2026-09-25", market: "Houston", drive_file_id: "vid-3" } }, { now: NOON });
+    assert.equal(t.honoured, true);
+    assert.equal(t.market, null);
+    assert.match(t.reason, /"Houston" is not one of san_antonio, austin, dallas/);
+    assert.equal(t.videoHonoured, true, "the video is still named — it will simply not be in the wrong city's pool");
+  });
+
+  test("THE VIDEO IS QUEUE CONTENT: safe_to_act false suppresses it, the MARKET is honoured regardless", () => {
+    // Same reasoning as post[] and how_many on 2026-09-10: a false flag means
+    // the writer's post-to-video matching is not trustworthy, and a named
+    // drive_file_id IS that matching. The market risks no repost.
+    const t = readTodayBlock({ today: { date: "2026-09-25", market: "austin", drive_file_id: "vid-1" } }, { now: NOON, safeToAct: false });
+    assert.equal(t.market, "austin");
+    assert.equal(t.videoHonoured, false);
+    assert.match(t.reason, /safe_to_act is false — not used/);
+  });
+
+  test("a market-only block names the market and no video", () => {
+    const t = readTodayBlock({ today: { date: "2026-09-25", market: "san antonio" } }, { now: NOON });
+    assert.equal(t.market, "san_antonio");
+    assert.equal(t.driveFileId, null);
+    assert.equal(t.videoHonoured, false);
+  });
+
+  test("a video-only block names the video and leaves the market to the rotation", () => {
+    const t = readTodayBlock({ today: { date: "2026-09-25", drive_file_id: "vid-9" } }, { now: NOON });
+    assert.equal(t.market, null);
+    assert.equal(t.videoHonoured, true);
+    assert.match(t.reason, /no market named — the rotation decides/);
+  });
+
+  test("`city`, `video_id` and `video.drive_file_id` are accepted spellings; blanks are null", () => {
+    assert.equal(readTodayBlock({ today: { date: "2026-09-25", city: "DFW" } }, { now: NOON }).market, "dallas");
+    assert.equal(readTodayBlock({ today: { date: "2026-09-25", video_id: " v " } }, { now: NOON }).driveFileId, "v");
+    assert.equal(readTodayBlock({ today: { date: "2026-09-25", video: { drive_file_id: "w" } } }, { now: NOON }).driveFileId, "w");
+    assert.equal(readTodayBlock({ today: { date: "2026-09-25", drive_file_id: "   " } }, { now: NOON }).driveFileId, null);
+    assert.equal(readTodayBlock({ today: { date: "2026-09-25", drive_file_id: 42 } }, { now: NOON }).driveFileId, null);
+  });
+
+  test("no block, a null block, an array or a scalar: present false, never a throw", () => {
+    for (const d of [{}, { today: null }, { today: [] }, { today: "austin" }, null, undefined]) {
+      const t = readTodayBlock(d, { now: NOON });
+      assert.equal(t.present, false, JSON.stringify(d));
+      assert.equal(t.market, null);
+    }
+  });
+
+  test("planFromDecision carries the block and puts the named video at RANK 0, ahead of post[]", () => {
+    const plan = planFromDecision({
+      today: { date: "2026-09-25", market: "austin", drive_file_id: "named" },
+      post: [{ rank: 1, drive_file_id: "first" }, { rank: 2, drive_file_id: "second" }],
+    }, { now: NOON });
+    assert.equal(plan.today.market, "austin");
+    assert.deepEqual(plan.ranked.map((r) => r.driveFileId), ["named", "first", "second"]);
+    assert.equal(plan.ranked[0].rank, 0);
+    assert.equal(plan.ranked[0].confidence, "named");
+    assert.equal(plan.rankIndex.get("named"), 0);
+  });
+
+  test("a named video that also appears in post[] is one entry, at rank 0", () => {
+    const plan = planFromDecision({
+      today: { date: "2026-09-25", drive_file_id: "dup" },
+      post: [{ rank: 1, drive_file_id: "other" }, { rank: 2, drive_file_id: "dup" }],
+    }, { now: NOON });
+    assert.deepEqual(plan.ranked.map((r) => r.driveFileId), ["dup", "other"]);
+  });
+
+  test("the named video is ADVICE: applyDecision puts it first when eligible and cannot insert it when it is not", () => {
+    const plan = planFromDecision({ today: { date: "2026-09-25", drive_file_id: "named" } }, { now: NOON });
+    const eligible = [{ id: "a" }, { id: "named" }, { id: "b" }];
+    assert.deepEqual(applyDecision(eligible, plan).candidates.map((v) => v.id), ["named", "a", "b"]);
+    // Excluded by the 30-day rule, the blocklist, or simply the other city's
+    // folder: not in the pool, so not posted — the pool is untouched.
+    assert.deepEqual(applyDecision([{ id: "a" }, { id: "b" }], plan).candidates.map((v) => v.id), ["a", "b"]);
+  });
+
+  test("safe_to_act false keeps the named video OUT of the ranked queue, through the plan too", () => {
+    const plan = planFromDecision({ today: { date: "2026-09-25", market: "austin", drive_file_id: "named" }, post: [] }, { now: NOON, safeToAct: false });
+    assert.deepEqual(plan.ranked, []);
+    assert.equal(plan.today.market, "austin", "the market still stands");
+  });
+
+  test("loadDecision scopes the block to the SAME clock it judged staleness with", async () => {
+    // The plan must not be built with Date.now() while the parse used `now`:
+    // a test at a fixed `now` would then see the block honoured or not by
+    // wall-clock accident, and so would a replay.
+    const file = { id: "f", modifiedTime: writtenToday };
+    const decision = await loadDecision({
+      now: NOON,
+      deps: {
+        findDecisionFile: async () => file,
+        downloadFileById: async () => Buffer.from(fresh({ today: { market: "austin", drive_file_id: "v" } })),
+      },
+    });
+    assert.equal(decision.usable, true);
+    assert.equal(decision.plan.today.honoured, true, "written today by modifiedTime");
+    assert.equal(decision.plan.today.market, "austin");
+    const stale = await loadDecision({
+      now: NOON + 86400000,
+      deps: { findDecisionFile: async () => file, downloadFileById: async () => Buffer.from(fresh({ today: { market: "austin" } })) },
+    });
+    assert.equal(stale.plan.today.honoured, false, "the same file, read a day later, names nothing");
+  });
+
+  test("Step 0 SAYS what the block did — main.js prints the reason and hands the market to the gate", () => {
+    const main = readFileSync(new URL("../src/main.js", import.meta.url), "utf-8");
+    assert.match(main, /\[Step 0\] Today block: \$\{todayBlock\.reason\}/);
+    assert.match(main, /namedMarket: decision\.plan\?\.today\?\.market \?\? null/);
   });
 });
 

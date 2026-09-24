@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "target": 2,
+  "target": 1,
   "floor": 1,
-  "ceiling": 3,
-  "changed_at": "2026-09-10T21:00:00.000Z",
+  "ceiling": 2,
+  "changed_at": "2026-09-24T15:27:42.719Z",
   "history": [
     {
       "at": "2026-09-10T21:00:00.000Z",
@@ -50,6 +50,54 @@
         ],
         "note": "Set directly by the operator, not by the loop. The one-step rule governs the LOOP; it is not a limit on a deliberate operator decision, which is why this moves 4 -> 2 in one entry. The decision file that supplied the number carries safe_to_act: false, which as of this change suppresses post[]/dont_post[] only — how_many is a separate analysis and is unaffected by the missing publish manifest.",
         "scope_caveat": "Measured on the flagship account @lifestyledesignrealtytexas, which this pipeline does NOT post to (mainBrandSkipIG withholds it for native posting). This cap governs the 3 satellite Instagram accounts, the main TikTok and the main YouTube Short, and the supply of Drive deliveries. It does not put the flagship at 2/day."
+      },
+      "run_id": null
+    },
+    {
+      "at": "2026-09-24T15:27:42.719Z",
+      "day": "2026-09-24",
+      "from": 2,
+      "to": 1,
+      "proposed": 1,
+      "actor": "operator",
+      "evidence": {
+        "source": "operator (Peter), 2026-09-24 — Instagram is rate-limiting/restricting the accounts",
+        "window": "2026-09-17 to 2026-09-23 (7 Chicago days), posted-log.json cross-checked against the Metricool Instagram reels connector",
+        "rationale": "Instagram is rate-limiting/restricting the accounts. Over the 7 Chicago days to 2026-09-23 this pipeline published 2 videos every single day (the 2/day cap binding on all 7) — 14 publishes, each fanned to 3 satellite Instagram accounts (42 satellite reels) plus the main TikTok and YouTube Short. Metricool shows ~20 reels per satellite account in the same window, so roughly 6 per account came from outside this pipeline, and 17 reels on the flagship (Peter, natively). Dropping to ONE publish a day, ONE market a day, to give the accounts room.",
+        "observed_publishes_last_7d": [
+          {
+            "date": "2026-09-23",
+            "posts": 2
+          },
+          {
+            "date": "2026-09-22",
+            "posts": 2
+          },
+          {
+            "date": "2026-09-21",
+            "posts": 2
+          },
+          {
+            "date": "2026-09-20",
+            "posts": 2
+          },
+          {
+            "date": "2026-09-19",
+            "posts": 2
+          },
+          {
+            "date": "2026-09-18",
+            "posts": 2
+          },
+          {
+            "date": "2026-09-17",
+            "posts": 2
+          }
+        ],
+        "runs_reaching_gate": "7-11 main.js runs a day reached the gate over 2026-09-19..23 against 6 possible cron fires. The retired city slots are still dispatched from outside this repo, several times a day; SA pm (retired 2026-09-10) PUBLISHED on 5 of the 7 days because the old gate let a slot it did not model through on the plain count. The gate now refuses any run that is not today's market on the one live slot.",
+        "new_law": "one slot a day (am; post.yml 17:45 UTC + 18:15 UTC backup), market rotates san_antonio -> austin -> dallas by Chicago date anchored 2026-09-24 = san_antonio; the decision file's `today` block may name the day's market and one video (day-scoped); everything else stands down at the gate, whoever dispatched it.",
+        "note": "Set directly by the operator, not by the loop. The one-step rule governs the LOOP and does not limit a deliberate operator decision — the same reasoning as the 2026-09-10 entry (4 -> 2). Floor 1, ceiling 2 (was 3): the loop may step back to 2 after the dwell period if the decision file argues for it, and no further. The code defaults in cadence.js were moved to 1/1/2 at the same time so a missing or corrupt cadence.json reads as this law, not as the old 2/day.",
+        "scope_caveat": "This cap governs the 3 satellite Instagram accounts, the main TikTok and the main YouTube Short, and the supply of Drive deliveries. The flagship @lifestyledesignrealtytexas is never posted to by this pipeline (mainBrandSkipIG) — its 2-4 reels a day in the window were posted natively and are a manual-posting decision."
       },
       "run_id": null
     }
