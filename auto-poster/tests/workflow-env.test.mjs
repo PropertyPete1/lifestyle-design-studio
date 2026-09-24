@@ -196,9 +196,11 @@ describe("the distribution sweep's credentials reach the job that runs it", () =
 describe("the daily workflow's credentials reach the jobs that need them", () => {
   const daily = jobs(DAILY_WORKFLOW);
 
-  const VOICEOVER_JOBS = ["post-san-antonio", "post-austin", "post-dallas", "trial-variant"];
+  // post-daily replaced the three city jobs on 2026-09-24 (one slot a day,
+  // market by rotation). One env block to keep in step instead of three.
+  const VOICEOVER_JOBS = ["post-daily", "trial-variant"];
 
-  test("the daily workflow is parseable into its five jobs", () => {
+  test("the daily workflow is parseable into its three jobs", () => {
     for (const j of [...VOICEOVER_JOBS, "post-carousel"]) {
       assert.ok(daily[j], `no ${j} job found in post.yml`);
     }
@@ -242,7 +244,7 @@ describe("the daily workflow's credentials reach the jobs that need them", () =>
    * four days of duplicate posts through.
    */
   test("the job that posts LinkedIn can read the live log", () => {
-    assert.match(daily["post-san-antonio"], /GITHUB_TOKEN:/, "the SA job runs the LinkedIn block and needs GITHUB_TOKEN for the live duplicate check");
+    assert.match(daily["post-daily"], /GITHUB_TOKEN:/, "the daily job runs the LinkedIn block and needs GITHUB_TOKEN for the live duplicate check");
   });
 
   test("every daily job can send its own failure alert", () => {
@@ -299,7 +301,7 @@ describe("no workflow env block repeats a key", () => {
  */
 describe("the decision reader's folder scope reaches the posting jobs", () => {
   const daily = jobs(DAILY_WORKFLOW);
-  const MAIN_JS_JOBS = ["post-san-antonio", "post-austin", "post-dallas"];
+  const MAIN_JS_JOBS = ["post-daily"];
 
   test("every job that runs src/main.js passes DECISION_FOLDER_ID", () => {
     const missing = MAIN_JS_JOBS.filter((j) => !/DECISION_FOLDER_ID:\s*\$\{\{\s*vars\.DECISION_FOLDER_ID\s*\}\}/.test(daily[j] || ""));
@@ -311,6 +313,20 @@ describe("the decision reader's folder scope reaches the posting jobs", () => {
       const runsMain = /node src\/main\.js/.test(text);
       const hasVar = /DECISION_FOLDER_ID:/.test(text);
       assert.equal(hasVar, runsMain, `${name}: runs main.js=${runsMain} but DECISION_FOLDER_ID=${hasVar}`);
+    }
+  });
+
+  test("the market step reads the decision file with the SAME folder scope and the SAME Drive creds as main.js", () => {
+    // scripts/market-today.mjs decides which city the cron runs as by reading
+    // the decision file's today block. Reading it from a different folder, or
+    // with no creds, would make the step and the gate disagree on every day
+    // the file names a market — and the gate would stand the slot down.
+    const body = daily["post-daily"];
+    const step = body.slice(body.indexOf("Resolve today's market"), body.indexOf("Run auto-poster"));
+    assert.ok(step.length > 0, "no market step in post-daily");
+    assert.match(step, /scripts\/market-today\.mjs/);
+    for (const key of ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN", "DECISION_FOLDER_ID"]) {
+      assert.match(step, new RegExp(`${key}:`), `the market step lacks ${key}`);
     }
   });
 

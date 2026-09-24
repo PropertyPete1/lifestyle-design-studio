@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "changes": [
+    {
+      "at": "2026-09-24T15:27:42.864Z",
+      "from": 2,
+      "to": 1,
+      "proposed": 1,
+      "rationale": "Instagram is rate-limiting/restricting the accounts. Over the 7 days to 2026-09-23 the pipeline published 2 videos every day, each to 3 satellite Instagram accounts, and the satellites were seeing about 3 reels a day each including posts from outside the pipeline. Set directly by Peter on 2026-09-24, not by the loop. One market a day now too: San Antonio, then Austin, then Dallas, by Chicago date, unless the day's decision file names one.",
+      "announcement": "Dropped posting to 1 a day, from 2. Instagram is rate-limiting/restricting the accounts. Over the 7 days to 2026-09-23 the pipeline published 2 videos every day, each to 3 satellite Instagram accounts, and the satellites were seeing about 3 reels a day each including posts from outside the pipeline. Set directly by Peter on 2026-09-24, not by the loop. One market a day now too: San Antonio, then Austin, then Dallas, by Chicago date, unless the day's decision file names one.",
+      "unit": "realty pipeline publishes per Chicago day",
+      "fan_out_note": "one publish reaches 3 satellite Instagram accounts plus TikTok and YouTube on the main brand; the main brand's Instagram is posted natively by Peter",
+      "floor": 1,
+      "ceiling": 2,
+      "run_id": null
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 /**
- * cadence.js — a real daily cap on the realty lane, and a loop that moves it.
+ * cadence.js — a real daily cap on the realty lane, the market rotation that
+ * decides WHO gets the day, and a loop that moves the cap.
  *
  * THE UNIT IS ONE PIPELINE PUBLISH PER CHICAGO DAY, pooled across cities.
  *
@@ -32,7 +33,7 @@
  *     imports no Metricool posting function and records platforms: [] on all 51
  *     rows ever written; it renders a variant to Drive for manual posting.
  *     Counting it without gating it would also starve the real lane, since its
- *     13:15Z cron fires before the first realty slot at 16:00Z.
+ *     13:15Z cron fires before the daily slot.
  *   - manual_confirm is EXCLUDED — it is the main-Instagram leg of a publish
  *     already counted. 78 of 81 such rows pair with a same-day, same-city
  *     main-lane row; they carry the DELIVERED file's Drive id rather than the
@@ -40,9 +41,34 @@
  *   - linkedin and the ldt_* lanes are EXCLUDED — different networks, and LDT
  *     is paused.
  *
- * MEASURED BASELINE (2026-09-09, last 14 Chicago days): 2.36 publishes/day,
- * min 2, max 3 — against five cron slots. Slots routinely find nothing
- * eligible, so the gate binds far less often than the schedule suggests.
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THE LAW, AS OF 2026-09-24 — Instagram is rate-limiting the accounts.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *   1. ONE publish per Chicago day. cadence.json target 1, floor 1, ceiling 2,
+ *      set directly by the operator (a history entry, not a loop step).
+ *   2. ONE slot per day — DAILY_SLOT ("am"). Every other slot is retired.
+ *   3. ONE market per day, rotating by Chicago date: San Antonio → Austin →
+ *      Dallas, anchored so 2026-09-24 is San Antonio. Derived from the date
+ *      alone — no cursor, nothing to drift, two runs on one day always agree.
+ *   4. The decision file may NAME today's market (its `today` block, read and
+ *      day-scoped in drive-decision.js). When it does, that market takes the
+ *      day; when it does not, the rotation does. The file overrides a day; the
+ *      calendar owns the sequence, so a named Tuesday does not shift Wednesday.
+ *   5. THE GATE IS THE LAW. A run for any other city, any other slot, or a day
+ *      already spent exits clean having posted nothing — whoever dispatched it.
+ *      post.yml no longer fires the retired slots, but something outside this
+ *      repo still does: over 2026-09-19..23, 7-11 runs a day reached this gate
+ *      against 6 possible cron fires, and the SA pm slot (retired 2026-09-10)
+ *      PUBLISHED on 5 of 7 days because the old gate let a slot it did not
+ *      model through on the plain count. That exception is gone: a slot the
+ *      law does not name never publishes.
+ *
+ * MEASURED, the 7 Chicago days to 2026-09-23: 2 publishes every single day
+ * (the 2/day cap binding on all 7), 14 publishes, 42 satellite Instagram
+ * reels from this pipeline alone, while Metricool showed ~20 reels per
+ * satellite account in the same window — about a third of the satellite
+ * volume is not this pipeline's. See the 2026-09-24 entry in cadence.json.
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -63,52 +89,32 @@ export const CADENCE_SCHEMA_VERSION = 1;
 export const CADENCE_HARD_CEILING = 6;
 
 /**
- * Operating range and target.
+ * Operating range and target — the CODE defaults, which are what a missing or
+ * corrupt cadence.json reads as. They match the file on purpose: if the file
+ * is ever unreadable, the lane must fall back to the law, not to the old 2/day.
  *
- * SET FROM REAL EVIDENCE ON 2026-09-10, replacing the deliberately-inert
- * defaults (target 4 against a measured max of 3) that shipped when the only
- * frequency evidence available was an artifact.
+ * TARGET 1 (2026-09-24). Instagram is rate-limiting/restricting the accounts.
+ * The 2026-09-10 evidence (213 flagship posts, 2026-04-29 to 2026-09-09) put
+ * 1/day at the best median views per post in the data — 1,555 against 1,470 at
+ * 2/day and 852 at 3/day — so one a day is also the row the frequency evidence
+ * liked most; the reach it gives up is the price of keeping the accounts.
  *
- * The 2026-09-10 decision run analysed 213 posts on the flagship account over
- * 2026-04-29 to 2026-09-09 — the full window Metricool exposes, not a sample:
+ * FLOOR 1, because zero is not a cadence.
  *
- *     posts/day   median views/post   sample
- *         1            1,555            47
- *         2            1,470            54
- *         3              852            27
- *         4              961            12
- *         5            1,462             5
- *         6              894            24
+ * CEILING 2, down from 3. The loop may step back up to two if the decision
+ * file argues for it after the dwell period, and no further: three a day is
+ * what the accounts were doing when the restriction landed, and above two the
+ * 2026-09-10 evidence collapses on 12, 5 and 24 posts anyway.
  *
- * TARGET 2. Going 1 -> 2 costs 5% of median views per post and nearly doubles
- * daily reach. Going to 3 costs 42%. Median day total is 1,555 at 1/day, 3,015
- * at 2/day, 3,934 at 3/day — half again the content for a third more reach.
- * Two is the last point where per-post quality holds.
- *
- * FLOOR 1, because 1/day is the best per-post row in the data and the loop
- * should be able to reach it if the evidence ever supports that. Zero is not a
- * cadence.
- *
- * CEILING 3, because above 2 the evidence collapses AND thins at the same time:
- * the 4, 5 and 6 rows rest on 12, 5 and 24 posts across three or four clustered
- * days, and the decision file says of its own 5/day row that it "is one day and
- * should be ignored". A ceiling of 3 lets the loop step back up one notch if 2
- * proves too quiet, without climbing into the range its own evidence distrusts.
- * CADENCE_HARD_CEILING stays the backstop that config cannot raise.
- *
- * WHAT THIS CAP DOES NOT DO. The recommendation was measured on the flagship
- * account, @lifestyledesignrealtytexas — which this pipeline never posts to,
- * because mainBrandSkipIG withholds it so Peter posts natively. Capping here
- * cuts the three satellite Instagram accounts, the main TikTok and the main
- * YouTube Short, and reduces the supply of Drive deliveries from ~3.1 to 2 a
- * day. The flagship runs ~3.1 posts/day of which only ~1.2 arrive through the
- * pipeline; closing the rest is a manual-posting change. Nobody should read
- * this cap as having implemented the 2/day finding on the account it was
- * measured on.
+ * WHAT THIS CAP DOES NOT DO. The flagship account, @lifestyledesignrealtytexas,
+ * is never posted to by this pipeline (mainBrandSkipIG withholds it so Peter
+ * posts natively). This cap governs the three satellite Instagram accounts,
+ * the main TikTok and the main YouTube Short, and the supply of Drive
+ * deliveries. The flagship's own cadence is a manual-posting decision.
  */
 export const DEFAULT_FLOOR = 1;
-export const DEFAULT_CEILING = 3;
-export const DEFAULT_TARGET = 2;
+export const DEFAULT_CEILING = 2;
+export const DEFAULT_TARGET = 1;
 
 /**
  * Evidence thresholds. Deliberately conservative, because the frequency
@@ -242,105 +248,166 @@ export function dailyPublishSeries(log, now = new Date(), days = 30) {
   return out;
 }
 
-/**
- * The posting slots the rotation arbitrates between, in the order they fire.
- *
- * Kept in sync with the live crons in .github/workflows/post.yml. Order is
- * chronological because that is what makes the unfairness this fixes visible:
- * a plain first-come cap always feeds the earliest slot and always starves the
- * latest one.
- */
-export const ROTATION_SLOTS = [
-  { city: "san_antonio", slot: "am" },
-  { city: "austin", slot: "am" },
-  { city: "dallas", slot: "pm" },
-];
+// ═══════════════════════════════════════════════════════════════════════════
+// THE MARKET ROTATION
+// ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Which slots stand down today so the others can use the cap.
+ * The markets, in rotation order. San Antonio → Austin → Dallas, repeat.
  *
- * WHY THIS EXISTS. Three slots against a target of two means one must yield
- * every day. Left to a plain first-come cap, the loser is always whoever fires
- * last — measured over the 30 days to 2026-09-10, a cap of 2 would have let
- * san_antonio am publish on 29 of 29 days while dallas pm published on 1 of 9.
- * Dallas would have gone dark by accident of clock order rather than on merit.
- *
- * So the yielder rotates by Chicago date. With three slots and a target of two,
- * each slot yields one day in three and publishes the other two. The rotation
- * is derived from the date alone — no stored cursor, nothing to drift, and two
- * runs on the same day always agree about who is yielding.
- *
- * It generalises: n = slots - target slots yield, taken consecutively from a
- * date-derived offset. At target 3 nobody yields; at target 1 two of the three
- * do.
- *
- * A slot not in the rotation (a manual workflow_dispatch, or a retired cron
- * someone re-enables) never yields — the plain cap governs it. Refusing to run
- * a slot we do not model would be a worse failure than letting the count decide.
+ * These are the CITY values main.js runs under and the keys of
+ * CITY_FOLDER_IDS in drive.js — the rotation hands the workflow a city name
+ * it can run as-is.
  */
-export function yieldingSlotsFor(day, { slots = ROTATION_SLOTS, target = DEFAULT_TARGET } = {}) {
-  const n = slots.length - target;
-  if (!Number.isFinite(n) || n <= 0) return [];
-  if (n >= slots.length) return [...slots];
-  // Days since the epoch, from the Chicago calendar date — stable for the whole
-  // Chicago day regardless of when in it a slot fires.
-  const [y, m, d] = String(day).split("-").map(Number);
-  if (!y || !m || !d) return [];
-  const dayNumber = Math.floor(Date.UTC(y, m - 1, d) / 86400000);
-  const offset = ((dayNumber % slots.length) + slots.length) % slots.length;
-  const out = [];
-  for (let i = 0; i < n; i++) out.push(slots[(offset + i) % slots.length]);
-  return out;
+export const MARKETS = ["san_antonio", "austin", "dallas"];
+
+/** The short labels merge-log-push.mjs puts in commit messages. */
+export const MARKET_LABELS = { san_antonio: "SA", austin: "ATX", dallas: "DFW" };
+
+/**
+ * The day the rotation started, and who had it: San Antonio on 2026-09-24
+ * ("San Antonio today, Austin tomorrow, Dallas next, repeat" — the operator's
+ * words, the day this shipped). Every later day is derived from this anchor,
+ * so the sequence is auditable from the constant alone.
+ */
+export const MARKET_ROTATION_ANCHOR = "2026-09-24";
+
+/**
+ * The one slot that publishes. Every other slot value is retired and stands
+ * down at the gate. "am" rather than a new name because it IS the morning slot
+ * the log already knows — hasRecentPost's 20h guard is keyed on city + slot and
+ * needs no migration, and the debut lane (promote-ahead.js) runs on am slots.
+ */
+export const DAILY_SLOT = "am";
+
+/**
+ * Spellings of the three markets that reach us from outside — the decision
+ * file is written by a Claude task in prose-adjacent JSON and the dispatch
+ * form is typed by a person. Lower-cased, letters only, so "San Antonio",
+ * "san_antonio", "SA" and "SATX" all land on the same id. Anything else is
+ * null, never a guess: an unknown market falls back to the rotation and says so.
+ */
+const MARKET_ALIASES = {
+  sanantonio: "san_antonio", sa: "san_antonio", satx: "san_antonio",
+  austin: "austin", atx: "austin",
+  dallas: "dallas", dfw: "dallas", dallasfortworth: "dallas", fortworth: "dallas",
+};
+
+/** Canonical market id for a spelling, or null when it names no market. */
+export function normalizeMarket(value) {
+  if (typeof value !== "string") return null;
+  const key = value.toLowerCase().replace(/[^a-z]/g, "");
+  return MARKET_ALIASES[key] ?? null;
 }
 
-/** Is this city+slot standing down today? */
-export function isYieldingToday(city, slot, day, opts = {}) {
-  const inRotation = (opts.slots || ROTATION_SLOTS).some((s) => s.city === city && s.slot === slot);
-  if (!inRotation) return false;
-  return yieldingSlotsFor(day, opts).some((s) => s.city === city && s.slot === slot);
+/** Day number (days since the epoch) of a "YYYY-MM-DD" string, or null. */
+function dayNumberOf(day) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(day ?? ""));
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (!y || !mo || !d) return null;
+  const n = Math.floor(Date.UTC(y, mo - 1, d) / 86400000);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * The market the ROTATION gives a Chicago calendar day. Pure, cursorless:
+ * anchor + (days since anchor) mod 3. A malformed day is null rather than a
+ * default market — a gate that cannot tell what day it is must refuse, not
+ * pick San Antonio.
+ */
+export function marketForDay(day) {
+  const n = dayNumberOf(day);
+  const a = dayNumberOf(MARKET_ROTATION_ANCHOR);
+  if (n === null || a === null) return null;
+  const idx = (((n - a) % MARKETS.length) + MARKETS.length) % MARKETS.length;
+  return MARKETS[idx];
+}
+
+/**
+ * Today's market, all things considered.
+ *
+ * `namedMarket` is what the decision file named FOR TODAY — drive-decision.js
+ * has already day-scoped it, so a block written for another day never reaches
+ * here as a name. It wins when it names a real market; the rotation otherwise.
+ */
+export function resolveMarket({ day, namedMarket = null } = {}) {
+  const named = normalizeMarket(namedMarket);
+  if (named) return { market: named, source: "decision_file" };
+  return { market: marketForDay(day), source: "rotation" };
+}
+
+/** The next `days` days of the rotation, for logs — [{ day, market }]. */
+export function rotationPreview(fromDay, days = 3) {
+  const n = dayNumberOf(fromDay);
+  if (n === null) return [];
+  const out = [];
+  for (let i = 0; i < days; i++) {
+    const day = new Date((n + i) * 86400000).toISOString().slice(0, 10);
+    out.push({ day, market: marketForDay(day) });
+  }
+  return out;
 }
 
 /**
  * THE GATE. Called at the top of a run, before Drive is listed.
  *
- * Returns { allowed, used, target, reason }. `allowed: false` means the run
- * should exit cleanly having posted nothing — not fail.
+ * Returns { allowed, used, target, day, market, marketSource, standDown,
+ * reason }. `allowed: false` means the run should exit cleanly having posted
+ * nothing — not fail. `standDown` names WHY, because the three reasons have
+ * three different owners:
+ *
+ *   "off_market"    this city is not today's market. Routine on a dispatch —
+ *                   the retired slots are still fired from outside this repo.
+ *   "retired_slot"  right city, wrong slot. Same.
+ *   "cap"           today's one publish has already happened.
+ *
+ * Checked in that order, and the market and slot are checked BEFORE the count:
+ * a run for the wrong city must stand down even when the budget is untouched,
+ * because it is holding that budget for the market whose day it is.
+ *
+ * With no city or slot supplied only the count governs — the gate cannot
+ * refuse a slot it cannot identify. main.js always supplies both.
  */
-export function cadenceGate(log, { now = new Date(), state = null, path = CADENCE_PATH, city = null, slot = null } = {}) {
+export function cadenceGate(log, {
+  now = new Date(), state = null, path = CADENCE_PATH, city = null, slot = null, namedMarket = null,
+} = {}) {
   const s = state || loadCadence(path);
   const target = clampTarget(s.target, s);
   const used = countPublishesToday(log, now);
   const day = chicagoDay(now);
+  const { market, source } = resolveMarket({ day, namedMarket });
+  const base = { used, target, day, market, marketSource: source };
+  const who = source === "decision_file" ? "named by today's decision file" : "SA → ATX → DFW by Chicago date";
 
-  // The rotation is checked BEFORE the count. A yielding slot stands down even
-  // when the budget is untouched — that is the whole point: it is holding the
-  // budget open for a slot that fires later in the day and would otherwise
-  // never reach it.
-  if (city && slot && isYieldingToday(city, slot, day, { target })) {
-    const takers = ROTATION_SLOTS
-      .filter((r) => !isYieldingToday(r.city, r.slot, day, { target }))
-      .map((r) => `${r.city} ${r.slot}`)
-      .join(", ");
+  if (city && market && city !== market) {
     return {
+      ...base,
       allowed: false,
-      used,
-      target,
-      day,
-      yielded: true,
-      reason: `yielding today so ${takers} can use the ${target}/day cap (rotates by date; this slot posts 2 days in 3)`,
+      standDown: "off_market",
+      reason: `not today's market — ${day} belongs to ${market} (${who}); ${city} stands down, whoever dispatched it`,
     };
   }
 
-  return {
-    allowed: used < target,
-    used,
-    target,
-    day,
-    yielded: false,
-    reason: used < target
-      ? `${used}/${target} publishes used today`
-      : `daily cap reached — ${used}/${target} publishes already made today (CT)`,
-  };
+  if (slot && slot !== DAILY_SLOT) {
+    return {
+      ...base,
+      allowed: false,
+      standDown: "retired_slot",
+      reason: `retired slot — only the ${DAILY_SLOT} slot publishes now, one a day; ${city ?? "this run"} ${slot} stands down, whoever dispatched it`,
+    };
+  }
+
+  if (used >= target) {
+    return {
+      ...base,
+      allowed: false,
+      standDown: "cap",
+      reason: `daily cap reached — ${used}/${target} publishes already made today (CT)`,
+    };
+  }
+
+  return { ...base, allowed: true, standDown: null, reason: `${used}/${target} publishes used today` };
 }
 
 /** Clamp a target into the configured range and the code ceiling. */
@@ -364,6 +431,11 @@ export function clampTarget(value, { floor = DEFAULT_FLOOR, ceiling = DEFAULT_CE
  *      [floor, ceiling] and to CADENCE_HARD_CEILING.
  *
  * Never jumps: a proposal of 6 against a target of 2 moves to 3, not 6.
+ *
+ * The one-step rule governs THE LOOP. It is not a limit on a deliberate
+ * operator decision, which is written to cadence.json directly with an
+ * `actor: "operator"` history entry — 4 -> 2 on 2026-09-10, 2 -> 1 on
+ * 2026-09-24.
  */
 export function proposeCadence({
   state,

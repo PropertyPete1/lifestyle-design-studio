@@ -110,9 +110,11 @@ describe("the carousel is off the schedule", () => {
     );
   });
 
-  test("the scheduled job set is exactly the four non-carousel lanes", () => {
+  test("the scheduled job set is exactly the two non-carousel lanes", () => {
+    // One reel job since 2026-09-24 (one slot a day, market by rotation) plus
+    // the trial variant, which posts nowhere.
     const reached = [...new Set(scheduled.flatMap((c) => jobsReachableByCron(all, c)))].sort();
-    assert.deepEqual(reached, ["post-austin", "post-dallas", "post-san-antonio", "trial-variant"]);
+    assert.deepEqual(reached, ["post-daily", "trial-variant"]);
   });
 
   /**
@@ -147,64 +149,97 @@ describe("the carousel is off the schedule", () => {
   });
 });
 
-describe("nothing else about the daily schedule moved", () => {
+describe("the daily schedule is ONE slot a day — 2026-09-24", () => {
   const all = jobs(DAILY);
 
   /**
-   * The full cron list, pinned. Deleting the carousel line is a one-line edit in
-   * the middle of this block, which is exactly the shape of edit that takes a
-   * neighbour with it — a dropped `30` backup would go unnoticed for weeks.
+   * The full cron list, pinned. A one-line edit in the middle of this block is
+   * exactly the shape of edit that takes a neighbour with it — a dropped `30`
+   * backup would go unnoticed for weeks.
    */
-  test("the reel and trial crons are exactly the three surviving slots", () => {
-    // UPDATED 2026-09-10 with the cadence cap. SA pm and ATX pm were retired
-    // because the cap is 2 publishes/day and five slots against it meant three
-    // runs a day would start, list Drive, read Instagram and exit. Three slots
-    // remain, one per city, so no city goes dark. The pin moved deliberately —
-    // if it moved and you did not mean it, that is the bug this test exists for.
+  test("the reel and trial crons are exactly one daily slot plus the trial windows", () => {
+    // UPDATED 2026-09-24. Instagram is rate-limiting the accounts, so the
+    // realty lane publishes ONE reel a day for ONE market (SA → ATX → DFW by
+    // Chicago date, or the market the decision file names). 17:45Z is 12:45 PM
+    // CDT / 11:45 AM CST — after the 11:00 AM CT decision task in both DST
+    // regimes, inside the 11am-1pm CT band Metricool rates best. The pin moved
+    // deliberately — if it moved and you did not mean it, that is the bug this
+    // test exists for.
     assert.deepEqual(crons(DAILY), [
-      "0 16 * * *", "30 16 * * *",   // SA am + backup
-      "0 17 * * *", "30 17 * * *",   // ATX am + backup
-      "0 21 * * *", "30 21 * * *",   // DFW pm + backup
+      "45 17 * * *", "15 18 * * *",  // the daily reel + backup
       "15 13 * * *", "45 23 * * *",  // trial variant am/pm
     ]);
   });
 
-  test("the retired pm crons are commented, not deleted", () => {
+  test("the retired city crons are commented, not deleted", () => {
     // Deliberately reads the RAW file, not code(). Every other check in this
     // file strips comments on purpose — a comment saying the words is not the
     // workflow doing them. This one is the exception that proves it: the
     // property being pinned IS the comment, because restoring a slot has to
     // stay an uncomment rather than a rewrite, the shape the carousel and LDT
-    // pauses use.
+    // pauses use. All ten city-slot strings: the three that were live until
+    // 2026-09-24 and the two pairs retired on 2026-09-10.
     const raw = readFileSync(DAILY, "utf-8");
-    for (const c of ["0 19 * * *", "30 19 * * *", "0 20 * * *", "30 20 * * *"]) {
+    const retired = [
+      "0 16 * * *", "30 16 * * *", // SA am
+      "0 17 * * *", "30 17 * * *", // ATX am
+      "0 19 * * *", "30 19 * * *", // SA pm
+      "0 20 * * *", "30 20 * * *", // ATX pm
+      "0 21 * * *", "30 21 * * *", // DFW pm
+    ];
+    for (const c of retired) {
       assert.ok(raw.includes(`#   - cron: '${c}'`), `${c} should be commented out, not removed`);
       assert.ok(!crons(DAILY).includes(c), `${c} must not be a live cron`);
     }
   });
 
-  test("post.yml still holds all five jobs", () => {
+  test("post.yml holds exactly three jobs: the daily reel, the trial variant, the retired carousel", () => {
     // The carousel job is RETIRED, not removed. Deleting it would strand the
     // shared design library it sits next to and break the long-form renderers.
-    assert.deepEqual(Object.keys(all).sort(), [
-      "post-austin", "post-carousel", "post-dallas", "post-san-antonio", "trial-variant",
-    ]);
+    // The three city jobs collapsed into post-daily on 2026-09-24: one job, one
+    // env block, one concurrency group — so two runs for different cities can
+    // never race each other past a cap of one.
+    assert.deepEqual(Object.keys(all).sort(), ["post-carousel", "post-daily", "trial-variant"]);
   });
 
-  test("each city job still answers to exactly its own two crons", () => {
+  test("each scheduled job answers to exactly its own two crons", () => {
     const expected = {
-      // The pm entries remain in each job's `if:` condition on purpose: a
-      // schedule that never fires cannot match one, and leaving them makes
-      // restoring a slot a single uncomment in the cron block.
-      "post-san-antonio": ["0 16 * * *", "30 16 * * *"],
-      "post-austin": ["0 17 * * *", "30 17 * * *"],
-      "post-dallas": ["0 21 * * *", "30 21 * * *"],
+      "post-daily": ["45 17 * * *", "15 18 * * *"],
       "trial-variant": ["15 13 * * *", "45 23 * * *"],
     };
     for (const [job, wanted] of Object.entries(expected)) {
       const bound = crons(DAILY).filter((c) => code(all[job]).includes(`'${c}'`));
       assert.deepEqual(bound, wanted, `${job} is bound to the wrong crons`);
     }
+  });
+
+  test("the daily job asks which market has the day BEFORE it runs main.js, and runs as that city", () => {
+    const body = code(all["post-daily"]);
+    const ask = body.indexOf("scripts/market-today.mjs");
+    const run = body.indexOf("node src/main.js");
+    assert.ok(ask > 0 && run > ask, "market-today.mjs must run before main.js");
+    assert.match(body, /CITY: \$\{\{ steps\.market\.outputs\.city \}\}/, "main.js must run as the market the step resolved");
+    assert.match(body, /SLOT: \$\{\{ steps\.market\.outputs\.slot \}\}/);
+    assert.match(body, /merge-log-push\.mjs "\$\{\{ steps\.market\.outputs\.label/, "the commit label follows the market");
+  });
+
+  test("a hand dispatch for any of the three cities reaches the daily job — and nothing else does", () => {
+    // The dispatch form still offers the three cities: the gate in main.js,
+    // not the workflow, decides whether a hand-run may publish. The external
+    // dispatcher that fires the retired slots lands here too, and stands down.
+    const body = code(all["post-daily"]);
+    for (const city of ["san_antonio", "austin", "dallas"]) {
+      assert.match(body, new RegExp(`github\.event\.inputs\.city == '${city}'`), `${city} cannot be dispatched`);
+    }
+    assert.match(body, /group:\s*autopost-daily-reel/, "one concurrency group for every reel run");
+    assert.match(body, /cancel-in-progress:\s*false/);
+  });
+
+  test("the daily job runs the reel entry point, the trial job runs its own, and neither runs the other", () => {
+    assert.match(code(all["post-daily"]), /node src\/main\.js/);
+    assert.doesNotMatch(code(all["post-daily"]), /trial-variant-main\.js/);
+    assert.match(code(all["trial-variant"]), /node src\/trial-variant-main\.js/);
+    assert.doesNotMatch(code(all["trial-variant"]), /node src\/main\.js/);
   });
 });
 

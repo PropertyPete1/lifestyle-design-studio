@@ -13,7 +13,7 @@ manual edit queue in particular **never** publish.
 
 | Pipeline | Entry point | Workflow | Schedule (UTC / CT) |
 | --- | --- | --- | --- |
-| **Daily reels** | `auto-poster/src/main.js` | `post.yml` | 5 slots + a `:30` backup each — SA 16:00/11am, ATX 17:00/12pm, SA 19:00/2pm, ATX 20:00/3pm, DFW 21:00/4pm |
+| **Daily reels** | `auto-poster/src/main.js` | `post.yml` | **One slot a day** — 17:45 UTC (+ 18:15 backup) = 12:45 PM CDT / 11:45 AM CST — for **one market**: SA → ATX → DFW by Chicago date, or the market the day's decision file names |
 | **Carousel** (retired) | `auto-poster/src/carousel-main.js` | `post.yml` | **No cron — manual dispatch only** (was 14:00 / 9:00 AM until 2026-09-04) |
 | **Weekly YouTube** | `auto-poster/src/yt-brief-main.js`, `yt-pipeline-main.js` | `youtube-longform.yml` | Brief Mon 14:00 (+`:30` backup); pipeline polls 15:00 and 21:00 daily |
 | **Trial variant** | `auto-poster/src/trial-variant-main.js` | `post.yml` | 13:15 / 8:15 AM and 23:45 / 6:45 PM |
@@ -31,8 +31,16 @@ clip is silent, quality-check it, write a fresh caption with Claude weighted by 
 performance, publish through Metricool to Instagram / TikTok / YouTube Shorts, then
 **verify** the post actually reached `PUBLISHED` rather than trusting the 200.
 
-All three cities post daily. (An earlier every-other-day rule for DFW no longer
-exists in the code.)
+**One city posts per day** (since 2026-09-24, when Instagram started rate-limiting
+the accounts). The market rotates San Antonio → Austin → Dallas by Chicago date,
+anchored 2026-09-24 = San Antonio, unless the day's decision file names a market in
+its `today` block (see the operator README). The cadence cap is **one publish per
+Chicago day** — `auto-poster/cadence.json`, set by an operator entry, floor 1 and
+ceiling 2 — and **the gate is the law** (`src/cadence.js`): a run for any other
+city, for the retired `pm` slot, or on a day already spent exits clean having
+posted nothing, whoever dispatched it. That matters because `post.yml` fires one
+slot but the retired city slots are still being dispatched from outside this repo
+several times a day; those runs now stand down at the gate.
 
 The same job also posts text-only LinkedIn recruiting content, fanned out to three
 Metricool brands. That path is decoupled — it runs whether or not the video posted.
@@ -150,7 +158,7 @@ knowledge base).
 
 | Workflow | Trigger | Permissions | Does |
 | --- | --- | --- | --- |
-| `post.yml` | 12 crons + manual | `contents: write` | Reels and trial variant on the crons; carousel by manual dispatch only. **The live posting path.** |
+| `post.yml` | 4 crons + manual | `contents: write` | One reel a day (market resolved by `scripts/market-today.mjs`, enforced by the cadence gate) and the trial variant on the crons; carousel by manual dispatch only. **The live posting path.** |
 | `youtube-longform.yml` | 4 crons + manual | `contents: write` (dry-run job: `read`) | Weekly brief and pipeline poll |
 | `manual-edit-queue.yml` | 5 crons + manual | `contents: write` | Manual edit queue: folder scan (cannot edit) and decision poll (only edits on a card action) |
 | `test.yml` | push to main, all PRs | `contents: read` | The test suite |
@@ -191,7 +199,7 @@ left orphaned in the Metricool media library.
 cd auto-poster && npm test
 ```
 
-728 tests, `node --test`, no framework. They run on every PR. The poster publishes to
+2,811 tests, `node --test`, no framework. They run on every PR. The poster publishes to
 live accounts on a cron, so a regression in the duplicate guards or the caption safety
 rules is a business incident rather than a failed build — treat a red suite that way.
 

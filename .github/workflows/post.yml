@@ -1,44 +1,61 @@
 name: Daily Auto Post
 
-# 5-SLOT SCHEDULE (Central Time → UTC during CDT):
-# SA-am 11:00 AM = 16:00, ATX-am 12:00 PM = 17:00,
-# SA-pm 2:00 PM = 19:00, ATX-pm 3:00 PM = 20:00, DFW-pm 4:00 PM = 21:00
-# Each slot has a :30 backup cron. The slot-aware idempotency guard makes this safe.
+# ONE SLOT A DAY — 2026-09-24. Instagram is rate-limiting/restricting the
+# accounts, so the realty lane publishes ONE reel per Chicago day, for ONE
+# market, rotating San Antonio → Austin → Dallas by Chicago date (anchored
+# 2026-09-24 = San Antonio). The cadence cap is 1 (auto-poster/cadence.json,
+# an operator entry). The decision file may name the day's market and video
+# in its `today` block; when it does not, the calendar decides.
+#
+# THE GATE IS THE LAW, NOT THIS SCHEDULE. cadence.js cadenceGate refuses any
+# run that is not today's market, on the one live slot, with the day's single
+# publish unspent — whoever dispatched it. That matters because something
+# outside this repo is still firing the retired city slots by workflow_dispatch:
+# over 2026-09-19..23, 7-11 runs a day reached the gate against 6 possible cron
+# fires, and the SA pm slot, retired here on 2026-09-10, published on 5 of 7
+# days because the old gate let a slot it did not model through on the count.
+# Those dispatches still start a runner (that is outside this file's control)
+# and now exit clean at the gate having posted nothing.
 on:
   schedule:
-    # SA AM: 11:00 AM CT = 16:00 UTC (primary), 11:30 AM CT = 16:30 UTC (backup)
-    - cron: '0 16 * * *'
-    - cron: '30 16 * * *'
-    # ATX AM: 12:00 PM CT = 17:00 UTC (primary), 12:30 PM CT = 17:30 UTC (backup)
-    - cron: '0 17 * * *'
-    - cron: '30 17 * * *'
-    # SA PM and ATX PM — RETIRED 2026-09-10. No slot fires.
+    # THE DAILY REEL — 17:45 UTC primary, 18:15 UTC backup.
+    #   during CDT (until 2026-11-01):  12:45 PM / 1:15 PM CT
+    #   during CST (after):             11:45 AM / 12:15 PM CT
+    # The decision task that names today's market and video runs daily at
+    # 11:00 AM CT, in Central time, so it moves with DST while these crons do
+    # not. Both times above sit AFTER it in both regimes — 45 minutes clear in
+    # winter, an hour and three quarters in summer — and both fall in the
+    # 11am-1pm CT band Metricool rates best for this account. A slot that fired
+    # at 11:00 CT alongside the writer would read yesterday's file about half
+    # the time; the reader is day-scoped so it would fall back to the rotation
+    # rather than repeat yesterday, but the named video would be lost.
+    # The market itself is resolved by scripts/market-today.mjs in the job
+    # below — a cron cannot do date arithmetic or read Drive.
+    - cron: '45 17 * * *'
+    - cron: '15 18 * * *'
+    # THE FIVE CITY SLOTS — RETIRED 2026-09-24. No city slot fires.
     #
-    # The daily cap is 2 publishes (cadence.js), set from the 2026-09-10
-    # decision run: median views per post 1,555 at 1/day, 1,470 at 2/day, 852
-    # at 3/day over 213 posts. Five slots against a cap of 2 meant three runs a
-    # day would start, list Drive, read Instagram and exit — and the cap would
-    # be spent by the two morning slots before DFW PM ever fired, so Dallas
-    # would have gone dark by accident of clock order.
-    #
-    # Three slots remain — SA AM, ATX AM, DFW PM — one per city, so each city
-    # keeps a voice. One of the three yields each day on a date-derived
-    # rotation (cadence.js yieldingSlotsFor), so the slot that loses the cap
-    # loses it on rotation rather than on being last.
-    #
-    # The crons are COMMENTED, NOT DELETED, so restoring a slot is an uncomment
-    # rather than a rewrite — the same shape the carousel and LDT pauses use.
-    # The post-san-antonio and post-austin jobs still LIST these schedules in
-    # their `if:` conditions, which is harmless (a schedule that never fires
-    # cannot match) and is what makes restoring a one-line change.
+    # SA am 16:00/16:30, ATX am 17:00/17:30 and DFW pm 21:00/21:30 were the
+    # three live slots (one per city, one yielding a day on rotation) under the
+    # 2/day cap; SA pm 19:00/19:30 and ATX pm 20:00/20:30 had been retired on
+    # 2026-09-10. All ten strings are kept below, COMMENTED, NOT DELETED, so
+    # restoring a slot is an uncomment rather than a rewrite — the same shape
+    # the carousel and LDT pauses use. Restoring one ALSO needs the gate's
+    # law in cadence.js relaxed, or the restored slot stands down every day.
+    # tests/carousel-schedule.test.mjs pins this block.
+    #   - cron: '0 16 * * *'
+    #   - cron: '30 16 * * *'
+    #   - cron: '0 17 * * *'
+    #   - cron: '30 17 * * *'
     #   - cron: '0 19 * * *'
     #   - cron: '30 19 * * *'
     #   - cron: '0 20 * * *'
     #   - cron: '30 20 * * *'
-    # DFW PM: 4:00 PM CT = 21:00 UTC (primary), 4:30 PM CT = 21:30 UTC (backup)
-    - cron: '0 21 * * *'
-    - cron: '30 21 * * *'
-    # TRIAL VARIANT: 8:15 AM CT = 13:15 UTC, 6:45 PM CT = 23:45 UTC
+    #   - cron: '0 21 * * *'
+    #   - cron: '30 21 * * *'
+    # TRIAL VARIANT: 8:15 AM CT = 13:15 UTC, 6:45 PM CT = 23:45 UTC.
+    # Posts to no social account — it renders a variant to Drive for review —
+    # so it is outside the one-a-day law and untouched by it.
     - cron: '15 13 * * *'
     - cron: '45 23 * * *'
     # DAILY CAROUSEL — RETIRED 2026-09-04. No slot fires.
@@ -60,7 +77,7 @@ on:
   workflow_dispatch:
     inputs:
       city:
-        description: 'City to post for (san_antonio, austin, dallas, trial_variant, carousel)'
+        description: 'City to post for (san_antonio, austin, dallas, trial_variant, carousel). A city that is not today''s market stands down at the cadence gate.'
         required: true
         default: 'san_antonio'
         type: choice
@@ -71,9 +88,9 @@ on:
           - trial_variant
           - carousel
       slot:
-        description: 'Time slot (am or pm). Dallas is always pm.'
+        description: 'Time slot. Only am (the one daily slot) can publish; pm is retired and stands down at the gate. Trial variant: am/pm window.'
         required: false
-        default: 'pm'
+        default: 'am'
         type: choice
         options:
           - am
@@ -84,7 +101,7 @@ on:
         default: false
         type: boolean
       force:
-        description: 'Force post (bypass the content-duplicate guard for manual testing)'
+        description: 'Force post (bypass the content-duplicate guard for manual testing). Does NOT bypass the cadence gate.'
         required: false
         default: false
         type: boolean
@@ -108,16 +125,26 @@ permissions:
   contents: write
 
 jobs:
-  post-san-antonio:
+  # ─── THE DAILY REEL ────────────────────────────────────────────────────────
+  # One job for all three markets. The cron path asks scripts/market-today.mjs
+  # which market has the day (the decision file's `today` block, else the
+  # calendar rotation) and runs main.js as that CITY; a workflow_dispatch runs
+  # as the city on the form. Either way main.js re-derives today's market and
+  # its gate refuses anything that is not today's market on the am slot with
+  # the day's one publish unspent.
+  #
+  # ONE concurrency group for every reel run, deliberately. Under a cap of one,
+  # two runs for different cities starting in the same minute could each read
+  # "0/1 used" and both publish; a shared group serialises them so the second
+  # one sees the first one's log entry and stands down.
+  post-daily:
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'san_antonio')
-      || github.event.schedule == '0 16 * * *'
-      || github.event.schedule == '30 16 * * *'
-      || github.event.schedule == '0 19 * * *'
-      || github.event.schedule == '30 19 * * *'
+      (github.event_name == 'workflow_dispatch' && (github.event.inputs.city == 'san_antonio' || github.event.inputs.city == 'austin' || github.event.inputs.city == 'dallas'))
+      || github.event.schedule == '45 17 * * *'
+      || github.event.schedule == '15 18 * * *'
     runs-on: ubuntu-latest
     concurrency:
-      group: autopost-san_antonio
+      group: autopost-daily-reel
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -134,22 +161,30 @@ jobs:
       - name: Install dependencies
         working-directory: auto-poster
         run: npm install
-      - name: Determine slot
-        id: slot
+      - name: Resolve today's market
+        id: market
+        working-directory: auto-poster
+        env:
+          # Read-only: the script reads the decision file to see whether it
+          # names today's market, and falls back to the calendar rotation on
+          # any failure. Same folder scope as main.js (see DECISION_FOLDER_ID
+          # below); the same creds because it is the same Drive read.
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          DECISION_FOLDER_ID: ${{ vars.DECISION_FOLDER_ID }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "value=${{ github.event.inputs.slot || 'pm' }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 16 * * *" ] || [ "${{ github.event.schedule }}" = "30 16 * * *" ]; then
-            echo "value=am" >> $GITHUB_OUTPUT
+            node scripts/market-today.mjs --city "${{ github.event.inputs.city }}" --slot "${{ github.event.inputs.slot || 'am' }}" >> "$GITHUB_OUTPUT"
           else
-            echo "value=pm" >> $GITHUB_OUTPUT
+            node scripts/market-today.mjs >> "$GITHUB_OUTPUT"
           fi
-      - name: Run auto-poster (San Antonio)
+      - name: Run auto-poster (today's market)
         id: run-poster
         working-directory: auto-poster
         env:
-          CITY: san_antonio
-          SLOT: ${{ steps.slot.outputs.value }}
+          CITY: ${{ steps.market.outputs.city }}
+          SLOT: ${{ steps.market.outputs.slot }}
           # The debut lane's kill switch. This workflow has no top-level `env:`,
           # so a variable not named in a job's own env block never reaches the
           # process. Set the repo variable PROMOTE_AHEAD to "false" to stand the
@@ -206,195 +241,7 @@ jobs:
           cd auto-poster
           git config user.name "Auto Poster Bot"
           git config user.email "bot@lifestyle-design.com"
-          node merge-log-push.mjs SA "${{ steps.run-poster.outputs.post_success }}"
-
-  post-austin:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'austin')
-      || github.event.schedule == '0 17 * * *'
-      || github.event.schedule == '30 17 * * *'
-      || github.event.schedule == '0 20 * * *'
-      || github.event.schedule == '30 20 * * *'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: autopost-austin
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install ffmpeg, tesseract & whisper
-        run: |
-          # tesseract is NOT optional: the caption-over-captions gate reads the
-          # source frames with it, and a check that cannot run refuses to add
-          # captions rather than adding them unverified.
-          sudo apt-get update && sudo apt-get install -y ffmpeg tesseract-ocr
-          pip install openai-whisper --quiet
-      - name: Install dependencies
-        working-directory: auto-poster
-        run: npm install
-      - name: Determine slot
-        id: slot
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "value=${{ github.event.inputs.slot || 'pm' }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 17 * * *" ] || [ "${{ github.event.schedule }}" = "30 17 * * *" ]; then
-            echo "value=am" >> $GITHUB_OUTPUT
-          else
-            echo "value=pm" >> $GITHUB_OUTPUT
-          fi
-      - name: Run auto-poster (Austin)
-        id: run-poster
-        working-directory: auto-poster
-        env:
-          CITY: austin
-          SLOT: ${{ steps.slot.outputs.value }}
-          # The debut lane's kill switch. This workflow has no top-level `env:`,
-          # so a variable not named in a job's own env block never reaches the
-          # process. Set the repo variable PROMOTE_AHEAD to "false" to stand the
-          # lane down without a deploy; unset means ON.
-          PROMOTE_AHEAD: ${{ vars.PROMOTE_AHEAD }}
-          PROMOTE_AHEAD_SLOTS: ${{ vars.PROMOTE_AHEAD_SLOTS }}
-          # The hook-guidance kill switch. The decision file's
-          # hooks_that_work[] reaches the fresh-caption prompt as subordinate
-          # advice; set the repo variable HOOK_GUIDANCE to "false" to stand
-          # that down without a deploy. Unset means ON. Same reason as
-          # PROMOTE_AHEAD above: no top-level env, so it must be named here.
-          HOOK_GUIDANCE: ${{ vars.HOOK_GUIDANCE }}
-          # The Drive folder the decision file is read from. Unset falls back to
-          # CONTENT_FOLDER_ID in src/drive.js ("Ready to Post", shared with
-          # the manifest mirror) — this line exists so the folder can MOVE
-          # without a deploy.
-          # It has to be named here for the same reason as the two above: this
-          # workflow sets no top-level env, so an unlisted variable is invisible
-          # to the step. DECISION_FOLDER_ID was read by the code since the
-          # reader landed and listed in no workflow, which is why every run up
-          # to now searched the whole Drive for the filename.
-          DECISION_FOLDER_ID: ${{ vars.DECISION_FOLDER_ID }}
-          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-          FORCE: ${{ github.event.inputs.force || 'false' }}
-          TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
-          FORCE_VIDEO_ID: ${{ github.event.inputs.force_video_id || '' }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
-          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
-          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          # The voice to narrate with. Unset falls back to the cloned voice
-          # hardcoded in voiceover.js — which is a PROFESSIONAL voice, and on
-          # 2026-07-27 the account lost the Creator tier that made it usable.
-          # Every voiceover run failed for 14 days and the only fix required a
-          # code change, because this knob was read but never plumbed through.
-          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
-          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
-        run: |
-          if node src/main.js; then
-            echo "post_success=true" >> $GITHUB_OUTPUT
-          else
-            echo "post_success=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-      - name: Commit posted-log
-        if: always()
-        run: |
-          cd auto-poster
-          git config user.name "Auto Poster Bot"
-          git config user.email "bot@lifestyle-design.com"
-          node merge-log-push.mjs ATX "${{ steps.run-poster.outputs.post_success }}"
-
-  post-dallas:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.city == 'dallas')
-      || github.event.schedule == '0 21 * * *'
-      || github.event.schedule == '30 21 * * *'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: autopost-dallas
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install ffmpeg, tesseract & whisper
-        run: |
-          # tesseract is NOT optional: the caption-over-captions gate reads the
-          # source frames with it, and a check that cannot run refuses to add
-          # captions rather than adding them unverified.
-          sudo apt-get update && sudo apt-get install -y ffmpeg tesseract-ocr
-          pip install openai-whisper --quiet
-      - name: Install dependencies
-        working-directory: auto-poster
-        run: npm install
-      - name: Run auto-poster (Dallas/DFW)
-        id: run-poster
-        working-directory: auto-poster
-        env:
-          CITY: dallas
-          SLOT: pm
-          # The debut lane's kill switch. This workflow has no top-level `env:`,
-          # so a variable not named in a job's own env block never reaches the
-          # process. Set the repo variable PROMOTE_AHEAD to "false" to stand the
-          # lane down without a deploy; unset means ON.
-          PROMOTE_AHEAD: ${{ vars.PROMOTE_AHEAD }}
-          PROMOTE_AHEAD_SLOTS: ${{ vars.PROMOTE_AHEAD_SLOTS }}
-          # The hook-guidance kill switch. The decision file's
-          # hooks_that_work[] reaches the fresh-caption prompt as subordinate
-          # advice; set the repo variable HOOK_GUIDANCE to "false" to stand
-          # that down without a deploy. Unset means ON. Same reason as
-          # PROMOTE_AHEAD above: no top-level env, so it must be named here.
-          HOOK_GUIDANCE: ${{ vars.HOOK_GUIDANCE }}
-          # The Drive folder the decision file is read from. Unset falls back to
-          # CONTENT_FOLDER_ID in src/drive.js ("Ready to Post", shared with
-          # the manifest mirror) — this line exists so the folder can MOVE
-          # without a deploy.
-          # It has to be named here for the same reason as the two above: this
-          # workflow sets no top-level env, so an unlisted variable is invisible
-          # to the step. DECISION_FOLDER_ID was read by the code since the
-          # reader landed and listed in no workflow, which is why every run up
-          # to now searched the whole Drive for the filename.
-          DECISION_FOLDER_ID: ${{ vars.DECISION_FOLDER_ID }}
-          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-          FORCE: ${{ github.event.inputs.force || 'false' }}
-          TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
-          FORCE_VIDEO_ID: ${{ github.event.inputs.force_video_id || '' }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
-          METRICOOL_API_TOKEN: ${{ secrets.METRICOOL_API_TOKEN }}
-          METRICOOL_BLOG_ID: ${{ secrets.METRICOOL_BLOG_ID }}
-          METRICOOL_USER_ID: ${{ secrets.METRICOOL_USER_ID }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          # The voice to narrate with. Unset falls back to the cloned voice
-          # hardcoded in voiceover.js — which is a PROFESSIONAL voice, and on
-          # 2026-07-27 the account lost the Creator tier that made it usable.
-          # Every voiceover run failed for 14 days and the only fix required a
-          # code change, because this knob was read but never plumbed through.
-          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
-          DASHBOARD_WEBHOOK_SECRET: ${{ secrets.DASHBOARD_WEBHOOK_SECRET }}
-        run: |
-          if node src/main.js; then
-            echo "post_success=true" >> $GITHUB_OUTPUT
-          else
-            echo "post_success=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-      - name: Commit posted-log
-        if: always()
-        run: |
-          cd auto-poster
-          git config user.name "Auto Poster Bot"
-          git config user.email "bot@lifestyle-design.com"
-          node merge-log-push.mjs DFW "${{ steps.run-poster.outputs.post_success }}"
+          node merge-log-push.mjs "${{ steps.market.outputs.label || 'REEL' }}" "${{ steps.run-poster.outputs.post_success }}"
 
   trial-variant:
     if: >-

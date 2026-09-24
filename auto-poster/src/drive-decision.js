@@ -20,9 +20,19 @@
  * parsed and exposed on the plan; the daily cap, the one-step rule and the
  * floor/ceiling live in cadence.js, which consumes it. This module still does
  * not act on it — it only reports it faithfully.
+ *
+ * THE DAILY FILE (2026-09-24 onward). The writer moves from twice a week to
+ * DAILY at 11:00 CT and names today's market and one video in a `today` block.
+ * readTodayBlock() below is the contract: the block is honoured only for the
+ * current Chicago day, the market is honoured whether or not safe_to_act is
+ * true, and the video is queue content that safe_to_act false suppresses. The
+ * market reaches the cadence gate (cadence.js resolveMarket) and the workflow's
+ * market step (scripts/market-today.mjs); the video is promoted to the head of
+ * the ranked queue and is still subject to every Step 3 filter.
  */
 
 import { getAccessToken, downloadFileById, CONTENT_FOLDER_ID } from "./drive.js";
+import { chicagoDay, normalizeMarket, MARKETS } from "./cadence.js";
 
 export const DECISION_FILENAME = "ig_posting_decision_latest.json";
 
@@ -50,9 +60,13 @@ export const SUPPORTED_SCHEMA_VERSIONS = ["1.1"];
 /**
  * How old a decision may be before it is ignored.
  *
- * The writer runs twice a week, so a file older than seven days means a run
- * was missed. Acting on stale rankings is worse than acting on none: the
- * 30-day rule will have moved the eligible pool underneath them.
+ * The writer ran twice a week and moves to daily on 2026-09-24; seven days
+ * still bounds how stale a file may be for how_many and hooks_that_work — a
+ * file older than that means many runs were missed, and acting on stale
+ * rankings is worse than acting on none: the 30-day rule will have moved the
+ * eligible pool underneath them. The `today` block is scoped far tighter, to
+ * the current Chicago day, by readTodayBlock — a day-old file still supplies
+ * cadence advice and hooks, but never yesterday's market or video.
  */
 export const MAX_AGE_DAYS = 7;
 
@@ -427,6 +441,101 @@ export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal =
 }
 
 /**
+ * The daily writer's `today` block, day-scoped. PURE.
+ *
+ * THE CONTRACT (2026-09-24). The decision task runs daily at 11:00 CT and
+ * names the market and one video for the day:
+ *
+ *   "today": {
+ *     "date": "2026-09-25",         the Chicago calendar day this block is for
+ *     "market": "austin",           san_antonio | austin | dallas — "SA", "ATX",
+ *                                   "DFW" and the plain city names are accepted
+ *     "drive_file_id": "1abc…",     the one video, by Drive file id
+ *     "reason": "…"                 optional; carried into the run log
+ *   }
+ *
+ * DAY-SCOPED, OR IGNORED. The block is honoured only for the current Chicago
+ * day: `date` must equal today, or, when the block carries no date, the file's
+ * Drive modifiedTime must fall on today. Anything else is reported and
+ * ignored, and the calendar rotation decides. That is what makes an 11:00 CT
+ * writer and an 11:45 CT reader safe to run back to back: a reader that finds
+ * yesterday's file falls back to the calendar instead of re-running yesterday.
+ *
+ * THE MARKET IS NOT QUEUE CONTENT; THE VIDEO IS. safe_to_act false suppresses
+ * post[] and dont_post[] because it means the writer's post-to-video matching
+ * is not trustworthy — and a named drive_file_id is exactly that matching, so
+ * it is suppressed with them. The market is a scheduling call that risks no
+ * repost, so it is honoured regardless, like how_many.
+ *
+ * Returns { present, honoured, date, requestedMarket, market, driveFileId,
+ * videoHonoured, reason }. `market` is null unless honoured AND recognised;
+ * the gate treats null as "the rotation decides". Never throws.
+ */
+export function readTodayBlock(decision, { now = Date.now(), modifiedTime = null, safeToAct = true } = {}) {
+  const block = decision?.today;
+  const none = {
+    present: false, honoured: false, date: null, requestedMarket: null, market: null,
+    driveFileId: null, videoHonoured: false, reason: "no today block in the decision file",
+  };
+  if (!block || typeof block !== "object" || Array.isArray(block)) return none;
+
+  const requestedMarket = typeof block.market === "string" ? block.market
+    : typeof block.city === "string" ? block.city
+    : null;
+  const rawId = block.drive_file_id ?? block.video_id ?? block.video?.drive_file_id ?? null;
+  const driveFileId = typeof rawId === "string" && rawId.trim() ? rawId.trim() : null;
+  const date = todayBlockDate(block.date ?? block.day ?? block.for_day);
+  const todayChicago = chicagoDay(new Date(now));
+  const fileDay = modifiedTime ? chicagoDay(modifiedTime) : null;
+
+  let honoured = false;
+  let reason;
+  if (date) {
+    honoured = date === todayChicago;
+    reason = honoured
+      ? `today block is for ${date}`
+      : `today block is for ${date}, today is ${todayChicago} — ignored`;
+  } else if (fileDay) {
+    honoured = fileDay === todayChicago;
+    reason = honoured
+      ? `today block carries no date; the file was written today (${fileDay})`
+      : `today block carries no date and the file was written ${fileDay}, not today (${todayChicago}) — ignored`;
+  } else {
+    reason = "today block carries no date and the file has no modifiedTime — cannot tell which day it is for; ignored";
+  }
+
+  const market = honoured ? normalizeMarket(requestedMarket) : null;
+  if (honoured && requestedMarket && !market) {
+    reason += `; market "${requestedMarket}" is not one of ${MARKETS.join(", ")} — the rotation decides`;
+  }
+  if (honoured && !requestedMarket) {
+    reason += "; no market named — the rotation decides";
+  }
+  if (honoured && driveFileId && !safeToAct) {
+    reason += "; the named video is queue content and safe_to_act is false — not used";
+  }
+  return {
+    present: true,
+    honoured,
+    date: date ?? null,
+    requestedMarket,
+    market,
+    driveFileId,
+    videoHonoured: honoured && !!driveFileId && safeToAct,
+    reason,
+  };
+}
+
+/** "YYYY-MM-DD" as given; a parseable datetime by its Chicago day; else null. */
+function todayBlockDate(value) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const t = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
+  const parsed = Date.parse(t);
+  return Number.isNaN(parsed) ? null : chicagoDay(parsed);
+}
+
+/**
  * Turn a validated decision into a plan the selector can apply.
  *
  * A post[] row with a null drive_file_id is NOT actionable. It is dropped and
@@ -434,16 +543,27 @@ export function sanitizeHooks(raw, { styleIds = ENGINE_STYLE_TOKENS, onRefusal =
  * library's filenames are 124 iPhone UUIDs out of 142 and a guess would land
  * on the wrong video silently.
  */
-export function planFromDecision(decision, { safeToAct = true, modifiedTime = null, fileId = null } = {}) {
+export function planFromDecision(decision, { safeToAct = true, modifiedTime = null, fileId = null, now = Date.now() } = {}) {
   // The suppression lives HERE, not at the call site, so no caller can obtain a
   // ranked queue from an unsafe file by constructing the plan itself.
   const post = safeToAct && Array.isArray(decision?.post) ? decision.post : [];
   const dontPost = safeToAct && Array.isArray(decision?.dont_post) ? decision.dont_post : [];
 
+  // TODAY'S MARKET AND VIDEO — the daily writer's block, day-scoped by
+  // readTodayBlock, which also applies the safe_to_act rule to the video.
+  const today = readTodayBlock(decision, { now, modifiedTime, safeToAct });
+
   const hookRefusals = [];
   const hookDrops = [];
   const ranked = [];
   const skipped = [];
+  if (today.videoHonoured) {
+    // Rank 0: ahead of every post[] row. Still ADVICE — applyDecision reorders
+    // what Step 3 left eligible and never inserts, so a named video that the
+    // 30-day rule, the blocklist or the wrong city's folder excluded is simply
+    // not in the pool, and main.js says so rather than posting it.
+    ranked.push({ driveFileId: today.driveFileId, rank: 0, confidence: "named", reason: "named by today's decision block" });
+  }
   for (const row of post) {
     const id = row?.drive_file_id;
     if (typeof id !== "string" || !id) {
@@ -454,6 +574,8 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
       });
       continue;
     }
+    // The named video may also appear in post[]; one entry, at rank 0.
+    if (ranked.some((r) => r.driveFileId === id)) continue;
     ranked.push({
       driveFileId: id,
       rank: Number.isFinite(row?.rank) ? row.rank : ranked.length + 1,
@@ -471,6 +593,10 @@ export function planFromDecision(decision, { safeToAct = true, modifiedTime = nu
     // True when safe_to_act was false: the queue halves are empty BY DESIGN,
     // not because the file had nothing in them.
     queueSuppressed: !safeToAct,
+    // The daily writer's market and video for TODAY — see readTodayBlock. The
+    // gate reads `today.market` (null means the rotation decides); the ranked
+    // queue above already carries `today.driveFileId` at rank 0 when honoured.
+    today,
     ranked,
     rankIndex: new Map(ranked.map((r, i) => [r.driveFileId, i])),
     exclude,
@@ -594,6 +720,7 @@ export async function loadDecision({ now = Date.now(), deps = {} } = {}) {
             safeToAct: result.safeToAct,
             modifiedTime: file.modifiedTime,
             fileId: file.id,
+            now,
           })
         : null,
     };

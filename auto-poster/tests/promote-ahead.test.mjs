@@ -255,8 +255,13 @@ describe("the kill switch actually reaches the process", () => {
     const yml = readFileSync(new URL("../../.github/workflows/post.yml", import.meta.url), "utf-8");
     const declared = (yml.match(/^\s*PROMOTE_AHEAD:/gm) || []).length;
     const slots = (yml.match(/^\s*PROMOTE_AHEAD_SLOTS:/gm) || []).length;
-    assert.equal(declared, 3, "san-antonio, austin and dallas each need it");
-    assert.equal(slots, 3);
+    // One per job that runs main.js. That was three city jobs until 2026-09-24,
+    // when they collapsed into the single post-daily job (one slot a day, market
+    // by rotation) — so the pin follows the jobs rather than naming a count.
+    const mainJobs = (yml.match(/node src\/main\.js/g) || []).length;
+    assert.ok(mainJobs >= 1, "post.yml no longer runs main.js at all");
+    assert.equal(declared, mainJobs, "every job that runs main.js needs PROMOTE_AHEAD in its env block");
+    assert.equal(slots, mainJobs);
   });
 
   test("an UNSET repo variable means ON, matching the documented default", () => {

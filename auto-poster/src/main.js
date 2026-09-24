@@ -41,11 +41,11 @@ import { recordPublish, recordPublishVerification } from "./publish-manifest.js"
 import { mirrorToDrive } from "./manifest-mirror.js";
 import { applyPromoteAhead } from "./promote-ahead.js";
 import { loadDecision, applyDecision, decisionFileLog } from "./drive-decision.js";
-import { loadCadence, saveCadence, cadenceGate, proposeCadence, recordCadenceChange, recordCadenceHold, dailyPublishSeries } from "./cadence.js";
+import { loadCadence, saveCadence, cadenceGate, proposeCadence, recordCadenceChange, recordCadenceHold, dailyPublishSeries, rotationPreview, DAILY_SLOT, MARKET_LABELS } from "./cadence.js";
 import { announceCadenceChange } from "./cadence-announce.js";
 import { postToLinkedin } from "./linkedin.js";
 import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
-import { notifyDailyFailure, OUTCOME } from "./daily-notify.js";
+import { notifyDailyFailure, notifyDailyOutcome, OUTCOME } from "./daily-notify.js";
 import { remedyFor } from "./failure-remedy.js";
 import { computeContentHash, findContentDuplicate, CONTENT_DUP_THRESHOLD } from "./content-hash.js";
 import { loadMatches, saveMatches, getVideoHashes, getIgPostHash, hammingDistance, getLocalDuration, aiVisionCompare, extractFrames } from "./matcher.js";
@@ -76,7 +76,7 @@ process.on("uncaughtException", async (err) => {
   // the real error with a ReferenceError.
   await notifyDailyFailure({
     pipeline: "Reels",
-    label: `${process.env.CITY || "san_antonio"} ${process.env.SLOT || "pm"}`,
+    label: `${process.env.CITY || "san_antonio"} ${process.env.SLOT || "am"}`,
     outcome: OUTCOME.FAILED,
     reason: `Uncaught exception: ${err.message}`,
     remedy: remedyFor(err),
@@ -97,7 +97,10 @@ const CITY = process.env.CITY || "san_antonio";
 const FORCE = process.env.FORCE === "true"; // Manual override to bypass the content-duplicate guard
 const TEST_DELIVERY_ONLY = process.env.TEST_DELIVERY_ONLY === "true"; // Test delivery pipeline only — no social posts, no log entry
 const FORCE_VIDEO_ID = process.env.FORCE_VIDEO_ID || ""; // Pin a specific Drive file ID for testing
-const SLOT = process.env.SLOT || "pm"; // "am" or "pm" — passed from crons/workflow_dispatch. Dallas is always "pm".
+// "am" is the ONE live slot (cadence.js DAILY_SLOT) since 2026-09-24; "pm" is
+// retired for every city and stands down at the cadence gate. Passed by
+// post.yml from the market step or the dispatch form.
+const SLOT = process.env.SLOT || DAILY_SLOT;
 // Debut lane (promote-ahead). ON by default; set PROMOTE_AHEAD=false to stand
 // it down without a deploy. post.yml passes this through on every city job —
 // the workflow has no top-level `env:`, so a variable that is not named in each
@@ -315,6 +318,24 @@ async function main() {
     );
   }
 
+  // TODAY'S MARKET. The daily decision file may name it (its `today` block,
+  // day-scoped in drive-decision.js so yesterday's file names nothing); the
+  // calendar rotation — San Antonio → Austin → Dallas by Chicago date — takes
+  // every day it does not. Said here, before the gate, so a run that stands
+  // down still says which market had the day and why.
+  const todayBlock = decision.plan?.today ?? null;
+  if (todayBlock?.present) {
+    console.log(`[Step 0] Today block: ${todayBlock.reason}`);
+    if (todayBlock.honoured) {
+      console.log(
+        `[Step 0] Today block names market ${todayBlock.market ?? "(none recognised)"} ` +
+        `and video ${todayBlock.driveFileId ?? "(none)"}${todayBlock.driveFileId && !todayBlock.videoHonoured ? " — video NOT used" : ""}`
+      );
+    }
+  } else {
+    console.log("[Step 0] Today block: none — the calendar rotation decides the market (SA → ATX → DFW by Chicago date)");
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // Step 0b: CADENCE — move the target if the evidence earns it, then enforce
   // ═══════════════════════════════════════════════════════════════
@@ -323,12 +344,13 @@ async function main() {
   // this run, and the gate runs before Drive is listed and before IG is read —
   // a capped day should cost nothing, not a download.
   //
-  // This gate does NOT reduce the number of times the workflow fires. Actions
-  // reads crons from the DEFAULT branch, so the five city slots keep starting
-  // whatever this branch says; each one now exits early once the day's target
-  // is met. That is the only mechanism available short of editing post.yml on
-  // main, and it is the better one anyway: the cap is data, changeable by the
-  // loop, where a cron is code requiring a deploy.
+  // THE GATE IS THE LAW (2026-09-24). post.yml fires one slot a day, but this
+  // gate does not depend on that: whatever starts a run — the cron, Peter, or
+  // the external dispatcher that still fires the retired city slots several
+  // times a day — only today's market, on the am slot, with the day's single
+  // publish unspent, gets past this point. The cap is data (cadence.json,
+  // changeable by the loop within floor 1 / ceiling 2); the market is the
+  // calendar unless the decision file names one; the slot is code.
   let cadenceState = loadCadence();
   {
     const proposal = proposeCadence({
@@ -372,17 +394,38 @@ async function main() {
     }
   }
 
-  const gate = cadenceGate(log, { state: cadenceState, city: CITY, slot: SLOT });
+  const gate = cadenceGate(log, { state: cadenceState, city: CITY, slot: SLOT, namedMarket: decision.plan?.today?.market ?? null });
+  console.log(`[Step 0b] Today's market: ${gate.market} (${gate.marketSource}) — this run is ${CITY} ${SLOT}`);
+  console.log(`[Step 0b] Rotation from today: ${rotationPreview(gate.day, 3).map((r) => `${r.day} ${MARKET_LABELS[r.market]}`).join(", ")}`);
   console.log(`[Step 0b] Cadence gate: ${gate.reason}`);
   if (!gate.allowed) {
-    await notifyDailyFailure({
+    // A stand-down here is the gate doing its job, and how loudly to say so
+    // depends on who asked:
+    //   - a workflow_dispatch standing down (Peter, or the external dispatcher
+    //     that still fires the retired city slots several times a day) is
+    //     ROUTINE — the run page gets the annotation, nobody gets mail;
+    //   - the SCHEDULED daily slot standing down is NOT — the workflow resolved
+    //     today's market itself (scripts/market-today.mjs) and this gate
+    //     disagreed, or the day's one publish was already spent by a hand-run
+    //     before the cron. Either way nothing posts today, and Peter is told.
+    // The backup cron after a successful primary never reaches this line: the
+    // 20h idempotency guard above exits it first, silently and correctly.
+    const scheduled = process.env.GITHUB_EVENT_NAME === "schedule";
+    await notifyDailyOutcome({
       pipeline: "Reels",
       label: `${CITY} ${SLOT}`,
-      outcome: OUTCOME.NOTHING_TO_POST,
-      reason: `Daily cadence cap reached: ${gate.used}/${gate.target} realty publishes already made on ${gate.day} (CT). This slot is standing down by design, not failing.`,
-      remedy: remedyFor("cadence cap reached"),
+      outcome: scheduled ? OUTCOME.NOTHING_TO_POST : OUTCOME.SKIPPED,
+      reason:
+        `Cadence gate (${gate.standDown}): ${gate.reason}. Today's market is ${gate.market} (${gate.marketSource}); ` +
+        `${gate.used}/${gate.target} publishes made on ${gate.day} (CT). This run is standing down by design, not failing.`,
+      remedy: scheduled
+        ? "The scheduled daily slot stood down, so nothing posts today unless today's market is dispatched by hand. " +
+          "off_market: the workflow's market step and the gate disagreed about the decision file's today block — compare the " +
+          "[MarketToday] lines in the previous step with the [Step 0] lines above. cap: today's publish already happened " +
+          "(posted-log.json, today's date in CT)."
+        : null,
     });
-    console.log(`[AutoPoster] ${CITY}: cadence cap reached (${gate.used}/${gate.target}). Exiting.`);
+    console.log(`[AutoPoster] ${CITY} ${SLOT}: standing down at the cadence gate (${gate.standDown}). Exiting.`);
     process.exit(0);
   }
 
@@ -770,9 +813,12 @@ async function main() {
   saveMatches(matchCache);
 
   // LinkedIn: post text-only recruiting content (DECOUPLED from video success)
-  // Only fires on san_antonio PM slot to avoid duplicates across city/slot runs.
-  // Has its own 20-hour idempotency guard so manual re-runs can't double-post.
-  if (CITY === "san_antonio" && SLOT === "pm" && !TEST_DELIVERY_ONLY) {
+  // Fires on the one daily slot, whichever market has the day. It used to be
+  // tied to san_antonio pm, and that slot retired on 2026-09-24 with the
+  // one-a-day law — leaving LinkedIn pinned to it would have silenced the
+  // recruiting post without anyone deciding to. The claim (linkedin-claim.js)
+  // plus the 20-hour guard hold it to once a day however many runs reach here.
+  if (SLOT === DAILY_SLOT && !TEST_DELIVERY_ONLY) {
     const hasRecentLinkedin = hasRecentLinkedinPost(log, 20);
 
     if (hasRecentLinkedin) {
