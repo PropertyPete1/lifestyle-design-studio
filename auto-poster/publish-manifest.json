@@ -2821,6 +2821,97 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-09-28T17:16:30.511Z",
+      "drive_file_id": "1eEApIbC8tdTqnyb1giUfRnEk6E4De8Kf",
+      "file_name": "AA48C44A-BFE9-46CB-A5D5-774EA9DD2942.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "I was speechless when I walked into this kitchen.\n\nNew construction like this doesn't sit long. Starting at $899,999 in West Austin.\n\n✨ everyday living hits\n\nOpen floor plan with natural light pouring through, modern finishes, and the kind of kitchen island that becomes the heart of the home. Clean lines, zero compromises, brand new everything.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸",
+      "slot": "am",
+      "run_id": "36455316102",
+      "targets": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blog_id": 4807109,
+          "post_id": 383647223,
+          "networks": [
+            "tiktok",
+            "youtube"
+          ]
+        },
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 383647313,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 383647389,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blog_id": 6493212,
+          "post_id": 383647500,
+          "networks": [
+            "instagram",
+            "facebook"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "tiktok",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7690636122422119694",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "youtube",
+          "label": "lifestyledesignrealtytexas",
+          "url": "https://www.youtube.com/shorts/ByXb-N_wGbk",
+          "shortcode": null,
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Dd1s1I8AkX-/",
+          "shortcode": "Dd1s1I8AkX-",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Dd1s0ybmfzd/",
+          "shortcode": "Dd1s0ybmfzd",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealty",
+          "url": "https://www.instagram.com/reel/Dd1s8t-mBHl/",
+          "shortcode": "Dd1s8t-mBHl",
+          "verified": true
+        },
+        {
+          "network": "facebook",
+          "label": "lifestyledesignrealty",
+          "url": "https://facebook.com/reel/1064569156388072",
+          "shortcode": null,
+          "verified": true
+        }
+      ]
     }
   ]
 }
