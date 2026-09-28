@@ -1,76 +1,76 @@
 {
   "weights": {
-    "question": 0.96,
-    "bold_claim": 0.97,
-    "wait_tease": 0.84,
-    "reaction": 1.05,
-    "vibe": 0.95
+    "question": 1.66,
+    "bold_claim": 0.67,
+    "wait_tease": 2.35,
+    "reaction": 1.01,
+    "vibe": 0.83
   },
-  "lastUpdated": "2026-09-20T22:49:03.762Z",
-  "reelsAnalyzed": 18,
-  "classifiedCount": 10,
+  "lastUpdated": "2026-09-28T16:06:51.532Z",
+  "reelsAnalyzed": 15,
+  "classifiedCount": 12,
   "styleBreakdown": {
     "question": {
-      "count": 2,
-      "avgScore": 689,
-      "weight": 0.96
+      "count": 3,
+      "avgScore": 1673,
+      "weight": 1.66
     },
     "bold_claim": {
-      "count": 0,
-      "avgScore": 0,
-      "weight": 0.97
+      "count": 1,
+      "avgScore": 459,
+      "weight": 0.67
     },
     "wait_tease": {
-      "count": 3,
-      "avgScore": 497,
-      "weight": 0.84
+      "count": 2,
+      "avgScore": 22546,
+      "weight": 2.35
     },
     "reaction": {
       "count": 1,
-      "avgScore": 662,
-      "weight": 1.05
+      "avgScore": 855,
+      "weight": 1.01
     },
     "vibe": {
-      "count": 4,
-      "avgScore": 611,
-      "weight": 0.95
+      "count": 5,
+      "avgScore": 670,
+      "weight": 0.83
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/DdXmdQRs7X4/",
-      "hookStyle": "unknown",
-      "score": 2606,
-      "views": 1788,
-      "firstLine": "Nobody tells you this until you’re sitting across from a realtor with a very con"
+      "url": "https://www.instagram.com/reel/DdxNGKRMQxy/",
+      "hookStyle": "wait_tease",
+      "score": 37208,
+      "views": 36494,
+      "firstLine": "Waiting for 3% rates to come back could cost you more than you think 🏡"
     },
     {
-      "url": "https://www.instagram.com/reel/DdSaNEVsqZz/",
-      "hookStyle": "unknown",
-      "score": 1230,
-      "views": 912,
-      "firstLine": "Nobody teaches you this in school 🏡"
+      "url": "https://www.instagram.com/reel/Ddm2p8WsClX/",
+      "hookStyle": "wait_tease",
+      "score": 7885,
+      "views": 7733,
+      "firstLine": "“I’ll wait until next year when prices come down” 🏡"
     },
     {
-      "url": "https://www.instagram.com/reel/DdR31LAMWJo/",
-      "hookStyle": "unknown",
-      "score": 1071,
-      "views": 763,
-      "firstLine": "Starting at $369,990 in San Antonio. The kind of new construction that makes you"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DdUJuarMW76/",
+      "url": "https://www.instagram.com/reel/DdrssV0sdyP/",
       "hookStyle": "question",
-      "score": 1004,
-      "views": 660,
-      "firstLine": "would you believe this is brand new construction in San Antonio?"
+      "score": 3862,
+      "views": 3163,
+      "firstLine": "Is this okay or is it not? Be honest."
     },
     {
-      "url": "https://www.instagram.com/reel/DdPSczWsfrR/",
+      "url": "https://www.instagram.com/reel/DdubNjDsGQA/",
       "hookStyle": "unknown",
-      "score": 932,
-      "views": 675,
-      "firstLine": "This kitchen hits different when you step into it for the first time."
+      "score": 3842,
+      "views": 3502,
+      "firstLine": "SAVE THIS for move-in week 👇"
+    },
+    {
+      "url": "https://www.instagram.com/reel/Ddj83LRswf7/",
+      "hookStyle": "vibe",
+      "score": 1075,
+      "views": 874,
+      "firstLine": "🌳 Luxury, privacy, and Guadalupe River access all in one address… this River Ch"
     }
   ],
   "history": [
@@ -183,6 +183,17 @@
         "vibe": 0.95
       },
       "reelsAnalyzed": 18
+    },
+    {
+      "date": "2026-09-28",
+      "weights": {
+        "question": 1.66,
+        "bold_claim": 0.67,
+        "wait_tease": 2.35,
+        "reaction": 1.01,
+        "vibe": 0.83
+      },
+      "reelsAnalyzed": 15
     }
   ]
 }
