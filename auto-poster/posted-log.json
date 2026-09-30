@@ -17968,6 +17968,13 @@
           }
         ]
       }
+    },
+    {
+      "type": "linkedin",
+      "status": "claimed",
+      "timestamp": "2026-09-30T18:52:01.953Z",
+      "runId": "36760123058",
+      "success": false
     }
   ],
   "lastTemplateIndex": -1
