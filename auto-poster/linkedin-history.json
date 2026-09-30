@@ -2,13 +2,6 @@
   "posts": [
     {
       "topic": "why_agents_leave",
-      "body": "Agents leave for three reasons. Not one.\n\n1. They're not getting real support when deals get messy. Your broker is unreachable or useless when things break. You solve it alone or you watch it die.\n\n2. They feel invisible. The brokerage talks about culture but delivers isolation. You close deals and nobody knows. Nobody celebrates. Nobody helps you think through the hard ones.\n\n3. They want to grow and there's no path. No mentorship. No systems to learn from. No one showing them how to scale beyond grinding leads every single day.\n\nThe split was never the issue. The issue was that you were running a solo business out of a brokerage office.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
-      "format": "list",
-      "ending": "dm_cta",
-      "date": "2026-09-14"
-    },
-    {
-      "topic": "why_agents_leave",
       "body": "Agents leave because they're invisible. You close deals and nobody's there. The split doesn't matter when you're solving problems alone at night. Real brokers show up. They know your name. They help you think bigger. That's what we built at Lifestyle Design Realty.",
       "format": "short_punchy",
       "ending": "strong_close",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "dm_cta",
       "date": "2026-09-23"
+    },
+    {
+      "topic": "deal_story",
+      "body": "Had a listing go sideways this week. Inspection came back with foundation issues the seller didn't disclose. Deal almost died right there.\n\n1. The agent panicked and wanted to renegotiate everything. I told her to stop. We called the inspector back, got clarity on what was actually structural versus cosmetic. Turns out it was fixable and cheaper than everyone thought. The buyer stayed. Deal survived.\n\n2. Most agents never make that second call. They assume the worst and kill momentum. One conversation changed the entire outcome.\n\n3. This happens because agents operate alone. No one to sanity check the panic. No one to say \"wait, let's think this through before we blow it up.\"\n\nWhen you've got support, deals don't fall apart over miscommunication. You solve them.",
+      "format": "list",
+      "ending": "strong_close",
+      "date": "2026-09-30"
     }
   ]
 }
