@@ -17971,10 +17971,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "deal_story",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-09-30T14:00:00"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-09-30T14:30:00"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-09-30T15:00:00"
+        }
+      ],
       "timestamp": "2026-09-30T18:52:01.953Z",
       "runId": "36760123058",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
