@@ -173,11 +173,17 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
           DECISION_FOLDER_ID: ${{ vars.DECISION_FOLDER_ID }}
+        # Only the four output lines may reach $GITHUB_OUTPUT — any other line
+        # fails the step with "Invalid format". The script writes nothing else
+        # to stdout, but its stdout is only as clean as everything it imports:
+        # drive.js's token-refresh log line failed every scheduled run from
+        # 2026-09-24. So the step filters too. tests/market-today.test.mjs runs
+        # this block as written.
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            node scripts/market-today.mjs --city "${{ github.event.inputs.city }}" --slot "${{ github.event.inputs.slot || 'am' }}" >> "$GITHUB_OUTPUT"
+            node scripts/market-today.mjs --city "${{ github.event.inputs.city }}" --slot "${{ github.event.inputs.slot || 'am' }}" | grep -E '^(city|label|slot|market_source)=' >> "$GITHUB_OUTPUT"
           else
-            node scripts/market-today.mjs >> "$GITHUB_OUTPUT"
+            node scripts/market-today.mjs | grep -E '^(city|label|slot|market_source)=' >> "$GITHUB_OUTPUT"
           fi
       - name: Run auto-poster (today's market)
         id: run-poster
