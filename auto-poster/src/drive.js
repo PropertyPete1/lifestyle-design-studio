@@ -70,7 +70,9 @@ async function getAccessToken() {
 
   const data = await res.json();
   cachedAccessToken = data.access_token;
-  console.log("[Drive] Access token refreshed successfully");
+  // stderr, not stdout: scripts/market-today.mjs imports this, and its stdout
+  // is post.yml's $GITHUB_OUTPUT — a stray line there fails the step.
+  console.error("[Drive] Access token refreshed successfully");
   return cachedAccessToken;
 }
 
