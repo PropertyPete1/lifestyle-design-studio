@@ -18658,10 +18658,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "unpopular_opinion",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-10-03T14:00:00"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-10-03T14:30:00"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-10-03T15:00:00"
+        }
+      ],
       "timestamp": "2026-10-03T16:12:49.579Z",
       "runId": "37135614654",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
