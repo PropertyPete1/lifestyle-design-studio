@@ -1,114 +1,34 @@
 {
   "brand": "ldt",
   "engine": "learn-v1",
-  "generated_at": "2026-09-28T21:18:30.932Z",
+  "generated_at": "2026-10-05T22:05:57.190Z",
   "window_days": 28,
   "sample": {
-    "posts_scored": 4,
-    "posts_scored_all_media": 12,
+    "posts_scored": 0,
+    "posts_scored_all_media": 0,
     "posts_unjoined": 0,
-    "analytics_rows_joined": 8,
-    "analytics_rows_unattributed": 742,
+    "analytics_rows_joined": 0,
+    "analytics_rows_unattributed": 750,
     "provenance": {
-      "tagged": 4,
+      "tagged": 0,
       "inferred": 0
     }
   },
-  "hook_styles": {
-    "pov": {
-      "n": 1,
-      "score": 17,
-      "median": 17,
-      "verdict": "insufficient_sample"
-    },
-    "bold_claim": {
-      "n": 2,
-      "score": 26,
-      "median": 26,
-      "verdict": "insufficient_sample"
-    },
-    "stat": {
-      "n": 1,
-      "score": 58,
-      "median": 58,
-      "verdict": "insufficient_sample"
-    }
-  },
+  "hook_styles": {},
   "caption_lengths": {},
   "posting_slots": {
     "analyzed_only": true,
-    "table": {
-      "pm": {
-        "n": 8,
-        "score": 36,
-        "median": 32,
-        "verdict": "mid"
-      },
-      "midday": {
-        "n": 4,
-        "score": 58,
-        "median": 37,
-        "verdict": "winner"
-      }
-    }
+    "table": {}
   },
   "cities": {
     "analyzed_only": true,
-    "table": {
-      "ldt": {
-        "n": 4,
-        "score": 32,
-        "median": 26,
-        "verdict": "winner"
-      }
-    }
+    "table": {}
   },
   "hook_plate": {
     "analyzed_only": true,
     "table": {}
   },
-  "top_hooks": [
-    {
-      "hook": "4,400+ contacts live on the floor today. Cold calls running at 2 AM. Pipeline briefed at 7:05 AM. PRIMARY watches it all while you sleep, th",
-      "hook_style": "stat",
-      "provenance": "tagged",
-      "score": 58,
-      "score_basis": "instagram_median",
-      "ig_views_median": 25,
-      "city": "ldt",
-      "posted": "2026-09-03T00:53:37.778Z"
-    },
-    {
-      "hook": "I watched the pipeline while he slept. He approved every send. New leads got contacted before his first meeting. Cold database got worked au",
-      "hook_style": "bold_claim",
-      "provenance": "tagged",
-      "score": 33,
-      "score_basis": "instagram_median",
-      "ig_views_median": 24,
-      "city": "ldt",
-      "posted": "2026-09-04T00:37:10.408Z"
-    },
-    {
-      "hook": "I watch the pipeline while he sleeps. I drafted the follow-ups. I contacted new leads in under five minutes, around the clock. He approved e",
-      "hook_style": "bold_claim",
-      "provenance": "tagged",
-      "score": 19,
-      "score_basis": "instagram_median",
-      "ig_views_median": 14,
-      "city": "ldt",
-      "posted": "2026-09-01T18:15:43.559Z"
-    },
-    {
-      "hook": "7:05 AM. The briefing hits my phone before I'm out of bed. PRIMARY watched the pipeline all night, ran follow-up on cold leads, and has the ",
-      "hook_style": "pov",
-      "provenance": "tagged",
-      "score": 17,
-      "score_basis": "instagram_median",
-      "ig_views_median": 12,
-      "city": "ldt",
-      "posted": "2026-09-01T01:32:08.638Z"
-    }
-  ],
+  "top_hooks": [],
   "kill_list": [],
   "guidance": {
     "exploit_ratio": 0.7,
@@ -147,7 +67,7 @@
     }
   ],
   "caveats": [
-    "4 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
+    "0 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
     "Posting slots are set by the cron, not chosen per post — the slot table is analysis, not a controlled experiment.",
     "Scores are not comparable across platforms; the headline score is the median across the brand's Instagram accounts."
   ]

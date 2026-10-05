@@ -1,90 +1,90 @@
 {
   "brand": "lifestyle",
   "engine": "learn-v1",
-  "generated_at": "2026-09-28T21:18:30.842Z",
+  "generated_at": "2026-10-05T22:05:57.148Z",
   "window_days": 28,
   "sample": {
-    "posts_scored": 53,
-    "posts_scored_all_media": 53,
+    "posts_scored": 43,
+    "posts_scored_all_media": 43,
     "posts_unjoined": 1,
-    "analytics_rows_joined": 308,
-    "analytics_rows_unattributed": 442,
+    "analytics_rows_joined": 255,
+    "analytics_rows_unattributed": 495,
     "provenance": {
-      "tagged": 53,
+      "tagged": 43,
       "inferred": 0
     }
   },
   "hook_styles": {
+    "pov": {
+      "n": 9,
+      "score": 201,
+      "median": 183,
+      "verdict": "mid"
+    },
     "question": {
       "n": 6,
-      "score": 175,
-      "median": 167,
+      "score": 194,
+      "median": 176,
       "verdict": "mid"
     },
     "pattern_interrupt": {
-      "n": 8,
-      "score": 264,
-      "median": 216,
-      "verdict": "mid"
-    },
-    "pov": {
-      "n": 13,
-      "score": 207,
-      "median": 189,
+      "n": 7,
+      "score": 308,
+      "median": 258,
       "verdict": "mid"
     },
     "story_open": {
-      "n": 12,
-      "score": 280,
-      "median": 204,
+      "n": 11,
+      "score": 299,
+      "median": 222,
       "verdict": "mid"
     },
     "bold_claim": {
-      "n": 9,
-      "score": 138,
+      "n": 7,
+      "score": 141,
       "median": 148,
       "verdict": "mid"
     },
     "stat": {
-      "n": 5,
-      "score": 336,
-      "median": 181,
+      "n": 3,
+      "score": 397,
+      "median": 153,
       "verdict": "winner"
     }
   },
   "caption_lengths": {
     "long": {
-      "n": 17,
-      "score": 227,
-      "median": 194,
-      "verdict": "mid"
-    },
-    "short": {
       "n": 15,
-      "score": 234,
-      "median": 185,
+      "score": 245,
+      "median": 206,
       "verdict": "mid"
     },
     "medium": {
-      "n": 15,
-      "score": 256,
-      "median": 155,
+      "n": 13,
+      "score": 278,
+      "median": 183,
       "verdict": "winner"
+    },
+    "short": {
+      "n": 12,
+      "score": 247,
+      "median": 194,
+      "verdict": "mid"
     }
   },
   "posting_slots": {
     "analyzed_only": true,
     "table": {
       "am": {
-        "n": 32,
-        "score": 241,
-        "median": 158,
+        "n": 31,
+        "score": 261,
+        "median": 183,
         "verdict": "winner"
       },
       "pm": {
-        "n": 21,
-        "score": 211,
-        "median": 195,
+        "n": 12,
+        "score": 208,
+        "median": 181,
         "verdict": "mid"
       }
     }
@@ -93,21 +93,15 @@
     "analyzed_only": true,
     "table": {
       "san_antonio": {
-        "n": 40,
-        "score": 231,
-        "median": 184,
+        "n": 30,
+        "score": 248,
+        "median": 187,
         "verdict": "winner"
       },
-      "dallas": {
-        "n": 1,
-        "score": 189,
-        "median": 189,
-        "verdict": "insufficient_sample"
-      },
       "austin": {
-        "n": 12,
-        "score": 225,
-        "median": 146,
+        "n": 13,
+        "score": 242,
+        "median": 181,
         "verdict": "mid"
       }
     }
@@ -116,9 +110,9 @@
     "analyzed_only": true,
     "table": {
       "no_plate": {
-        "n": 53,
-        "score": 229,
-        "median": 181,
+        "n": 43,
+        "score": 246,
+        "median": 183,
         "verdict": "winner"
       }
     }
@@ -128,9 +122,9 @@
       "hook": "$449,990 and brand new construction in North Austin that's moving fast.",
       "hook_style": "stat",
       "provenance": "tagged",
-      "score": 887,
+      "score": 893,
       "score_basis": "instagram_median",
-      "ig_views_median": 607,
+      "ig_views_median": 635,
       "city": "austin",
       "posted": "2026-09-21T17:09:57.120Z"
     },
@@ -138,9 +132,9 @@
       "hook": "Starting at $369,990 in San Antonio.",
       "hook_style": "story_open",
       "provenance": "tagged",
-      "score": 874,
+      "score": 876,
       "score_basis": "instagram_median",
-      "ig_views_median": 650,
+      "ig_views_median": 681,
       "city": "san_antonio",
       "posted": "2026-09-20T16:10:29.809Z"
     },
@@ -148,9 +142,9 @@
       "hook": "stop scrolling. this is what new construction in San Antonio looks like right now.",
       "hook_style": "pattern_interrupt",
       "provenance": "tagged",
-      "score": 684,
+      "score": 692,
       "score_basis": "instagram_median",
-      "ig_views_median": 590,
+      "ig_views_median": 596,
       "city": "san_antonio",
       "posted": "2026-09-12T16:08:52.705Z"
     },
@@ -158,9 +152,9 @@
       "hook": "the kind of new construction that makes you wonder why you waited this long",
       "hook_style": "story_open",
       "provenance": "tagged",
-      "score": 647,
+      "score": 649,
       "score_basis": "instagram_median",
-      "ig_views_median": 480,
+      "ig_views_median": 483,
       "city": "san_antonio",
       "posted": "2026-09-10T16:07:21.711Z"
     },
@@ -168,9 +162,9 @@
       "hook": "POV: you just walked into brand new construction that actually feels like home. starting at $469,990 in San Antonio.",
       "hook_style": "pov",
       "provenance": "tagged",
-      "score": 369,
+      "score": 373,
       "score_basis": "instagram_median",
-      "ig_views_median": 394,
+      "ig_views_median": 398,
       "city": "san_antonio",
       "posted": "2026-09-16T19:12:53.562Z"
     }
@@ -213,7 +207,7 @@
     }
   ],
   "caveats": [
-    "53 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
+    "43 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
     "1 posted reels had no matching analytics rows (usually: posted within the last day, before metrics exist). They are excluded, not zeroed.",
     "Posting slots are set by the cron, not chosen per post — the slot table is analysis, not a controlled experiment.",
     "Scores are not comparable across platforms; the headline score is the median across the brand's Instagram accounts."
