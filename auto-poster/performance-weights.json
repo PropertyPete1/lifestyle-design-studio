@@ -1,76 +1,76 @@
 {
   "weights": {
-    "question": 1.66,
-    "bold_claim": 0.67,
-    "wait_tease": 2.35,
-    "reaction": 1.01,
-    "vibe": 0.83
+    "question": 1.1,
+    "bold_claim": 0.9,
+    "wait_tease": 1.48,
+    "reaction": 0.97,
+    "vibe": 0.95
   },
-  "lastUpdated": "2026-09-28T16:06:51.532Z",
-  "reelsAnalyzed": 15,
-  "classifiedCount": 12,
+  "lastUpdated": "2026-10-05T16:18:09.288Z",
+  "reelsAnalyzed": 18,
+  "classifiedCount": 8,
   "styleBreakdown": {
     "question": {
       "count": 3,
-      "avgScore": 1673,
-      "weight": 1.66
+      "avgScore": 530,
+      "weight": 1.1
     },
     "bold_claim": {
-      "count": 1,
-      "avgScore": 459,
-      "weight": 0.67
+      "count": 0,
+      "avgScore": 0,
+      "weight": 0.9
     },
     "wait_tease": {
-      "count": 2,
-      "avgScore": 22546,
-      "weight": 2.35
+      "count": 1,
+      "avgScore": 686,
+      "weight": 1.48
     },
     "reaction": {
-      "count": 1,
-      "avgScore": 855,
-      "weight": 1.01
+      "count": 2,
+      "avgScore": 592,
+      "weight": 0.97
     },
     "vibe": {
-      "count": 5,
-      "avgScore": 670,
-      "weight": 0.83
+      "count": 2,
+      "avgScore": 618,
+      "weight": 0.95
     }
   },
   "topPerformers": [
     {
-      "url": "https://www.instagram.com/reel/DdxNGKRMQxy/",
-      "hookStyle": "wait_tease",
-      "score": 37208,
-      "views": 36494,
-      "firstLine": "Waiting for 3% rates to come back could cost you more than you think 🏡"
-    },
-    {
-      "url": "https://www.instagram.com/reel/Ddm2p8WsClX/",
-      "hookStyle": "wait_tease",
-      "score": 7885,
-      "views": 7733,
-      "firstLine": "“I’ll wait until next year when prices come down” 🏡"
-    },
-    {
-      "url": "https://www.instagram.com/reel/DdrssV0sdyP/",
-      "hookStyle": "question",
-      "score": 3862,
-      "views": 3163,
-      "firstLine": "Is this okay or is it not? Be honest."
-    },
-    {
-      "url": "https://www.instagram.com/reel/DdubNjDsGQA/",
+      "url": "https://www.instagram.com/reel/DeAZf4kMTu9/",
       "hookStyle": "unknown",
-      "score": 3842,
-      "views": 3502,
-      "firstLine": "SAVE THIS for move-in week 👇"
+      "score": 2865,
+      "views": 2786,
+      "firstLine": "Comment PLAN and I’ll DM you a game plan for buying at today’s rates 👀 Follow m"
     },
     {
-      "url": "https://www.instagram.com/reel/Ddj83LRswf7/",
-      "hookStyle": "vibe",
-      "score": 1075,
-      "views": 874,
-      "firstLine": "🌳 Luxury, privacy, and Guadalupe River access all in one address… this River Ch"
+      "url": "https://www.instagram.com/reel/Dd2KXTUMyiH/",
+      "hookStyle": "unknown",
+      "score": 1624,
+      "views": 1541,
+      "firstLine": "Been in real estate a while. Like... a while. 🦴🏠"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DeCfWC2MTB_/",
+      "hookStyle": "unknown",
+      "score": 1087,
+      "views": 803,
+      "firstLine": "the kind of kitchen that stops you cold"
+    },
+    {
+      "url": "https://www.instagram.com/reel/DeF6I_8MKcg/",
+      "hookStyle": "unknown",
+      "score": 1023,
+      "views": 754,
+      "firstLine": "SAVE THIS for the days you don’t feel like it 🥋"
+    },
+    {
+      "url": "https://www.instagram.com/reel/Dd2I4Hrsvx1/",
+      "hookStyle": "unknown",
+      "score": 974,
+      "views": 815,
+      "firstLine": "Been in real estate a while. Like... a while. 🦴🏠"
     }
   ],
   "history": [
@@ -194,6 +194,17 @@
         "vibe": 0.83
       },
       "reelsAnalyzed": 15
+    },
+    {
+      "date": "2026-10-05",
+      "weights": {
+        "question": 1.1,
+        "bold_claim": 0.9,
+        "wait_tease": 1.48,
+        "reaction": 0.97,
+        "vibe": 0.95
+      },
+      "reelsAnalyzed": 18
     }
   ]
 }
