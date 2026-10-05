@@ -19168,6 +19168,224 @@
       "captionSnippet": "I walked through this one three times because the flow just works.\n\nBrand new construction in San Antonio. The kind of o",
       "mainIgPostedAt": "2026-10-05T16:40:35.828Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "1odfTv_dVHGH_T8JI5-05L6cuwGpXoQb2",
+      "fileName": "EA39C8D6-4CBD-4FF6-90CC-DB006A26903E.mp4",
+      "city": "san_antonio",
+      "caption": "I walked through this one three times because the flow just works.\n\nBrand new construction in San Antonio. The kind of open floor plan and natural light that makes you actually want to spend time in y",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-10-05T16:40:07.701Z",
+      "success": true,
+      "brands": "lifestyledesignrealtytexas, propertypete01, lifestyledesignrealtyaustintx, lifestyledesignrealty",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_transcript": "ums",
+      "voiceover_persona": "hot_take_contrarian",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 1,
+        "violations": [],
+        "fallback_used": false
+      },
+      "content_hash": "ffffff0f0000ffff:01633b03310d3179:ffff1f071139e1f1:ff1e00e080c31f7f:ffffe747640000c0",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "bold_claim",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "brief_exploit",
+        "brief_generated_at": "2026-09-28T21:18:30.842Z",
+        "decision_hooks": 3,
+        "decision_file_at": "2026-10-05T16:31:27.769Z",
+        "topic": {
+          "price_overlay": false,
+          "community_kb": false,
+          "overlay_community": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/12PnuteMvnvA03sTXuHoZT9V41MLS6Q1d/view",
+      "distribution": [
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "postId": 388730525,
+          "network": "tiktok",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-05T16:47:17.551Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7693224380989459725"
+        },
+        {
+          "label": "lifestyledesignrealtytexas",
+          "blogId": 4807109,
+          "postId": 388730525,
+          "network": "youtube",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-05T16:47:17.551Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.youtube.com/shorts/bHbSeLLsH8U"
+        },
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 388730621,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-05T16:47:17.692Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DeHqOjtGGx_/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 388730699,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-05T16:47:17.833Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DeHqSRCjE6i/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "postId": 388730776,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-05T16:47:17.962Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DeHqXlvlQXk/"
+        },
+        {
+          "label": "lifestyledesignrealty",
+          "blogId": 6493212,
+          "postId": 388730776,
+          "network": "facebook",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-05T16:47:17.962Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://facebook.com/reel/1586907219845843"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-10-05T16:47:17.962Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 6,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "lifestyledesignrealtytexas",
+            "postId": 388730525,
+            "blogId": 4807109,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "tiktok",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.tiktok.com/@lifestyledesignrealtytx/video/7693224380989459725"
+              },
+              {
+                "network": "youtube",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.youtube.com/shorts/bHbSeLLsH8U"
+              }
+            ]
+          },
+          {
+            "label": "propertypete01",
+            "postId": 388730621,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DeHqOjtGGx_/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 388730699,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DeHqSRCjE6i/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealty",
+            "postId": 388730776,
+            "blogId": 6493212,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "facebook",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://facebook.com/reel/1586907219845843"
+              },
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DeHqXlvlQXk/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
