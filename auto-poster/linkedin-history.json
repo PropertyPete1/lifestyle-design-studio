@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "market_now",
-      "body": "Agents who price right always outwork agents who chase the market.\n\nWhen you list at the true market rate, you get showings. You get offers. You get momentum. When you list high hoping to negotiate down, you're invisible for weeks then desperate for a price cut. Same with buyers. The ones who understand what a house is actually worth make offers that get accepted. The ones waiting for the perfect deal at the perfect price stay locked in analysis. The agents thriving in any market aren't the ones waiting for conditions to shift. They're the ones who know how to have a real conversation with a seller about what their home is worth today, not what they hope it's worth. That confidence moves deals.\n\nWhat's the difference between an agent on your team who's consistent and one who disappears when the market gets quiet?",
-      "format": "bold_statement",
-      "ending": "question",
-      "date": "2026-10-01"
-    },
-    {
       "topic": "why_agents_leave",
       "body": "Agents leave because they're invisible. You close deals and nobody's there. The split doesn't matter when you're solving problems alone at night. Real brokers show up. They know your name. They help you think bigger. That's what we built at Lifestyle Design Realty.",
       "format": "short_punchy",
@@ -48,6 +41,13 @@
       "format": "story",
       "ending": "question",
       "date": "2026-10-07"
+    },
+    {
+      "topic": "deal_story",
+      "body": "Had a listing go sideways this week. Inspection came back with foundation issues the seller didn't disclose. Deal almost died right there.\n\n1. The agent panicked and wanted to renegotiate everything. I told her to stop. We called the inspector back, got clarity on what was actually structural versus cosmetic. Turns out it was fixable and cheaper than everyone thought. The buyer stayed. Deal survived.\n\n2. Most agents never make that second call. They assume the worst and kill momentum. One conversation changed the entire outcome.\n\n3. This happens because agents operate alone. No one to sanity check the panic. No one to say \"wait, let's think this through before we blow it up.\"\n\nWhen you've got support, deals don't fall apart over miscommunication. You solve them.",
+      "format": "list",
+      "ending": "strong_close",
+      "date": "2026-09-30"
     }
   ]
 }
