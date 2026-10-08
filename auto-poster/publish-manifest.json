@@ -3724,6 +3724,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-08T22:33:04.393Z",
+      "drive_file_id": "1UuJq3nKUUUv1wzSRfm3hA3BaamHk__2n",
+      "file_name": "003001B1-0C39-4A31-82EE-FD86C942D049.mp4",
+      "market": "san_antonio",
+      "community": null,
+      "caption": "$2,500 and brand new construction in San Antonio keeps flying off the market.\n\nNew builds at this price point don't wait long. Builder incentives are still on the table.\n\n✨ open floor plan with natural light, modern finishes, and kitchen island. Everything ready to move into.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 VA, FHA, USDA, and conventional financing all welcome. builder rate b",
+      "slot": "am",
+      "run_id": "37853788513",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 391597371,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 391597400,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DeQBCdGkfvl/",
+          "shortcode": "DeQBCdGkfvl",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DeQBCdvgOW5/",
+          "shortcode": "DeQBCdvgOW5",
+          "verified": true
+        }
+      ]
     }
   ]
 }
