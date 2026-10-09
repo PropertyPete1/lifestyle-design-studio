@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "leadership_culture",
-      "body": "You work for a leader who actually knows your name.\n\nI'm not talking about remembering it in a hallway. I mean the person running your brokerage knows what you're working on this month. Knows when you closed something hard. Knows when you're stuck and picks up the phone instead of waiting for you to ask. That's the difference between a brokerage and a real organization. At Lifestyle Design Realty, agents aren't transaction numbers. You're people I invested in, and I show up for that investment. You get support when deals get messy. You get feedback when you're spinning your wheels. You get pushed forward when you're capable of more. That's what culture actually is. It's not a nice office or free coffee. It's a leader who has your back when it matters.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
-      "format": "bold_statement",
-      "ending": "dm_cta",
-      "date": "2026-10-05"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We're running more buyer and lease leads than we can handle right now. New construction in San Antonio and Austin mostly, plus out-of-state relocations. Warm leads but they need vetting and nurturing. Most aren't transaction ready. If this sounds like something you'd take on, send me a DM.",
       "format": "short_punchy",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "dm_cta",
       "date": "2026-10-09"
+    },
+    {
+      "topic": "why_agents_leave",
+      "body": "Agents leave because their broker isn't actually there. You close a deal and nobody knows. You hit a problem and you're solving it alone at midnight. You want to grow and there's no plan, no support, no one pushing you forward. Here's what they're really looking for instead. 1. A leader who shows up. Not just quarterly. Not just when something breaks. Someone who knows what you're working on and genuinely cares if you win or lose. 2. Systems that actually work. Most brokers have nothing. You're inventing your process from scratch every deal. Better brokerages give you a playbook so you're not reinventing the wheel every month. 3. A culture where your split doesn't matter more than your growth. You can negotiate a commission all day. What you can't negotiate is whether your broker believes you're capable of bigger things. The right brokerage isn't about percentage points?",
+      "format": "list",
+      "ending": "question",
+      "date": "2026-10-04"
     }
   ]
 }
