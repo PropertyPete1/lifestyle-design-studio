@@ -3769,6 +3769,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-09T21:59:38.805Z",
+      "drive_file_id": "16ZISfnNwqrt-YggrTuYl4wOdooBIHHVz",
+      "file_name": "ABACCC1C-03C7-4B55-B2E3-52CA26786FA7.mp4",
+      "market": "san_antonio",
+      "community": "Northeast",
+      "caption": "stop scrolling. this is what $674,223+ gets you in San Antonio right now.\n\nnew construction like this moves fast. builder incentives are on the table for early movers.\n\n✨ everyday living hits\nopen floor plan. natural light flooding through. modern finishes and kitchen island that actually works for real life.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 buyer wins\nVA, FHA, USDA, and conve",
+      "slot": "am",
+      "run_id": "37996050277",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 392424679,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 392424722,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DeSiEaeEwAo/",
+          "shortcode": "DeSiEaeEwAo",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DeSh-agCdNF/",
+          "shortcode": "DeSh-agCdNF",
+          "verified": true
+        }
+      ]
     }
   ]
 }
