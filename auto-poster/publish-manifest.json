@@ -3814,6 +3814,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-10T20:47:13.525Z",
+      "drive_file_id": "1bt2oufNohqnhTrtD6j50T1qeEtpUJ8-j",
+      "file_name": "8C7A00AA-399A-45DE-8637-9516355FA21B.mp4",
+      "market": "san_antonio",
+      "community": "Northwest",
+      "caption": "$290,990 for brand new construction in San Antonio. people move fast on these.\n\n✨ open floor plan with natural light, modern finishes, and everything brand new. kitchen island and quality throughout.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 VA, FHA, USDA, and conventional financing welcome. builder incentives available. rate buydowns on the table.\n\nPerfect for growing families, milita",
+      "slot": "am",
+      "run_id": "38084793658",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 392946393,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 392946414,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DeU-fwCCjak/",
+          "shortcode": "DeU-fwCCjak",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DeU-fpyiK-R/",
+          "shortcode": "DeU-fpyiK-R",
+          "verified": true
+        }
+      ]
     }
   ]
 }
