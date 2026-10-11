@@ -3859,6 +3859,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-11T21:13:42.062Z",
+      "drive_file_id": "1yLUkkkVH5wIbM1OrtkHxnlOVWj5qWuFL",
+      "file_name": "7FF299C3-BFA6-44B0-BD68-D91993A3DE45.mp4",
+      "market": "san_antonio",
+      "community": null,
+      "caption": "The kind of new construction in San Antonio that has you walking through the front door and already picturing Sunday dinners.\n\nNew construction like this doesn't sit long. builder incentives are actively on the table right now.\n\n✨ Open floor plan with natural light flooding through, modern finishes throughout, and the kind of kitchen island where everyone ends up anyway. Clean lines, thoughtful layout, move-in ready.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 s",
+      "slot": "am",
+      "run_id": "38174808400",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 393529546,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 393529589,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DeXmTFZk5DE/",
+          "shortcode": "DeXmTFZk5DE",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DeXmUN9jG6N/",
+          "shortcode": "DeXmUN9jG6N",
+          "verified": true
+        }
+      ]
     }
   ]
 }
