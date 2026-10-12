@@ -3904,6 +3904,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-12T23:29:11.936Z",
+      "drive_file_id": "1CDfmUlFw3uOrx1iv0j89HStWqcfRUKO7",
+      "file_name": "60731120-BE09-423F-BE4D-51B42DDBBFA7.mp4",
+      "market": "san_antonio",
+      "community": null,
+      "caption": "$299,990 for brand new construction in San Antonio. This is where it starts.\n\nNew builds at this price point move fast around here.\n\n✨ everyday living hits\nOpen floor plan with natural light pouring through, modern finishes, kitchen island. Walk into these and you feel the quality immediately.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 buyer wins\nVA, FHA, USDA, and conventional financin",
+      "slot": "am",
+      "run_id": "38321961199",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 394472207,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 394472232,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DeaarXIFaxp/",
+          "shortcode": "DeaarXIFaxp",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DeaaoHJlIaZ/",
+          "shortcode": "DeaaoHJlIaZ",
+          "verified": true
+        }
+      ]
     }
   ]
 }
