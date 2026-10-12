@@ -13,7 +13,7 @@ manual edit queue in particular **never** publish.
 
 | Pipeline | Entry point | Workflow | Schedule (UTC / CT) |
 | --- | --- | --- | --- |
-| **Daily reels** | `auto-poster/src/main.js` | `post.yml` | **One slot a day** — 17:45 UTC (+ 18:15 backup) = 12:45 PM CDT / 11:45 AM CST — for **one market**: SA → ATX → DFW by Chicago date, or the market the day's decision file names |
+| **Daily reels** | `auto-poster/src/main.js` | `post.yml` | **One slot a day** — 17:45 UTC primary = 12:45 PM CDT / 11:45 AM CST, with fires every 30 min from 17:15 to 22:45 UTC because GitHub starts crons late; the gate allows one publish — for **one market**: SA → ATX → DFW by Chicago date, or the market the day's decision file names |
 | **Carousel** (retired) | `auto-poster/src/carousel-main.js` | `post.yml` | **No cron — manual dispatch only** (was 14:00 / 9:00 AM until 2026-09-04) |
 | **Weekly YouTube** | `auto-poster/src/yt-brief-main.js`, `yt-pipeline-main.js` | `youtube-longform.yml` | Brief Mon 14:00 (+`:30` backup); pipeline polls 15:00 and 21:00 daily |
 | **Trial variant** | `auto-poster/src/trial-variant-main.js` | `post.yml` | 13:15 / 8:15 AM and 23:45 / 6:45 PM |

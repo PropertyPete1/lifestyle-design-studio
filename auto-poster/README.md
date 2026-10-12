@@ -28,7 +28,7 @@ calling the GitHub API, and that is no longer how any of it fires.
 
 | What | When (CT) | Cron (UTC) |
 | --- | --- | --- |
-| The daily reel | 12:45 PM during CDT, 11:45 AM during CST (+ a 30-minute backup) | `45 17 * * *`, `15 18 * * *` |
+| The daily reel | every 30 min, 12:15–5:45 PM during CDT, 11:15 AM–4:45 PM during CST (17:45 primary) | twelve strings, `15 17 * * *` … `45 22 * * *` |
 | Trial variant (posts nowhere) | 8:15 AM, 6:45 PM | `15 13 * * *`, `45 23 * * *` |
 
 **Which market.** San Antonio → Austin → Dallas, by Chicago calendar date, anchored
@@ -43,6 +43,15 @@ Wednesday. `scripts/market-today.mjs` resolves this for the workflow before
 17:45 UTC is after it in both regimes — 45 minutes clear in winter — and inside the
 11am–1pm CT band Metricool rates best for the account. A reader that fires alongside
 the writer would read yesterday's file about half the time.
+
+**Why twelve fires (since 2026-10-12).** GitHub starts scheduled runs hours late or
+drops them — posts landed anywhere from 11:10 AM to 5:33 PM CT, and on 2026-10-12
+neither 17:45 nor 18:15 fired. So `post-daily` answers to a cron every 30 minutes
+from 17:15 to 22:45 UTC. The gate below allows one publish a day: the first run to
+reach it publishes, every later one stands down. The 17:15 fire is the one that can
+beat the decision file in winter (11:15 AM CST); if it does, the day falls back to
+the calendar's market and an auto-picked video. The job is capped at 45 minutes and
+its apt/pip install at 10, so a hung run cannot hold the reel queue.
 
 **The gate is the law** (`cadenceGate` in `src/cadence.js`). Whatever starts a run —
 the cron, the Actions tab, or the external dispatcher that still fires the retired

@@ -31,8 +31,34 @@ on:
     # rather than repeat yesterday, but the named video would be lost.
     # The market itself is resolved by scripts/market-today.mjs in the job
     # below — a cron cannot do date arithmetic or read Drive.
+    #
+    # BACKUP FIRES — 2026-10-12. GitHub starts scheduled runs hours late, or
+    # not at all: posts landed anywhere from 11:10 AM to 5:33 PM CT, and on
+    # 2026-10-12 neither 17:45 nor 18:15 fired. So post-daily answers to a cron
+    # every 30 minutes from 17:15 to 22:45 UTC — twelve chances a day:
+    #   during CDT:  12:15 PM .. 5:45 PM CT
+    #   during CST:  11:15 AM .. 4:45 PM CT
+    # The cadence gate allows ONE publish per Chicago day, so the first run to
+    # reach it publishes and every later one stands down clean. The concurrency
+    # group below serialises them, so two can never both read "0/1 used".
+    # 17:15 is the one fire that can beat the decision file: the writer has
+    # landed it as late as 12:35 PM CT, and 17:15 UTC is 11:15 AM CST in
+    # winter. An on-time 17:15 fire then posts the calendar's market with an
+    # auto-picked video — the fallback described above, not a double post.
+    # All twelve sit on :15/:45, clear of the retired :00/:30 city strings
+    # below, so no live cron collides with a commented one.
+    - cron: '15 17 * * *'
     - cron: '45 17 * * *'
     - cron: '15 18 * * *'
+    - cron: '45 18 * * *'
+    - cron: '15 19 * * *'
+    - cron: '45 19 * * *'
+    - cron: '15 20 * * *'
+    - cron: '45 20 * * *'
+    - cron: '15 21 * * *'
+    - cron: '45 21 * * *'
+    - cron: '15 22 * * *'
+    - cron: '45 22 * * *'
     # THE FIVE CITY SLOTS — RETIRED 2026-09-24. No city slot fires.
     #
     # SA am 16:00/16:30, ATX am 17:00/17:30 and DFW pm 21:00/21:30 were the
@@ -137,12 +163,31 @@ jobs:
   # two runs for different cities starting in the same minute could each read
   # "0/1 used" and both publish; a shared group serialises them so the second
   # one sees the first one's log entry and stands down.
+  #
+  # TIMEOUTS — 2026-10-12. That group holds one running run and ONE pending; a
+  # newer arrival replaces the pending one. So a hung run blocks every reel
+  # run behind it until GitHub's 6-hour default kills it: on 2026-10-01 the
+  # apt/pip install step hung for 350 minutes and nine queued runs were
+  # cancelled behind it. A real publish, including the ~7-minute PUBLISHED
+  # wait, finishes in about 12; the install normally takes under 2 minutes,
+  # so 10 is a hang, not a slow mirror.
   post-daily:
     if: >-
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.city == 'san_antonio' || github.event.inputs.city == 'austin' || github.event.inputs.city == 'dallas'))
+      || github.event.schedule == '15 17 * * *'
       || github.event.schedule == '45 17 * * *'
       || github.event.schedule == '15 18 * * *'
+      || github.event.schedule == '45 18 * * *'
+      || github.event.schedule == '15 19 * * *'
+      || github.event.schedule == '45 19 * * *'
+      || github.event.schedule == '15 20 * * *'
+      || github.event.schedule == '45 20 * * *'
+      || github.event.schedule == '15 21 * * *'
+      || github.event.schedule == '45 21 * * *'
+      || github.event.schedule == '15 22 * * *'
+      || github.event.schedule == '45 22 * * *'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     concurrency:
       group: autopost-daily-reel
       cancel-in-progress: false
@@ -152,6 +197,7 @@ jobs:
         with:
           node-version: '20'
       - name: Install ffmpeg, tesseract & whisper
+        timeout-minutes: 10
         run: |
           # tesseract is NOT optional: the caption-over-captions gate reads the
           # source frames with it, and a check that cannot run refuses to add
