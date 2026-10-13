@@ -33,18 +33,28 @@ on:
     # below — a cron cannot do date arithmetic or read Drive.
     #
     # BACKUP FIRES — 2026-10-12. GitHub starts scheduled runs hours late, or
-    # not at all: posts landed anywhere from 11:10 AM to 5:33 PM CT, and on
-    # 2026-10-12 neither 17:45 nor 18:15 fired. So post-daily answers to a cron
+    # drops them: posts landed anywhere from 11:10 AM to 5:33 PM CT, and on
+    # 2026-10-12 the 17:45 and 18:15 fires arrived six hours late, after the
+    # day's reel had been dispatched by hand. So post-daily answers to a cron
     # every 30 minutes from 17:15 to 22:45 UTC — twelve chances a day:
     #   during CDT:  12:15 PM .. 5:45 PM CT
     #   during CST:  11:15 AM .. 4:45 PM CT
-    # The cadence gate allows ONE publish per Chicago day, so the first run to
-    # reach it publishes and every later one stands down clean. The concurrency
-    # group below serialises them, so two can never both read "0/1 used".
-    # 17:15 is the one fire that can beat the decision file: the writer has
-    # landed it as late as 12:35 PM CT, and 17:15 UTC is 11:15 AM CST in
-    # winter. An on-time 17:15 fire then posts the calendar's market with an
-    # auto-picked video — the fallback described above, not a double post.
+    # Still ONE publish per Chicago day. Once the day's reel is out, later fires
+    # resolve the same market and stop silently at main.js's same-city guard
+    # (20h slot / 2h cooldown). A fire queued behind the publishing run checks
+    # out the commit from before that run's log row, gets past the local guard,
+    # and is stopped by the live-log re-check just before it posts.
+    # Lateness cuts both ways. Late into the night: a 22:45 fire more than
+    # 6h15m late (CDT; 7h15m in CST) is past Chicago midnight, and the 18:15
+    # fire on 2026-10-12 was 6h20m late. main.js stands down any scheduled fire
+    # delivered on a later Chicago day than it was due (scheduledFireDay in
+    # src/cadence.js, fed FIRE_SCHEDULE below). Early in the day: a fire that
+    # starts before the decision file lands (as late as 12:35 PM CT — 17:15 UTC
+    # is before that in CDT, 17:15 to 18:15 in CST) takes the calendar's market
+    # with an auto-picked video, the fallback described above; if the file then
+    # names another market, the day's later scheduled fires each stand down at
+    # the cap with a [DAILY ALERT]. No post-daily fire has yet arrived less
+    # than two hours late, which puts every fire after the file.
     # All twelve sit on :15/:45, clear of the retired :00/:30 city strings
     # below, so no live cron collides with a commented one.
     - cron: '15 17 * * *'
@@ -259,6 +269,10 @@ jobs:
           # reader landed and listed in no workflow, which is why every run up
           # to now searched the whole Drive for the filename.
           DECISION_FOLDER_ID: ${{ vars.DECISION_FOLDER_ID }}
+          # Which cron this fire answers, so main.js can tell when GitHub
+          # delivered it on a later Chicago day than it was due and stand it
+          # down (scheduledFireDay in src/cadence.js). Empty on a dispatch.
+          FIRE_SCHEDULE: ${{ github.event.schedule }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}

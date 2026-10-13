@@ -269,6 +269,24 @@ describe("the daily schedule is ONE slot a day — 2026-09-24", () => {
     assert.match(body, /cancel-in-progress:\s*false/);
   });
 
+  test("main.js is told which cron fired, so a fire delivered on the next Chicago day can stand down", () => {
+    // Twelve fires reach 22:45 UTC, and GitHub has delivered them over six
+    // hours late — 22:45 crosses Chicago midnight at 6h15m. main.js compares the
+    // fire's due day (scheduledFireDay) with today; without this env line in
+    // the step that RUNS main.js it reads undefined and the guard fails open.
+    const body = code(all["post-daily"]);
+    const start = body.indexOf("- name: Run auto-poster");
+    assert.ok(start > 0, "no Run auto-poster step in post-daily");
+    const next = body.indexOf("\n      - name:", start + 1);
+    const step = body.slice(start, next === -1 ? body.length : next);
+    assert.match(step, /node src\/main\.js/, "the step bounds are wrong — this is not the main.js step");
+    assert.match(
+      step,
+      /FIRE_SCHEDULE: \$\{\{ github\.event\.schedule \}\}/,
+      "the Run auto-poster step must pass github.event.schedule to main.js as FIRE_SCHEDULE"
+    );
+  });
+
   test("a hung reel run cannot hold the queue: the job and its apt/pip install are time-boxed", () => {
     // The concurrency group above keeps one pending run and replaces it with
     // each new arrival, so a hung run blocks every reel run behind it. On
