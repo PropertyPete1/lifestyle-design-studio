@@ -20658,6 +20658,17 @@
       "timestamp": "2026-10-13T22:01:27.261Z",
       "runId": "38474407161",
       "success": true
+    },
+    {
+      "city": "san_antonio",
+      "timestamp": "2026-10-13T22:03:38.232Z",
+      "success": true,
+      "platform": "instagram_main_native",
+      "source": "manual_confirm",
+      "driveFileId": "1iMhjzQrAi66CSMswS26IWzPVkDA9kcUt",
+      "captionSnippet": "I just walked through a $269,990 new construction home in San Antonio and couldn't shake the feeling that this is exactl",
+      "mainIgPostedAt": "2026-10-13T22:03:38.232Z",
+      "note": "Main IG post confirmed via manual confirm"
     }
   ],
   "lastTemplateIndex": -1
