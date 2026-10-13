@@ -3949,6 +3949,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-13T22:01:26.788Z",
+      "drive_file_id": "1O3xEoZiFdQD26OMHQ0EiAFrwqPTEPeNX",
+      "file_name": "5B453E70-D4BC-4076-B244-295AFA21E005.mp4",
+      "market": "san_antonio",
+      "community": "Northwest",
+      "caption": "I just walked through a $269,990 new construction home in San Antonio and couldn't shake the feeling that this is exactly what a fresh start looks like.\n\nNew construction at this price point moves fast. Builder incentives are live right now.\n\n✨ open floor plan with natural light flooding through, modern finishes, kitchen island that actually works for real life. the kind of layout that makes a house feel bigger than it is.\n\n🌳 full amenity and community rundown available. it's worth asking about",
+      "slot": "am",
+      "run_id": "38474407161",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 395368489,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 395368616,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Dec1mv-FAPU/",
+          "shortcode": "Dec1mv-FAPU",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Dec1qO2CDzw/",
+          "shortcode": "Dec1qO2CDzw",
+          "verified": true
+        }
+      ]
     }
   ]
 }

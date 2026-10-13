@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "why_agents_leave",
-      "body": "Agents leave because their broker isn't actually there. You close a deal and nobody knows. You hit a problem and you're solving it alone at midnight. You want to grow and there's no plan, no support, no one pushing you forward. Here's what they're really looking for instead. 1. A leader who shows up. Not just quarterly. Not just when something breaks. Someone who knows what you're working on and genuinely cares if you win or lose. 2. Systems that actually work. Most brokers have nothing. You're inventing your process from scratch every deal. Better brokerages give you a playbook so you're not reinventing the wheel every month. 3. A culture where your split doesn't matter more than your growth. You can negotiate a commission all day. What you can't negotiate is whether your broker believes you're capable of bigger things. The right brokerage isn't about percentage points?",
-      "format": "list",
-      "ending": "question",
-      "date": "2026-10-04"
-    },
-    {
       "topic": "deal_story",
       "body": "Had a buyer fall through last Tuesday. Financing looked solid. Then the lender pulled the plug twenty four hours before closing. Agent froze. Wanted to walk. I told her to call the buyer directly. Turns out it was a processing error on the lender's end. One call. Deal stayed alive. Most agents never make that call?",
       "format": "short_punchy",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "dm_cta",
       "date": "2026-10-08"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We have more buyer and lease leads than we can actually work right now.\n\nMostly new construction in San Antonio and Austin, plus out-of-state relocations coming in. The leads are warm but they need real vetting and nurturing before they're transaction ready. Most of these buyers aren't buying tomorrow. They're buying in three months or six months. If you're the kind of agent who knows how to work a lead that isn't hot yet and turn it into a closed deal down the road, we have inventory for you. If this sounds like something you'd take on, send me a DM.",
+      "format": "bold_statement",
+      "ending": "dm_cta",
+      "date": "2026-10-13"
     }
   ]
 }

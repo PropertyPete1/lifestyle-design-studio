@@ -20669,6 +20669,129 @@
       "captionSnippet": "I just walked through a $269,990 new construction home in San Antonio and couldn't shake the feeling that this is exactl",
       "mainIgPostedAt": "2026-10-13T22:03:38.232Z",
       "note": "Main IG post confirmed via manual confirm"
+    },
+    {
+      "driveFileId": "1O3xEoZiFdQD26OMHQ0EiAFrwqPTEPeNX",
+      "fileName": "5B453E70-D4BC-4076-B244-295AFA21E005.mp4",
+      "city": "san_antonio",
+      "caption": "I just walked through a $269,990 new construction home in San Antonio and couldn't shake the feeling that this is exactly what a fresh start looks like.\n\nNew construction at this price point moves fas",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-10-13T22:01:26.783Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (15 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "The house does not come with Stephen. He just happens to be there right now.",
+      "content_hash": "fffffe000c3fff00:180090de6e7e7f1e:06844eff3f7eff7f:0088b0fcfcfcbc00:c0c0e3efe3e2c0c0",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "stat",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "brief_exploit",
+        "brief_generated_at": "2026-10-12T22:32:11.693Z",
+        "decision_hooks": 3,
+        "decision_file_at": "2026-10-13T16:34:42.243Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1iMhjzQrAi66CSMswS26IWzPVkDA9kcUt/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 395368489,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-13T22:08:34.746Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Dec1mv-FAPU/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 395368616,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-13T22:08:34.878Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Dec1qO2CDzw/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-10-13T22:08:34.878Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 395368489,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Dec1mv-FAPU/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 395368616,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Dec1qO2CDzw/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
