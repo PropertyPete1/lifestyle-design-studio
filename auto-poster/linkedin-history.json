@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We're running more buyer and lease leads than we can handle right now. New construction in San Antonio and Austin mostly, plus out-of-state relocations. Warm leads but they need vetting and nurturing. Most aren't transaction ready. If this sounds like something you'd take on, send me a DM.",
-      "format": "short_punchy",
-      "ending": "dm_cta",
-      "date": "2026-10-06"
-    },
-    {
       "topic": "market_now",
       "body": "I watched a seller turn down three offers last month because she was convinced her house was worth more. The agent just nodded and waited. I asked her what the comparable sales actually showed. She hadn't pulled them. Hadn't had the conversation. Just assumed the seller knew better.\n\nThat agent is still waiting for the market to shift. Meanwhile, the agent who priced a similar house down the street got four offers in ten days. Same market. Different approach.\n\nThe agents who stay consistent aren't the ones betting on market conditions. They're the ones who sit down with sellers and buyers and actually talk through what things cost right now. Not what they wish things cost. What they actually cost. That honesty builds trust. Trust builds momentum. Momentum builds business.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
       "format": "story",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "question",
       "date": "2026-10-04"
+    },
+    {
+      "topic": "why_agents_leave",
+      "body": "Agents leave because they're solo. No one knows what they're working on. No one helps when deals break. No one pushes them forward. They're looking for a leader who shows up. Systems that work. A culture that invests in growth over splits. That's what we're building here.",
+      "format": "short_punchy",
+      "ending": "dm_cta",
+      "date": "2026-10-14"
     }
   ]
 }

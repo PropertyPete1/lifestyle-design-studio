@@ -3994,6 +3994,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-14T21:11:18.255Z",
+      "drive_file_id": "14OGRhsBnRJzIxM2PvwKBLzNFe-IfaKhh",
+      "file_name": "Abby! Post this video it’s for San Antonio wowskis.mp4",
+      "market": "san_antonio",
+      "community": null,
+      "caption": "the kitchen in this one made me stop mid-tour 😮‍💨\n\nnew construction like this doesn't sit long in San Antonio\n\n✨ everyday living hits\n• brand new build with modern finishes and a smart open layout\n• huge windows and natural light flooding every room\n• chef's kitchen with island and upgraded counters\n• energy efficient and move-in ready\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 buyer ",
+      "slot": "am",
+      "run_id": "38636516885",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 396281449,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 396281491,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DefUbcuDDPm/",
+          "shortcode": "DefUbcuDDPm",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DefUbgokXA-/",
+          "shortcode": "DefUbgokXA-",
+          "verified": true
+        }
+      ]
     }
   ]
 }

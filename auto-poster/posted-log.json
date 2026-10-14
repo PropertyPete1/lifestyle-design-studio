@@ -20813,6 +20813,135 @@
       "timestamp": "2026-10-14T21:11:18.699Z",
       "runId": "38636516885",
       "success": true
+    },
+    {
+      "driveFileId": "14OGRhsBnRJzIxM2PvwKBLzNFe-IfaKhh",
+      "fileName": "Abby! Post this video it’s for San Antonio wowskis.mp4",
+      "city": "san_antonio",
+      "caption": "the kitchen in this one made me stop mid-tour 😮‍💨\n\nnew construction like this doesn't sit long in San Antonio\n\n✨ everyday living hits\n• brand new build with modern finishes and a smart open layout\n•",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-10-14T21:11:18.246Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "silent_add_voiceover",
+      "voiceover_persona": "storyteller",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 2,
+        "violations": [],
+        "fallback_used": true
+      },
+      "content_hash": "1fff1f003ffec000:ffff7fbf33301000:fffffffee4c08000:7e7e7f7f746c4800:e0e1f3fffbe1e060",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "brief_exploit",
+        "brief_generated_at": "2026-10-12T22:32:11.693Z",
+        "decision_hooks": 3,
+        "decision_file_at": "2026-10-14T16:21:29.479Z",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/17z_uHYRCp82PEYhEhZmu914JD3xhmbrk/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 396281449,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-14T21:18:27.906Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DefUbcuDDPm/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 396281491,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-14T21:18:28.021Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DefUbgokXA-/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-10-14T21:18:28.021Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 396281449,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DefUbcuDDPm/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 396281491,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DefUbgokXA-/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
