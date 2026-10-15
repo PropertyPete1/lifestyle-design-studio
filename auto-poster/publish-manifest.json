@@ -4039,6 +4039,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-15T20:44:50.027Z",
+      "drive_file_id": "1-sAGhnGU4_0lWyH_ReCN7TsFmp5_eFaC",
+      "file_name": "267155D3-BCBD-43F5-A1D3-6C3E798DCAC8.mp4",
+      "market": "san_antonio",
+      "community": "Dominion",
+      "caption": "This might be the best new build finishes I've seen at this price point in San Antonio.\n\nNew construction like this moves fast. Builder incentives are on the table right now if you're ready to move.\n\n✨ Open floor plans with natural light pouring through, modern finishes, and kitchens designed to actually live in. Everything feels intentional and built to last.\n\n🌳 Full amenity and community rundown available. It's worth asking about.\n\n🎓 School ratings, HOA and taxes vary by address. Exact numbe",
+      "slot": "am",
+      "run_id": "38802812768",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 397194660,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 397194731,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Deh2L0Ajm3m/",
+          "shortcode": "Deh2L0Ajm3m",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Deh2PKNiXFU/",
+          "shortcode": "Deh2PKNiXFU",
+          "verified": true
+        }
+      ]
     }
   ]
 }
