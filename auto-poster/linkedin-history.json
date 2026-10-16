@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "wish_i_knew",
-      "body": "When I started, I thought harder work solved everything. Long hours, more calls, grinding it out. That got me some deals. But it didn't get me ahead.\n\n1. You can't scale solo. I spent five years trying. The ceiling isn't your work ethic. It's your time. Once I built a team and learned to delegate, everything changed.\n\n2. Commission splits mean nothing if you have no support. I've seen agents take cuts at brokerages with real infrastructure and blow past what they made solo. The percentage looks smaller but the total gets bigger because you're actually supported.\n\n3. Culture beats compensation every time. Agents will leave a higher split for a leader who actually invests in their growth. Money keeps people for a month. Real support keeps them for years.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
-      "format": "list",
-      "ending": "dm_cta",
-      "date": "2026-10-08"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We have more buyer and lease leads than we can actually work right now.\n\nMostly new construction in San Antonio and Austin, plus out-of-state relocations coming in. The leads are warm but they need real vetting and nurturing before they're transaction ready. Most of these buyers aren't buying tomorrow. They're buying in three months or six months. If you're the kind of agent who knows how to work a lead that isn't hot yet and turn it into a closed deal down the road, we have inventory for you. If this sounds like something you'd take on, send me a DM.",
       "format": "bold_statement",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "strong_close",
       "date": "2026-09-30"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We have more buyer and lease leads than we can actually work right now.\n\n1. Mostly new construction in San Antonio and Austin, plus out-of-state relocations coming in. The leads are warm but they need real vetting and nurturing before they're transaction ready.\n\n2. Most of these buyers aren't buying tomorrow. They're buying in three months or six months. If you're the kind of agent who knows how to work a lead that isn't hot yet and turn it into a closed deal down the road, we have inventory for you.\n\n3. The catch is real. They need patience and a system. You can't treat them like a hot buyer and expect to close in two weeks. You need to nurture. You need to follow up. You need to stay in front of them until they're ready.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "list",
+      "ending": "dm_cta",
+      "date": "2026-10-16"
     }
   ]
 }

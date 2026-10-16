@@ -21125,6 +21125,135 @@
       "timestamp": "2026-10-16T17:12:27.368Z",
       "runId": "38936581123",
       "success": true
+    },
+    {
+      "driveFileId": "1diZqKeE1Jt2N9mZYIVceGY53Ugwtjtn6",
+      "fileName": "092F0A61-7A39-4218-B223-ED6EFE0D7F9E.mp4",
+      "city": "austin",
+      "caption": "Would you believe this is brand new construction in Kyle right now?\n\nBrand new homes like this don't sit on the market long. Builder incentives are real and they're moving fast.\n\n✨ everyday living hit",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-10-16T17:12:26.979Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "Kyle",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_persona": "deadpan_comedian",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 1,
+        "violations": [],
+        "fallback_used": false
+      },
+      "content_hash": "ffffff800000fdff:ffff3f0000f90307:ffffffff0080e0f0:ffffff0f0a802130:fffffef0e09090c0",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "question",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "bold_claim",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-10-12T22:32:11.693Z",
+        "decision_hooks": 3,
+        "decision_file_at": "2026-10-16T16:30:02.253Z",
+        "topic": {
+          "price_overlay": false,
+          "community_kb": false,
+          "overlay_community": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/15caURiME3i_eoJnQHygGqi9CVb9b8tBc/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 397962010,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-16T17:19:35.330Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DekCsRTANvK/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 397962130,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-16T17:19:35.573Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DekCsYiEcXY/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-10-16T17:19:35.573Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 397962010,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DekCsRTANvK/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 397962130,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DekCsYiEcXY/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
