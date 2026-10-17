@@ -39,6 +39,7 @@ import {
   recordCadenceHold,
   loadCadence,
   chicagoDay,
+  scheduledFireDay,
   CADENCE_HARD_CEILING,
   MIN_DAYS_BETWEEN_CHANGES,
   MARKETS,
@@ -656,5 +657,105 @@ describe("main.js runs under the law", () => {
     // day the lane went dark.
     assert.match(main, /const scheduled = process\.env\.GITHUB_EVENT_NAME === "schedule";/);
     assert.match(main, /outcome: scheduled \? OUTCOME\.NOTHING_TO_POST : OUTCOME\.SKIPPED,/);
+  });
+});
+
+/**
+ * A SCHEDULED FIRE BELONGS TO THE DAY IT WAS DUE — 2026-10-12.
+ *
+ * post-daily answers to a cron every 30 minutes from 17:15 to 22:45 UTC, and
+ * GitHub delivers them hours late (2 to 6.3 hours over 2026-09-29..10-13; the
+ * trial lane's up to 8.5). A 22:45 fire more than 6h15m late (7h15m in CST) is
+ * past Chicago midnight, where the gate would see an unspent day and post in
+ * the small hours on the calendar's market. main.js asks scheduledFireDay which
+ * day the fire was due, and a fire arriving on a later day stands down.
+ */
+describe("a late scheduled fire belongs to the day it was due", () => {
+  test("an on-time or same-day-late fire is due today", () => {
+    // 17:45 UTC fire delivered at 17:46 and at 23:45 (the 2026-10-12 lateness).
+    assert.equal(scheduledFireDay("45 17 * * *", new Date("2026-10-12T17:46:00Z")), "2026-10-12");
+    assert.equal(scheduledFireDay("45 17 * * *", new Date("2026-10-12T23:45:49Z")), "2026-10-12");
+    assert.equal(chicagoDay(new Date("2026-10-12T23:45:49Z")), "2026-10-12");
+  });
+
+  test("a fire delivered at exactly its time is due that day", () => {
+    assert.equal(scheduledFireDay("15 17 * * *", new Date("2026-10-13T17:15:00Z")), "2026-10-13");
+  });
+
+  test("a 22:45 fire that slips past Chicago midnight is due YESTERDAY — and today is a different day", () => {
+    // CDT: midnight is 05:00 UTC. 22:45 + 6h20m = 05:05 UTC on the 13th.
+    const lateCdt = new Date("2026-10-13T05:05:00Z");
+    assert.equal(scheduledFireDay("45 22 * * *", lateCdt), "2026-10-12");
+    assert.equal(chicagoDay(lateCdt), "2026-10-13");
+    // CST: midnight is 06:00 UTC. 22:45 + 7.5h = 06:15 UTC.
+    const lateCst = new Date("2026-11-10T06:15:00Z");
+    assert.equal(scheduledFireDay("45 22 * * *", lateCst), "2026-11-09");
+    assert.equal(chicagoDay(lateCst), "2026-11-10");
+  });
+
+  test("a fire still before Chicago midnight, though past UTC midnight, is due today", () => {
+    // 22:45 + 6h = 04:45 UTC on the 13th = 11:45 PM CDT on the 12th: still its day.
+    const t = new Date("2026-10-13T04:45:00Z");
+    assert.equal(scheduledFireDay("45 22 * * *", t), "2026-10-12");
+    assert.equal(chicagoDay(t), "2026-10-12");
+  });
+
+  test("every reel fire stands down exactly when it lands on a later Chicago day — both DST regimes", () => {
+    // Every cron, 0 to 9 hours late in 15-minute steps (the worst post-daily
+    // fire seen is 6.3h, the trial lane's 8.5h). A fire that lands on its own
+    // Chicago day must never stand down; one that lands on the next must.
+    for (const day of ["2026-10-14", "2026-11-12"]) {
+      for (let h = 17; h <= 22; h++) for (const m of [15, 45]) {
+        const due = new Date(`${day}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00Z`);
+        for (let late = 0; late <= 9 * 60; late += 15) {
+          const at = new Date(due.getTime() + late * 60000);
+          assert.equal(scheduledFireDay(`${m} ${h} * * *`, at), day, `${m} ${h} +${late}m on ${day}`);
+          const standsDown = scheduledFireDay(`${m} ${h} * * *`, at) !== chicagoDay(at);
+          assert.equal(standsDown, chicagoDay(at) !== day, `${m} ${h} +${late}m on ${day}`);
+        }
+      }
+    }
+    // The crossing points the comments quote.
+    const cross = (iso, late) => chicagoDay(new Date(Date.parse(iso) + late * 60000));
+    assert.equal(cross("2026-10-14T22:45:00Z", 6 * 60 + 14), "2026-10-14");
+    assert.equal(cross("2026-10-14T22:45:00Z", 6 * 60 + 15), "2026-10-15");
+    assert.equal(cross("2026-11-12T22:45:00Z", 7 * 60 + 14), "2026-11-12");
+    assert.equal(cross("2026-11-12T22:45:00Z", 7 * 60 + 15), "2026-11-13");
+  });
+
+  test("an empty, malformed or non-daily cron is 'cannot tell' (null), never a guess", () => {
+    for (const c of [undefined, null, "", "45 17 * * 1", "*/30 17 * * *", "60 17 * * *", "45 24 * * *", "garbage"]) {
+      assert.equal(scheduledFireDay(c, new Date("2026-10-13T05:05:00Z")), null, `${c} should be null`);
+    }
+  });
+});
+
+describe("main.js stands down a late scheduled fire before anything else", () => {
+  const main = readFileSync(join(SRC, "main.js"), "utf-8");
+
+  test("only a first-attempt schedule event is checked, against the fire's own cron, and a mismatch exits without posting", () => {
+    const at = main.indexOf('if (process.env.GITHUB_EVENT_NAME === "schedule" && firstAttempt) {\n    const dueDay = scheduledFireDay(process.env.FIRE_SCHEDULE);');
+    assert.ok(at > 0, "main.js no longer checks the scheduled fire's due day");
+    const block = main.slice(at, main.indexOf("\n  }\n", at));
+    // The run's day must be the CHICAGO day. A UTC date here would stand down
+    // every legitimate evening fire delivered after 00:00 UTC (7 PM CDT).
+    assert.match(block, /const runDay = chicagoDay\(new Date\(\)\);/, "runDay must be today's Chicago day");
+    assert.match(block, /dueDay && dueDay !== runDay/, "a null due day must mean run, not stand down");
+    assert.match(block, /outcome: OUTCOME\.SKIPPED/, "a late fire is routine — annotate, do not mail");
+    assert.match(block, /process\.exit\(0\)/);
+  });
+
+  test("a 'Re-run jobs' of a scheduled run is a hand-run, not a late fire", () => {
+    // A re-run keeps the schedule event and its cron, so without this a re-run
+    // on the next day would stand down or post depending on the hour.
+    assert.match(main, /const firstAttempt = Number\(process\.env\.GITHUB_RUN_ATTEMPT \|\| 1\) === 1;/);
+  });
+
+  test("the check runs before the idempotency guard, the decision file and the gate", () => {
+    const late = main.indexOf("scheduledFireDay(process.env.FIRE_SCHEDULE)");
+    for (const later of ["hasRecentPost(log, CITY, SLOT, 20)", "await loadDecision()", "cadenceGate(log, {"]) {
+      const at = main.indexOf(later);
+      assert.ok(at > 0 && late > 0 && late < at, `the late-fire check must come before ${later}`);
+    }
   });
 });
