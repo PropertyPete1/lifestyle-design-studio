@@ -2,13 +2,6 @@
   "posts": [
     {
       "topic": "why_agents_leave",
-      "body": "Agents leave because their broker isn't actually there. You close a deal and nobody knows. You hit a problem and you're solving it alone at midnight. You want to grow and there's no plan, no support, no one pushing you forward. Here's what they're really looking for instead. 1. A leader who shows up. Not just quarterly. Not just when something breaks. Someone who knows what you're working on and genuinely cares if you win or lose. 2. Systems that actually work. Most brokers have nothing. You're inventing your process from scratch every deal. Better brokerages give you a playbook so you're not reinventing the wheel every month. 3. A culture where your split doesn't matter more than your growth. You can negotiate a commission all day. What you can't negotiate is whether your broker believes you're capable of bigger things. The right brokerage isn't about percentage points?",
-      "format": "list",
-      "ending": "question",
-      "date": "2026-10-04"
-    },
-    {
-      "topic": "why_agents_leave",
       "body": "Agents leave because they're solo. No one knows what they're working on. No one helps when deals break. No one pushes them forward. They're looking for a leader who shows up. Systems that work. A culture that invests in growth over splits. That's what we're building here.",
       "format": "short_punchy",
       "ending": "dm_cta",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "dm_cta",
       "date": "2026-10-17"
+    },
+    {
+      "topic": "wish_i_knew",
+      "body": "I started solo and thought the split was everything. Turned out it meant nothing without support. No one to call when a deal broke. No one to celebrate with when I won. I was making good money and miserable. Best lesson I learned. Build around people first. The money follows.",
+      "format": "short_punchy",
+      "ending": "strong_close",
+      "date": "2026-10-18"
     }
   ]
 }

@@ -4174,6 +4174,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-18T16:14:26.473Z",
+      "drive_file_id": "10xY-L7YfK74DyFjkiAkLmE9Aa6cvMByg",
+      "file_name": "06744F90-F40C-4279-8F27-78F861E28165.mp4",
+      "market": "san_antonio",
+      "community": "Alamo Ranch",
+      "caption": "Would you believe brand new construction starts at $469,990 in San Antonio?\n\nNew builds like this don't wait around. Builder incentives are real right now.\n\n✨ everyday living hits\nOpen floor plans flooded with natural light. Modern finishes throughout. The kitchen is built to actually live in.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 buyer wins\nVA, FHA, USDA, and conventional financin",
+      "slot": "am",
+      "run_id": "39143641694",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 399241438,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 399241493,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DepFn1Tjker/",
+          "shortcode": "DepFn1Tjker",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DepFro2jgnm/",
+          "shortcode": "DepFro2jgnm",
+          "verified": true
+        }
+      ]
     }
   ]
 }
