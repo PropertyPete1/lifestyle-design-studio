@@ -21407,10 +21407,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "wish_i_knew",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-10-18T14:00:00"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-10-18T14:30:00"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-10-18T15:00:00"
+        }
+      ],
       "timestamp": "2026-10-18T16:14:27.085Z",
       "runId": "39143641694",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
