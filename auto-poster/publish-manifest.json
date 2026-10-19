@@ -4219,6 +4219,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-19T17:10:52.626Z",
+      "drive_file_id": "1fS0AU7K1Ti84d5vnuWEYdgm243kXh3Ct",
+      "file_name": "D90C7C26-E63E-40FD-998C-179A141EC7AC.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "Stop scrolling. Look at this kitchen.\n\nNew construction in Bee Cave doesn't stay on the market long, especially when it's built like this.\n\n✨ Open floor plan with natural light flooding through, modern finishes, and a kitchen island that's actually the heart of the home. This is where everyday living happens.\n\n🌳 Full amenity and community rundown available. It's worth asking about.\n\n🎓 School ratings, HOA and taxes vary by address. Exact numbers on request.\n\n💸 VA, FHA, USDA, and conventional f",
+      "slot": "am",
+      "run_id": "39291177454",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 400273767,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 400273842,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Derw6fPjvXu/",
+          "shortcode": "Derw6fPjvXu",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Derw6bakX5O/",
+          "shortcode": "Derw6bakX5O",
+          "verified": true
+        }
+      ]
     }
   ]
 }

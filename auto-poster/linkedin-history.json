@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "why_agents_leave",
-      "body": "Agents leave because they're solo. No one knows what they're working on. No one helps when deals break. No one pushes them forward. They're looking for a leader who shows up. Systems that work. A culture that invests in growth over splits. That's what we're building here.",
-      "format": "short_punchy",
-      "ending": "dm_cta",
-      "date": "2026-10-14"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We're running more buyer and lease leads than we can handle right now. New construction in San Antonio and Austin mostly, plus out-of-state relocations. Warm leads but they need vetting and nurturing. Most aren't transaction ready. If this sounds like something you'd take on, send me a DM.",
       "format": "short_punchy",
@@ -48,6 +41,13 @@
       "format": "short_punchy",
       "ending": "strong_close",
       "date": "2026-10-18"
+    },
+    {
+      "topic": "time_to_level_up",
+      "body": "I hit a wall last month. Commission was solid but I was burnt out. Same routines. Same problems. No one pushing me to think bigger. I realized I wasn't growing anymore. I was just maintaining.\n\nThat's when I knew it was time to move.\n\nIf you're telling yourself you're fine where you are but you're not excited about tomorrow, that's a sign. If your broker hasn't invested in your growth in the last year, that's a sign. If you're making decent money but feel invisible, that's a sign.\n\nOutgrowing a place doesn't mean the place is bad. It means you're ready for more.\n\nThe question isn't whether you should leave. It's whether you're brave enough to admit you've already left mentally?",
+      "format": "story",
+      "ending": "question",
+      "date": "2026-10-19"
     }
   ]
 }
