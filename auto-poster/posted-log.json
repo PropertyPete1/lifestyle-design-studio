@@ -21551,10 +21551,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "time_to_level_up",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-10-19T14:00:00"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-10-19T14:30:00"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-10-19T15:00:00"
+        }
+      ],
       "timestamp": "2026-10-19T17:10:53.448Z",
       "runId": "39291177454",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
