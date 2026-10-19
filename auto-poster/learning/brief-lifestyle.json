@@ -1,74 +1,74 @@
 {
   "brand": "lifestyle",
   "engine": "learn-v1",
-  "generated_at": "2026-10-12T22:32:11.693Z",
+  "generated_at": "2026-10-19T20:39:31.402Z",
   "window_days": 28,
   "sample": {
-    "posts_scored": 35,
-    "posts_scored_all_media": 35,
-    "posts_unjoined": 0,
-    "analytics_rows_joined": 188,
-    "analytics_rows_unattributed": 562,
+    "posts_scored": 28,
+    "posts_scored_all_media": 28,
+    "posts_unjoined": 1,
+    "analytics_rows_joined": 120,
+    "analytics_rows_unattributed": 630,
     "provenance": {
-      "tagged": 35,
+      "tagged": 28,
       "inferred": 0
     }
   },
   "hook_styles": {
+    "pov": {
+      "n": 6,
+      "score": 156,
+      "median": 137,
+      "verdict": "mid"
+    },
     "question": {
       "n": 4,
-      "score": 208,
-      "median": 207,
-      "verdict": "mid"
-    },
-    "pattern_interrupt": {
-      "n": 6,
-      "score": 203,
-      "median": 168,
-      "verdict": "mid"
-    },
-    "story_open": {
-      "n": 8,
-      "score": 266,
-      "median": 181,
-      "verdict": "mid"
-    },
-    "pov": {
-      "n": 7,
-      "score": 224,
-      "median": 191,
-      "verdict": "mid"
-    },
-    "bold_claim": {
-      "n": 5,
-      "score": 170,
-      "median": 156,
+      "score": 195,
+      "median": 199,
       "verdict": "mid"
     },
     "stat": {
       "n": 5,
-      "score": 282,
-      "median": 142,
+      "score": 132,
+      "median": 135,
+      "verdict": "mid"
+    },
+    "pattern_interrupt": {
+      "n": 4,
+      "score": 199,
+      "median": 165,
       "verdict": "winner"
+    },
+    "bold_claim": {
+      "n": 3,
+      "score": 156,
+      "median": 135,
+      "verdict": "mid"
+    },
+    "story_open": {
+      "n": 6,
+      "score": 187,
+      "median": 183,
+      "verdict": "mid"
     }
   },
   "caption_lengths": {
+    "long": {
+      "n": 9,
+      "score": 173,
+      "median": 142,
+      "verdict": "mid"
+    },
     "medium": {
-      "n": 11,
-      "score": 247,
-      "median": 156,
+      "n": 7,
+      "score": 194,
+      "median": 142,
       "verdict": "winner"
     },
     "short": {
-      "n": 12,
-      "score": 225,
-      "median": 154,
-      "verdict": "mid"
-    },
-    "long": {
       "n": 11,
-      "score": 223,
-      "median": 206,
+      "score": 159,
+      "median": 141,
       "verdict": "mid"
     }
   },
@@ -76,33 +76,33 @@
     "analyzed_only": true,
     "table": {
       "am": {
-        "n": 29,
-        "score": 225,
-        "median": 145,
-        "verdict": "mid"
+        "n": 26,
+        "score": 164,
+        "median": 138,
+        "verdict": "winner"
       },
       "pm": {
-        "n": 6,
-        "score": 249,
+        "n": 2,
+        "score": 245,
         "median": 245,
-        "verdict": "winner"
+        "verdict": "insufficient_sample"
       }
     }
   },
   "cities": {
     "analyzed_only": true,
     "table": {
-      "san_antonio": {
-        "n": 25,
-        "score": 213,
-        "median": 148,
-        "verdict": "mid"
-      },
       "austin": {
-        "n": 10,
-        "score": 268,
-        "median": 203,
+        "n": 6,
+        "score": 198,
+        "median": 191,
         "verdict": "winner"
+      },
+      "san_antonio": {
+        "n": 22,
+        "score": 162,
+        "median": 141,
+        "verdict": "mid"
       }
     }
   },
@@ -110,63 +110,63 @@
     "analyzed_only": true,
     "table": {
       "no_plate": {
-        "n": 35,
-        "score": 229,
-        "median": 156,
+        "n": 28,
+        "score": 170,
+        "median": 141,
         "verdict": "winner"
       }
     }
   },
   "top_hooks": [
     {
-      "hook": "$449,990 and brand new construction in North Austin that's moving fast.",
-      "hook_style": "stat",
-      "provenance": "tagged",
-      "score": 893,
-      "score_basis": "instagram_median",
-      "ig_views_median": 639,
-      "city": "austin",
-      "posted": "2026-09-21T17:09:57.120Z"
-    },
-    {
-      "hook": "Starting at $369,990 in San Antonio.",
-      "hook_style": "story_open",
-      "provenance": "tagged",
-      "score": 876,
-      "score_basis": "instagram_median",
-      "ig_views_median": 686,
-      "city": "san_antonio",
-      "posted": "2026-09-20T16:10:29.809Z"
-    },
-    {
-      "hook": "POV: you just walked into brand new construction that actually feels like home. starting at $469,990 in San Antonio.",
-      "hook_style": "pov",
-      "provenance": "tagged",
-      "score": 373,
-      "score_basis": "instagram_median",
-      "ig_views_median": 398,
-      "city": "san_antonio",
-      "posted": "2026-09-16T19:12:53.562Z"
-    },
-    {
       "hook": "Stop scrolling. This is what $579,990 gets you in San Antonio right now.",
       "hook_style": "pattern_interrupt",
       "provenance": "tagged",
-      "score": 350,
+      "score": 352,
       "score_basis": "instagram_median",
-      "ig_views_median": 418,
+      "ig_views_median": 419,
       "city": "san_antonio",
       "posted": "2026-09-29T22:06:25.068Z"
     },
     {
-      "hook": "POV: you just stepped into a brand new home where everything actually works.",
+      "hook": "what does brand new construction actually look like at $337,500 in Schertz?",
+      "hook_style": "question",
+      "provenance": "tagged",
+      "score": 283,
+      "score_basis": "instagram_median",
+      "ig_views_median": 292,
+      "city": "san_antonio",
+      "posted": "2026-09-22T19:12:56.667Z"
+    },
+    {
+      "hook": "I was speechless when I walked into this kitchen.",
+      "hook_style": "story_open",
+      "provenance": "tagged",
+      "score": 275,
+      "score_basis": "instagram_median",
+      "ig_views_median": 360,
+      "city": "austin",
+      "posted": "2026-09-28T17:16:30.504Z"
+    },
+    {
+      "hook": "What does $689,868 actually get you in brand new construction in North Austin right now?",
+      "hook_style": "question",
+      "provenance": "tagged",
+      "score": 271,
+      "score_basis": "instagram_median",
+      "ig_views_median": 338,
+      "city": "austin",
+      "posted": "2026-10-01T22:11:34.807Z"
+    },
+    {
+      "hook": "POV: you just walked into your first brand new home and everything feels possible.",
       "hook_style": "pov",
       "provenance": "tagged",
-      "score": 327,
+      "score": 255,
       "score_basis": "instagram_median",
-      "ig_views_median": 358,
+      "ig_views_median": 259,
       "city": "san_antonio",
-      "posted": "2026-09-20T19:06:56.206Z"
+      "posted": "2026-09-27T16:12:02.875Z"
     }
   ],
   "kill_list": [],
@@ -207,7 +207,8 @@
     }
   ],
   "caveats": [
-    "35 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
+    "28 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
+    "1 posted reels had no matching analytics rows (usually: posted within the last day, before metrics exist). They are excluded, not zeroed.",
     "Posting slots are set by the cron, not chosen per post — the slot table is analysis, not a controlled experiment.",
     "Scores are not comparable across platforms; the headline score is the median across the brand's Instagram accounts."
   ]
