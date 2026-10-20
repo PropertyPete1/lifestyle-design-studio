@@ -4264,6 +4264,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-20T16:37:21.487Z",
+      "drive_file_id": "1L5ecuBAq8lX2yV879CUjOTuCMFLgux8t",
+      "file_name": "3D5F0A76-9651-4D71-9524-076313F3EE71.mp4",
+      "market": "san_antonio",
+      "community": "Northwest",
+      "caption": "POV: you just walked into your first brand new home in San Antonio.\n\nNew construction like this doesn't sit long.\n\n✨ open floor plan with natural light flooding through, modern finishes, chef's kitchen with island. everything feels fresh because it is.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 starting at $339,990. VA, FHA, USDA and conventional financing welcome. builder incentives av",
+      "slot": "am",
+      "run_id": "39458429784",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 401299386,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 401299478,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DeuR3OYFH7y/",
+          "shortcode": "DeuR3OYFH7y",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DeuR3Y4mD5H/",
+          "shortcode": "DeuR3Y4mD5H",
+          "verified": true
+        }
+      ]
     }
   ]
 }

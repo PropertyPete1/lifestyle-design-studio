@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We're running more buyer and lease leads than we can handle right now. New construction in San Antonio and Austin mostly, plus out-of-state relocations. Warm leads but they need vetting and nurturing. Most aren't transaction ready. If this sounds like something you'd take on, send me a DM.",
-      "format": "short_punchy",
-      "ending": "dm_cta",
-      "date": "2026-10-06"
-    },
-    {
       "topic": "leadership_culture",
       "body": "I walked into one of our agent's listing appointment with her last month. She was nervous. First big listing in a competitive neighborhood. I stayed quiet, let her lead it, asked one question at the end that she hadn't thought about yet. She nailed the listing.\n\nAfter we left, she told me that moment changed something. Not because I closed it for her. Because I showed up and believed she could do it before she believed it herself.\n\nThat's the difference between working somewhere and working for someone who has your back. You stop doubting yourself because someone else already knows you're capable.\n\nThat's what we're building at Lifestyle Design Realty. Leaders don't recruit agents. They build believers. When you know your broker is actually invested in your growth, you show up differently.",
       "format": "story",
@@ -48,6 +41,13 @@
       "format": "story",
       "ending": "question",
       "date": "2026-10-19"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We're sitting on more buyer and lease leads than our team can work right now.\n\n1. New construction in San Antonio and Austin, plus out-of-state relocation buyers. These leads are warm but they need real vetting and nurturing before they close. Most aren't ready to go under contract today.\n\n2. If you know how to work a lead that's three to six months out and actually turn it into a deal, we have volume for you. Not every agent can do this. Most want the hot buyer ready to sign tomorrow.\n\n3. The honest part. These leads require patience and a system. You follow up when they're not buying yet. You stay in their world until they are. You don't treat them like an emergency.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "list",
+      "ending": "dm_cta",
+      "date": "2026-10-20"
     }
   ]
 }
