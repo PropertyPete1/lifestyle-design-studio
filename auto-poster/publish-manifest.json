@@ -4309,6 +4309,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-21T16:18:30.895Z",
+      "drive_file_id": "19imODcsbuOvx8EufDTlXSw024peR1PIq",
+      "file_name": "11E5D83D-74AE-4335-BD92-7D5B99BC674C.mp4",
+      "market": "san_antonio",
+      "community": null,
+      "caption": "This might be the best new build I've toured in San Antonio this month.\n\nNew construction like this doesn't sit long. The finishes, the layout, the price point. I had to share it.\n\n✨ Open floor plan with natural light flooding through, modern kitchen with island, and the kind of finishes you usually hunt for in resale homes. This is what move-in ready actually looks like.\n\n🌳 Full amenity and community rundown available. It's worth asking about.\n\n🎓 School ratings, HOA and taxes vary by address.",
+      "slot": "am",
+      "run_id": "39631262783",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 402315764,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 402315849,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Dew0jQmDmPU/",
+          "shortcode": "Dew0jQmDmPU",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Dew0jSSAJuZ/",
+          "shortcode": "Dew0jSSAJuZ",
+          "verified": true
+        }
+      ]
     }
   ]
 }
