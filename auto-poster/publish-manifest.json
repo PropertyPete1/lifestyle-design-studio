@@ -4354,6 +4354,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-22T21:40:19.483Z",
+      "drive_file_id": "1dy8XR_o8UfM2ikHi9EUhhxEmkKj-uCAb",
+      "file_name": "3F37BDA3-B4C6-46EF-8ACB-6CC7908E5443.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "Stop scrolling. This is new construction in North Austin, and it's $470K to start.\n\nNew construction like this doesn't sit around long, especially at this price point.\n\n✨ everyday living hits\n\nOpen floor plan with natural light flooding through modern finishes. The kitchen is a showstopper with an island that's built for real living. Clean lines, quality materials, and a layout that actually flows.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA ",
+      "slot": "am",
+      "run_id": "39852184871",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 403599352,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 403599424,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Dez-IIvkcmd/",
+          "shortcode": "Dez-IIvkcmd",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Dez-G64lU_z/",
+          "shortcode": "Dez-G64lU_z",
+          "verified": true
+        }
+      ]
     }
   ]
 }
