@@ -4399,6 +4399,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-23T21:14:16.535Z",
+      "drive_file_id": "1aEBWjoDPE2Ucx0xXm1xMA8Cg7FhlzV55",
+      "file_name": "C756555D-A9E9-4061-8699-5A9BFC3180F8.mp4",
+      "market": "dallas",
+      "community": null,
+      "caption": "$295K for brand new construction and the payment actually makes sense 🔥\n\nMove-in quick options climbing into the low $300s depending on your floor plan.\n\n✨ everyday living hits\n• One and two story homes with diverse floor plans to match your style\n• Layouts span roughly 1,400 to 2,900 sq ft\n• 3 to 5 bedrooms and 2 to 4 bathrooms so go cozy or go roomy\n• Perfect whether you're a first-time buyer or expanding your family\n\n🌳 amenity energy you will actually use\n• 8,000 plus sq ft resort-style poo",
+      "slot": "am",
+      "run_id": "40020909670",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 404570523,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 404570553,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/De2f7KPEhGJ/",
+          "shortcode": "De2f7KPEhGJ",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/De2gBBeij0j/",
+          "shortcode": "De2gBBeij0j",
+          "verified": true
+        }
+      ]
     }
   ]
 }
