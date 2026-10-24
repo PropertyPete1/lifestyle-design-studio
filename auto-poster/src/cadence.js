@@ -208,6 +208,35 @@ export function chicagoDay(dateLike) {
 }
 
 /**
+ * The Chicago day a scheduled fire was DUE on. PURE.
+ *
+ * GitHub delivers scheduled runs hours late — post-daily's crons arrived 2 to
+ * 6.3 hours behind their time over 2026-09-29..10-13, the trial lane's up to
+ * 8.5 — and the reel's last fires sit close enough to Chicago midnight that a
+ * late one lands on the NEXT day: 22:45 crosses at 6h15m late in CDT, 7h15m in
+ * CST. There the gate sees a fresh day with its publish unspent, and the fire
+ * would post in the small hours on the calendar's market, before that day's
+ * decision file exists.
+ *
+ * The fire's own cron string (github.event.schedule) says when it was due: the
+ * most recent instant at or before `now` whose UTC clock reads that time.
+ * Only daily `M H * * *` crons are understood; anything else is null, which the
+ * caller reads as "cannot tell" and runs exactly as before.
+ */
+export function scheduledFireDay(cron, now = new Date()) {
+  const m = /^\s*(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*\s*$/.exec(String(cron ?? ""));
+  if (!m) return null;
+  const minute = Number(m[1]);
+  const hour = Number(m[2]);
+  if (minute > 59 || hour > 23) return null;
+  const at = now instanceof Date ? now : new Date(now);
+  if (Number.isNaN(at.getTime())) return null;
+  const due = new Date(Date.UTC(at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate(), hour, minute));
+  if (due.getTime() > at.getTime()) due.setUTCDate(due.getUTCDate() - 1);
+  return chicagoDay(due);
+}
+
+/**
  * Is this posted-log row a realty main-lane publish?
  *
  * The discriminator is a NON-EMPTY platforms array plus the absence of a `type`

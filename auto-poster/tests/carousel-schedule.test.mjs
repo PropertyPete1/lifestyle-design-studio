@@ -153,6 +153,19 @@ describe("the daily schedule is ONE slot a day — 2026-09-24", () => {
   const all = jobs(DAILY);
 
   /**
+   * The reel's fires: every 30 minutes, 17:15..22:45 UTC (2026-10-12).
+   *
+   * GitHub starts scheduled runs hours late or drops them — on 2026-10-12
+   * neither 17:45 nor 18:15 fired — so the one daily slot gets twelve chances.
+   * The cadence gate still allows one publish a day; the extra fires stand down.
+   */
+  const REEL_CRONS = [
+    "15 17 * * *", "45 17 * * *", "15 18 * * *", "45 18 * * *",
+    "15 19 * * *", "45 19 * * *", "15 20 * * *", "45 20 * * *",
+    "15 21 * * *", "45 21 * * *", "15 22 * * *", "45 22 * * *",
+  ];
+
+  /**
    * The full cron list, pinned. A one-line edit in the middle of this block is
    * exactly the shape of edit that takes a neighbour with it — a dropped `30`
    * backup would go unnoticed for weeks.
@@ -165,10 +178,28 @@ describe("the daily schedule is ONE slot a day — 2026-09-24", () => {
     // regimes, inside the 11am-1pm CT band Metricool rates best. The pin moved
     // deliberately — if it moved and you did not mean it, that is the bug this
     // test exists for.
+    // UPDATED 2026-10-12: the one slot is now twelve fires, 17:15..22:45 UTC
+    // every 30 minutes, because GitHub's scheduler starts them late or not at
+    // all. Still one publish a day — the gate, not the cron count, holds that.
     assert.deepEqual(crons(DAILY), [
-      "45 17 * * *", "15 18 * * *",  // the daily reel + backup
+      ...REEL_CRONS,                 // the daily reel, 17:45 primary + backups
       "15 13 * * *", "45 23 * * *",  // trial variant am/pm
     ]);
+  });
+
+  test("the original 17:45 primary and 18:15 backup are still among the reel's fires", () => {
+    for (const c of ["45 17 * * *", "15 18 * * *"]) {
+      assert.ok(crons(DAILY).includes(c), `${c} was dropped from the reel's schedule`);
+    }
+  });
+
+  test("no reel fire lands on a retired city string", () => {
+    // The retired city slots sit on :00/:30 and are kept as comments to be
+    // restored by uncommenting. A live reel cron on one of those strings would
+    // make that uncomment a duplicate, so the backups stay on :15/:45.
+    for (const c of REEL_CRONS) {
+      assert.match(c, /^(15|45) /, `${c} is off the :15/:45 grid`);
+    }
   });
 
   test("the retired city crons are commented, not deleted", () => {
@@ -202,9 +233,12 @@ describe("the daily schedule is ONE slot a day — 2026-09-24", () => {
     assert.deepEqual(Object.keys(all).sort(), ["post-carousel", "post-daily", "trial-variant"]);
   });
 
-  test("each scheduled job answers to exactly its own two crons", () => {
+  test("each scheduled job answers to exactly its own crons", () => {
+    // Every reel fire must be quoted in post-daily's `if:` — GitHub matches
+    // github.event.schedule literally, so a cron added to the schedule block
+    // and not to the `if:` starts a runner that skips every job.
     const expected = {
-      "post-daily": ["45 17 * * *", "15 18 * * *"],
+      "post-daily": REEL_CRONS,
       "trial-variant": ["15 13 * * *", "45 23 * * *"],
     };
     for (const [job, wanted] of Object.entries(expected)) {
@@ -233,6 +267,38 @@ describe("the daily schedule is ONE slot a day — 2026-09-24", () => {
     }
     assert.match(body, /group:\s*autopost-daily-reel/, "one concurrency group for every reel run");
     assert.match(body, /cancel-in-progress:\s*false/);
+  });
+
+  test("main.js is told which cron fired, so a fire delivered on the next Chicago day can stand down", () => {
+    // Twelve fires reach 22:45 UTC, and GitHub has delivered them over six
+    // hours late — 22:45 crosses Chicago midnight at 6h15m. main.js compares the
+    // fire's due day (scheduledFireDay) with today; without this env line in
+    // the step that RUNS main.js it reads undefined and the guard fails open.
+    const body = code(all["post-daily"]);
+    const start = body.indexOf("- name: Run auto-poster");
+    assert.ok(start > 0, "no Run auto-poster step in post-daily");
+    const next = body.indexOf("\n      - name:", start + 1);
+    const step = body.slice(start, next === -1 ? body.length : next);
+    assert.match(step, /node src\/main\.js/, "the step bounds are wrong — this is not the main.js step");
+    assert.match(
+      step,
+      /FIRE_SCHEDULE: \$\{\{ github\.event\.schedule \}\}/,
+      "the Run auto-poster step must pass github.event.schedule to main.js as FIRE_SCHEDULE"
+    );
+  });
+
+  test("a hung reel run cannot hold the queue: the job and its apt/pip install are time-boxed", () => {
+    // The concurrency group above keeps one pending run and replaces it with
+    // each new arrival, so a hung run blocks every reel run behind it. On
+    // 2026-10-01 the install step hung for 350 minutes under GitHub's 6-hour
+    // default and nine queued runs were cancelled behind it.
+    const body = code(all["post-daily"]);
+    assert.match(body, /\n {4}timeout-minutes:\s*45\n/, "post-daily needs a job-level timeout-minutes: 45");
+    assert.match(
+      body,
+      /- name: Install ffmpeg, tesseract & whisper\n\s+timeout-minutes:\s*10\n/,
+      "the apt/pip install step needs timeout-minutes: 10"
+    );
   });
 
   test("the daily job runs the reel entry point, the trial job runs its own, and neither runs the other", () => {
