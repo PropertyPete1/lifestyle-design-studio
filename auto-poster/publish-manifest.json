@@ -4489,6 +4489,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-25T17:10:39.745Z",
+      "drive_file_id": "10whBnOGjMOhsi0LydOVtngTAllEu7joZ",
+      "file_name": "3F5F725C-2517-4518-9C08-BA4035994102.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "6 weeks free rent plus 50% off deposit. brand new luxury rentals in Leander just hit the market and this timing is everything 🔥\n\nThis deal stacks savings from day one. Lock in thousands before move-in even happens.\n\n✨ everyday living hits\n• Spacious 3 to 4 bedroom floor plans\n• Modern kitchens with quartz countertops and stainless steel appliances\n• Private fenced backyards, perfect for pets\n• Attached garages\n• Smart home features and energy efficient builds\n• High ceilings and tons of natural",
+      "slot": "am",
+      "run_id": "40214745883",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 405819632,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 405819675,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/De7NoCcjqYK/",
+          "shortcode": "De7NoCcjqYK",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/De7NvClDdd4/",
+          "shortcode": "De7NvClDdd4",
+          "verified": true
+        }
+      ]
     }
   ]
 }
