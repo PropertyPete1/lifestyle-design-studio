@@ -1,74 +1,74 @@
 {
   "brand": "lifestyle",
   "engine": "learn-v1",
-  "generated_at": "2026-10-19T20:39:31.402Z",
+  "generated_at": "2026-10-26T20:39:20.956Z",
   "window_days": 28,
   "sample": {
-    "posts_scored": 28,
-    "posts_scored_all_media": 28,
-    "posts_unjoined": 1,
-    "analytics_rows_joined": 120,
-    "analytics_rows_unattributed": 630,
+    "posts_scored": 27,
+    "posts_scored_all_media": 27,
+    "posts_unjoined": 0,
+    "analytics_rows_joined": 88,
+    "analytics_rows_unattributed": 662,
     "provenance": {
-      "tagged": 28,
+      "tagged": 27,
       "inferred": 0
     }
   },
   "hook_styles": {
-    "pov": {
-      "n": 6,
-      "score": 156,
-      "median": 137,
-      "verdict": "mid"
-    },
-    "question": {
-      "n": 4,
-      "score": 195,
-      "median": 199,
-      "verdict": "mid"
-    },
-    "stat": {
-      "n": 5,
-      "score": 132,
-      "median": 135,
-      "verdict": "mid"
-    },
     "pattern_interrupt": {
-      "n": 4,
-      "score": 199,
-      "median": 165,
-      "verdict": "winner"
-    },
-    "bold_claim": {
-      "n": 3,
-      "score": 156,
-      "median": 135,
+      "n": 5,
+      "score": 165,
+      "median": 123,
       "verdict": "mid"
     },
     "story_open": {
       "n": 6,
-      "score": 187,
-      "median": 183,
+      "score": 159,
+      "median": 154,
+      "verdict": "mid"
+    },
+    "question": {
+      "n": 3,
+      "score": 171,
+      "median": 129,
+      "verdict": "winner"
+    },
+    "pov": {
+      "n": 4,
+      "score": 118,
+      "median": 114,
+      "verdict": "mid"
+    },
+    "bold_claim": {
+      "n": 4,
+      "score": 151,
+      "median": 137,
+      "verdict": "mid"
+    },
+    "stat": {
+      "n": 5,
+      "score": 129,
+      "median": 129,
       "verdict": "mid"
     }
   },
   "caption_lengths": {
     "long": {
       "n": 9,
-      "score": 173,
-      "median": 142,
-      "verdict": "mid"
-    },
-    "medium": {
-      "n": 7,
-      "score": 194,
-      "median": 142,
+      "score": 162,
+      "median": 136,
       "verdict": "winner"
     },
     "short": {
-      "n": 11,
-      "score": 159,
-      "median": 141,
+      "n": 9,
+      "score": 143,
+      "median": 129,
+      "verdict": "mid"
+    },
+    "medium": {
+      "n": 6,
+      "score": 156,
+      "median": 136,
       "verdict": "mid"
     }
   },
@@ -76,33 +76,33 @@
     "analyzed_only": true,
     "table": {
       "am": {
-        "n": 26,
-        "score": 164,
-        "median": 138,
+        "n": 27,
+        "score": 149,
+        "median": 129,
         "verdict": "winner"
-      },
-      "pm": {
-        "n": 2,
-        "score": 245,
-        "median": 245,
-        "verdict": "insufficient_sample"
       }
     }
   },
   "cities": {
     "analyzed_only": true,
     "table": {
+      "san_antonio": {
+        "n": 20,
+        "score": 146,
+        "median": 132,
+        "verdict": "mid"
+      },
       "austin": {
         "n": 6,
-        "score": 198,
-        "median": 191,
+        "score": 161,
+        "median": 119,
         "verdict": "winner"
       },
-      "san_antonio": {
-        "n": 22,
-        "score": 162,
-        "median": 141,
-        "verdict": "mid"
+      "dallas": {
+        "n": 1,
+        "score": 125,
+        "median": 125,
+        "verdict": "insufficient_sample"
       }
     }
   },
@@ -110,9 +110,9 @@
     "analyzed_only": true,
     "table": {
       "no_plate": {
-        "n": 28,
-        "score": 170,
-        "median": 141,
+        "n": 27,
+        "score": 149,
+        "median": 129,
         "verdict": "winner"
       }
     }
@@ -129,26 +129,6 @@
       "posted": "2026-09-29T22:06:25.068Z"
     },
     {
-      "hook": "what does brand new construction actually look like at $337,500 in Schertz?",
-      "hook_style": "question",
-      "provenance": "tagged",
-      "score": 283,
-      "score_basis": "instagram_median",
-      "ig_views_median": 292,
-      "city": "san_antonio",
-      "posted": "2026-09-22T19:12:56.667Z"
-    },
-    {
-      "hook": "I was speechless when I walked into this kitchen.",
-      "hook_style": "story_open",
-      "provenance": "tagged",
-      "score": 275,
-      "score_basis": "instagram_median",
-      "ig_views_median": 360,
-      "city": "austin",
-      "posted": "2026-09-28T17:16:30.504Z"
-    },
-    {
       "hook": "What does $689,868 actually get you in brand new construction in North Austin right now?",
       "hook_style": "question",
       "provenance": "tagged",
@@ -159,14 +139,34 @@
       "posted": "2026-10-01T22:11:34.807Z"
     },
     {
-      "hook": "POV: you just walked into your first brand new home and everything feels possible.",
-      "hook_style": "pov",
+      "hook": "The kitchen in this one made me stop mid-tour.",
+      "hook_style": "bold_claim",
       "provenance": "tagged",
-      "score": 255,
+      "score": 248,
       "score_basis": "instagram_median",
-      "ig_views_median": 259,
+      "ig_views_median": 219,
+      "city": "austin",
+      "posted": "2026-10-04T17:11:22.199Z"
+    },
+    {
+      "hook": "this is what new construction is supposed to feel like.",
+      "hook_style": "story_open",
+      "provenance": "tagged",
+      "score": 225,
+      "score_basis": "instagram_median",
+      "ig_views_median": 240,
       "city": "san_antonio",
-      "posted": "2026-09-27T16:12:02.875Z"
+      "posted": "2026-09-30T18:52:01.702Z"
+    },
+    {
+      "hook": "the kind of kitchen that stops you cold",
+      "hook_style": "story_open",
+      "provenance": "tagged",
+      "score": 204,
+      "score_basis": "instagram_median",
+      "ig_views_median": 233,
+      "city": "san_antonio",
+      "posted": "2026-10-03T16:12:49.327Z"
     }
   ],
   "kill_list": [],
@@ -207,8 +207,7 @@
     }
   ],
   "caveats": [
-    "28 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
-    "1 posted reels had no matching analytics rows (usually: posted within the last day, before metrics exist). They are excluded, not zeroed.",
+    "27 posts scored over the last 28 days; values with fewer than 3 posts are marked insufficient_sample and never ranked or killed.",
     "Posting slots are set by the cron, not chosen per post — the slot table is analysis, not a controlled experiment.",
     "Scores are not comparable across platforms; the headline score is the median across the brand's Instagram accounts."
   ]
