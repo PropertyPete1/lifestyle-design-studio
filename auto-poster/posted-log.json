@@ -22569,6 +22569,130 @@
       "timestamp": "2026-10-26T21:58:11.552Z",
       "runId": "40408068660",
       "success": true
+    },
+    {
+      "driveFileId": "1A57u1VrjAL9nyDEP0b1NZzZ8fuDEU7Lj",
+      "fileName": "062644C3-05EB-4C2D-96DE-298A47092BFE.mp4",
+      "city": "dallas",
+      "caption": "Stop scrolling. this price point doesn't last long.\n\nNew construction in Fort Worth starting at $399,990. Open floor plans flooded with natural light, modern finishes, and kitchens built for real life",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-10-26T21:58:11.282Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "Fort Worth",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (38 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Already gave you the time and the place to know big size To comb these on the night being Tell me if you got something to give I wanted I kinda like you when you call me one",
+      "content_hash": "ffff070000ff0600:ccfbffe4303f1f3f:071ffff3f3840c9c:feeefff8cc3d3c00:fffffbfd8794d000",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pattern_interrupt",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-10-26T20:39:20.956Z",
+        "decision_hooks": 0,
+        "decision_file_at": null,
+        "original_refused": "bot_authored",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1EOIaz4GEdrDwZQLxbFiAYOzyaWDuZkj9/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 407197846,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-26T22:05:18.888Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/De-TZgLFQC8/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 407197898,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-26T22:05:18.978Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/De-TWSEFfXZ/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-10-26T22:05:18.978Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 407197846,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/De-TZgLFQC8/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 407197898,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/De-TWSEFfXZ/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
