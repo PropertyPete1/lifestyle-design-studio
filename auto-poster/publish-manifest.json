@@ -4579,6 +4579,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-27T16:17:14.724Z",
+      "drive_file_id": "1cFxQYXfBA_slqzVp6jHlxlUEhsoNdItz",
+      "file_name": "7BB919B7-7D0F-4FB1-BC47-AE11EED5FEC0.mp4",
+      "market": "san_antonio",
+      "community": "Northwest",
+      "caption": "the kind of new construction that stops you mid-scroll. mature trees, move-in ready homes, and pricing from the mid $340s to the $580s.\n\nfresh construction nestled among mature trees. nature first lifestyle with several homes ready to move into today.\n\n✨ everyday living hits\n🍳 chef ready kitchens with islands that open seamlessly into bright family and dining zones perfect for entertaining\n📐 floor plans span 1,801 to 3,542 square feet with 3 to 5 bedrooms and 2 to 4 baths across multiple layou",
+      "slot": "am",
+      "run_id": "40538063234",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 408014611,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 408014726,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfAROnFkXuN/",
+          "shortcode": "DfAROnFkXuN",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfARI_dD6rL/",
+          "shortcode": "DfARI_dD6rL",
+          "verified": true
+        }
+      ]
     }
   ]
 }
