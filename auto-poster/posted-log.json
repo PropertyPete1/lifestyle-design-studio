@@ -22837,6 +22837,129 @@
       "timestamp": "2026-10-28T17:08:45.588Z",
       "runId": "40732241668",
       "success": true
+    },
+    {
+      "driveFileId": "1LR1lkn6X1MyGUT-rB2V7PjYltB4WXDUp",
+      "fileName": "788A2776-99DA-457B-B0B8-D4BD0EBE2F2D.mp4",
+      "city": "austin",
+      "caption": "POV: you just walked into your first brand new home and everything feels like it was built just for you.\n\nNew construction like this doesn't sit long in Buda.\n\n✨ everyday living hits\nOpen floor plan w",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-10-28T17:08:45.066Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "Buda",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (20 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "We have a girl. Who we name her? I never should be a Gneema. Hmm. She would need to be...",
+      "content_hash": "7fffffb6003e0600:317beff3fe050100:ffff01fffee06000:7878f8f81838f0f8:1cf3ffffcf0c8403",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 7
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "story_open",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-10-26T20:39:20.956Z",
+        "decision_hooks": 0,
+        "decision_file_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1FWfzMsldXw7nPyZT0hBDHecvuoB6SHdW/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 409201120,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-28T17:15:57.451Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DfC727WAgf-/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 409201229,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-28T17:15:57.575Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DfC76QdDH1z/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-10-28T17:15:57.575Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 409201120,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DfC727WAgf-/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 409201229,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DfC76QdDH1z/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1

@@ -4624,6 +4624,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-28T17:08:45.072Z",
+      "drive_file_id": "1LR1lkn6X1MyGUT-rB2V7PjYltB4WXDUp",
+      "file_name": "788A2776-99DA-457B-B0B8-D4BD0EBE2F2D.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "POV: you just walked into your first brand new home and everything feels like it was built just for you.\n\nNew construction like this doesn't sit long in Buda.\n\n✨ everyday living hits\nOpen floor plan with natural light pouring through, modern finishes in every room, and a kitchen that actually works the way you've been dreaming about. This is what move-in ready feels like.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. ",
+      "slot": "am",
+      "run_id": "40732241668",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 409201120,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 409201229,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfC727WAgf-/",
+          "shortcode": "DfC727WAgf-",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfC76QdDH1z/",
+          "shortcode": "DfC76QdDH1z",
+          "verified": true
+        }
+      ]
     }
   ]
 }

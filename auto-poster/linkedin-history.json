@@ -2,13 +2,6 @@
   "posts": [
     {
       "topic": "lead_overflow",
-      "body": "We have more buyer and lease leads than we can actually work right now.\n\n1. Mostly new construction in San Antonio and Austin, plus out-of-state relocations coming in. The leads are warm but they need real vetting and nurturing before they're transaction ready.\n\n2. Most of these buyers aren't buying tomorrow. They're buying in three months or six months. If you're the kind of agent who knows how to work a lead that isn't hot yet and turn it into a closed deal down the road, we have inventory for you.\n\n3. The catch is real. They need patience and a system. You can't treat them like a hot buyer and expect to close in two weeks. You need to nurture. You need to follow up. You need to stay in front of them until they're ready.\n\nIf this sounds like something you'd take on, send me a DM.",
-      "format": "list",
-      "ending": "dm_cta",
-      "date": "2026-10-16"
-    },
-    {
-      "topic": "lead_overflow",
       "body": "We're running into a good problem right now. More leads coming in than we can efficiently handle.\n\nMostly new construction buyers in San Antonio and Austin, plus out-of-state relocations. The leads are solid but they need real work. They're warm, not hot. Most of them are three to six months away from actually moving.\n\nHere's the part most agents won't do. They see a lead that isn't ready today and they move on. They want the buyer who's signing next week. I get it. But if you know how to nurture someone who's still in the research phase and actually turn them into a closed deal six months later, we have volume for you.\n\nIt takes patience. It takes a system. It takes follow up when they're not buying yet.\n\nIf this sounds like something you'd take on, send me a DM.",
       "format": "story",
       "ending": "dm_cta",
@@ -48,6 +41,13 @@
       "format": "short_punchy",
       "ending": "question",
       "date": "2026-10-22"
+    },
+    {
+      "topic": "wish_i_knew",
+      "body": "When I was solo, I thought experience meant I had all the answers. I didn't. I was too proud to ask for help and too stubborn to change what wasn't working.\n\n1. Your first five years teach you what works. Your next five teach you what you've been doing wrong. I didn't listen to that second part for way too long.\n\n2. I kept grinding the same way because it was familiar. Familiar feels safe. Safe keeps you stuck.\n\n3. The agents I respect most now are the ones who admit they don't know something and move fast to fix it. Pride costs more than ego.\n\nIf you're still doing things the way you did them three years ago, how will the next three years be any different?",
+      "format": "list",
+      "ending": "question",
+      "date": "2026-10-28"
     }
   ]
 }
