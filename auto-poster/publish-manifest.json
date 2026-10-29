@@ -4669,6 +4669,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-29T22:08:15.683Z",
+      "drive_file_id": "17t2VeaMIr_DCovNQH9KbZG1t3Jv-YzNq",
+      "file_name": "AE582A40-B859-4927-9F1C-3F87DE5767BE.mp4",
+      "market": "dallas",
+      "community": null,
+      "caption": "I've never seen finishes like this at this price point in Dallas.\n\nNew construction at $466,900 doesn't sit on the market long. Builder incentives are actively on the table right now.\n\n✨ everyday living hits\nOpen floor plan with natural light flooding through, modern kitchen with island, clean contemporary finishes throughout. This is move-in ready.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on reques",
+      "slot": "am",
+      "run_id": "40962560847",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 410602896,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 410602930,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfGCpX4CohK/",
+          "shortcode": "DfGCpX4CohK",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfGCqRkj-gx/",
+          "shortcode": "DfGCqRkj-gx",
+          "verified": true
+        }
+      ]
     }
   ]
 }

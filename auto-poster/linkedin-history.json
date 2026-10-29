@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We're running into a good problem right now. More leads coming in than we can efficiently handle.\n\nMostly new construction buyers in San Antonio and Austin, plus out-of-state relocations. The leads are solid but they need real work. They're warm, not hot. Most of them are three to six months away from actually moving.\n\nHere's the part most agents won't do. They see a lead that isn't ready today and they move on. They want the buyer who's signing next week. I get it. But if you know how to nurture someone who's still in the research phase and actually turn them into a closed deal six months later, we have volume for you.\n\nIt takes patience. It takes a system. It takes follow up when they're not buying yet.\n\nIf this sounds like something you'd take on, send me a DM.",
-      "format": "story",
-      "ending": "dm_cta",
-      "date": "2026-10-23"
-    },
-    {
       "topic": "wish_i_knew",
       "body": "I started solo and thought the split was everything. Turned out it meant nothing without support. No one to call when a deal broke. No one to celebrate with when I won. I was making good money and miserable. Best lesson I learned. Build around people first. The money follows.",
       "format": "short_punchy",
@@ -48,6 +41,13 @@
       "format": "list",
       "ending": "question",
       "date": "2026-10-28"
+    },
+    {
+      "topic": "time_to_level_up",
+      "body": "You're outgrowing your current situation if you're the smartest person in every conversation.\n\nWhen you stop learning from the people around you, that's the real sign it's time to move. Not the money. Not the split. It's when you realize you've already mastered what your broker and your team have to teach you. You're ready for agents who push you. You're ready for leadership that demands more from you because they believe you can deliver it. You're ready to be around people who are further ahead than you are.\n\nIf you want to talk about what we're building at Lifestyle Design Realty, send me a DM.",
+      "format": "bold_statement",
+      "ending": "dm_cta",
+      "date": "2026-10-29"
     }
   ]
 }
