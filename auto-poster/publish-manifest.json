@@ -4714,6 +4714,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-30T16:14:09.291Z",
+      "drive_file_id": "1L4jyyh0XfLbYKIz9wDGLHB2_LHzQKOlV",
+      "file_name": "313E1B48-1780-4A3A-8754-A03E6428E094.mp4",
+      "market": "san_antonio",
+      "community": "OLEANDER",
+      "caption": "Stop scrolling. This is what $369,990 gets you in San Antonio right now.\n\nNew construction like this moves fast, and builder incentives won't last forever.\n\n✨ Open floor plan with natural light pouring through modern finishes. Kitchen island, clean lines, everything built fresh. This is the move if you're tired of older homes.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 VA, FHA, USDA, an",
+      "slot": "am",
+      "run_id": "41087096733",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 411404987,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 411405072,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfH_QRACvnn/",
+          "shortcode": "DfH_QRACvnn",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfH_LdoE7fb/",
+          "shortcode": "DfH_LdoE7fb",
+          "verified": true
+        }
+      ]
     }
   ]
 }
