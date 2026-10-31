@@ -4759,6 +4759,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-10-31T17:20:21.974Z",
+      "drive_file_id": "1eEApIbC8tdTqnyb1giUfRnEk6E4De8Kf",
+      "file_name": "AA48C44A-BFE9-46CB-A5D5-774EA9DD2942.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "POV: you just stepped into brand new construction that actually feels like home.\n\nNew construction like this doesn't sit long in West Austin.\n\n✨ everyday living hits\nOpen floor plan with natural light pouring through. Modern finishes and kitchen island built for real life, not just photos.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 buyer wins\nStarting at just $899,999. VA, FHA, USDA, an",
+      "slot": "am",
+      "run_id": "41222963575",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 412321117,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 412321162,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfKriDvEs1v/",
+          "shortcode": "DfKriDvEs1v",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfKriN8CGwV/",
+          "shortcode": "DfKriN8CGwV",
+          "verified": true
+        }
+      ]
     }
   ]
 }

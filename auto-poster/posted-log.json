@@ -23267,6 +23267,129 @@
       "timestamp": "2026-10-31T17:20:22.183Z",
       "runId": "41222963575",
       "success": true
+    },
+    {
+      "driveFileId": "1eEApIbC8tdTqnyb1giUfRnEk6E4De8Kf",
+      "fileName": "AA48C44A-BFE9-46CB-A5D5-774EA9DD2942.mp4",
+      "city": "austin",
+      "caption": "POV: you just stepped into brand new construction that actually feels like home.\n\nNew construction like this doesn't sit long in West Austin.\n\n✨ everyday living hits\nOpen floor plan with natural light",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-10-31T17:20:21.966Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "West Austin",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (44 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Hi, my name is Peter Parker. You don't remember me, but we used to know each other. Something bad was going to happen in the only way to stop it was to make everyone forget about me. I'm not just Peter Parker. I'm Spider-Man.",
+      "content_hash": "077fff0000ff7f00:7f7f7e3f3f070200:70c087674387c0f0:ffffc77e7f730100:ffffff7f1f010000",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "pattern_interrupt",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "short",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-10-26T20:39:20.956Z",
+        "decision_hooks": 0,
+        "decision_file_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1BwG0pMtuLqtt3jWiqvBxvnaPxrBhMpxz/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 412321117,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-31T17:27:33.001Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DfKriDvEs1v/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 412321162,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-10-31T17:27:33.090Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DfKriN8CGwV/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-10-31T17:27:33.090Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 412321117,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DfKriDvEs1v/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 412321162,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DfKriN8CGwV/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
