@@ -23249,10 +23249,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "market_now",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-10-31T14:00:00"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-10-31T14:30:00"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-10-31T15:00:00"
+        }
+      ],
       "timestamp": "2026-10-31T17:20:22.183Z",
       "runId": "41222963575",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
