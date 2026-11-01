@@ -4804,6 +4804,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-01T21:26:58.218Z",
+      "drive_file_id": "1ZILCBnB4RMxoVvY4yR2Z_zIE76Mu6K6a",
+      "file_name": "66F56133-01D7-4DC7-B0DC-790209B3A75F.mp4",
+      "market": "dallas",
+      "community": null,
+      "caption": "New construction in Fort Worth starting at $489,000 and the finishes in this kitchen alone are worth the drive.\n\nOpen floor plans, natural light pouring through, and modern touches everywhere. The kind of space that actually feels like home before you've even moved in.\n\n✨ clean lines, premium finishes, and layouts designed for how people actually live today\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers o",
+      "slot": "am",
+      "run_id": "41351675994",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 413294733,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 413294766,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfNskKPFFzN/",
+          "shortcode": "DfNskKPFFzN",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfNskxIDCXI/",
+          "shortcode": "DfNskxIDCXI",
+          "verified": true
+        }
+      ]
     }
   ]
 }
