@@ -4849,6 +4849,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-02T16:12:40.952Z",
+      "drive_file_id": "1cc073h2GsbN-XpQjrmfplvIVuYB-NA8T",
+      "file_name": "5B24EDCA-5E87-4207-B99C-E99A3B9DE8D6.mp4",
+      "market": "san_antonio",
+      "community": "Alamo Ranch",
+      "caption": "What does $579,990 actually get you in brand new construction in San Antonio right now?\n\nNew construction like this doesn't sit long. Builder incentives are moving fast.\n\n✨ everyday living hits\n\nOpen floor plan with natural light flowing through, modern finishes throughout, and a kitchen designed for real life. This is what new construction quality feels like.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact number",
+      "slot": "am",
+      "run_id": "41478212930",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 414187187,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 414187306,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfPtXMgAKNN/",
+          "shortcode": "DfPtXMgAKNN",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfPtYOPCQJR/",
+          "shortcode": "DfPtYOPCQJR",
+          "verified": true
+        }
+      ]
     }
   ]
 }
