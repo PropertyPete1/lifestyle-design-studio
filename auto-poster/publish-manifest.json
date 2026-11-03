@@ -4894,6 +4894,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-03T17:09:14.324Z",
+      "drive_file_id": "1wMXWiwUevD9mzO3OEhHQ72CDmC5KRYv2",
+      "file_name": "E7B4A10C-4CD6-4CE3-BA6C-F73BB0170935.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "🏡 Hill Country views protected canyons and a new build starting in the $639s 😮‍💨🔥\n\nlimited-time incentives and preferred lending programs available to reduce your monthly payment or closing costs on eligible homes.\n\n✨ everyday living hits\n• newly constructed homes on generous lots with Hill Country views\n• floor plans ranging from 2,341 to 3,656 square feet, one and two story options\n• open layouts with soaring ceilings and abundant natural light throughout\n• spacious kitchens centered aroun",
+      "slot": "am",
+      "run_id": "41680569759",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 415541122,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 415541197,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfSY_AmAlyW/",
+          "shortcode": "DfSY_AmAlyW",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfSY-l4G007/",
+          "shortcode": "DfSY-l4G007",
+          "verified": true
+        }
+      ]
     }
   ]
 }

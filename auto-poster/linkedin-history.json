@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "team_wins",
-      "body": "We closed more deals last month than the month before. Not because the market got better. Because the team got tighter.\n\nWhen you're surrounded by agents who actually show up for each other, momentum builds different. You stop competing internally and start winning together.\n\nWhat's keeping you from being part of something that grows?",
-      "format": "short_punchy",
-      "ending": "question",
-      "date": "2026-10-22"
-    },
-    {
       "topic": "wish_i_knew",
       "body": "When I was solo, I thought experience meant I had all the answers. I didn't. I was too proud to ask for help and too stubborn to change what wasn't working.\n\n1. Your first five years teach you what works. Your next five teach you what you've been doing wrong. I didn't listen to that second part for way too long.\n\n2. I kept grinding the same way because it was familiar. Familiar feels safe. Safe keeps you stuck.\n\n3. The agents I respect most now are the ones who admit they don't know something and move fast to fix it. Pride costs more than ego.\n\nIf you're still doing things the way you did them three years ago, how will the next three years be any different?",
       "format": "list",
@@ -48,6 +41,13 @@
       "format": "bold_statement",
       "ending": "question",
       "date": "2026-10-25"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We're running with more buyer and lease leads than we can work right now. Mostly new construction in San Antonio and Austin, plus out-of-state relocations. They're warm but they need vetting and nurture. Most aren't ready to move today.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "short_punchy",
+      "ending": "dm_cta",
+      "date": "2026-11-03"
     }
   ]
 }
