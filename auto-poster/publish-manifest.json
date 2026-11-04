@@ -4939,6 +4939,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-04T22:58:20.004Z",
+      "drive_file_id": "1ePuEP2c27053UU3Tm77RaYl1aFEx5tUM",
+      "file_name": "093F5EF4-10C6-4B44-A50F-39E58F766087.mp4",
+      "market": "dallas",
+      "community": null,
+      "caption": "stop scrolling. look at this price point.\n\nNew construction in Fort Worth starting at $294,990 doesn't stay on the market long. Builder incentives are real right now.\n\n✨ Open floor plan with natural light pouring through. Modern finishes and thoughtful kitchen design that actually works for how you live.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 VA, FHA, USDA, and conventional financin",
+      "slot": "am",
+      "run_id": "41929258376",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 417118043,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 417118107,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfVlXoQDOeM/",
+          "shortcode": "DfVlXoQDOeM",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfVlXjcAXBK/",
+          "shortcode": "DfVlXjcAXBK",
+          "verified": true
+        }
+      ]
     }
   ]
 }
