@@ -23844,10 +23844,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "leadership_culture",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-11-04T16:59:57"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-11-04T17:29:57"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-11-04T17:59:57"
+        }
+      ],
       "timestamp": "2026-11-04T22:58:20.401Z",
       "runId": "41929258376",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
