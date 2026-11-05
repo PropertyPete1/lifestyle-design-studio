@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-11-04",
+      "window": "pm",
+      "sourceVideoId": "1odfTv_dVHGH_T8JI5-05L6cuwGpXoQb2",
+      "sourceFileName": "EA39C8D6-4CBD-4FF6-90CC-DB006A26903E.mp4",
+      "city": "san_antonio",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "The monthly payment on this one is lower than most people guess.\n\nNew construction in San Antonio like this doesn't sit around long. Builders are still offering incentives and rate buydowns on homes c",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1R9Uvj-hZjpkFAEIAUxSMYDeRvHC9AzWG/view",
+      "generatedAt": "2026-11-05T03:47:16.142Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-11-03",
       "window": "am",
       "sourceVideoId": "1odfTv_dVHGH_T8JI5-05L6cuwGpXoQb2",
