@@ -4984,6 +4984,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-05T16:21:15.226Z",
+      "drive_file_id": "1AuihVLx-I7cVOgxdEUVAQe3vjlbLVGQ8",
+      "file_name": "4A52F0FB-D2D5-4776-8930-7CCF9F6F83F6.mp4",
+      "market": "san_antonio",
+      "community": null,
+      "caption": "This might be the best new build value I've seen in San Antonio this month.\n\nNew construction like this doesn't sit around. Starting at $369,990, these homes are moving fast, and builder incentives are on the table for buyers ready to move now.\n\n✨ everyday living hits\n\nOpen floor plans that actually feel spacious. Natural light flooding through every room. Modern finishes and kitchen islands that make cooking feel like the center of the home. Clean, current, move-in ready.\n\n🌳 full amenity and c",
+      "slot": "am",
+      "run_id": "42062558218",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 417935475,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 417935549,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfXcvxHkuJK/",
+          "shortcode": "DfXcvxHkuJK",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfXcvpUFKhy/",
+          "shortcode": "DfXcvpUFKhy",
+          "verified": true
+        }
+      ]
     }
   ]
 }
