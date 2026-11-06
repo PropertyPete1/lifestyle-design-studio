@@ -5029,6 +5029,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-06T17:12:14.637Z",
+      "drive_file_id": "1UdPT7zffkaTEK_4geMGSCbUwYSVN5WDr",
+      "file_name": "45A7E871-87DA-41D6-9924-2FDF9F25367E.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "Stop scrolling. this is $329,990 in San Marcos.\n\nNew construction this clean doesn't sit long.\n\n✨ everyday living hits\nOpen floor plan flooded with natural light. Modern finishes and kitchen island designed for real life, not just photos.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 buyer wins\nVA, FHA, USDA, and conventional financing all welcome. Builder incentives available.\n\nPerfect fo",
+      "slot": "am",
+      "run_id": "42258642261",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 419182358,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 419182462,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfaHZAFD8OY/",
+          "shortcode": "DfaHZAFD8OY",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfaHeeZAOqj/",
+          "shortcode": "DfaHeeZAOqj",
+          "verified": true
+        }
+      ]
     }
   ]
 }
