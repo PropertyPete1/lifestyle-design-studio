@@ -31,8 +31,44 @@ on:
     # rather than repeat yesterday, but the named video would be lost.
     # The market itself is resolved by scripts/market-today.mjs in the job
     # below — a cron cannot do date arithmetic or read Drive.
+    #
+    # BACKUP FIRES — 2026-10-12. GitHub starts scheduled runs hours late, or
+    # drops them: posts landed anywhere from 11:10 AM to 5:33 PM CT, and on
+    # 2026-10-12 the 17:45 and 18:15 fires arrived six hours late, after the
+    # day's reel had been dispatched by hand. So post-daily answers to a cron
+    # every 30 minutes from 17:15 to 22:45 UTC — twelve chances a day:
+    #   during CDT:  12:15 PM .. 5:45 PM CT
+    #   during CST:  11:15 AM .. 4:45 PM CT
+    # Still ONE publish per Chicago day. Once the day's reel is out, later fires
+    # resolve the same market and stop silently at main.js's same-city guard
+    # (20h slot / 2h cooldown). A fire queued behind the publishing run checks
+    # out the commit from before that run's log row, gets past the local guard,
+    # and is stopped by the live-log re-check just before it posts.
+    # Lateness cuts both ways. Late into the night: a 22:45 fire more than
+    # 6h15m late (CDT; 7h15m in CST) is past Chicago midnight, and the 18:15
+    # fire on 2026-10-12 was 6h20m late. main.js stands down any scheduled fire
+    # delivered on a later Chicago day than it was due (scheduledFireDay in
+    # src/cadence.js, fed FIRE_SCHEDULE below). Early in the day: a fire that
+    # starts before the decision file lands (as late as 12:35 PM CT — 17:15 UTC
+    # is before that in CDT, 17:15 to 18:15 in CST) takes the calendar's market
+    # with an auto-picked video, the fallback described above; if the file then
+    # names another market, the day's later scheduled fires each stand down at
+    # the cap with a [DAILY ALERT]. No post-daily fire has yet arrived less
+    # than two hours late, which puts every fire after the file.
+    # All twelve sit on :15/:45, clear of the retired :00/:30 city strings
+    # below, so no live cron collides with a commented one.
+    - cron: '15 17 * * *'
     - cron: '45 17 * * *'
     - cron: '15 18 * * *'
+    - cron: '45 18 * * *'
+    - cron: '15 19 * * *'
+    - cron: '45 19 * * *'
+    - cron: '15 20 * * *'
+    - cron: '45 20 * * *'
+    - cron: '15 21 * * *'
+    - cron: '45 21 * * *'
+    - cron: '15 22 * * *'
+    - cron: '45 22 * * *'
     # THE FIVE CITY SLOTS — RETIRED 2026-09-24. No city slot fires.
     #
     # SA am 16:00/16:30, ATX am 17:00/17:30 and DFW pm 21:00/21:30 were the
@@ -137,12 +173,31 @@ jobs:
   # two runs for different cities starting in the same minute could each read
   # "0/1 used" and both publish; a shared group serialises them so the second
   # one sees the first one's log entry and stands down.
+  #
+  # TIMEOUTS — 2026-10-12. That group holds one running run and ONE pending; a
+  # newer arrival replaces the pending one. So a hung run blocks every reel
+  # run behind it until GitHub's 6-hour default kills it: on 2026-10-01 the
+  # apt/pip install step hung for 350 minutes and nine queued runs were
+  # cancelled behind it. A real publish, including the ~7-minute PUBLISHED
+  # wait, finishes in about 12; the install normally takes under 2 minutes,
+  # so 10 is a hang, not a slow mirror.
   post-daily:
     if: >-
       (github.event_name == 'workflow_dispatch' && (github.event.inputs.city == 'san_antonio' || github.event.inputs.city == 'austin' || github.event.inputs.city == 'dallas'))
+      || github.event.schedule == '15 17 * * *'
       || github.event.schedule == '45 17 * * *'
       || github.event.schedule == '15 18 * * *'
+      || github.event.schedule == '45 18 * * *'
+      || github.event.schedule == '15 19 * * *'
+      || github.event.schedule == '45 19 * * *'
+      || github.event.schedule == '15 20 * * *'
+      || github.event.schedule == '45 20 * * *'
+      || github.event.schedule == '15 21 * * *'
+      || github.event.schedule == '45 21 * * *'
+      || github.event.schedule == '15 22 * * *'
+      || github.event.schedule == '45 22 * * *'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     concurrency:
       group: autopost-daily-reel
       cancel-in-progress: false
@@ -152,6 +207,7 @@ jobs:
         with:
           node-version: '20'
       - name: Install ffmpeg, tesseract & whisper
+        timeout-minutes: 10
         run: |
           # tesseract is NOT optional: the caption-over-captions gate reads the
           # source frames with it, and a check that cannot run refuses to add
@@ -213,6 +269,10 @@ jobs:
           # reader landed and listed in no workflow, which is why every run up
           # to now searched the whole Drive for the filename.
           DECISION_FOLDER_ID: ${{ vars.DECISION_FOLDER_ID }}
+          # Which cron this fire answers, so main.js can tell when GitHub
+          # delivered it on a later Chicago day than it was due and stand it
+          # down (scheduledFireDay in src/cadence.js). Empty on a dispatch.
+          FIRE_SCHEDULE: ${{ github.event.schedule }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           FORCE: ${{ github.event.inputs.force || 'false' }}
           TEST_DELIVERY_ONLY: ${{ github.event.inputs.test_delivery_only || 'false' }}
