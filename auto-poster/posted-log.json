@@ -24463,6 +24463,129 @@
           }
         ]
       }
+    },
+    {
+      "driveFileId": "1Dk8-gIkwd8rt7We5XN_oVNlgNYubtGf1",
+      "fileName": "E3356B42-092A-49EB-93F0-0B685162C55A.mp4",
+      "city": "san_antonio",
+      "caption": "Stop scrolling. this is what new construction should look like.\n\nNew construction like this doesn't sit long in San Antonio.\n\n✨ open floor plan with natural light flooding through, modern finishes, an",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-11-08T16:08:11.650Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (11 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "$500 Way to go ! Money talk is much louder now",
+      "content_hash": "ffffff87003e0000:f8fffdfffcb0b000:1f0f0ffb3e2f070f:e4c1c3fc1dcf4420:a136e0f07ee0f84e",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pattern_interrupt",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "stat",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-11-02T23:10:01.923Z",
+        "decision_hooks": 0,
+        "decision_file_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1t2gB4xlHToUBsbvjXnuagW0WT4gdEYWO/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 420857054,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-11-08T16:15:12.170Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DffJqp8iFIW/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 420857116,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-11-08T16:15:12.282Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DffJoxBCWVK/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-11-08T16:15:12.282Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 420857054,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DffJqp8iFIW/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 420857116,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DffJoxBCWVK/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1

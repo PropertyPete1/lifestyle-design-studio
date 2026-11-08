@@ -5119,6 +5119,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-08T16:08:11.657Z",
+      "drive_file_id": "1Dk8-gIkwd8rt7We5XN_oVNlgNYubtGf1",
+      "file_name": "E3356B42-092A-49EB-93F0-0B685162C55A.mp4",
+      "market": "san_antonio",
+      "community": "Perry Homes",
+      "caption": "Stop scrolling. this is what new construction should look like.\n\nNew construction like this doesn't sit long in San Antonio.\n\n✨ open floor plan with natural light flooding through, modern finishes, and a kitchen built for real living. this is everyday living done right.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 starting at $499,999. VA, FHA, USDA, and conventional financing all welcome",
+      "slot": "am",
+      "run_id": "42497993411",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 420857054,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 420857116,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DffJqp8iFIW/",
+          "shortcode": "DffJqp8iFIW",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DffJoxBCWVK/",
+          "shortcode": "DffJoxBCWVK",
+          "verified": true
+        }
+      ]
     }
   ]
 }
