@@ -1,75 +1,75 @@
 {
   "brand": "lifestyle",
   "engine": "learn-v1",
-  "generated_at": "2026-11-02T23:10:01.923Z",
+  "generated_at": "2026-11-09T23:48:54.114Z",
   "window_days": 28,
   "sample": {
     "posts_scored": 27,
     "posts_scored_all_media": 27,
     "posts_unjoined": 1,
-    "analytics_rows_joined": 60,
-    "analytics_rows_unattributed": 690,
+    "analytics_rows_joined": 54,
+    "analytics_rows_unattributed": 696,
     "provenance": {
       "tagged": 27,
       "inferred": 0
     }
   },
   "hook_styles": {
-    "stat": {
-      "n": 5,
-      "score": 132,
-      "median": 135,
-      "verdict": "mid"
-    },
-    "pattern_interrupt": {
-      "n": 6,
-      "score": 159,
-      "median": 118,
-      "verdict": "winner"
-    },
     "story_open": {
       "n": 5,
-      "score": 139,
-      "median": 142,
+      "score": 141,
+      "median": 127,
       "verdict": "mid"
     },
     "pov": {
       "n": 5,
-      "score": 157,
+      "score": 159,
       "median": 118,
       "verdict": "mid"
     },
     "bold_claim": {
-      "n": 4,
-      "score": 148,
-      "median": 148,
+      "n": 5,
+      "score": 133,
+      "median": 90,
       "verdict": "mid"
     },
     "question": {
+      "n": 3,
+      "score": 203,
+      "median": 131,
+      "verdict": "winner"
+    },
+    "pattern_interrupt": {
+      "n": 7,
+      "score": 157,
+      "median": 112,
+      "verdict": "mid"
+    },
+    "stat": {
       "n": 2,
-      "score": 123,
-      "median": 123,
+      "score": 445,
+      "median": 445,
       "verdict": "insufficient_sample"
     }
   },
   "caption_lengths": {
-    "medium": {
-      "n": 7,
-      "score": 136,
-      "median": 129,
-      "verdict": "mid"
-    },
     "long": {
-      "n": 7,
-      "score": 121,
-      "median": 118,
-      "verdict": "mid"
+      "n": 8,
+      "score": 217,
+      "median": 115,
+      "verdict": "winner"
     },
     "short": {
-      "n": 9,
-      "score": 181,
-      "median": 131,
-      "verdict": "winner"
+      "n": 8,
+      "score": 186,
+      "median": 124,
+      "verdict": "mid"
+    },
+    "medium": {
+      "n": 6,
+      "score": 150,
+      "median": 156,
+      "verdict": "mid"
     }
   },
   "posting_slots": {
@@ -77,8 +77,8 @@
     "table": {
       "am": {
         "n": 27,
-        "score": 146,
-        "median": 124,
+        "score": 176,
+        "median": 123,
         "verdict": "winner"
       }
     }
@@ -87,21 +87,21 @@
     "analyzed_only": true,
     "table": {
       "san_antonio": {
-        "n": 17,
-        "score": 127,
+        "n": 13,
+        "score": 143,
         "median": 118,
         "verdict": "mid"
       },
       "austin": {
-        "n": 6,
-        "score": 154,
-        "median": 120,
+        "n": 8,
+        "score": 146,
+        "median": 122,
         "verdict": "mid"
       },
       "dallas": {
-        "n": 4,
-        "score": 212,
-        "median": 177,
+        "n": 6,
+        "score": 290,
+        "median": 199,
         "verdict": "winner"
       }
     }
@@ -111,20 +111,40 @@
     "table": {
       "no_plate": {
         "n": 27,
-        "score": 146,
-        "median": 124,
+        "score": 176,
+        "median": 123,
         "verdict": "winner"
       }
     }
   },
   "top_hooks": [
     {
+      "hook": "Brand new construction in Fort Worth just hit the market and these move fast.",
+      "hook_style": "stat",
+      "provenance": "tagged",
+      "score": 753,
+      "score_basis": "instagram_median",
+      "ig_views_median": 782,
+      "city": "dallas",
+      "posted": "2026-11-07T21:24:41.290Z"
+    },
+    {
+      "hook": "What does $579,990 actually get you in brand new construction in San Antonio right now?",
+      "hook_style": "question",
+      "provenance": "tagged",
+      "score": 364,
+      "score_basis": "instagram_median",
+      "ig_views_median": 195,
+      "city": "san_antonio",
+      "posted": "2026-11-02T16:12:40.944Z"
+    },
+    {
       "hook": "Stop scrolling. this price point doesn't last long.",
       "hook_style": "pattern_interrupt",
       "provenance": "tagged",
-      "score": 360,
+      "score": 363,
       "score_basis": "instagram_median",
-      "ig_views_median": 356,
+      "ig_views_median": 360,
       "city": "dallas",
       "posted": "2026-10-26T21:58:11.282Z"
     },
@@ -132,9 +152,9 @@
       "hook": "POV: you just stepped into brand new construction that actually feels like home.",
       "hook_style": "pov",
       "provenance": "tagged",
-      "score": 332,
+      "score": 338,
       "score_basis": "instagram_median",
-      "ig_views_median": 394,
+      "ig_views_median": 399,
       "city": "austin",
       "posted": "2026-10-31T17:20:21.966Z"
     },
@@ -142,31 +162,11 @@
       "hook": "I've never seen finishes like this at this price point in San Antonio.",
       "hook_style": "bold_claim",
       "provenance": "tagged",
-      "score": 208,
+      "score": 211,
       "score_basis": "instagram_median",
-      "ig_views_median": 190,
+      "ig_views_median": 193,
       "city": "san_antonio",
       "posted": "2026-10-24T16:16:15.537Z"
-    },
-    {
-      "hook": "I've never seen finishes like this at this price point in Dallas.",
-      "hook_style": "bold_claim",
-      "provenance": "tagged",
-      "score": 207,
-      "score_basis": "instagram_median",
-      "ig_views_median": 229,
-      "city": "dallas",
-      "posted": "2026-10-29T22:08:15.677Z"
-    },
-    {
-      "hook": "The kind of new construction in San Antonio that has you walking through the front door and already picturing Sunday dinners.",
-      "hook_style": "story_open",
-      "provenance": "tagged",
-      "score": 167,
-      "score_basis": "instagram_median",
-      "ig_views_median": 194,
-      "city": "san_antonio",
-      "posted": "2026-10-11T21:13:42.057Z"
     }
   ],
   "kill_list": [],
