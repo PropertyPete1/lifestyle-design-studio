@@ -24607,6 +24607,130 @@
       "timestamp": "2026-11-09T17:07:46.927Z",
       "runId": "42660742729",
       "success": true
+    },
+    {
+      "driveFileId": "1FYsssl5dLy2CXCnC3ZJBR2e8WJn6xxUp",
+      "fileName": "5BCA0865-96E7-418A-8D99-93F3F8E1BEFF.mp4",
+      "city": "austin",
+      "caption": "The kind of new construction that makes you rethink what's possible at this price point.\n\nStarting at $649,990 near Leander. New homes built to move fast, and honestly, they don't sit around long.\n\n✨ ",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-11-09T17:07:46.293Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "Leander",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (91 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "You're gonna put the music on Everybody is just a little bit That you are being so clear I can't confidence That you're just working Come in, so clear But like an honest Why you're like a line It's okay You're gonna put the music on Everybody is just a little bit You're gonna put the music on You're gonna put the music on You're gonna put the music on You're gonna put the music on I'm so funny I'm so funny I need to write money Back as a realist",
+      "content_hash": "ffffff83017fe000:7ffdc1e3c1ff1e00:1fffffcffe1e0300:7c7efffffefcf878:fcffffdf7f330004",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "story_open",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "pattern_interrupt",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "long",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-11-02T23:10:01.923Z",
+        "decision_hooks": 0,
+        "decision_file_at": null,
+        "original_refused": "bot_authored",
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1qcgG0UL4mC1uI1r984XA7oPhEAUv6Vf8/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 422131970,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-11-09T17:15:00.237Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Dfh1mnrAg9T/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 422132128,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-11-09T17:15:00.353Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Dfh1rTKAbHm/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-11-09T17:15:00.353Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 422131970,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Dfh1mnrAg9T/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 422132128,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Dfh1rTKAbHm/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1

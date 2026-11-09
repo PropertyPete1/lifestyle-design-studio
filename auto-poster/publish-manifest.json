@@ -5164,6 +5164,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-09T17:07:46.302Z",
+      "drive_file_id": "1FYsssl5dLy2CXCnC3ZJBR2e8WJn6xxUp",
+      "file_name": "5BCA0865-96E7-418A-8D99-93F3F8E1BEFF.mp4",
+      "market": "austin",
+      "community": "Leander",
+      "caption": "The kind of new construction that makes you rethink what's possible at this price point.\n\nStarting at $649,990 near Leander. New homes built to move fast, and honestly, they don't sit around long.\n\n✨ open floor plans that feel like home from day one. natural light pouring through modern finishes, kitchen islands built for gathering. the kind of spaces that work for real life, not just Instagram.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and",
+      "slot": "am",
+      "run_id": "42660742729",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 422131970,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 422132128,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Dfh1mnrAg9T/",
+          "shortcode": "Dfh1mnrAg9T",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Dfh1rTKAbHm/",
+          "shortcode": "Dfh1rTKAbHm",
+          "verified": true
+        }
+      ]
     }
   ]
 }
