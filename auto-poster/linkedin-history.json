@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "lead_overflow",
-      "body": "We're running with more buyer and lease leads than we can work right now. Mostly new construction in San Antonio and Austin, plus out-of-state relocations. They're warm but they need vetting and nurture. Most aren't ready to move today.\n\nIf this sounds like something you'd take on, send me a DM.",
-      "format": "short_punchy",
-      "ending": "dm_cta",
-      "date": "2026-11-03"
-    },
-    {
       "topic": "leadership_culture",
       "body": "I joined my team because I was tired of grinding alone. First month here, a deal went sideways. Inspection issues, appraisal came in low, seller got defensive. Instead of watching it die, three agents stopped what they were doing and sat down with me. We worked through it together. Deal closed. That's when it hit me. This isn't about the split or the marketing budget or whatever your last broker promised. It's about being surrounded by people who actually show up for you. Who care if you win or lose. Who believe your success is their success. Most agents never experience that. They move from broker to broker chasing commission splits and never ask the real question. Who has my back when things get hard. At Lifestyle Design Realty, that's the baseline. Not the perk.",
       "format": "story",
@@ -48,6 +41,13 @@
       "format": "story",
       "ending": "question",
       "date": "2026-10-19"
+    },
+    {
+      "topic": "unpopular_opinion",
+      "body": "Most agents I talk to say they want leads. What they actually want is certainty. They want a guaranteed pipeline that converts at a predictable rate. That's not real. I spent two years chasing that fantasy before I stopped lying to myself. The agents crushing it at our brokerage aren't the ones with the most leads. They're the ones who got comfortable being uncomfortable. Who stopped waiting for perfect conditions and started working messy situations. Who learned that a smaller pipeline you actually execute on beats a massive one you're afraid to touch. The leads are there. The question is whether you're willing to do the work when the lead doesn't look like what you imagined it should be?",
+      "format": "story",
+      "ending": "question",
+      "date": "2026-11-12"
     }
   ]
 }
