@@ -5344,6 +5344,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-13T22:58:29.688Z",
+      "drive_file_id": "16Q3ZqfPwCTL3D_k7sZ90DyLa1gnXbhjc",
+      "file_name": "812B92A0-8471-4BAA-A55F-02732C4C6198.mp4",
+      "market": "dallas",
+      "community": null,
+      "caption": "Stop scrolling. Look at this ceiling.\n\nNew construction in Fort Worth moves fast, and builder incentives like this won't last forever.\n\n✨ Open floor plan with natural light, modern finishes, and a kitchen built for real living. This is what new construction should feel like.\n\n🌳 Full amenity and community rundown available. It's worth asking about.\n\n🎓 School ratings, HOA and taxes vary by address. Exact numbers on request.\n\n💸 VA, FHA, USDA, and conventional financing all welcome. Builder incen",
+      "slot": "am",
+      "run_id": "43522942974",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 427561567,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 427561659,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfswhjpDice/",
+          "shortcode": "DfswhjpDice",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfswjOnnA97/",
+          "shortcode": "DfswjOnnA97",
+          "verified": true
+        }
+      ]
     }
   ]
 }

@@ -1,13 +1,6 @@
 {
   "posts": [
     {
-      "topic": "leadership_culture",
-      "body": "I joined my team because I was tired of grinding alone. First month here, a deal went sideways. Inspection issues, appraisal came in low, seller got defensive. Instead of watching it die, three agents stopped what they were doing and sat down with me. We worked through it together. Deal closed. That's when it hit me. This isn't about the split or the marketing budget or whatever your last broker promised. It's about being surrounded by people who actually show up for you. Who care if you win or lose. Who believe your success is their success. Most agents never experience that. They move from broker to broker chasing commission splits and never ask the real question. Who has my back when things get hard. At Lifestyle Design Realty, that's the baseline. Not the perk.",
-      "format": "story",
-      "ending": "dm_cta",
-      "date": "2026-11-04"
-    },
-    {
       "topic": "lead_overflow",
       "body": "We're running with more buyer and lease leads than we can work right now.\n\nMostly new construction in San Antonio and Austin, plus out-of-state relocations. They're warm but they need vetting and nurture. Most aren't ready to move today. That's the honest part. These aren't hot leads sitting on your desk waiting to convert tomorrow. They're real people in real situations who need someone to stay in front of them, build trust, and be ready when they're actually ready to move. If you're the kind of agent who can work a long pipeline and turn patient follow-up into closed deals, this is exactly the kind of volume you should have in your business.\n\nIf this sounds like something you'd take on, send me a DM.",
       "format": "bold_statement",
@@ -48,6 +41,13 @@
       "format": "story",
       "ending": "question",
       "date": "2026-11-12"
+    },
+    {
+      "topic": "lead_overflow",
+      "body": "We're running with more buyer and lease leads than we can work right now.\n\nMostly new construction in San Antonio and Austin, plus out-of-state relocations. They're warm but they need vetting and nurture. Most aren't ready to move today. That's the honest part.\n\n1. These aren't hot leads sitting on your desk. They're real people in transition who need someone to stay in front of them consistently until they're actually ready to close.\n\n2. The agents who thrive on this kind of work are the ones who know how to build trust over time instead of chasing the quick close. It's a different skill than farming hot leads.\n\n3. If you're someone who can work a longer pipeline and turn patient follow-up into closed deals, this is the volume you should have in your business.\n\nIf this sounds like something you'd take on, send me a DM.",
+      "format": "list",
+      "ending": "dm_cta",
+      "date": "2026-11-13"
     }
   ]
 }
