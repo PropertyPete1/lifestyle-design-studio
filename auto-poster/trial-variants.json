@@ -1,6 +1,19 @@
 {
   "variants": [
     {
+      "date": "2026-11-13",
+      "window": "am",
+      "sourceVideoId": "17t2VeaMIr_DCovNQH9KbZG1t3Jv-YzNq",
+      "sourceFileName": "AE582A40-B859-4927-9F1C-3F87DE5767BE.mp4",
+      "city": "dallas",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "the monthly payment on this one is lower than most people guess\n\nNew construction in Dallas doesn't sit around long, and with builder incentives on the table right now, this is the moment to move.\n\n✨ ",
+      "deliveryDriveLink": "https://drive.google.com/file/d/14mQTRTLvwy2gO4E1mj4g0RKLjgYtwkiE/view",
+      "generatedAt": "2026-11-13T20:30:41.399Z",
+      "trigger": "schedule"
+    },
+    {
       "date": "2026-11-12",
       "window": "pm",
       "sourceVideoId": "17t2VeaMIr_DCovNQH9KbZG1t3Jv-YzNq",
