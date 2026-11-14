@@ -342,6 +342,37 @@ describe("the decision reader's folder scope reaches the posting jobs", () => {
 });
 
 /**
+ * A hung run must not hold the reel queue for GitHub's 360-minute default.
+ *
+ * post-daily's autopost-daily-reel group keeps one running and ONE pending
+ * run, so while a run hangs, every dispatch queued behind it is cancelled as
+ * superseded. On 2026-10-01 the install step hung from 16:04Z and the day posted
+ * nothing until the run was cancelled by hand at ~21:53Z — no gate refusal, no
+ * error, just a queue that never moved.
+ *
+ * Bounds rather than exact values, from every post.yml reel job since
+ * 2026-09-01: the slowest whole job took 24.5 min (a publish, with its 420s
+ * verify wait) and the slowest install 8.6 min. Below those a limit kills real
+ * posts; past an hour it is barely a limit.
+ */
+describe("a hung post-daily run releases the reel queue", () => {
+  const daily = jobs(DAILY_WORKFLOW)["post-daily"];
+  const minutes = (text, indent) => Number(text.match(new RegExp(`^ {${indent}}timeout-minutes: (\\d+)$`, "m"))?.[1]);
+
+  test("the job has its own timeout, between the slowest real run and an hour", () => {
+    const job = minutes(daily, 4);
+    assert.ok(job >= 30 && job <= 60, `post-daily timeout-minutes is ${job}`);
+  });
+
+  test("the install step has a shorter one, above the slowest real install", () => {
+    const at = daily.indexOf("- name: Install ffmpeg, tesseract & whisper");
+    assert.ok(at >= 0, "no install step in post-daily");
+    const step = minutes(daily.slice(at).split(/\n {6}- /)[0], 8);
+    assert.ok(step >= 10 && step < minutes(daily, 4), `install timeout-minutes is ${step}`);
+  });
+});
+
+/**
  * The mirror workflow: the one way to write the manifest to Drive on demand.
  *
  * A workflow_dispatch workflow can only be dispatched when it exists on the
