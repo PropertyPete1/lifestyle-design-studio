@@ -41,7 +41,7 @@ import { recordPublish, recordPublishVerification } from "./publish-manifest.js"
 import { mirrorToDrive } from "./manifest-mirror.js";
 import { applyPromoteAhead } from "./promote-ahead.js";
 import { loadDecision, applyDecision, decisionFileLog } from "./drive-decision.js";
-import { loadCadence, saveCadence, cadenceGate, proposeCadence, recordCadenceChange, recordCadenceHold, dailyPublishSeries, rotationPreview, DAILY_SLOT, MARKET_LABELS } from "./cadence.js";
+import { loadCadence, saveCadence, cadenceGate, proposeCadence, recordCadenceChange, recordCadenceHold, dailyPublishSeries, rotationPreview, chicagoDay, scheduledFireDay, DAILY_SLOT, MARKET_LABELS } from "./cadence.js";
 import { announceCadenceChange } from "./cadence-announce.js";
 import { postToLinkedin } from "./linkedin.js";
 import { claimLinkedinSlot, finalizeLinkedinClaim, releaseLinkedinClaim } from "./linkedin-claim.js";
@@ -221,6 +221,32 @@ async function main() {
   console.log(`[AutoPoster] Mode: ${TEST_DELIVERY_ONLY ? "TEST DELIVERY ONLY (no social posts)" : DRY_RUN ? "DRY RUN" : "LIVE"}`);
   console.log(`[AutoPoster] Time: ${new Date().toLocaleString("en-US", { timeZone: "America/Chicago" })} CT`);
   console.log("=".repeat(60));
+
+  // A SCHEDULED FIRE THAT ARRIVES ON A LATER CHICAGO DAY THAN IT WAS DUE stands
+  // down before anything else. GitHub delivers the reel's crons hours late, and
+  // a 22:45 UTC fire more than 6h15m late (7h15m in CST) is past Chicago
+  // midnight: the gate would see a fresh day and post in the small hours on the
+  // calendar's market, spending that day's one publish before its decision file
+  // exists. That day has its own fires. Hand-runs are untouched — a dispatch,
+  // or a "Re-run jobs" of a scheduled run (which keeps the schedule event), is
+  // meant for the day it runs on.
+  const firstAttempt = Number(process.env.GITHUB_RUN_ATTEMPT || 1) === 1;
+  if (process.env.GITHUB_EVENT_NAME === "schedule" && firstAttempt) {
+    const dueDay = scheduledFireDay(process.env.FIRE_SCHEDULE);
+    const runDay = chicagoDay(new Date());
+    if (dueDay && dueDay !== runDay) {
+      await notifyDailyOutcome({
+        pipeline: "Reels",
+        label: `${CITY} ${SLOT}`,
+        outcome: OUTCOME.SKIPPED,
+        reason:
+          `Late fire: the ${process.env.FIRE_SCHEDULE} UTC cron was due on ${dueDay} (CT) and GitHub delivered it on ${runDay}. ` +
+          `${dueDay} is over and ${runDay} has its own fires, so this one stands down without posting.`,
+      });
+      console.log(`[AutoPoster] Late scheduled fire for ${dueDay} arriving on ${runDay}. Exiting.`);
+      process.exit(0);
+    }
+  }
 
   // Run weekly analytics feedback loop (if stale or missing)
   try {
