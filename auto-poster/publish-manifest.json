@@ -5389,6 +5389,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-14T16:04:57.128Z",
+      "drive_file_id": "1BI68DxyeR8BtRJ8eBZqNcM3OdqeiwncD",
+      "file_name": "0A19605A-FFE2-4213-909B-21BC63F3CACA.mp4",
+      "market": "san_antonio",
+      "community": "Northeast",
+      "caption": "the kind of space that makes you forget you're house hunting and start imagining your actual life here\n\nnew construction in San Antonio at this price point moves fast. builder incentives are actively on the table right now.\n\n✨ open floor plan with natural light pouring through, modern finishes, and a kitchen built for real living. the bones are solid, the flow is smart, and everything feels brand new because it is.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 sch",
+      "slot": "am",
+      "run_id": "43613417579",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 428120008,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 428120030,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfumhcklAeN/",
+          "shortcode": "DfumhcklAeN",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfumbwdCPOT/",
+          "shortcode": "DfumbwdCPOT",
+          "verified": true
+        }
+      ]
     }
   ]
 }
