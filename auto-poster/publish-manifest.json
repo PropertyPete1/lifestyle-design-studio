@@ -5434,6 +5434,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-15T17:05:46.014Z",
+      "drive_file_id": "1SaLDVuRc0pOHKgEIn7uzAqjIDfc25jpL",
+      "file_name": "73E6BD42-E8B3-4CD8-AEE8-B52D738D9D49.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "POV: you just walked into your first brand new home and everything is exactly how you imagined it.\n\nNew construction in Georgetown starting at $663,990 and these move fast.\n\n✨ open floor plans flooded with natural light, modern finishes, kitchen islands built for real living. this is the stuff rental life can't touch.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 VA, FHA, USDA and conventi",
+      "slot": "am",
+      "run_id": "43738639852",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 429069448,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 429069528,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DfxSJybj5Qi/",
+          "shortcode": "DfxSJybj5Qi",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DfxSIB7jP7_/",
+          "shortcode": "DfxSIB7jP7_",
+          "verified": true
+        }
+      ]
     }
   ]
 }
