@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-11-16",
+      "window": "pm",
+      "sourceVideoId": "1iR7xZ7shGneDs5WugDlaolhB-am7slLx",
+      "sourceFileName": "3C1D3FC2-02B0-4BA2-A0F5-13B2CBF50DBA.mp4",
+      "city": "dallas",
+      "hookAngle": "payment_tease",
+      "variantNumber": 2,
+      "caption": "The monthly payment on this one is lower than most people guess.\n\nNew construction in Fort Worth starting at $499,990 moves fast. Builder incentives are real right now.\n\n✨ Open floor plan with tons of",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1WTLJ-hzHpW_DgqbQPcsrPrQIomwuiuwZ/view",
+      "generatedAt": "2026-11-17T05:17:14.265Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-11-16",
       "window": "am",
       "sourceVideoId": "1iR7xZ7shGneDs5WugDlaolhB-am7slLx",
       "sourceFileName": "3C1D3FC2-02B0-4BA2-A0F5-13B2CBF50DBA.mp4",
