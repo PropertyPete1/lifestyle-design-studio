@@ -5479,6 +5479,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-17T01:09:19.612Z",
+      "drive_file_id": "1C1r5L4pwNcMRT5uRzD1ptPLMBdDP_HPc",
+      "file_name": "E6F91E00-7DF9-4AD4-9FA4-A47534319E39.mp4",
+      "market": "dallas",
+      "community": null,
+      "caption": "I've never seen finishes like this at this price point in Fort Worth.\n\nNew construction starting at $600,000 doesn't sit long. Builder incentives are actively available right now.\n\n✨ Open floor plan with natural light flooding through, modern kitchen with island, and finishes that feel way more premium than the price tag. Everything's brand new and built to spec.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact num",
+      "slot": "am",
+      "run_id": "43992796551",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 430879938,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 430879977,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Df0t5M6HKwS/",
+          "shortcode": "Df0t5M6HKwS",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Df0t7Z6Drxe/",
+          "shortcode": "Df0t7Z6Drxe",
+          "verified": true
+        }
+      ]
     }
   ]
 }
