@@ -25625,10 +25625,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "mindset_motivation",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-11-16T19:10:57"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-11-16T19:40:57"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-11-16T20:10:57"
+        }
+      ],
       "timestamp": "2026-11-17T01:09:19.921Z",
       "runId": "43992796551",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
