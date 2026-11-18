@@ -5569,6 +5569,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-18T17:12:46.464Z",
+      "drive_file_id": "1diZqKeE1Jt2N9mZYIVceGY53Ugwtjtn6",
+      "file_name": "092F0A61-7A39-4218-B223-ED6EFE0D7F9E.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "Would you believe this is brand new construction in Kyle?\n\nNew homes like this move fast. Builder incentives are real right now, and inventory in this market won't last long.\n\n✨ everyday living hits\n\nOpen floor plan, tons of natural light, modern finishes throughout, and a kitchen built for how you actually live. This is the new construction standard done right.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numb",
+      "slot": "am",
+      "run_id": "44353821587",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 433134695,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 433134856,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Df5BKwND0SU/",
+          "shortcode": "Df5BKwND0SU",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Df5BJmTjHif/",
+          "shortcode": "Df5BJmTjHif",
+          "verified": true
+        }
+      ]
     }
   ]
 }
