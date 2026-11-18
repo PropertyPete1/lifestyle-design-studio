@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-11-17",
+      "window": "pm",
+      "sourceVideoId": "1iR7xZ7shGneDs5WugDlaolhB-am7slLx",
+      "sourceFileName": "3C1D3FC2-02B0-4BA2-A0F5-13B2CBF50DBA.mp4",
+      "city": "dallas",
+      "hookAngle": "question_hook",
+      "variantNumber": 4,
+      "caption": "Would you believe this is brand new construction starting at $499,990 in Fort Worth?\n\nNew construction like this doesn't sit around long. These homes are moving fast and builder incentives are real ri",
+      "deliveryDriveLink": "https://drive.google.com/file/d/17E4CgWb7MDyTdz47FjbKnkL6e0lpcwx6/view",
+      "generatedAt": "2026-11-18T04:45:45.526Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-11-17",
       "window": "am",
       "sourceVideoId": "1iR7xZ7shGneDs5WugDlaolhB-am7slLx",
       "sourceFileName": "3C1D3FC2-02B0-4BA2-A0F5-13B2CBF50DBA.mp4",
