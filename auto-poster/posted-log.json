@@ -26159,10 +26159,24 @@
     },
     {
       "type": "linkedin",
-      "status": "claimed",
+      "topic": "lead_overflow",
+      "brands": [
+        {
+          "label": "Peter",
+          "publishAt": "2026-11-20T14:00:00"
+        },
+        {
+          "label": "Steven",
+          "publishAt": "2026-11-20T14:30:00"
+        },
+        {
+          "label": "Lifestyle Design Realty",
+          "publishAt": "2026-11-20T15:00:00"
+        }
+      ],
       "timestamp": "2026-11-20T16:07:11.684Z",
       "runId": "44768875051",
-      "success": false
+      "success": true
     }
   ],
   "lastTemplateIndex": -1
