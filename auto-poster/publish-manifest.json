@@ -5614,6 +5614,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-20T16:07:11.415Z",
+      "drive_file_id": "10xY-L7YfK74DyFjkiAkLmE9Aa6cvMByg",
+      "file_name": "06744F90-F40C-4279-8F27-78F861E28165.mp4",
+      "market": "san_antonio",
+      "community": "Alamo Ranch",
+      "caption": "POV: you just walked into your first brand new home and everything feels exactly right.\n\nNew construction like this doesn't sit long in San Antonio.\n\n✨ everyday living hits\nOpen floor plans flooded with natural light. Modern finishes in every room. Kitchen islands built for real life. Everything brand new means everything works.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 buyer wins\nStar",
+      "slot": "am",
+      "run_id": "44768875051",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 435764654,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 435764778,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/Df-DqfMggL6/",
+          "shortcode": "Df-DqfMggL6",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/Df-Dk1QI_lY/",
+          "shortcode": "Df-Dk1QI_lY",
+          "verified": true
+        }
+      ]
     }
   ]
 }

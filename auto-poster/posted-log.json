@@ -26177,6 +26177,129 @@
       "timestamp": "2026-11-20T16:07:11.684Z",
       "runId": "44768875051",
       "success": true
+    },
+    {
+      "driveFileId": "10xY-L7YfK74DyFjkiAkLmE9Aa6cvMByg",
+      "fileName": "06744F90-F40C-4279-8F27-78F861E28165.mp4",
+      "city": "san_antonio",
+      "caption": "POV: you just walked into your first brand new home and everything feels exactly right.\n\nNew construction like this doesn't sit long in San Antonio.\n\n✨ everyday living hits\nOpen floor plans flooded wi",
+      "voiceover": false,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-11-20T16:07:11.405Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "San Antonio",
+      "voiceover_reason": "source_has_speech",
+      "voiceover_note": "voiceover skipped: source has speech (92 words transcribed) — the person talking is the content",
+      "voiceover_transcript": "Remember this is just a model house. You do park your car in the garage. I just took the question right out of your mind, did not I? Watch as we turn this office into a real two car garage for your daily driver. How is this only $2,900 a month? Here's the exact breakdown. Starting in the low $470,000 on a competitive 30 year rate with property taxes. At just 0.5% on PMI factor in, it all adds up to right around $2,900 a month. Fill out the Lincoln Biophrinth up.",
+      "content_hash": "ffffff0110fb6f0c:e002bf600000ffff:dffffe9a9e8080bc:ffff7f787070f844:fffffc7f71401011",
+      "captions_burned": false,
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 8,
+        "novel_texts": 8
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "pov",
+        "hook_style_source": "brief_explore",
+        "excluded_style": "question",
+        "hook_plate_burned": false,
+        "caption_source": "fresh",
+        "caption_length_bucket": "medium",
+        "caption_length_source": "brief_explore",
+        "brief_generated_at": "2026-11-16T23:46:40.176Z",
+        "decision_hooks": 0,
+        "decision_file_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": true
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1pu1ZtJ47edOjZTrSVIHz1CU8BxbhNwsD/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 435764654,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-11-20T16:14:22.201Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Df-DqfMggL6/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 435764778,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-11-20T16:14:22.290Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/Df-Dk1QI_lY/"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-11-20T16:14:22.291Z",
+        "allVerified": true,
+        "anyFailed": false,
+        "pendingRecheck": false,
+        "counts": {
+          "published": 2,
+          "failed": 0,
+          "pending": 0,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 435764654,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Df-DqfMggL6/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 435764778,
+            "blogId": 6486275,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/Df-Dk1QI_lY/"
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
