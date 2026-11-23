@@ -2,6 +2,19 @@
   "variants": [
     {
       "date": "2026-11-22",
+      "window": "pm",
+      "sourceVideoId": "1C1r5L4pwNcMRT5uRzD1ptPLMBdDP_HPc",
+      "sourceFileName": "E6F91E00-7DF9-4AD4-9FA4-A47534319E39.mp4",
+      "city": "dallas",
+      "hookAngle": "feature_callout",
+      "variantNumber": 3,
+      "caption": "Look at this kitchen island. This is what new construction in Fort Worth is looking like right now.\n\nStarting at $600,000, homes like this are moving fast. Builder incentives are on the table if you k",
+      "deliveryDriveLink": "https://drive.google.com/file/d/11QX-_0Wfalto3MZ9HwWXkGSB5PaszP6O/view",
+      "generatedAt": "2026-11-23T04:02:52.765Z",
+      "trigger": "schedule"
+    },
+    {
+      "date": "2026-11-22",
       "window": "am",
       "sourceVideoId": "1C1r5L4pwNcMRT5uRzD1ptPLMBdDP_HPc",
       "sourceFileName": "E6F91E00-7DF9-4AD4-9FA4-A47534319E39.mp4",
