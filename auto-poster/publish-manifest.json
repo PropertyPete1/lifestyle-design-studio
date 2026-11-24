@@ -5794,6 +5794,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-24T17:07:10.555Z",
+      "drive_file_id": "1dy8XR_o8UfM2ikHi9EUhhxEmkKj-uCAb",
+      "file_name": "3F37BDA3-B4C6-46EF-8ACB-6CC7908E5443.mp4",
+      "market": "austin",
+      "community": null,
+      "caption": "$470,000 for brand new construction in North Austin that's already turning heads.\n\nNew builds in this market move fast, and builder incentives are real right now.\n\n✨ open floor plan with natural light flooding through, modern finishes, and that kitchen island you've been picturing. Walk through and you'll see exactly why this price point hits different.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on re",
+      "slot": "am",
+      "run_id": "45443783018",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 440601627,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 440601756,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DgIdzy4ADcA/",
+          "shortcode": "DgIdzy4ADcA",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DgId8o0DdCe/",
+          "shortcode": "DgId8o0DdCe",
+          "verified": true
+        }
+      ]
     }
   ]
 }
