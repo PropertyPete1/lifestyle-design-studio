@@ -5839,6 +5839,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-26T01:15:09.786Z",
+      "drive_file_id": "1A57u1VrjAL9nyDEP0b1NZzZ8fuDEU7Lj",
+      "file_name": "062644C3-05EB-4C2D-96DE-298A47092BFE.mp4",
+      "market": "dallas",
+      "community": null,
+      "caption": "POV: you just walked into your first brand new home and everything is exactly how you imagined it.\n\nNew construction like this doesn't sit long in Fort Worth.\n\n✨ open floor plan with tons of natural light, modern finishes throughout, and a kitchen that actually makes you want to cook. this is the move-in ready feeling.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 starting at $399,990. VA,",
+      "slot": "am",
+      "run_id": "45733959424",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 442532679,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 442532720,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DgL50joAJjt/",
+          "shortcode": "DgL50joAJjt",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DgL5vZ5xw8t/",
+          "shortcode": "DgL5vZ5xw8t",
+          "verified": true
+        }
+      ]
     }
   ]
 }
