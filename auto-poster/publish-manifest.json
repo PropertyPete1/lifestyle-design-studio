@@ -5884,6 +5884,51 @@
           "verified": true
         }
       ]
+    },
+    {
+      "schema_version": 1,
+      "posted_at": "2026-11-26T16:18:21.690Z",
+      "drive_file_id": "19imODcsbuOvx8EufDTlXSw024peR1PIq",
+      "file_name": "11E5D83D-74AE-4335-BD92-7D5B99BC674C.mp4",
+      "market": "san_antonio",
+      "community": null,
+      "caption": "Brand new construction just hit the market in San Antonio and these homes are moving fast.\n\n✨ everyday living hits\n\nOpen floor plan with natural light pouring through, modern finishes throughout, and a kitchen built for real life. This is what new construction should feel like.\n\n🌳 full amenity and community rundown available. it's worth asking about\n\n🎓 school ratings, HOA and taxes vary by address. exact numbers on request\n\n💸 buyer wins\n\nVA, FHA, USDA, and conventional financing all welcome h",
+      "slot": "am",
+      "run_id": "45854744724",
+      "targets": [
+        {
+          "label": "propertypete01",
+          "blog_id": 6486247,
+          "post_id": 443349922,
+          "networks": [
+            "instagram"
+          ]
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blog_id": 6486275,
+          "post_id": 443350072,
+          "networks": [
+            "instagram"
+          ]
+        }
+      ],
+      "reel_urls": [
+        {
+          "network": "instagram",
+          "label": "propertypete01",
+          "url": "https://www.instagram.com/reel/DgNhE94zsoJ/",
+          "shortcode": "DgNhE94zsoJ",
+          "verified": true
+        },
+        {
+          "network": "instagram",
+          "label": "lifestyledesignrealtyaustintx",
+          "url": "https://www.instagram.com/reel/DgNhFthgkkJ/",
+          "shortcode": "DgNhFthgkkJ",
+          "verified": true
+        }
+      ]
     }
   ]
 }
