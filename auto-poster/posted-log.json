@@ -27253,6 +27253,135 @@
       "timestamp": "2026-11-27T17:06:16.302Z",
       "runId": "46038339693",
       "success": true
+    },
+    {
+      "driveFileId": "10whBnOGjMOhsi0LydOVtngTAllEu7joZ",
+      "fileName": "3F5F725C-2517-4518-9C08-BA4035994102.mp4",
+      "city": "austin",
+      "caption": "would you believe this is brand new construction with 6 weeks free rent in Leander?\n\nThis deal won't last. Limited-time move-in specials are stacked, and the homes are ready to go.\n\n✨ everyday living ",
+      "voiceover": true,
+      "platforms": [
+        "tiktok",
+        "youtube",
+        "satellite_ig"
+      ],
+      "timestamp": "2026-11-27T17:06:15.943Z",
+      "success": true,
+      "brands": "propertypete01, lifestyledesignrealtyaustintx",
+      "slot": "am",
+      "spoken_city": "Leander",
+      "voiceover_reason": "music_only_add_voiceover",
+      "voiceover_transcript": "...",
+      "voiceover_persona": "insider_secret",
+      "number_honesty": {
+        "checked": true,
+        "attempts": 1,
+        "violations": [],
+        "fallback_used": false
+      },
+      "content_hash": "00c0ff77f0df0ffc:0f01010b1b3fffe1:ffff7c1f1f161008:ffffffffef000000:3f8fffffc9000000",
+      "captions_burned": false,
+      "captions_skip_reason": "source_has_burned_captions",
+      "caption_scan": {
+        "detected": true,
+        "ocr_unavailable": false,
+        "text_frames": 6,
+        "novel_texts": 6
+      },
+      "freshness": "re_encoded",
+      "hook_plate": {
+        "burned": false,
+        "reason": "source already carries burned-in text — a plate over it is the caption-over-captions class",
+        "text": null,
+        "hold_seconds": 3
+      },
+      "generation": {
+        "engine": "variation-v1",
+        "hook_style": "question",
+        "hook_style_source": "brief_exploit",
+        "excluded_style": "stat",
+        "hook_plate_burned": false,
+        "caption_source": "restructured",
+        "caption_length_bucket": null,
+        "caption_length_source": "restructured",
+        "brief_generated_at": "2026-11-24T02:26:30.370Z",
+        "decision_hooks": 0,
+        "decision_file_at": null,
+        "topic": {
+          "price_overlay": true,
+          "community_kb": false,
+          "overlay_community": false
+        }
+      },
+      "mainIgDelivery": "delivered",
+      "deliveryDriveLink": "https://drive.google.com/file/d/1rCgAsUNYYDS2rwXaSK43hFciOqjmLf38/view",
+      "distribution": [
+        {
+          "label": "propertypete01",
+          "blogId": 6486247,
+          "postId": 444635827,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "published",
+          "verified": true,
+          "verifiedAt": "2026-11-27T17:16:29.857Z",
+          "status": "PUBLISHED",
+          "publicUrl": "https://www.instagram.com/reel/DgQMPZHJyPu/"
+        },
+        {
+          "label": "lifestyledesignrealtyaustintx",
+          "blogId": 6486275,
+          "postId": 444635983,
+          "network": "instagram",
+          "ok": true,
+          "verdict": "pending",
+          "verified": false,
+          "verifiedAt": "2026-11-27T17:16:29.997Z",
+          "status": "PUBLISHING"
+        }
+      ],
+      "verification": {
+        "checkedAt": "2026-11-27T17:16:29.997Z",
+        "allVerified": false,
+        "anyFailed": false,
+        "pendingRecheck": true,
+        "counts": {
+          "published": 1,
+          "failed": 0,
+          "pending": 1,
+          "unknown": 0
+        },
+        "results": [
+          {
+            "label": "propertypete01",
+            "postId": 444635827,
+            "blogId": 6486247,
+            "verdict": "published",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHED",
+                "detail": "Published",
+                "url": "https://www.instagram.com/reel/DgQMPZHJyPu/"
+              }
+            ]
+          },
+          {
+            "label": "lifestyledesignrealtyaustintx",
+            "postId": 444635983,
+            "blogId": 6486275,
+            "verdict": "pending",
+            "providers": [
+              {
+                "network": "instagram",
+                "status": "PUBLISHING",
+                "detail": "publishing",
+                "url": null
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
   "lastTemplateIndex": -1
